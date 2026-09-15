@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kullanım Koşulları — CineStream</title>
+<style>
+  :root {
+    --bg: #0D0A16;
+    --bg-panel: #17122A;
+    --bg-panel-alt: #1E1832;
+    --border: #2E2547;
+    --text: #EDE9F7;
+    --text-dim: #A79FC4;
+    --text-faint: #756D93;
+    --accent: #E93DE0;
+    --accent-soft: #C084FC;
+    --accent-blue: #4CC9F0;
+    --warn: #FACC15;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse at top, #1A1330 0%, #0D0A16 55%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+  header.top { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .logo-mark {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent) 0%, #7C3AED 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 4px 18px rgba(233,61,224,0.35);
+  }
+  .brand { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand span { color: var(--accent-soft); }
+  h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin: 40px 0 6px; color: #fff; }
+  .meta {
+    color: var(--text-faint); font-size: 14px; margin-bottom: 40px;
+    padding-bottom: 28px; border-bottom: 1px solid var(--border);
+  }
+  h2 {
+    font-size: 19px; font-weight: 700; color: #fff; margin: 44px 0 14px;
+    padding-top: 4px; display: flex; align-items: center; gap: 10px;
+  }
+  h2::before {
+    content: ""; width: 4px; height: 18px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-blue));
+    border-radius: 2px; display: inline-block;
+  }
+  p { color: var(--text-dim); margin: 0 0 14px; font-size: 15.5px; }
+  ul { margin: 0 0 16px; padding-left: 0; list-style: none; }
+  li {
+    color: var(--text-dim); font-size: 15.5px; padding: 10px 0 10px 26px;
+    position: relative; border-bottom: 1px solid var(--border);
+  }
+  li:last-child { border-bottom: none; }
+  li::before {
+    content: ""; position: absolute; left: 4px; top: 19px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent-soft);
+  }
+  li strong { color: var(--text); }
+  .callout {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-left: 3px solid var(--warn); border-radius: var(--radius);
+    padding: 18px 20px; margin: 18px 0 24px; font-size: 14.5px; color: var(--text-dim);
+  }
+  .callout strong { color: var(--warn); }
+  .card {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 24px; margin: 16px 0;
+  }
+  .price-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap: 12px; margin: 18px 0;
+  }
+  .price-card {
+    background: var(--bg-panel-alt); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .price-card .tier { color: var(--text-faint); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .price-card .amount { color: #fff; font-size: 20px; font-weight: 800; }
+  .fill {
+    background: var(--bg-panel-alt); border: 1px dashed var(--border);
+    border-radius: 8px; padding: 2px 8px; color: var(--accent-soft); font-size: 0.95em;
+  }
+  footer {
+    margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--text-faint); font-size: 13px; text-align: center;
+  }
+  a { color: var(--accent-blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong.hl { color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo-mark">C</div>
+    <div class="brand">Cine<span>Stream</span></div>
+  </header>
+
+  <h1>Kullanım Koşulları</h1>
+  <div class="meta">Son güncelleme: <span class="fill">14 Eylül 2026</span> · Yürürlük tarihi: <span class="fill">Yayın tarihi</span></div>
+
+  <p>Bu Kullanım Koşulları ("Koşullar"), CineStream mobil uygulamasını ("Uygulama") indirerek, kurarak veya kullanarak kabul ettiğiniz sözleşmeyi oluşturur. Bu koşulları kabul etmiyorsanız, lütfen Uygulamayı kullanmayın.</p>
+
+  <div class="callout">
+    <strong>En önemli madde — lütfen dikkatle okuyun:</strong> CineStream, bir <strong>medya oynatıcı</strong> uygulamasıdır. Herhangi bir televizyon kanalı, film, dizi veya yayın içeriği <strong>sağlamaz, barındırmaz veya dağıtmaz</strong>. Uygulama, yalnızca sizin kendi seçtiğiniz ve kendi sorumluluğunuzda eklediğiniz üçüncü taraf yayın listelerini (M3U/Xtream Codes) oynatmak için bir araçtır — tıpkı bir video oynatıcı yazılımı gibi.
+  </div>
+
+  <h2>1. Hizmetin Niteliği</h2>
+  <p>CineStream, kullanıcıların kendi tedarik ettikleri IPTV yayın listelerini (M3U/M3U8 bağlantısı veya Xtream Codes hesap bilgileri) girerek içerik izleyebildiği bir oynatıcı yazılımıdır. Geliştirici:</p>
+  <ul>
+    <li>Herhangi bir televizyon kanalı, film veya dizi içeriğinin sahibi, dağıtıcısı veya sağlayıcısı <strong>değildir</strong>.</li>
+    <li>Kullanıcıların eklediği yayın listelerinin kaynağı, içeriği veya yasallığı üzerinde <strong>hiçbir kontrole sahip değildir</strong>.</li>
+    <li>Üçüncü taraf IPTV sağlayıcılarıyla herhangi bir iş ortaklığı, bağlantısı veya anlaşması <strong>bulunmamaktadır</strong>.</li>
+  </ul>
+
+  <h2>2. Kullanıcı Sorumluluğu</h2>
+  <p>Uygulamaya eklediğiniz her yayın listesi kaynağından <strong class="hl">yalnızca siz sorumlusunuz</strong>. Eklediğiniz içerik kaynağının:</p>
+  <ul>
+    <li>Yasal bir abonelik veya lisans yoluyla elde edilmiş olduğunu,</li>
+    <li>Bulunduğunuz ülkenin telif hakkı ve yayıncılık mevzuatına uygun olduğunu</li>
+  </ul>
+  <p>teyit etmek sizin sorumluluğunuzdadır. CineStream'i, telif hakkıyla korunan içeriğe izinsiz erişim sağlamak amacıyla kullanmamayı kabul edersiniz.</p>
+
+  <h2>3. Abonelik ve Ödemeler (CineStream PRO)</h2>
+  <p>Uygulama, aşağıdaki isteğe bağlı ücretli katmanları sunar:</p>
+  <div class="price-grid">
+    <div class="price-card"><div class="tier">Aylık</div><div class="amount">₺80</div></div>
+    <div class="price-card"><div class="tier">Yıllık</div><div class="amount">₺800</div></div>
+    <div class="price-card"><div class="tier">Ömür Boyu</div><div class="amount">₺1500</div></div>
+  </div>
+  <ul>
+    <li>Tüm ödemeler Google Play Faturalandırma sistemi üzerinden işlenir; kart bilgileriniz bize ulaşmaz.</li>
+    <li>Aylık/yıllık abonelikler, iptal etmediğiniz sürece otomatik olarak yenilenir. İptal, Google Play'in abonelik yönetim ekranından yapılabilir.</li>
+    <li>İade talepleri, Google Play'in kendi iade politikasına ve yürürlükteki tüketici mevzuatına tabidir.</li>
+    <li>Ücretsiz katman, günlük paylaşımlı bir kullanım süresi sunar; bu limit uygulama içinde belirtilir ve önceden haber verilmeksizin değiştirilebilir.</li>
+  </ul>
+
+  <h2>4. Yapay Zeka Özellikleri</h2>
+  <p>AI destekli öneri ve sohbet özellikleri, kendi eklediğiniz Google Gemini API anahtarınızı kullanır. Bu özelliklerin kullanımı Google'ın kendi hizmet şartlarına tabidir ve API kullanım maliyetinden (varsa) siz sorumlusunuz.</p>
+
+  <h2>5. Yaş Sınırı</h2>
+  <p>CineStream 18 yaş altı bireyler için tasarlanmamıştır. Eklediğiniz içerik kaynağına bağlı olarak yetişkinlere yönelik içerik kategorileri görünebilir; bu tür içeriklere erişim isteğe bağlı bir PIN ile sınırlandırılabilir. Uygulamayı kullanarak 18 yaşını doldurduğunuzu beyan edersiniz.</p>
+
+  <h2>6. Fikri Mülkiyet</h2>
+  <p>CineStream uygulamasının kendisi (yazılım, tasarım, marka, arayüz) geliştiricinin fikri mülkiyetidir. Bu Koşullar, uygulama üzerinden erişilen üçüncü taraf içeriklerle ilgili hiçbir fikri mülkiyet hakkı devretmez.</p>
+
+  <h2>7. Sorumluluk Reddi</h2>
+  <p>Uygulama "olduğu gibi" ve "mevcut olduğu şekilde" sunulur. Yayın kesintileri, üçüncü taraf sağlayıcı kaynaklı erişim sorunları veya içerik kalitesiyle ilgili hiçbir garanti verilmez, çünkü bu unsurlar tamamen sizin seçtiğiniz üçüncü taraf kaynağın kontrolündedir.</p>
+
+  <h2>8. Sorumluluğun Sınırlandırılması</h2>
+  <p>Yürürlükteki mevzuatın izin verdiği azami ölçüde, geliştirici; üçüncü taraf yayın kaynaklarının kullanımından, içeriğinden veya yasallığından doğabilecek hiçbir doğrudan veya dolaylı zarardan sorumlu tutulamaz.</p>
+
+  <h2>9. Fesih</h2>
+  <p>Bu Koşulları ihlal etmeniz durumunda, Uygulamayı kullanma erişiminiz herhangi bir bildirimde bulunmaksızın sonlandırılabilir.</p>
+
+  <h2>10. Geçerli Hukuk</h2>
+  <p>Bu Koşullar, Türkiye Cumhuriyeti kanunlarına tabidir. Bu Koşullardan doğabilecek uyuşmazlıklarda Türkiye mahkemeleri ve icra daireleri yetkilidir.</p>
+
+  <h2>11. Değişiklikler</h2>
+  <p>Bu Koşulları zaman zaman güncelleyebiliriz. Güncel sürüm her zaman bu sayfada yayınlanır. Uygulamayı kullanmaya devam etmeniz, güncellenmiş Koşulları kabul ettiğiniz anlamına gelir.</p>
+
+  <h2>12. Bize Ulaşın</h2>
+  <div class="card">
+    <p style="margin:0 0 4px">Sorularınız için:</p>
+    <p style="margin:0"><strong class="hl">E-posta:</strong> <span class="fill">yilmazmurat08@gmail.com</span></p>
+  </div>
+
+  <footer>
+    © 2026 CineStream. Tüm hakları saklıdır.
+  </footer>
+</div>
+</body>
+</html>
