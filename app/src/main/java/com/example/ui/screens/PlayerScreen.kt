@@ -4,7 +4,6 @@ package com.example.ui.screens
 
 import com.example.ui.theme.rememberAppAdaptiveLayout
 
-import com.example.ui.PlayerViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import android.app.Activity
@@ -107,33 +106,19 @@ fun PlayerScreen(
     onProgressUpdate: (IPTVItem, progress: Long, total: Long) -> Unit,
     modifier: Modifier = Modifier,
     initialProgressSeconds: Long = 0L,
-    iptvViewModel: IPTVViewModel? = null,
-    playerViewModel: PlayerViewModel = viewModel()
+    iptvViewModel: IPTVViewModel? = null
 ) {
-    val adaptiveLayout = rememberAppAdaptiveLayout()
-    val useFallback by playerViewModel.useFallbackPlayer.collectAsState()
-
-    if (useFallback) {
-        LegacyExoPlayerScreen(
-            item = item,
-            siblingItems = siblingItems,
-            onBack = onBack,
-            onPlayItem = onPlayItem,
-            onProgressUpdate = onProgressUpdate,
-            modifier = modifier,
-            initialProgressSeconds = initialProgressSeconds,
-            iptvViewModel = iptvViewModel
-        )
-    } else {
-        VideoPlayerScreen(
-            item = item,
-            onBack = onBack,
-            modifier = modifier,
-            initialProgressSeconds = initialProgressSeconds,
-            onProgressUpdate = onProgressUpdate,
-            playerViewModel = playerViewModel
-        )
-    }
+    // Oynatıcı ExoPlayer'dır (önceki VLC yolu hiç açılmıyordu ve kaldırıldı).
+    LegacyExoPlayerScreen(
+        item = item,
+        siblingItems = siblingItems,
+        onBack = onBack,
+        onPlayItem = onPlayItem,
+        onProgressUpdate = onProgressUpdate,
+        modifier = modifier,
+        initialProgressSeconds = initialProgressSeconds,
+        iptvViewModel = iptvViewModel
+    )
 }
 
 @OptIn(UnstableApi::class)

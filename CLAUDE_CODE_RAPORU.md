@@ -102,6 +102,7 @@ Doğru bulunanlar: Coil güvenli OkHttp istemcisini kullanıyor; M3U satır sat�
 - Keystore olmadığı için release, imzasız APK olarak derlendi (R8 doğrulaması için imza gerekmez; geçici bir imza değişikliği yapılmadı).
 
 ### 3.7 16 KB sayfa boyutu ve 64-bit (B)
+- *Güncelleme:* VLC daha sonra onayınızla tamamen kaldırıldı (Bölüm 5, madde 4); aşağıdaki libvlc güncellemesi bu nedenle artık geçerli değil.
 - `libvlc-all` 3.6.0 → **3.6.5** (aynı 3.6 çizgisinde yama sürümü). 3.6.0'da `libvlc.so`, `libvlcjni.so`, `libc++_shared.so` (arm64 ve x86_64) 4 KB hizalıydı; 3.6.5'te hepsi 16 KB. APK'daki tüm `.so` dosyaları ELF başlıklarından ve `zipalign -c -P 16` ile doğrulandı. APK'da 64-bit (arm64-v8a, x86_64) kütüphaneler mevcut.
 
 ### 3.8 Ana iş parçacığı, StrictMode, coroutine (A)
@@ -193,7 +194,7 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 | Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **93 (93 geçti, 0 başarısız)** |
 | lintDebug | 26 hata / 268 uyarı | 0 hata / 120 uyarı |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
-| APK boyutu | debug 219 MB | debug 230 MB, imzasız release 206 MB (artış: libvlc 3.6.5'in 16 KB hizalı native kütüphaneleri 3.6.0'dan ~12 MB büyük; APK'nın asıl payı VLC'de, bkz. Bölüm 5, madde 4) |
+| APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
 
 Son kontrol `./gradlew clean` sonrası, derleme önbelleği kapalı (`--no-build-cache`) çalıştırıldı: **BUILD SUCCESSFUL**. Cihaz testleri de derleniyor (`assembleDebugAndroidTest`).
 
@@ -222,8 +223,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 2. **applicationId** `com.aistudio.cinestreamiptv.gkrwpy`: Play'de ilk yayından sonra değiştirilemez. Yayından önce kalıcı bir ad seçmenizi öneririm.
 3. **Cleartext (HTTP) trafiği açık** (`usesCleartextTraffic="true"`, `cleartextTrafficPermitted="true"`): IPTV/Xtream sunucularının çoğu ve yayın adresleri `http://` kullanır; liste adreslerini kullanıcı girdiği için alan adları önceden bilinemez, bu yüzden gerekli.
    *Öneri:* `network_security_config.xml`'e `api.themoviedb.org`, `generativelanguage.googleapis.com`, `api.revenuecat.com` için `cleartextTrafficPermitted="false"` alan adı kuralları eklenebilir.
-4. **VLC oynatıcı hiç açılmıyor:** `PlayerViewModel._useFallbackPlayer` `true` başlıyor ve hiçbir yerde `false` yapılmıyor; `VideoPlayerScreen` pratikte kullanılmıyor. Buna karşın `libvlc-all` APK'ya ~189 MB (4 mimari, sıkıştırılmamış) native kütüphane ekliyor.
-   *Öneri:* Ya VLC'yi (bağımlılık + `VideoPlayerScreen` + `PlayerViewModel`) kaldırın, ya da gerçekten ana oynatıcı olması isteniyorsa başlangıç değerini değiştirin. AAB ile dağıtımda cihaz başına ~50 MB'a düşer.
+4. ~~**VLC oynatıcı hiç açılmıyor**~~ — **Yapıldı (onayınızla, ikinci PR):** `libvlc-all` bağımlılığı, `VideoPlayerScreen.kt`, `PlayerViewModel.kt` ve VLC ProGuard kuralları kaldırıldı; `PlayerScreen` doğrudan (zaten her zaman açılan) ExoPlayer oynatıcısını gösteriyor. Debug APK 230 → 31 MB, imzasız release APK 206 → 6,9 MB. APK'da kalan native kütüphaneler (AndroidX) 16 KB hizalı.
 5. **Yayın açılamazsa ilgisiz bir test videosu oynatılıyor:** `PlayerScreen` birkaç denemeden sonra `https://vjs.zencdn.net/v/oceans.mp4` (film/dizi) veya `https://test-streams.mux.dev/...` (canlı) açıyor. Kullanıcı kendi kanalı yerine okyanus videosu görüyor.
    *Öneri:* Bunun yerine "Yayın açılamadı" mesajı + "Tekrar dene" düğmesi.
 6. **Firebase AI ve App Check bağımlılıkları kullanılmıyor.** Gemini, REST API ile ve anahtar adres içinde (`?key=`) gönderilerek çağrılıyor.

@@ -64,7 +64,7 @@ object CrashRecoveryManager {
             if (current is NullPointerException) {
                 return CrashCategory.NULL_POINTER
             }
-            if (className.contains("media3") || className.contains("exoplayer") || className.contains("libvlc") || className.contains("player")) {
+            if (className.contains("media3") || className.contains("exoplayer") || className.contains("player")) {
                 return CrashCategory.PLAYER
             }
             if (className.contains("compose") || className.contains("view") || className.contains("layout")) {
