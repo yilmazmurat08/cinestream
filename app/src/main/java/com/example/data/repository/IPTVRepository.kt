@@ -678,7 +678,13 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
             } catch (_: Exception) {}
             throw ce
         } catch (e: Exception) {
-            Log.w(TAG, "M3U stream reading stopped or reached end with notice: ${e.message}")
+            // Bağlantı yarıda koptu ya da boyut sınırı aşıldı: yarım listeyi aktif tabloya taşıma,
+            // kullanıcının mevcut listesini koru. syncPlaylist bu hatayı yakalayıp eski kanalları döndürür.
+            Log.w(TAG, "M3U stream interrupted, keeping existing items: ${e.message}")
+            try {
+                iptvDao.clearStagingItems(playlistId)
+            } catch (_: Exception) {}
+            throw e
         }
 
         if (stagingBatch.isNotEmpty()) {
