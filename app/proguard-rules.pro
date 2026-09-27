@@ -27,10 +27,8 @@
 -keep class * extends androidx.room.RoomDatabase
 -keep class com.example.data.db.** { *; }
 
-# Media3 / ExoPlayer & LibVLC
+# Media3 / ExoPlayer
 -keep class androidx.media3.** { *; }
--keep class org.videolan.libvlc.** { *; }
--keep class org.videolan.medialibrary.** { *; }
 
 # RevenueCat
 -keep class com.revenuecat.purchases.** { *; }
