@@ -445,10 +445,11 @@ fun HomeScreen(
                         // 1. Top Hero Featured Movie Card (12 Saatte Bir Değişen M3U Özel Film Kartı)
                         if (isHeroVisible) {
                             item(key = "hero_featured") {
-                                val featuredMovie by viewModel.featuredMovie.collectAsState()
-                                if (featuredMovie != null) {
-                                    com.example.ui.components.FeaturedMovieCard(
-                                        featuredMovie = featuredMovie,
+                                // Öne Çıkan: 5 sn'de bir kendiliğinden veya parmakla kaydırınca değişir; yetişkin içerik yok.
+                                val heroSlides by viewModel.heroSlides.collectAsState()
+                                if (heroSlides.isNotEmpty()) {
+                                    com.example.ui.components.FeaturedHeroCarousel(
+                                        slides = heroSlides,
                                         onPlayClick = { item ->
                                             val matched = viewModel.findMatchedItem(item)
                                             val targetItem = if (matched.streamUrl.isNotEmpty()) matched else item

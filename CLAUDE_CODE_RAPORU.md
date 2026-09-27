@@ -204,7 +204,7 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 
 | | Başlangıç | Son |
 |---|---|---|
-| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **107 (107 geçti, 0 başarısız)** |
+| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **110 (110 geçti, 0 başarısız)** |
 | lintDebug | 26 hata / 268 uyarı | 0 hata / 157 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
 | APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
@@ -225,6 +225,7 @@ Eklenen testler:
 | `MainActivityRecreateTest` | 5 | Telefon dikey, 320 dp + 2.0 yazı boyutu, yatay→dikey, tablet, TV: `recreate()` sonrası çökme yok, splash tekrar oynamıyor |
 | `DiagnosticLogTest` | 4 | Anahtar/jeton/şifre maskeleme |
 | `DatabaseCorruptionBackupTest` | 3 | Bozuk veritabanı silinmeden yedekleniyor (elle kurtarma ve SQLite açılışı); sağlam veritabanında yedek alınmıyor |
+| `FeaturedHeroCarouselTest` | 3 | Öne Çıkan alanı 5 sn'de kendiliğinden geçiyor, sola kaydırınca sonraki film geliyor; yetişkin içerik listeye girmiyor, aynı başlık bir kez |
 | `PictureInPictureTest` | 5 | Dil ayarlı bağlamda da PiP: Android 8–11'de ana ekrana çıkınca PiP'e geçiş, duraklatılmışken geçmeme, Android 12+ otomatik geçiş hazır, TV'de kapalı; ağ ayarında `image.tmdb.org` HTTP'ye açık ve kullanıcı sertifikalarına güveniliyor |
 | `PipAspectRatioTest` | 3 | PiP pencere oranı: normal video, bilinmeyen boyut (16:9), aşırı oranların sınırlanması |
 | `ActiveScreenSaverTest` | 3 | Açık ekran ve oynatıcıdaki içerik süreç ölümünden sonra geri yükleniyor; bilinmeyen değerde ana sayfaya dönülüyor |
@@ -260,6 +261,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 16. ~~**Oynatıcı Activity'yi bulamıyor (AI Studio'dan gelen hata)**~~ — **Yapıldı (onayınızla, sekizinci PR):** MainActivity dil desteği için Compose'a Activity olmayan bir bağlam verdiği için oynatıcıda tam ekran (durum çubuğunu gizleme), yatay ekrana geçiş ve parmakla parlaklık ayarı hiç çalışmıyordu. Oynatıcı artık Activity'yi Compose görünümünden (`LocalView`) alıyor. Oynatıcı tam ekran ve yatay açılıyor; alt satıra **Tam ekran / Küçült** düğmesi eklendi (küçült: dikey ekran, durum çubuğu görünür; TV'de düğme yok, TV hep tam ekran). Parmakla ayarlanan parlaklık sadece oynatıcıda geçerli; oynatıcıdan çıkınca sistem parlaklığına dönülüyor. Yeni metinler TR+EN eklendi.
 
 17. **RevenueCat kaldırıldı (onayınızla, sekizinci PR):** PRO ödemeleri Google Play ile kurulacağı için RevenueCat kütüphanesi, başlatma kodu, ProGuard kuralı ve ağ ayarı kaldırıldı. `SubscriptionManager` artık sadece ürün adlarını tutuyor; satın alma/geri yükleme, ödeme altyapısı kurulana kadar önceki gibi "servis kullanılabilir değil" diyor. PRO ekranının görünümü değişmedi.
+18. **Öne Çıkan alanı kaydırmalı oldu (onayınızla, dokuzuncu PR):** Ana sayfadaki Öne Çıkan kartı artık öne çıkan film + kütüphaneden rastgele seçilen 7 filmi (afişi olan, oynatılabilir) gösteriyor. 5 saniyede bir kendiliğinden ya da parmakla sola/sağa kaydırınca değişiyor, sonsuz dönüyor; kaydırınca 5 sn baştan başlıyor. Kartın görünümü ve boyutu aynı. Yetişkin içerik hem film seçiminde hem gösterilecek listede ayrıca filtreleniyor (eski öne çıkan film seçiminde bu filtre yoktu, eklendi). Kütüphane güncellendiğinde (ör. favori ekleme) kartlar karışmıyor. TV'de odak kartın içindeyken otomatik geçiş duruyor. Yenile düğmesi yeni bir film seti seçiyor. `FeaturedHeroCarouselTest` ile test ediliyor.
 
 ---
 
@@ -291,6 +293,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 9. Bir film açıkken telefonun Geliştirici seçenekleri → "Etkinlikleri tutma" açıkken ana ekrana çıkıp geri dönün: oynatıcı ekranı (aynı içerik) açık olmalı.
 10. Bir film oynarken ana ekran tuşuna basın: video küçük pencerede devam etmeli, pencerede düğme görünmemeli. Pencereye dokunup büyütün: kontroller geri gelmeli. Pencereyi aşağı sürükleyip kapatın: ses durmalı, "Şu an oynatılıyor" bildirimi kalkmalı. Videoyu duraklatıp ana ekrana çıkın: PiP açılmamalı.
 11. Bir film açın: ekran yatay ve tam ekran (durum çubuğu gizli) olmalı. Kontrollerdeki Tam ekran / Küçült düğmesine basın: dikeye dönmeli ve durum çubuğu görünmeli; tekrar basınca tam ekrana dönmeli. Sol yarıda parmağı yukarı/aşağı kaydırın: ekran parlaklığı değişmeli; oynatıcıdan çıkınca normal parlaklığa dönmeli.
+12. Ana sayfada Öne Çıkan kartını izleyin: 5 sn'de bir film değişmeli. Parmakla sola kaydırın: hemen sonraki film gelmeli. Yetişkin içerik hiç görünmemeli.
 
 ### Android TV / Google TV (kumanda)
 1. Açılışta OK'ye basın: açılış atlanmalı.

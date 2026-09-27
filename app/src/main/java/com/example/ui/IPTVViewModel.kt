@@ -467,6 +467,19 @@ class IPTVViewModel(
     val manualEpgUrl: StateFlow<String> = settingsRepository.manualEpgUrlFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
+    // Yetişkin içerik filtresi: init bloklarındaki arka plan işleri de kullandığı için en üstte tanımlı.
+    private val adultKeywords = listOf(
+        "+18", "18+", "adult", "adults", "erotik", "erotic", "xxx", "porn", "porno",
+        "nsfw", "yetiskin", "yetişkin", "for adult", "mature", "hentai", "sex",
+        "brazzers", "playboy", "hustler", "redlight", "strip", "babes", "onlyfans",
+        "hardcore", "softcore", "sensual", "ecchi", "cams", "erotica"
+    )
+
+    private val adultRegex = Regex(
+        """(?:\b|[^a-zA-Z0-9])(\+?18\+?|xxx|adults?|porn(?:o)?|erotik|erotic|nsfw|yetiskin|yetişkin|hentai|sex|brazzers)(?:\b|[^a-zA-Z0-9])""",
+        RegexOption.IGNORE_CASE
+    )
+
     init {
         viewModelScope.launch(coroutineExceptionHandler) {
             combine(playlists, settingsRepository.manualEpgUrlFlow) { list, manualUrl ->
@@ -583,6 +596,17 @@ class IPTVViewModel(
     // 12 Saatte bir güncellenen öne çıkan M3U filmi
     private val _featuredMovie = MutableStateFlow<com.example.data.repository.FeaturedMovie?>(null)
     val featuredMovie: StateFlow<com.example.data.repository.FeaturedMovie?> = _featuredMovie.asStateFlow()
+
+    // --- Öne Çıkan kaydırmalı alanı (5 sn'de bir otomatik / parmakla kaydırma) ---
+    private val _featuredCarousel = MutableStateFlow<List<com.example.data.repository.FeaturedMovie>>(emptyList())
+    private var featuredCarouselJob: kotlinx.coroutines.Job? = null
+
+    /** Öne çıkan film ilk sırada, ardından kütüphaneden seçilen filmler. Yetişkin içerik asla yer almaz. */
+    val heroSlides: StateFlow<List<com.example.data.repository.FeaturedMovie>> =
+        combine(_featuredMovie, _featuredCarousel) { featured, carousel ->
+            buildHeroSlides(featured, carousel) { isAdultFeatured(it) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
 
     // Manuel / Carousel filmleri (M3U listesinden rastgele 10 film - donma ve performans korumalı)
     private val _moviesState = MutableStateFlow<List<IPTVItem>>(emptyList())
@@ -1088,6 +1112,13 @@ class IPTVViewModel(
             repository.getItemsByType("MOVIE").collectLatest { items ->
                 if (items.isNotEmpty()) {
                     loadFeaturedMovie(items, forceUpdate = false)
+                    // Favori ekleme vb. her veritabanı güncellemesinde kartlar karışmasın: sadece ilk yüklemede
+                    // veya gösterilen filmlerden biri kütüphaneden kalktığında yeniden seç.
+                    val shownIds = _featuredCarousel.value.mapNotNull { it.iptvItem?.id }
+                    val itemIds = items.mapTo(HashSet()) { it.id }
+                    if (shownIds.isEmpty() || shownIds.any { it !in itemIds }) {
+                        loadFeaturedCarousel(items)
+                    }
 
                     // Carousel filmleri: Sadece filmleri al, karıştır, en fazla 10 tane al (performans korumalı)
                     val carouselMovies = items
@@ -1131,7 +1162,7 @@ class IPTVViewModel(
                 }
 
                 val playableTrendingMovies = tmdbTrending.filter {
-                    it.type == "MOVIE" && it.id > 0 && it.streamUrl.isNotBlank()
+                    it.type == "MOVIE" && it.id > 0 && it.streamUrl.isNotBlank() && !isAdultContent(it)
                 }
 
                 val selectedMovie = if (playableTrendingMovies.isNotEmpty()) {
@@ -1144,9 +1175,9 @@ class IPTVViewModel(
                                 !item.name.contains("Bölüm", ignoreCase = true) &&
                                 !item.name.contains("Season", ignoreCase = true) &&
                                 item.type != "SERIES" && item.type != "LIVE" && item.type != "RADIO"
-                        isExplicitMovie && notSeries && item.streamUrl.isNotBlank()
+                        isExplicitMovie && notSeries && item.streamUrl.isNotBlank() && !isAdultContent(item)
                     }
-                    val targetList = if (movieList.isNotEmpty()) movieList else m3uItems.filter { it.type != "LIVE" && it.type != "RADIO" }
+                    val targetList = if (movieList.isNotEmpty()) movieList else m3uItems.filter { it.type != "LIVE" && it.type != "RADIO" && !isAdultContent(it) }
                     targetList.shuffled().firstOrNull()
                 }
 
@@ -1193,7 +1224,65 @@ class IPTVViewModel(
 
     fun refreshFeaturedMovie() {
         loadFeaturedMovie(movies.value, forceUpdate = true)
+        loadFeaturedCarousel(movies.value)
     }
+
+    private fun isAdultFeatured(movie: com.example.data.repository.FeaturedMovie): Boolean =
+        movie.iptvItem?.let { isAdultContent(it) } == true ||
+            isAdultContent(movie.category ?: "", movie.title)
+
+    /**
+     * Kaydırmalı alan için kütüphaneden afişi olan, oynatılabilir, yetişkin olmayan filmlerden rastgele
+     * [FEATURED_CAROUSEL_SIZE] tane seçer. Özet/puan eksikse öne çıkan filmdeki gibi TMDB'den tamamlanır.
+     */
+    fun loadFeaturedCarousel(m3uItems: List<IPTVItem> = movies.value) {
+        featuredCarouselJob?.cancel()
+        featuredCarouselJob = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            val candidates = m3uItems.filter { item ->
+                item.type == "MOVIE" && item.streamUrl.isNotBlank() && !item.logoUrl.isNullOrBlank() &&
+                    !isAdultContent(item)
+            }
+            if (candidates.isEmpty()) {
+                _featuredCarousel.value = emptyList()
+                return@launch
+            }
+            // Özeti veya puanı olan filmler önce (daha dolu bir kart); aralarında rastgele.
+            val (rich, plain) = candidates.shuffled().partition { it.summary.isNotBlank() || it.rating > 0 }
+            val picked = (rich + plain).take(FEATURED_CAROUSEL_SIZE)
+            var slides = picked.map { it.toFeaturedMovie() }
+            _featuredCarousel.value = slides
+
+            picked.forEachIndexed { index, item ->
+                if (item.summary.isNotBlank() && item.rating > 0) return@forEachIndexed
+                try {
+                    val details = tmdbRepository.fetchDetailsByTitle(
+                        item.cleanedName.ifEmpty { item.name }, type = "MOVIE", tmdbApiKey = tmdbApiKey.value
+                    ) ?: return@forEachIndexed
+                    val current = slides[index]
+                    val overview = if (details.overview.isNotBlank() && details.overview != "Açıklama bulunamadı.") details.overview else current.overview
+                    val rating = if (details.rating > 0.0) String.format("%.1f", details.rating) else current.imdbRating
+                    slides = slides.toMutableList().also { it[index] = current.copy(overview = overview, imdbRating = rating) }
+                    _featuredCarousel.value = slides
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w("IPTVViewModel", "TMDB details for featured carousel failed", e)
+                }
+            }
+        }
+    }
+
+    private fun IPTVItem.toFeaturedMovie() = com.example.data.repository.FeaturedMovie(
+        title = cleanedName.ifBlank { name },
+        posterUrl = logoUrl,
+        backdropUrl = logoUrl,
+        overview = summary.ifBlank { null },
+        imdbRating = if (rating > 0) String.format("%.1f", rating) else null,
+        releaseDate = releaseDate,
+        category = category,
+        streamUrl = streamUrl,
+        iptvItem = this
+    )
 
     private fun prefetchSeriesCovers() {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
@@ -2559,18 +2648,6 @@ class IPTVViewModel(
         }
     }
 
-    private val adultKeywords = listOf(
-        "+18", "18+", "adult", "adults", "erotik", "erotic", "xxx", "porn", "porno",
-        "nsfw", "yetiskin", "yetişkin", "for adult", "mature", "hentai", "sex",
-        "brazzers", "playboy", "hustler", "redlight", "strip", "babes", "onlyfans",
-        "hardcore", "softcore", "sensual", "ecchi", "cams", "erotica"
-    )
-
-    private val adultRegex = Regex(
-        """(?:\b|[^a-zA-Z0-9])(\+?18\+?|xxx|adults?|porn(?:o)?|erotik|erotic|nsfw|yetiskin|yetişkin|hentai|sex|brazzers)(?:\b|[^a-zA-Z0-9])""",
-        RegexOption.IGNORE_CASE
-    )
-
     fun isAdultContent(category: String, name: String = ""): Boolean {
         val lowerCat = category.lowercase(java.util.Locale.ROOT)
         val lowerName = name.lowercase(java.util.Locale.ROOT)
@@ -2598,3 +2675,16 @@ class IPTVViewModel(
         }
     }
 }
+
+/** Öne Çıkan alanında öne çıkan filme ek olarak gösterilen film sayısı. */
+private const val FEATURED_CAROUSEL_SIZE = 7
+
+/** Öne Çıkan slaytları: öne çıkan film başta, yetişkin içerik çıkarılmış, aynı başlık bir kez. */
+internal fun buildHeroSlides(
+    featured: com.example.data.repository.FeaturedMovie?,
+    carousel: List<com.example.data.repository.FeaturedMovie>,
+    isAdult: (com.example.data.repository.FeaturedMovie) -> Boolean
+): List<com.example.data.repository.FeaturedMovie> =
+    (listOfNotNull(featured) + carousel)
+        .filterNot(isAdult)
+        .distinctBy { it.title.trim().lowercase(java.util.Locale.ROOT) }
