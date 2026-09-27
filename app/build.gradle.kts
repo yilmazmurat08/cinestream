@@ -59,6 +59,12 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  // MigrationTestHelper şema JSON'larını test assets'inden okur.
+  sourceSets {
+    // Robolectric unit testleri uygulamanın (debug) assets'ini okur; release APK etkilenmez.
+    getByName("debug").assets.directories.add("$projectDir/schemas")
+    getByName("androidTest").assets.directories.add("$projectDir/schemas")
+  }
   lint {
     abortOnError = false
     checkReleaseBuilds = false
@@ -82,6 +88,11 @@ if (!envFile.exists() || envApiKey.isNotEmpty() || tmdbApiKey.isNotEmpty() || yo
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
+}
+
+// Room şema dosyaları (app/schemas/) sürüm kontrolünde tutulur; migration testleri bunları kullanır.
+ksp {
+  arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 googleServices {
@@ -142,6 +153,7 @@ dependencies {
   testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.androidx.room.testing)
   testImplementation(libs.robolectric)
   testImplementation(libs.roborazzi)
   testImplementation(libs.roborazzi.compose)

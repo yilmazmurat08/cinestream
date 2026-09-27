@@ -34,8 +34,8 @@ import com.example.data.model.tmdb.TmdbCacheEntity
         SeriesCoverEntity::class,
         XtreamSeriesCatalogEntity::class
     ],
-    version = 10,
-    exportSchema = false
+    version = AppDatabase.DATABASE_VERSION,
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -45,60 +45,27 @@ abstract class AppDatabase : RoomDatabase() {
         private const val TAG = "AppDatabase"
         private const val DB_NAME = "cinestream_database"
 
-        val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `iptv_items_staging` (
-                        `id` INTEGER NOT NULL,
-                        `playlistId` INTEGER NOT NULL,
-                        `name` TEXT NOT NULL,
-                        `cleanedName` TEXT NOT NULL,
-                        `logoUrl` TEXT,
-                        `streamUrl` TEXT NOT NULL,
-                        `category` TEXT NOT NULL,
-                        `type` TEXT NOT NULL,
-                        `rating` REAL NOT NULL,
-                        `summary` TEXT NOT NULL,
-                        `cast` TEXT NOT NULL,
-                        `director` TEXT NOT NULL,
-                        `trailerUrl` TEXT,
-                        `isFavorite` INTEGER NOT NULL,
-                        `season` INTEGER,
-                        `episode` INTEGER,
-                        `releaseDate` TEXT NOT NULL,
-                        `genre` TEXT NOT NULL,
-                        PRIMARY KEY(`id`)
-                    )
-                """.trimIndent())
-            }
-        }
+        /**
+         * Yayındaki ilk şema sürümü. Şema dosyası app/schemas/ altında dışa aktarılır.
+         *
+         * KURAL: Bundan sonraki her şema değişikliğinde DATABASE_VERSION bir artırılır ve
+         * [MIGRATIONS] listesine bir Migration eklenir. Yıkıcı geçiş (tabloları silip yeniden
+         * oluşturma) SADECE yayın öncesi geliştirme sürümleri (1–9) için geçerlidir; 10 ve
+         * sonrasında migration bulunamazsa Room hata verir, kullanıcının listeleri, favorileri ve
+         * izleme geçmişi sessizce silinmez. AppDatabaseMigrationTest bu kuralı denetler.
+         */
+        const val DATABASE_VERSION = 10
 
-        val MIGRATION_4_5 = object : Migration(4, 5) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS `tmdb_cache` (
-                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `sourceKey` TEXT NOT NULL,
-                        `normalizedTitle` TEXT NOT NULL,
-                        `year` TEXT,
-                        `mediaType` TEXT NOT NULL,
-                        `tmdbId` INTEGER NOT NULL,
-                        `title` TEXT NOT NULL,
-                        `overview` TEXT NOT NULL,
-                        `posterPath` TEXT,
-                        `backdropPath` TEXT,
-                        `rating` REAL NOT NULL,
-                        `releaseDate` TEXT NOT NULL,
-                        `genresJson` TEXT NOT NULL,
-                        `castJson` TEXT NOT NULL,
-                        `directorName` TEXT,
-                        `directorPhoto` TEXT,
-                        `updatedAt` INTEGER NOT NULL
-                    )
-                """.trimIndent())
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tmdb_cache_sourceKey` ON `tmdb_cache` (`sourceKey`)")
-            }
-        }
+        /** Yayın öncesi geliştirme sürümleri; bu sürümlerdeki veritabanları yeniden oluşturulur. */
+        internal val DEV_ONLY_VERSIONS: IntArray = (1..9).toList().toIntArray()
+
+        /** 10'dan sonraki şema değişiklikleri için migration'lar (ör. Migration(10, 11)). */
+        val MIGRATIONS: Array<Migration> = arrayOf()
+
+        /** Uygulamanın ve testlerin kullandığı tek migration politikası. */
+        fun <T : RoomDatabase> RoomDatabase.Builder<T>.applyMigrationPolicy(): RoomDatabase.Builder<T> =
+            addMigrations(*MIGRATIONS)
+                .fallbackToDestructiveMigrationFrom(true, *DEV_ONLY_VERSIONS)
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -116,8 +83,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DB_NAME
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
-                    .fallbackToDestructiveMigration()
+                    .applyMigrationPolicy()
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onOpen(db: SupportSQLiteDatabase) {
                             super.onOpen(db)
@@ -151,8 +117,7 @@ abstract class AppDatabase : RoomDatabase() {
                         AppDatabase::class.java,
                         DB_NAME
                     )
-                        .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
-                        .fallbackToDestructiveMigration()
+                        .applyMigrationPolicy()
                         .build()
                     recoveredDb.openHelper.readableDatabase
                     recoveredDb
