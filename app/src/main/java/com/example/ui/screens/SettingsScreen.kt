@@ -190,24 +190,24 @@ fun SettingsScreen(
                             isLoading = isLoading,
                             onAddM3UPlaylist = { name, url ->
                                 viewModel.loadM3UPlaylistFromUrl(name, url)
-                                Toast.makeText(context, "Oynatma listesi ekleniyor...", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.settings_toast_adding_playlist), Toast.LENGTH_SHORT).show()
                             },
                             onAddXtreamPlaylist = { name, serverUrl, username, password ->
                                 viewModel.loadXtreamPlaylist(name, serverUrl, username, password)
-                                Toast.makeText(context, "Xtream listesi ekleniyor...", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.settings_toast_adding_xtream), Toast.LENGTH_SHORT).show()
                             },
                             onDeletePlaylist = { id ->
                                 viewModel.deletePlaylist(id)
-                                Toast.makeText(context, "Liste silindi.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.settings_toast_deleted), Toast.LENGTH_SHORT).show()
                             },
                             onRefreshPlaylist = { playlist ->
                                 viewModel.refreshSinglePlaylist(playlist) {
-                                    Toast.makeText(context, "Listeler başarıyla yenilendi", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.settings_toast_refreshed), Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onEditPlaylist = { playlist, newName, newUrl, isXtream, username, password ->
                                 viewModel.updatePlaylistDetails(playlist, newName, newUrl, isXtream, username, password)
-                                Toast.makeText(context, "Oynatma listesi güncellendi.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.settings_toast_updated), Toast.LENGTH_SHORT).show()
                             }
                         )
 
@@ -282,7 +282,7 @@ fun SettingsScreen(
                                 isClearingCache = true
                                 viewModel.clearAppCache {
                                     isClearingCache = false
-                                    Toast.makeText(context, "Uygulama önbelleği başarıyla temizlendi.", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.settings_toast_cache_cleared), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
@@ -347,24 +347,24 @@ fun SettingsScreen(
                         isLoading = isLoading,
                         onAddM3UPlaylist = { name, url ->
                             viewModel.loadM3UPlaylistFromUrl(name, url)
-                            Toast.makeText(context, "Oynatma listesi ekleniyor...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.settings_toast_adding_playlist), Toast.LENGTH_SHORT).show()
                         },
                         onAddXtreamPlaylist = { name, serverUrl, username, password ->
                             viewModel.loadXtreamPlaylist(name, serverUrl, username, password)
-                            Toast.makeText(context, "Xtream listesi ekleniyor...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.settings_toast_adding_xtream), Toast.LENGTH_SHORT).show()
                         },
                         onDeletePlaylist = { id ->
                             viewModel.deletePlaylist(id)
-                            Toast.makeText(context, "Liste silindi.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.settings_toast_deleted), Toast.LENGTH_SHORT).show()
                         },
                         onRefreshPlaylist = { playlist ->
                             viewModel.refreshSinglePlaylist(playlist) {
-                                Toast.makeText(context, "Listeler başarıyla yenilendi", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.settings_toast_refreshed), Toast.LENGTH_SHORT).show()
                             }
                         },
                         onEditPlaylist = { playlist, newName, newUrl, isXtream, username, password ->
                             viewModel.updatePlaylistDetails(playlist, newName, newUrl, isXtream, username, password)
-                            Toast.makeText(context, "Oynatma listesi güncellendi.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.settings_toast_updated), Toast.LENGTH_SHORT).show()
                         }
                     )
 
@@ -422,7 +422,7 @@ fun SettingsScreen(
                             isClearingCache = true
                             viewModel.clearAppCache {
                                 isClearingCache = false
-                                Toast.makeText(context, "Uygulama önbelleği başarıyla temizlendi.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.settings_toast_cache_cleared), Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -518,7 +518,7 @@ fun PlayerSettingsCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Oynatıcı Ayarları",
+                    text = stringResource(R.string.settings_player),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -535,13 +535,13 @@ fun PlayerSettingsCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Donanımsal Hızlandırma",
+                        text = stringResource(R.string.settings_hw_accel),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Donanım çözücüleri kullanarak video performansını artırır.",
+                        text = stringResource(R.string.settings_hw_accel_desc),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -576,13 +576,13 @@ fun PlayerSettingsCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Tampon Bellek Boyutu",
+                        text = stringResource(R.string.settings_buffer),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Yayın akışlarının yüklenme süresini ve kesintileri yönetir.",
+                        text = stringResource(R.string.settings_buffer_desc),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -597,10 +597,10 @@ fun PlayerSettingsCard(
                         ),
                         modifier = Modifier.testTag("buffer_size_dropdown_button")
                     ) {
-                        Text(text = selectedBuffer, color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = settingsOptionLabel(selectedBuffer), color = MaterialTheme.colorScheme.onSurface)
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Seç",
+                            contentDescription = stringResource(R.string.settings_select_desc),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -612,7 +612,7 @@ fun PlayerSettingsCard(
                     ) {
                         bufferOptions.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(text = option) },
+                                text = { Text(text = settingsOptionLabel(option)) },
                                 onClick = {
                                     onBufferSelect(option)
                                     onDropdownToggle(false)
@@ -658,7 +658,7 @@ fun DataAndMemoryCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Veri ve Hafıza",
+                    text = stringResource(R.string.settings_data_storage),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -675,13 +675,13 @@ fun DataAndMemoryCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Hücresel Veride Kaliteyi Düşür",
+                        text = stringResource(R.string.settings_cellular_quality),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Mobil verideyken yayını 480p çözünürlüğe sınırlar.",
+                        text = stringResource(R.string.settings_cellular_quality_desc),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -716,13 +716,13 @@ fun DataAndMemoryCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Listeyi Otomatik Yenile",
+                        text = stringResource(R.string.settings_auto_refresh),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Uygulama açılışında IPTV kanallarını otomatik günceller.",
+                        text = stringResource(R.string.settings_auto_refresh_desc),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -757,13 +757,13 @@ fun DataAndMemoryCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Görsel ve Veri Önbelleği",
+                        text = stringResource(R.string.settings_cache),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Biriken resim önbelleklerini ve geçici dosyaları temizler.",
+                        text = stringResource(R.string.settings_cache_desc),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -779,7 +779,7 @@ fun DataAndMemoryCard(
                     if (isClearingCache) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Text(text = "Temizle", color = Color.White)
+                        Text(text = stringResource(R.string.settings_clear), color = Color.White)
                     }
                 }
             }
@@ -797,13 +797,13 @@ fun DataAndMemoryCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Çökme Günlükleri (Tanılama)",
+                        text = stringResource(R.string.settings_crash_logs_title),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Bir çökme olduysa detaylı kaydını buradan görüp kopyalayabilirsin.",
+                        text = stringResource(R.string.settings_crash_logs_desc),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -823,7 +823,7 @@ fun DataAndMemoryCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Hakkında",
+                text = stringResource(R.string.settings_about),
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -842,7 +842,7 @@ fun DataAndMemoryCard(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Bu ürün TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamıştır veya sertifikalandırılmamıştır.",
+                    text = stringResource(R.string.settings_tmdb_notice),
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -891,7 +891,7 @@ fun CrashLogsDialog(onDismiss: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = selectedLogContent?.let { "Çökme Detayı" } ?: "Çökme Günlükleri",
+                        text = if (selectedLogContent != null) stringResource(R.string.settings_crash_detail) else stringResource(R.string.settings_crash_logs),
                         color = Color.White,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold
@@ -899,7 +899,7 @@ fun CrashLogsDialog(onDismiss: () -> Unit) {
                     IconButton(onClick = {
                         if (selectedLogContent != null) selectedLogContent = null else onDismiss()
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.settings_close_desc), tint = Color.White)
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -930,13 +930,13 @@ fun CrashLogsDialog(onDismiss: () -> Unit) {
                                 colors = ButtonDefaults.buttonColors(containerColor = CineOrange),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Kopyala", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.settings_copy), color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                     logFiles.isEmpty() -> {
                         Text(
-                            text = "Henüz kayıtlı bir çökme günlüğü yok. Bu iyi bir işaret! Bir çökme olursa burada listelenecek.",
+                            text = stringResource(R.string.settings_no_crash_logs),
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 13.sp
                         )
@@ -953,7 +953,7 @@ fun CrashLogsDialog(onDismiss: () -> Unit) {
                                             selectedLogContent = try {
                                                 file.readText()
                                             } catch (e: Exception) {
-                                                "Okuma hatası: ${e.message}"
+                                                context.getString(R.string.settings_read_error, e.message ?: "")
                                             }
                                         }
                                         .padding(12.dp),
@@ -1012,7 +1012,7 @@ fun SubtitlesCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Altyazı Özelleştirme",
+                    text = stringResource(R.string.settings_subtitles),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -1027,7 +1027,7 @@ fun SubtitlesCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Altyazı Boyutu",
+                        text = stringResource(R.string.settings_subtitle_size),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1065,7 +1065,7 @@ fun SubtitlesCard(
             // Subtitle Color Choices
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 Text(
-                    text = "Altyazı Rengi",
+                    text = stringResource(R.string.settings_subtitle_color),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -1106,7 +1106,7 @@ fun SubtitlesCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = colorName,
+                                text = settingsOptionLabel(colorName),
                                 fontSize = 13.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -1148,7 +1148,7 @@ fun SecurityCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Güvenlik & PIN Kilidi",
+                    text = stringResource(R.string.settings_security),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -1165,13 +1165,13 @@ fun SecurityCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "PIN Koruması",
+                        text = stringResource(R.string.settings_pin_protection),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.5.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Yetişkin veya kilitli içeriklere erişimde 4 haneli PIN ister.",
+                        text = stringResource(R.string.settings_pin_protection_desc),
                         fontSize = 11.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -1205,13 +1205,13 @@ fun SecurityCard(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "4 Haneli PIN Kodu",
+                                text = stringResource(R.string.settings_pin_code),
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 13.5.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Kilitli içerikleri açmak için kullanılacak kod.",
+                                text = stringResource(R.string.settings_pin_code_desc),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
@@ -1286,7 +1286,7 @@ fun IPTVPlaylistsCard(
             ) {
                 if (playlists.isEmpty()) {
                     Text(
-                        text = "Henüz eklenmiş bir liste yok. Aşağıdaki butonla M3U veya Xtream girişini ekleyebilirsin.",
+                        text = stringResource(R.string.settings_no_playlists),
                         color = Color.White.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
@@ -1321,7 +1321,7 @@ fun IPTVPlaylistsCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Ekle",
+                        contentDescription = stringResource(R.string.settings_add_desc),
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -1387,7 +1387,7 @@ fun PlaylistItemRow(
             // Sol: Seçili durum ikonu
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Seçili",
+                contentDescription = stringResource(R.string.settings_selected_desc),
                 tint = if (isSelected) Color.White else Color.Transparent,
                 modifier = Modifier.size(22.dp)
             )
@@ -1421,7 +1421,7 @@ fun PlaylistItemRow(
             ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Menü",
+                    contentDescription = stringResource(R.string.settings_menu_desc),
                     tint = Color.Gray,
                     modifier = Modifier.size(22.dp)
                 )
@@ -2322,7 +2322,7 @@ fun AccountHeaderComponent(
                             .data(photoUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Profil Fotoğrafı",
+                        contentDescription = stringResource(R.string.settings_profile_photo_desc),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
@@ -2331,7 +2331,7 @@ fun AccountHeaderComponent(
                 } else {
                     Icon(
                         imageVector = Icons.Default.Person,
-                        contentDescription = "Varsayılan Profil",
+                        contentDescription = stringResource(R.string.settings_default_profile_desc),
                         tint = Color.White.copy(alpha = 0.8f),
                         modifier = Modifier.size(48.dp)
                     )
@@ -2342,7 +2342,7 @@ fun AccountHeaderComponent(
 
             // Kullanıcı Ad-Soyadı
             Text(
-                text = if (!displayName.isNullOrBlank()) displayName else "Kullanıcı",
+                text = if (!displayName.isNullOrBlank()) displayName else stringResource(R.string.settings_default_user),
                 style = TextStyle(
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
@@ -2380,13 +2380,13 @@ fun AccountHeaderComponent(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Düzenle",
+                        contentDescription = stringResource(R.string.settings_edit_desc),
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Düzenle",
+                        text = stringResource(R.string.settings_edit),
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
@@ -2435,7 +2435,7 @@ fun EditProfileDialog(
                 if (savedPath != null) {
                     photoInput = savedPath
                 } else {
-                    Toast.makeText(context, "Fotoğraf yüklenemedi, tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.settings_toast_photo_failed), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -2446,7 +2446,7 @@ fun EditProfileDialog(
         containerColor = Color(0xFF1E1A29),
         title = {
             Text(
-                text = "Profil Bilgilerini Düzenle",
+                text = stringResource(R.string.settings_edit_profile),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -2463,7 +2463,7 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = nameInput,
                     onValueChange = { nameInput = it },
-                    label = { Text("Ad Soyad", color = Color.Gray) },
+                    label = { Text(stringResource(R.string.settings_full_name), color = Color.Gray) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -2477,7 +2477,7 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = emailInput,
                     onValueChange = { emailInput = it },
-                    label = { Text("E-posta Adresi", color = Color.Gray) },
+                    label = { Text(stringResource(R.string.settings_email), color = Color.Gray) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -2491,7 +2491,7 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = photoInput,
                     onValueChange = { photoInput = it },
-                    label = { Text("Profil Fotoğrafı URL (İsteğe Bağlı)", color = Color.Gray) },
+                    label = { Text(stringResource(R.string.settings_photo_url), color = Color.Gray) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -2520,7 +2520,7 @@ fun EditProfileDialog(
                             color = CineOrange
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Yükleniyor...", color = CineOrange)
+                        Text(stringResource(R.string.settings_loading), color = CineOrange)
                     } else {
                         Icon(
                             imageVector = Icons.Default.PhotoLibrary,
@@ -2529,7 +2529,7 @@ fun EditProfileDialog(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Cihazdan Fotoğraf Seç", color = CineOrange, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.settings_pick_photo), color = CineOrange, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -2552,7 +2552,7 @@ fun EditProfileDialog(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Oturumu Kapat (Çıkış Yap)", color = Color(0xFFCF6679), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.settings_sign_out), color = Color(0xFFCF6679), fontWeight = FontWeight.Bold)
                 }
             }
         },
@@ -2565,12 +2565,12 @@ fun EditProfileDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = CineOrange),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Kaydet", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.settings_save), color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("İptal", color = Color.Gray)
+                Text(stringResource(R.string.settings_cancel), color = Color.Gray)
             }
         }
     )
@@ -2804,7 +2804,7 @@ fun GeminiApiKeyCard(
                         strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Doğrulanıyor...", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.settings_verifying), fontWeight = FontWeight.Bold)
                 } else {
                     Icon(
                         imageVector = Icons.Default.Check,
@@ -2812,7 +2812,7 @@ fun GeminiApiKeyCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Doğrula ve Kaydet", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.settings_verify_save), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -2911,5 +2911,18 @@ fun ManualEpgCard(
             }
         }
     }
+}
+
+/** Tampon/altyazı rengi seçenekleri Türkçe anahtar olarak kaydedilir; ekranda seçili dildeki karşılığı gösterilir. */
+@Composable
+private fun settingsOptionLabel(key: String): String = when (key) {
+    "Düşük" -> stringResource(R.string.settings_buffer_low)
+    "Normal" -> stringResource(R.string.settings_buffer_normal)
+    "Yüksek" -> stringResource(R.string.settings_buffer_high)
+    "Beyaz" -> stringResource(R.string.settings_color_white)
+    "Sarı" -> stringResource(R.string.settings_color_yellow)
+    "Yeşil" -> stringResource(R.string.settings_color_green)
+    "Mavi" -> stringResource(R.string.settings_color_blue)
+    else -> key
 }
 
