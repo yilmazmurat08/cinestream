@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -71,7 +73,7 @@ fun PlaylistAddDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "İçerik Ekle",
+                        text = stringResource(R.string.playlist_add_title),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
@@ -152,7 +154,7 @@ fun PlaylistAddDialog(
                 OutlinedTextField(
                     value = playlistName,
                     onValueChange = { playlistName = it },
-                    label = { Text("Oynatma Listesi Adı") },
+                    label = { Text(stringResource(R.string.playlist_add_name)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,
@@ -196,7 +198,7 @@ fun PlaylistAddDialog(
                         OutlinedTextField(
                             value = m3uContent,
                             onValueChange = { m3uContent = it },
-                            label = { Text("M3U Çalma Listesi İçeriği") },
+                            label = { Text(stringResource(R.string.playlist_add_m3u_content)) },
                             placeholder = { Text("#EXTM3U\n#EXTINF:-1 tvg-logo=\"logo.png\" group-title=\"Spor\",Kanal Adı\nhttp://stream_url") },
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
@@ -238,7 +240,7 @@ fun PlaylistAddDialog(
                             OutlinedTextField(
                                 value = username,
                                 onValueChange = { username = it },
-                                label = { Text("Kullanıcı") },
+                                label = { Text(stringResource(R.string.playlist_add_user)) },
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White,
@@ -255,7 +257,7 @@ fun PlaylistAddDialog(
                             OutlinedTextField(
                                 value = password,
                                 onValueChange = { password = it },
-                                label = { Text("Şifre") },
+                                label = { Text(stringResource(R.string.playlist_add_password)) },
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White,
@@ -284,7 +286,7 @@ fun PlaylistAddDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Vazgeç", color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.playlist_add_cancel), color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
                     }
 
                     Button(
@@ -316,7 +318,7 @@ fun PlaylistAddDialog(
                             .weight(1.5f)
                             .testTag("playlist_save_button")
                     ) {
-                        Text("Yükle", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.playlist_add_load), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }

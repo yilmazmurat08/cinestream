@@ -521,14 +521,12 @@ fun LoginScreen(
                     ?: remember { mutableStateOf(emptyMap<String, Int>()) }
                 val importFinished by viewModel?.importFinishedSuccessfully?.collectAsState()
                     ?: remember { mutableStateOf(false) }
-                val typeLabels = remember {
-                    mapOf(
-                        "LIVE" to "📡 Canlı Yayın",
-                        "MOVIE" to "🎬 Filmler",
-                        "SERIES" to "📺 Diziler",
-                        "RADIO" to "📻 Radyo"
-                    )
-                }
+                val typeLabels = mapOf(
+                    "LIVE" to stringResource(R.string.login_type_live),
+                    "MOVIE" to stringResource(R.string.login_type_movie),
+                    "SERIES" to stringResource(R.string.login_type_series),
+                    "RADIO" to stringResource(R.string.login_type_radio)
+                )
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -536,7 +534,7 @@ fun LoginScreen(
                 ) {
                     if (importFinished) {
                         Text(
-                            text = "✨ Harika! Kütüphanen hazır.",
+                            text = stringResource(R.string.login_library_ready),
                             color = Color.White,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
@@ -544,7 +542,7 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Ana sayfaya yönlendiriliyorsun...",
+                            text = stringResource(R.string.login_redirecting),
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
@@ -566,7 +564,7 @@ fun LoginScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "${typeLabels[type] ?: type}: $count içerik indirildi",
+                                    text = stringResource(R.string.login_import_count, typeLabels[type] ?: type, count),
                                     color = Color.White.copy(alpha = 0.85f),
                                     fontSize = 13.sp
                                 )
@@ -1051,7 +1049,7 @@ fun StepOneVisual() {
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Google ile Giriş Yap",
+                    text = stringResource(R.string.login_google),
                     color = Color(0xFF5F6368),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -1133,7 +1131,7 @@ fun StepTwoVisual() {
                     .padding(6.dp)
             ) {
                 Text(
-                    text = "➕ Create API key in new project",
+                    text = stringResource(R.string.login_create_api_key),
                     color = Color(0xFF1A73E8),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
