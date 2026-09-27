@@ -174,11 +174,8 @@ object MetadataEnricher {
         val creds = parseXtreamCredentials(item)
         if (creds == null) {
             Log.d(TAG, "Item ${item.name} does not match direct Xtream URL pattern. Skipping Xtream Info fetch.")
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "xtream_cover_diag_$ts.txt").writeText(
+            if (com.example.util.DiagnosticLog.enabled) try {
+                com.example.util.DiagnosticLog.write(context, "xtream_cover_diag", 
                     "KİMLİK BİLGİSİ ÇIKARILAMADI\nÖğe: ${item.name}\nlogoUrl: ${item.logoUrl}\nstreamUrl: ${item.streamUrl}\n" +
                     "-> Bu URL beklenen Xtream kalıbına (http(s)://host/movie|series|live/kullanici/sifre/id) uymuyor."
                 )
@@ -254,11 +251,8 @@ object MetadataEnricher {
 
             Log.d(TAG, "Successfully parsed Xtream VOD Info for ${item.name}: plot=${rawPlot.take(30)}..., rating=$ratingVal")
 
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "xtream_cover_diag_$ts.txt").writeText(
+            if (com.example.util.DiagnosticLog.enabled) try {
+                com.example.util.DiagnosticLog.write(context, "xtream_cover_diag", 
                     "BAŞARILI ÇAĞRI\nÖğe: ${item.name}\nAPI URL: $apiUrl\n" +
                     "rating (ham): '${info.optString("rating", "YOK")}'\n" +
                     "rating_5based (ham): '${info.optString("rating_5based", "YOK")}'\n" +
@@ -296,14 +290,7 @@ object MetadataEnricher {
      * böyle eşitliyor. TEK ağ isteğiyle TÜM dizilerin kapağını döndürür.
      */
     suspend fun fetchAllSeriesCoversFromXtreamBulk(context: android.content.Context, anySeriesItem: IPTVItem): Map<String, String> = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) {
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "bulk_series_cover_diag_$ts.txt").writeText(msg)
-            } catch (e: Exception) { }
-        }
+        fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "bulk_series_cover_diag", msg)
 
         val creds = parseXtreamCredentials(anySeriesItem)
         if (creds == null) {
@@ -399,14 +386,7 @@ object MetadataEnricher {
     }
 
     suspend fun fetchXtreamLiveStreamsAsItems(context: android.content.Context, host: String, user: String, pass: String, playlistId: Int): List<IPTVItem> = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) {
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "xtream_live_streams_diag_$ts.txt").writeText(msg)
-            } catch (e: Exception) { }
-        }
+        fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_live_streams_diag", msg)
         try {
             val categoryNames = fetchCategoryNameMap(host, user, pass, "get_live_categories")
             val apiUrl = "$host/player_api.php?username=$user&password=$pass&action=get_live_streams"
@@ -475,14 +455,7 @@ object MetadataEnricher {
     }
 
     suspend fun fetchXtreamVodStreamsAsItems(context: android.content.Context, anyMovieItem: IPTVItem): List<IPTVItem> = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) {
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "xtream_vod_streams_diag_$ts.txt").writeText(msg)
-            } catch (e: Exception) { }
-        }
+        fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_vod_streams_diag", msg)
         val creds = parseXtreamCredentials(anyMovieItem)
         if (creds == null) {
             writeDiag("VOD LİSTESİ: Kimlik bilgisi çıkarılamadı.\nstreamUrl: ${anyMovieItem.streamUrl}")
@@ -551,14 +524,7 @@ object MetadataEnricher {
     }
 
     suspend fun fetchXtreamVodStreamsDiagnostic(context: android.content.Context, anyMovieItem: IPTVItem): Int = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) {
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "xtream_vod_streams_diag_$ts.txt").writeText(msg)
-            } catch (e: Exception) { }
-        }
+        fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_vod_streams_diag", msg)
         val creds = parseXtreamCredentials(anyMovieItem)
         if (creds == null) {
             writeDiag("VOD LİSTESİ: Kimlik bilgisi çıkarılamadı.\nstreamUrl: ${anyMovieItem.streamUrl}")
@@ -616,14 +582,7 @@ object MetadataEnricher {
         showDirector: String,
         anyItemForCredentials: IPTVItem
     ): com.example.data.model.TvShow? = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) {
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "series_info_live_diag_$ts.txt").writeText(msg)
-            } catch (e: Exception) { }
-        }
+        fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "series_info_live_diag", msg)
         val creds = parseXtreamCredentials(anyItemForCredentials) ?: run {
             writeDiag("CANLI BÖLÜM ÇEKME: Kimlik bilgisi çıkarılamadı.\nDizi: $showTitle")
             return@withContext null
@@ -799,13 +758,10 @@ object MetadataEnricher {
                     )
                 )
             }
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
+            if (com.example.util.DiagnosticLog.enabled) try {
                 val distinctCategories = list.map { it.categoryId }.toSet()
                 val digerCount = list.count { it.categoryId == "Diğer" }
-                java.io.File(logDir, "series_category_diag_$ts.txt").writeText(
+                com.example.util.DiagnosticLog.write(context, "series_category_diag", 
                     "Xtream'in kategori uç noktasından (get_series_categories) dönen kategori sayısı: ${categoryNames.size}\n" +
                     "Kataloğa aktarılan toplam dizi sayısı: ${list.size}\n" +
                     "Sonuçtaki BENZERSİZ kategori adı sayısı (Diğer dahil): ${distinctCategories.size}\n" +
@@ -1986,14 +1942,7 @@ object MetadataEnricher {
         role: String,
         tmdbApiKey: String
     ): PersonDetails? = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) {
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "person_tmdb_diag_$ts.txt").writeText(msg)
-            } catch (e: Exception) { }
-        }
+        fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "person_tmdb_diag", msg)
         try {
             val apiKey = tmdbApiKey.ifBlank {
                 com.example.data.repository.TMDBRepository.resolveEmbeddedTmdbKey()

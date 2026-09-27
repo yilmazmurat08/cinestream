@@ -29,9 +29,11 @@ object NetworkModule {
 
     val loggingInterceptor: HttpLoggingInterceptor by lazy {
         HttpLoggingInterceptor { message ->
-            Log.d(TAG, message)
+            // TmdbAuthInterceptor'dan sonra çalıştığı için istekte gerçek anahtar/jeton bulunur; maskele.
+            Log.d(TAG, com.example.util.DiagnosticLog.redact(message))
         }.apply {
             level = HttpLoggingInterceptor.Level.BODY
+            redactHeader("Authorization")
         }
     }
 

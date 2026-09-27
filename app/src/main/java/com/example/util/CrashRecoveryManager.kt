@@ -241,7 +241,7 @@ object CrashRecoveryManager {
                 appendLine("StackTrace:")
                 appendLine(throwable.stackTraceToString())
             }
-            logFile.writeText(content)
+            logFile.writeText(DiagnosticLog.redact(content))
         } catch (e: Throwable) {
             // Ignore
         }

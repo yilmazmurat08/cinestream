@@ -57,15 +57,9 @@ class PersonCreditsRepository(private val context: Context) {
         return if (wantsDirector) dept == "Directing" || dept == "Writing" || dept == "Creator" else dept == "Acting"
     }
 
-    /** Ayarlar → Çökme Günlükleri'nde görünür. Anahtarın kendisi değil, sadece türü yazılır. */
-    private fun writeDiag(message: String) {
-        try {
-            val logDir = java.io.File(context.filesDir, "crash_logs")
-            if (!logDir.exists()) logDir.mkdirs()
-            java.io.File(logDir, "person_otherworks_diag_last.txt").writeText(message)
-        } catch (_: Exception) {
-        }
-    }
+    /** Yalnızca debug derlemede Ayarlar → Çökme Günlükleri'nde görünür. Anahtarın kendisi değil, sadece türü yazılır. */
+    private fun writeDiag(message: String) =
+        com.example.util.DiagnosticLog.write(context, "person_otherworks_diag_last", message, timestamped = false)
 
     /**
      * Aynı isimli kişiler karışmasın diye önce tam isim eşleşmesi, sonra meslek (oyuncu/yönetmen),

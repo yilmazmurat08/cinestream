@@ -1204,10 +1204,7 @@ class IPTVViewModel(
 
                 val shows = com.example.data.model.SeriesParser.groupItemsIntoShows(seriesItems, existingCovers)
 
-                try {
-                    val logDir = java.io.File(getApplication<Application>().filesDir, "crash_logs")
-                    if (!logDir.exists()) logDir.mkdirs()
-                    val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
+                if (com.example.util.DiagnosticLog.enabled) try {
                     val samples = com.example.data.model.SeriesParser.FallbackDiagnostics.getSamples()
                     val msg = StringBuilder()
                     msg.append("Toplam ham dizi/bölüm satırı (iptv_items, type=SERIES): ${seriesItems.size}\n")
@@ -1217,7 +1214,7 @@ class IPTVViewModel(
                     val ambiguousMovies = com.example.data.repository.IPTVRepository.ambiguousMovieClassificationSamples
                     msg.append("\nMOVIE sayılan ama belirsiz (dizi olabilecek) örnek isimler (ilk ${ambiguousMovies.size}):\n")
                     ambiguousMovies.forEachIndexed { i, s -> msg.append("  ${i + 1}. $s\n") }
-                    java.io.File(logDir, "series_grouping_diag_$ts.txt").writeText(msg.toString())
+                    com.example.util.DiagnosticLog.write(getApplication<Application>(), "series_grouping_diag", msg.toString())
                 } catch (e: Exception) { }
                 var pending = shows.filter { show ->
                     val key = show.title.lowercase(java.util.Locale.ROOT).trim()
