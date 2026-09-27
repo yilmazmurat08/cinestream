@@ -251,6 +251,14 @@ interface IPTVDao {
     """)
     suspend fun copyStagingToActive(playlistId: Int)
 
+    /** Birden çok öğenin detay bilgisini tek işlemde yazar: listeler bir kez yeniden okunur. */
+    @Transaction
+    suspend fun updateItemsMetadata(updates: List<ItemMetadataUpdate>) {
+        updates.forEach { u ->
+            updateItemMetadata(u.itemId, u.summary, u.cast, u.director, u.rating, u.logoUrl, u.trailerUrl, u.releaseDate, u.genre)
+        }
+    }
+
     // --- Aşırı büyük alan koruması ---
     // Bazı listeler logoyu adres yerine resmin kendisi (base64) olarak ya da çok uzun metinlerle verir.
     // Tek bir satır 2 MB'lık okuma penceresini (CursorWindow) aşarsa listeyi okumak "Couldn't read row"
@@ -350,11 +358,13 @@ interface IPTVDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPersonDetails(person: PersonDetailsEntity)
 
-    @Query("DELETE FROM tmdb_person_cache WHERE name NOT IN (SELECT name FROM tmdb_person_cache LIMIT :limit)")
-    suspend fun trimPersonCache(limit: Int = 200)
+    // En son eklenen/güncellenen :limit kişi kalır (REPLACE her yazmada yeni rowid verir). Eskiden sırasız
+    // LIMIT rastgele kayıtları tutuyordu; son bakılan oyuncuların fotoğrafları silinip yeniden aranıyordu.
+    @Query("DELETE FROM tmdb_person_cache WHERE rowid NOT IN (SELECT rowid FROM tmdb_person_cache ORDER BY rowid DESC LIMIT :limit)")
+    suspend fun trimPersonCache(limit: Int = 3000)
 
     @Transaction
-    suspend fun insertPersonDetailsWithLimit(person: PersonDetailsEntity, limit: Int = 200) {
+    suspend fun insertPersonDetailsWithLimit(person: PersonDetailsEntity, limit: Int = 3000) {
         insertPersonDetails(person)
         trimPersonCache(limit)
     }

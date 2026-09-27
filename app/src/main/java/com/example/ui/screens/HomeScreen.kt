@@ -199,7 +199,10 @@ fun HomeScreen(
     }
 
     // Ana sayfa vitrin listelerine yetişkin içerik hiçbir şekilde girmez (ilk 10 uygun öğe bulunana kadar süzülür).
-    val top10Movies = remember(movies) {
+    // On binlerce filmi sıralamak ana iş parçacığını meşgul etmesin diye arka planda hesaplanır.
+    val top10Movies = com.example.ui.components.rememberComputedOffMain(
+        movies, workSize = movies.size, fallback = emptyList<IPTVItem>()
+    ) {
         movies.sortedByDescending { it.rating }.asSequence()
             .filterNot { viewModel.isAdultContent(it) }
             .take(10).toList()
@@ -457,6 +460,8 @@ fun HomeScreen(
                                 if (heroSlides.isNotEmpty()) {
                                     com.example.ui.components.FeaturedHeroCarousel(
                                         slides = heroSlides,
+                                        // Sayfa kaydırılırken otomatik geçiş duraklar (iki animasyon aynı anda takılma yapar).
+                                        paused = homeLazyListState.isScrollInProgress,
                                         onPlayClick = { item ->
                                             val matched = viewModel.findMatchedItem(item)
                                             val targetItem = if (matched.streamUrl.isNotEmpty()) matched else item

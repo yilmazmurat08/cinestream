@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** TMDB oyuncu/yönetmen önbelleği sınırı atlayan kayıtlarla da 200'ü geçmemeli. */
+/** TMDB oyuncu/yönetmen önbelleği sınırlı kalmalı ve en son kullanılan kişiler silinmemeli. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class TmdbCacheTrimTest {
@@ -33,15 +33,20 @@ class TmdbCacheTrimTest {
     fun tearDown() = db.close()
 
     @Test
-    fun personCache_isTrimmedTo200() = runBlocking {
+    fun personCache_isTrimmed_keepingMostRecent() = runBlocking {
         val dao = db.iptvDao()
         repeat(260) { i ->
             dao.insertPersonDetails(PersonDetailsEntity(name = "kisi$i", displayName = "Kişi $i", role = "Oyuncu", biography = ""))
         }
-        IPTVRepository(dao, db).trimTmdbCaches(cutoffTime = 0L)
+        // Eskiden eklenmiş biri yeniden kullanılınca (REPLACE) en yeniler arasına girer.
+        dao.insertPersonDetails(PersonDetailsEntity(name = "kisi0", displayName = "Kişi 0", role = "Oyuncu", biography = ""))
+        IPTVRepository(dao, db).trimTmdbCaches(cutoffTime = 0L, personCacheLimit = 200)
         var count = 0
         repeat(260) { i -> if (dao.getPersonDetails("kisi$i") != null) count++ }
         assertEquals(200, count)
+        assertNotNull("En son kullanılan kişi kalmalı", dao.getPersonDetails("kisi0"))
+        assertNotNull(dao.getPersonDetails("kisi259"))
+        assertEquals("En eski kayıtlar silinmeli", null, dao.getPersonDetails("kisi1"))
         assertNotNull("Playlists tablosu etkilenmemeli", dao.getAllPlaylists())
     }
 }

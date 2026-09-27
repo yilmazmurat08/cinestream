@@ -48,6 +48,55 @@ class IPTVViewModel(
     }
     private val coroutineExceptionHandler = exceptionHandler
 
+    // --- Ortak (paylaşılan) tür listeleri ---
+    // Her tür veritabanından tek kez okunur ve tüm ekranlar/hesaplamalar aynı listeyi paylaşır. Eskiden aynı
+    // tablo 13 ayrı sorguyla okunuyordu; tek bir satır değişince (ör. detay açılınca) on binlerce satır 13 kez
+    // yeniden okunuyor, kaydırma takılıyordu. En üstte tanımlı: init bloklarındaki işler de kullanıyor.
+    private fun sharedItemsOf(type: String): Flow<List<IPTVItem>> = repository.getItemsByType(type)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+    // Detay açılınca indirilen bilgiler (özet, oyuncular...) hemen ekranda gösterilir ama veritabanına
+    // uygulama arka plana geçince tek seferde yazılır: gezinirken tüm listeler yeniden okunmaz.
+    private val pendingMetadata = java.util.concurrent.ConcurrentHashMap<Int, com.example.data.db.ItemMetadataUpdate>()
+
+    private fun IPTVItem.withPendingMetadata(): IPTVItem = pendingMetadata[id]?.let { m ->
+        copy(summary = m.summary, cast = m.cast, director = m.director, rating = m.rating,
+            logoUrl = m.logoUrl, trailerUrl = m.trailerUrl, releaseDate = m.releaseDate, genre = m.genre)
+    } ?: this
+
+    /** Bekleyen detay bilgilerini tek işlemde veritabanına yazar (MainActivity.onStop ve onCleared). */
+    fun flushPendingMetadata() {
+        if (pendingMetadata.isEmpty()) return
+        val batch = pendingMetadata.values.toList()
+        batch.forEach { pendingMetadata.remove(it.itemId, it) }
+        // viewModelScope kapanmış olabilir (onCleared); uygulama kapsamında yazılır.
+        com.example.IPTVApplication.applicationScope.launch {
+            try {
+                repository.updateItemsMetadata(batch)
+            } catch (e: Exception) {
+                Log.w("IPTVViewModel", "Pending metadata flush failed", e)
+            }
+        }
+    }
+
+    private fun queueMetadata(item: IPTVItem) {
+        if (item.id == 0) return
+        pendingMetadata[item.id] = com.example.data.db.ItemMetadataUpdate(
+            itemId = item.id, summary = item.summary, cast = item.cast, director = item.director,
+            rating = item.rating, logoUrl = item.logoUrl, trailerUrl = item.trailerUrl,
+            releaseDate = item.releaseDate, genre = item.genre
+        )
+    }
+
+    override fun onCleared() {
+        flushPendingMetadata()
+        super.onCleared()
+    }
+
+    private val liveItemsShared = sharedItemsOf("LIVE")
+    private val movieItemsShared = sharedItemsOf("MOVIE")
+    private val seriesItemsShared = sharedItemsOf("SERIES")
+    private val radioItemsShared = sharedItemsOf("RADIO")
+
     private var syncFetchJob: Job? = null
 
     // TMDB Repository Integration
@@ -632,7 +681,7 @@ class IPTVViewModel(
 
     // Filtered by Type and selectedCategory using type-specific Room flows
     val liveChannels: StateFlow<List<IPTVItem>> = combine(
-        repository.getItemsByType("LIVE").debounce(400),
+        liveItemsShared.debounce(400),
         _selectedCategory
     ) { items, category ->
         if (category == null || category == "Tümü") {
@@ -643,7 +692,7 @@ class IPTVViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val movies: StateFlow<List<IPTVItem>> = combine(
-        repository.getItemsByType("MOVIE").debounce(400),
+        movieItemsShared.debounce(400),
         _selectedCategory
     ) { items, category ->
         if (category == null || category == "Tümü") {
@@ -654,7 +703,7 @@ class IPTVViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val series: StateFlow<List<IPTVItem>> = combine(
-        repository.getItemsByType("SERIES").debounce(400),
+        seriesItemsShared.debounce(400),
         _selectedCategory
     ) { items, category ->
         if (category == null || category == "Tümü") {
@@ -685,7 +734,7 @@ class IPTVViewModel(
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allSeries: StateFlow<List<IPTVItem>> = repository.getItemsByType("SERIES")
+    val allSeries: StateFlow<List<IPTVItem>> = seriesItemsShared
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val xtreamSeriesCatalog: StateFlow<List<com.example.data.model.TvShow>> =
@@ -741,7 +790,7 @@ class IPTVViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val radioChannels: StateFlow<List<IPTVItem>> = combine(
-        repository.getItemsByType("RADIO"),
+        radioItemsShared,
         _selectedCategory
     ) { items, category ->
         if (category == null || category == "Tümü") {
@@ -794,7 +843,7 @@ class IPTVViewModel(
         }
     }
 
-    val liveGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = repository.getItemsByType("LIVE")
+    val liveGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = liveItemsShared
         .map { items ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
@@ -803,7 +852,7 @@ class IPTVViewModel(
                 .sortedBy { it.name }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val movieGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = repository.getItemsByType("MOVIE")
+    val movieGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = movieItemsShared
         .map { items ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
@@ -812,7 +861,7 @@ class IPTVViewModel(
                 .sortedWith(compareBy({ movieCategoryRank(it.name).first }, { movieCategoryRank(it.name).second }))
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val seriesGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = repository.getItemsByType("SERIES")
+    val seriesGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = seriesItemsShared
         .map { items ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
@@ -822,8 +871,8 @@ class IPTVViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val directorActorSpotlights: StateFlow<List<SpotlightCollection>> = combine(
-        repository.getItemsByType("MOVIE"),
-        repository.getItemsByType("SERIES")
+        movieItemsShared,
+        seriesItemsShared
     ) { movies, series ->
         val candidates = movies + series
         val directorGroups = mutableMapOf<String, MutableList<IPTVItem>>()
@@ -865,8 +914,8 @@ class IPTVViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val trailerBoxItems: StateFlow<List<IPTVItem>> = combine(
-        repository.getItemsByType("MOVIE"),
-        repository.getItemsByType("SERIES")
+        movieItemsShared,
+        seriesItemsShared
     ) { movies, series ->
         (movies + series)
             .filter { !it.trailerUrl.isNullOrBlank() }
@@ -1105,7 +1154,7 @@ class IPTVViewModel(
 
         // Observe movies to load/update 12-hour Featured Movie and Carousel Movies
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            repository.getItemsByType("MOVIE").collectLatest { items ->
+            movieItemsShared.collectLatest { items ->
                 if (items.isNotEmpty()) {
                     loadFeaturedMovie(items, forceUpdate = false)
                     // Favori ekleme vb. her veritabanı güncellemesinde kartlar karışmasın: sadece ilk yüklemede
@@ -1212,7 +1261,8 @@ class IPTVViewModel(
     /** Kullanıcı uygulamaya geri döndüğünde (arka plandan) Öne Çıkan içerikleri yenilenir. */
     fun onAppReturnedToForeground() {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            val items = repository.getItemsByTypeDirect("MOVIE")
+            // Paylaşılan film listesi zaten bellekte: veritabanını yeniden okumaya gerek yok.
+            val items = movieItemsShared.first()
             if (items.isEmpty()) return@launch
             loadFeaturedMovie(items, forceUpdate = true)
             loadFeaturedCarousel(items)
@@ -2017,7 +2067,7 @@ class IPTVViewModel(
                 } else {
                     findMatchedItem(item)
                 }
-                _selectedItem.value = dbItem
+                _selectedItem.value = dbItem.withPendingMetadata()
                 if (dbItem.type == "MOVIE" || dbItem.type == "SERIES") {
                     enrichItemMetadata(dbItem)
                 }
@@ -2043,17 +2093,7 @@ class IPTVViewModel(
                 )
 
                 if (updatedItem.summary != item.summary || updatedItem.cast != item.cast || updatedItem.director != item.director || updatedItem.rating != item.rating) {
-                    repository.updateItemMetadata(
-                        itemId = item.id,
-                        summary = updatedItem.summary,
-                        cast = updatedItem.cast,
-                        director = updatedItem.director,
-                        rating = updatedItem.rating,
-                        logoUrl = updatedItem.logoUrl,
-                        trailerUrl = updatedItem.trailerUrl,
-                        releaseDate = updatedItem.releaseDate,
-                        genre = updatedItem.genre
-                    )
+                    queueMetadata(updatedItem)
                 }
 
                 // If the user hasn't switched selection, update the current UI state on Main thread
@@ -2263,19 +2303,10 @@ class IPTVViewModel(
 
             if (item != null && (info.cast.isNotEmpty() || info.director.isNotBlank())) {
                 try {
-                    val updatedCast = if (info.cast.isNotEmpty()) info.cast.joinToString(", ") else item.cast
-                    val updatedDirector = if (info.director.isNotBlank()) info.director else item.director
-                    repository.updateItemMetadata(
-                        itemId = item.id,
-                        summary = item.summary,
-                        cast = updatedCast,
-                        director = updatedDirector,
-                        rating = item.rating,
-                        logoUrl = item.logoUrl,
-                        trailerUrl = item.trailerUrl,
-                        releaseDate = item.releaseDate,
-                        genre = item.genre
-                    )
+                    val current = item.withPendingMetadata()
+                    val updatedCast = if (info.cast.isNotEmpty()) info.cast.joinToString(", ") else current.cast
+                    val updatedDirector = if (info.director.isNotBlank()) info.director else current.director
+                    queueMetadata(current.copy(cast = updatedCast, director = updatedDirector))
                 } catch (e: Throwable) {
                     Log.w("IPTVViewModel", "fetchCastAndDirectorInfo DB update failed safely: ${e.message}")
                 }

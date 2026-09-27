@@ -204,7 +204,7 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 
 | | Başlangıç | Son |
 |---|---|---|
-| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **120 (120 geçti, 0 başarısız) + 7 stres testi** |
+| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **121 (121 geçti, 0 başarısız) + 7 stres testi** |
 | lintDebug | 26 hata / 268 uyarı | 0 hata / 159 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
 | APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
@@ -225,6 +225,7 @@ Eklenen testler:
 | `MainActivityRecreateTest` | 5 | Telefon dikey, 320 dp + 2.0 yazı boyutu, yatay→dikey, tablet, TV: `recreate()` sonrası çökme yok, splash tekrar oynamıyor |
 | `DiagnosticLogTest` | 4 | Anahtar/jeton/şifre maskeleme |
 | `DatabaseCorruptionBackupTest` | 3 | Bozuk veritabanı silinmeden yedekleniyor (elle kurtarma ve SQLite açılışı); sağlam veritabanında yedek alınmıyor |
+| `MetadataBatchReloadTest` | 1 | 20 detay bilgisi toplu yazılınca liste 1 kez yeniden okunuyor (ayrı ayrı: 20) |
 | `IptvCertificateTest` | 3 | IPTV istemcisi kendinden imzalı sertifikayı kabul etmiyor; sertifika hatasında aynı adres http ile deneniyor; diğer hatalarda denenmiyor |
 | `CursorWindowReproTest` | 1 | Kullanıcının çökmesi: 3 MB'lık satırla ham okuma düşüyor, uygulama katmanı kurtarıyor |
 | `ChannelRingTest` | 3 | Kanal listesi: izlenen klasör, yetişkin kanal karışmaz, boş klasörde tüm uygun kanallar |
@@ -290,6 +291,7 @@ Telefonda monkey testi (USB hata ayıklama açık, bilgisayarda adb kurulu): `ad
 20. **Liste okurken çökme düzeltildi (onuncu PR):** Kullanıcı günlüğünde `IllegalStateException: Couldn't read row …, col 0 from CursorWindow` (IPTVDao.getItemsByTypeFlow) vardı. Bu hata tek bir satır 2 MB'lık okuma penceresine sığmadığında çıkar (ör. logosu base64 olarak gömülü M3U satırı, çok uzun açıklama). Alan uzunluğu hiç sınırlanmıyordu ve hata yakalanmadığı için uygulama kapanıyordu. Artık aşırı büyük alanlar liste her kaydedildiğinde ve her açılışta kırpılıyor (4 KB'tan uzun logo/fragman adresi boşaltılıyor, açıklama 8000, oyuncular 4000, ad 500 karakterle sınırlanıyor). Okuma hatasında önce kırpılıp 3 kez yeniden deneniyor, yine olmazsa hata kaydediliyor ve ekrandaki liste korunuyor. `OversizedRowTrimTest` ile test ediliyor.
 21. **Yetişkin içerik ana sayfaya ve oynatıcıya karışmıyor (onuncu PR):** "Bugün Trend Filmler", "Popüler Diziler" ve "Popüler Kanallar" listeleri yetişkin filtresinden geçmiyordu; artık geçiyor. Filtre, birçok sağlayıcının yetişkin kanallara koyduğu "XX:" önekini de tanıyor ("XXL" gibi adları yakalamıyor).
 22. **Canlı yayın oynatıcısı (onuncu PR):** Canlı yayında 10 sn geri/ileri düğmelerinin yerine **önceki kanal / sonraki kanal** düğmeleri var; film ve dizide 10 sn düğmeleri aynı. Oynatıcıdaki kanal listesi ve kanal değiştirme (düğmeler ve CH+/CH-) artık tüm kanallar yerine izlenen kanalın klasöründeki kanalları kullanıyor; yetişkin olmayan bir kanal izlenirken yetişkin kanallar hiç gelmiyor. Klasörde başka kanal yoksa tüm uygun kanallar kullanılıyor. Film önerilerinden de yetişkin içerik çıkarıldı. `ChannelRingTest` ile test ediliyor. Yeni metinler TR+EN.
+23. **Takılma ve geç gelen oyuncu fotoğrafları düzeltildi (on ikinci PR):** (a) Bir film/dizi detayı açıldığında indirilen bilgiler (özet, oyuncular) hemen veritabanına yazılıyordu; Room tek satırlık değişikliği tüm tablo değişikliği saydığı için ana sayfanın dinlediği bütün listeler (on binlerce satır) baştan okunuyor, kaydırma takılıyordu. Artık bu bilgiler hemen ekranda gösteriliyor, veritabanına uygulama arka plana geçince tek işlemde yazılıyor (20 detay bilgisi: 20 yeniden okuma yerine 1, `MetadataBatchReloadTest`). (b) ViewModel aynı tabloyu 13 ayrı sorguyla dinliyordu (canlı 2, film 5, dizi 5, radyo, tümü); her tür artık bir kez okunup paylaşılıyor (13 yerine 5 sorgu). (c) Oyuncu fotoğrafı önbelleği sırasız `LIMIT` yüzünden rastgele kayıtları tutup son bakılan oyuncuları siliyordu (hem eski kayıt yolunda hem on birinci PR'daki açılış temizliğinde); fotoğraflar her seferinde TMDB'den yeniden aranıyordu. Artık en son kullanılan 3000 kişi tutuluyor. (d) Öne Çıkan alanı sayfa kaydırılırken otomatik geçişi duraklatıyor; "Bugün Trend Filmler" sıralaması arka planda hesaplanıyor; arka plandan dönüşte film listesi yeniden okunmuyor.
 
 ---
 
