@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 10-inch Large Tablet (sw720dp) Dimensions -->
+    <dimen name="screen_padding">32dp</dimen>
+    <dimen name="header_padding_horizontal">40dp</dimen>
+    <dimen name="header_padding_vertical">20dp</dimen>
+
+    <!-- Card & Component Dimensions -->
+    <dimen name="card_width_small">180dp</dimen>
+    <dimen name="card_height_small">270dp</dimen>
+    <dimen name="card_width_medium">220dp</dimen>
+    <dimen name="card_height_medium">330dp</dimen>
+    <dimen name="folder_card_height">270dp</dimen>
+    <dimen name="hero_banner_height">400dp</dimen>
+    <dimen name="button_height">60dp</dimen>
+    <dimen name="avatar_size">60dp</dimen>
+    <dimen name="badge_size">30dp</dimen>
+    <dimen name="grid_min_size">165dp</dimen>
+
+    <!-- Spacing & Margins -->
+    <dimen name="spacing_micro">4dp</dimen>
+    <dimen name="spacing_tiny">8dp</dimen>
+    <dimen name="spacing_small">14dp</dimen>
+    <dimen name="spacing_medium">20dp</dimen>
+    <dimen name="spacing_large">28dp</dimen>
+    <dimen name="spacing_xlarge">40dp</dimen>
+    <dimen name="spacing_xxlarge">56dp</dimen>
+
+    <!-- Navigation & Icons -->
+    <dimen name="nav_bar_height">80dp</dimen>
+    <dimen name="icon_size_small">24dp</dimen>
+    <dimen name="icon_size_medium">32dp</dimen>
+    <dimen name="icon_size_large">44dp</dimen>
+    <dimen name="icon_size_xlarge">64dp</dimen>
+
+    <!-- Corner Radius & Elevation -->
+    <dimen name="corner_radius_small">12dp</dimen>
+    <dimen name="corner_radius_medium">18dp</dimen>
+    <dimen name="corner_radius_large">24dp</dimen>
+    <dimen name="corner_radius_xlarge">32dp</dimen>
+    <dimen name="elevation_low">4dp</dimen>
+    <dimen name="elevation_medium">10dp</dimen>
+    <dimen name="elevation_high">20dp</dimen>
+    <dimen name="border_thin">2dp</dimen>
+    <dimen name="border_medium">3dp</dimen>
+
+    <!-- Text Sizes (sp) -->
+    <item name="font_size_caption" type="dimen">13sp</item>
+    <item name="font_size_body_small" type="dimen">14sp</item>
+    <item name="font_size_body" type="dimen">16sp</item>
+    <item name="font_size_subtitle" type="dimen">20sp</item>
+    <item name="font_size_title" type="dimen">28sp</item>
+    <item name="font_size_large_title" type="dimen">30sp</item>
+    <item name="font_size_hero" type="dimen">38sp</item>
+
+    <integer name="grid_columns_count">6</integer>
+</resources>

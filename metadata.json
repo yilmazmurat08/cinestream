@@ -1,0 +1,6 @@
+{
+  "name": "CineStream IPTV",
+  "description": "Apple ve Netflix tasarım felsefesini harmanlayan minimalist, premium bir IPTV uygulaması.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
