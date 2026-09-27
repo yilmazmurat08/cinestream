@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Neden cleartext (HTTP) açık?
+  IPTV/Xtream sunucularının ve yayın adreslerinin çoğu http:// kullanır ve liste adreslerini kullanıcı
+  girdiği için alan adları önceden bilinemez. Bu yüzden genel kural HTTP'ye ve kullanıcının cihaza
+  yüklediği sertifikalara izin verir (IPTV davranışı değişmez).
+
+  Uygulamanın kendi servisleri (TMDB, Gemini, RevenueCat) ise her zaman HTTPS kullanır: bu alan
+  adlarında HTTP kapalıdır ve yalnızca sistem sertifikalarına güvenilir; böylece cihaza yüklenmiş bir
+  aracı (MITM) sertifikasıyla API anahtarları ve jetonlar okunamaz.
+-->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
@@ -6,4 +16,22 @@
             <certificates src="user" />
         </trust-anchors>
     </base-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">api.themoviedb.org</domain>
+        <domain includeSubdomains="false">image.tmdb.org</domain>
+        <domain includeSubdomains="false">generativelanguage.googleapis.com</domain>
+        <domain includeSubdomains="false">www.googleapis.com</domain>
+        <domain includeSubdomains="true">revenuecat.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Geliştirme sırasında (debug) proxy araçlarıyla hata ayıklanabilsin. -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
 </network-security-config>
