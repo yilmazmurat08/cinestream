@@ -204,8 +204,8 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 
 | | Başlangıç | Son |
 |---|---|---|
-| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **99 (99 geçti, 0 başarısız)** |
-| lintDebug | 26 hata / 268 uyarı | 0 hata / 159 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
+| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **102 (102 geçti, 0 başarısız)** |
+| lintDebug | 26 hata / 268 uyarı | 0 hata / 160 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
 | APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
 
@@ -225,6 +225,7 @@ Eklenen testler:
 | `MainActivityRecreateTest` | 5 | Telefon dikey, 320 dp + 2.0 yazı boyutu, yatay→dikey, tablet, TV: `recreate()` sonrası çökme yok, splash tekrar oynamıyor |
 | `DiagnosticLogTest` | 4 | Anahtar/jeton/şifre maskeleme |
 | `DatabaseCorruptionBackupTest` | 3 | Bozuk veritabanı silinmeden yedekleniyor (elle kurtarma ve SQLite açılışı); sağlam veritabanında yedek alınmıyor |
+| `PipAspectRatioTest` | 3 | PiP pencere oranı: normal video, bilinmeyen boyut (16:9), aşırı oranların sınırlanması |
 | `ActiveScreenSaverTest` | 3 | Açık ekran ve oynatıcıdaki içerik süreç ölümünden sonra geri yükleniyor; bilinmeyen değerde ana sayfaya dönülüyor |
 
 Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilerek geçti.
@@ -243,7 +244,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 6. **Firebase AI ve App Check bağımlılıkları kullanılmıyor.** Gemini, REST API ile ve anahtar adres içinde (`?key=`) gönderilerek çağrılıyor.
    *Öneri:* Kullanılmayan bağımlılıkları kaldırmak ya da anahtarı `x-goog-api-key` başlığıyla göndermek. Gemini davranışına dokunmamam istendiği için değiştirmedim.
 7. ~~**`RECORD_AUDIO` izni ve ses tanıma `queries` tanımlı ama kodda sesli arama yok**~~ — **Yapıldı (onayınızla, dördüncü PR):** `RECORD_AUDIO` izni, sadece bu izin yüzünden eklenen `android.hardware.microphone` özellik satırı ve ses tanıma `queries` bloğu manifest'ten kaldırıldı. Birleştirilmiş son manifest'te de izin yok (hiçbir kütüphane geri eklemiyor). Uygulama artık mikrofon izni istemiyor; Play'de hassas izin gerekçesi gerekmez.
-8. **`supportsPictureInPicture="true"` ama PiP'e geçiren kod yok** (oynatıcı sadece PiP'te olup olmadığını kontrol ediyor ve PiP'teyken oynatmayı sürdürüyor). Bayrağı kaldırmak mevcut bir davranışı, PiP düğmesi eklemek ise yeni özellik eklemek olur; ikisi de kural dışı olduğu için dokunulmadı. Öneri: "Ana ekran tuşuna basınca küçük pencerede oynatmaya devam et" isteniyorsa `setAutoEnterEnabled` ile eklenebilir.
+8. ~~**`supportsPictureInPicture="true"` ama PiP'e geçiren kod yok**~~ — **Yapıldı (onayınızla, altıncı PR):** Oynatıcıda video oynarken ana ekran tuşuna basılınca video küçük pencerede (resim içinde resim) oynamaya devam ediyor. Android 12+'da sistemin otomatik geçişi (`setAutoEnterEnabled`), Android 8–11'de `onUserLeaveHint` kullanılıyor. Pencere oranı videoya göre ayarlanıyor (Android sınırı 2,39:1). PiP'teyken kontroller, paneller ve pencereler gizleniyor, sadece video görünüyor; büyütünce geri geliyor. PiP penceresi kapatılınca oynatma duruyor ve bildirim kalkıyor (konum korunuyor). Video duraklatılmışsa, yayın açılamadıysa, Android TV'de ve PiP desteklemeyen cihazlarda PiP'e geçilmiyor. Görünüme yeni düğme eklenmedi.
 9. ~~**Bozuk veritabanı kurtarma veriyi siliyor**~~ — **Yapıldı (beşinci PR):** Disk G/Ç hataları (ör. disk dolu) artık bozulma sayılmıyor. Gerçek bozulmada veritabanı silinmek yerine `cinestream_database.corrupt-<tarih>` adıyla (yan dosyalarıyla) yedekleniyor; SQLite'ın kendi "bozuk dosyayı sil" adımından önce de kopya alınıyor. Eski durum: `AppDatabase` `SQLiteDiskIOException`'ı da (ör. disk doluyken) "bozulma" sayıp veritabanını silebiliyor; `CrashRecoveryManager` üç açılış çökmesinden sonra da siliyor.
    *Öneri:* Silmek yerine dosyayı `.corrupt-<tarih>` diye yedeğe almak ve yalnızca gerçek `SQLiteDatabaseCorruptException`'da yapmak.
 10. **Depo herkese açık (public) ve gömülü TMDB kimlik bilgileri:** `TmdbAuth.kt` ve `TMDBRepository.kt` içinde XOR+Base64 ile gizlenmiş TMDB okuma jetonu ve v3 anahtarı var (kolayca çözülebilir; rapordaki düz metin anahtarla aynı). Bu mantığa dokunmamam istendi.
@@ -283,6 +284,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 7. Uygulamayı "son uygulamalar"dan kapatın: "Şu an oynatılıyor" bildirimi kalmamalı.
 8. Dili İngilizceye çevirin: Ayarlar, ana sayfa bölüm başlıkları, klasör kartları, EPG rehberi, çoklu ekran ve hata bandı İngilizce olmalı; EPG'de "Morning (06-12)" gibi filtreler yine doğru kanalları süzmeli.
 9. Bir film açıkken telefonun Geliştirici seçenekleri → "Etkinlikleri tutma" açıkken ana ekrana çıkıp geri dönün: oynatıcı ekranı (aynı içerik) açık olmalı.
+10. Bir film oynarken ana ekran tuşuna basın: video küçük pencerede devam etmeli, pencerede düğme görünmemeli. Pencereye dokunup büyütün: kontroller geri gelmeli. Pencereyi aşağı sürükleyip kapatın: ses durmalı, "Şu an oynatılıyor" bildirimi kalkmalı. Videoyu duraklatıp ana ekrana çıkın: PiP açılmamalı.
 
 ### Android TV / Google TV (kumanda)
 1. Açılışta OK'ye basın: açılış atlanmalı.
