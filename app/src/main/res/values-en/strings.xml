@@ -544,4 +544,6 @@
     <string name="settings_color_yellow">Yellow</string>
     <string name="settings_color_green">Green</string>
     <string name="settings_color_blue">Blue</string>
+    <string name="player_fullscreen_desc">Full screen</string>
+    <string name="player_exit_fullscreen_desc">Exit full screen</string>
 </resources>
