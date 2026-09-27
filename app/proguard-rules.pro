@@ -30,8 +30,6 @@
 # Media3 / ExoPlayer
 -keep class androidx.media3.** { *; }
 
-# RevenueCat
--keep class com.revenuecat.purchases.** { *; }
 
 # WorkManager
 -keep class * extends androidx.work.Worker { *; }

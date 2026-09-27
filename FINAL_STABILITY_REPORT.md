@@ -72,5 +72,5 @@
 
 - **Çökme Riskleri:** Player lifecycle (`DisposableEffect`, `onRelease`, `onCleared`), Room Transaction'ları ve Coroutine Scope'ları güvenli hale getirildi. Bozuk M3U girdileri veya eksik TMDB anahtarları durumunda çökmeyi engelleyen fallback mekanizmaları aktiftir.
 - **Performans:** Room sorguları ve M3U ayrıştırma işlemleri `Dispatchers.IO` üzerinde batch olarak yürütülür; Main Thread hiçbir zaman bloklanmaz.
-- **Güvenlik:** TMDB/Gemini/RevenueCat HTTPS + default trust store kullanır. Unsafe SSL yalnızca kullanıcı tarafından sağlanan özel IPTV stream oynatımı ile sınırlıdır.
+- **Güvenlik:** TMDB/Gemini HTTPS + default trust store kullanır. Unsafe SSL yalnızca kullanıcı tarafından sağlanan özel IPTV stream oynatımı ile sınırlıdır.
 - **Kalan Problem:** BULUNMAMAKTADIR.

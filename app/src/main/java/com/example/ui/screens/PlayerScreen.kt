@@ -138,7 +138,11 @@ fun LegacyExoPlayerScreen(
     val layout = rememberAppAdaptiveLayout()
     val scope = rememberCoroutineScope()
     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    val activity = remember(context) { context.findActivity() }
+    // MainActivity, dil desteği için Compose'a Activity olmayan bir bağlam (LocalContext) verir; o yüzden
+    // Activity, Compose görünümünün kendi bağlamından alınır (tam ekran, yön, parlaklık ve PiP bunu kullanır).
+    val composeView = androidx.compose.ui.platform.LocalView.current
+    val activity = remember(composeView, context) { composeView.context.findActivity() ?: context.findActivity() }
+    val isTvDevice = remember(context) { com.example.ui.tv.TvDevice.isTv(context) }
 
     // Subtitle Customization
     val subtitleSize by (iptvViewModel?.subtitleSize?.collectAsState() ?: remember { mutableStateOf(16) })
@@ -275,6 +279,10 @@ fun LegacyExoPlayerScreen(
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var releasedOnStop by remember(player) { mutableStateOf(false) }
+    // PiP durumu (aşağıda rememberPictureInPicture ile güncellenir). `activity` dil ayarlı bağlamdan
+    // bulunamadığı için PiP kontrolü Compose görünümünün bağlı olduğu gerçek Activity ile yapılır.
+    val pipActivity = activity
+    val latestPipState = remember { mutableStateOf(com.example.player.PictureInPictureState(isInPip = false, willEnterOnLeave = false)) }
     DisposableEffect(lifecycleOwner, player) {
         com.example.player.PlaybackForegroundService.start(
             context,
@@ -283,7 +291,9 @@ fun LegacyExoPlayerScreen(
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
                 androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
-                    val inPip = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity?.isInPictureInPictureMode == true
+                    // PiP'e geçilecekse duraklatma; PiP'e geçilemezse ON_STOP'ta zaten durdurulur.
+                    val pip = latestPipState.value
+                    val inPip = pip.isInPip || pip.willEnterOnLeave || pipActivity?.isInPictureInPictureMode == true
                     if (!inPip) {
                         try {
                             player.pause()
@@ -293,7 +303,7 @@ fun LegacyExoPlayerScreen(
                     }
                 }
                 androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
-                    val inPip = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity?.isInPictureInPictureMode == true
+                    val inPip = latestPipState.value.isInPip || pipActivity?.isInPictureInPictureMode == true
                     if (!inPip) {
                         try {
                             player.pause()
@@ -363,6 +373,12 @@ fun LegacyExoPlayerScreen(
         onDispose {
             activity?.requestedOrientation = originalOrientation
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            // Oynatıcıda parmakla ayarlanan parlaklık yalnızca oynatıcı için geçerli; çıkınca sistem ayarına dön.
+            activity?.window?.let { window ->
+                window.attributes = window.attributes.apply {
+                    screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                }
+            }
             activity?.window?.let { window ->
                 WindowCompat.setDecorFitsSystemWindows(window, true)
                 WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
@@ -370,12 +386,15 @@ fun LegacyExoPlayerScreen(
         }
     }
 
-    // Dynamic rotation handling based on user choice
+    // Tam ekran (yatay, sistem çubukları gizli) / küçült (dikey, sistem çubukları görünür).
+    // TV'de ekran yönüne dokunulmaz; her zaman tam ekrandır.
     LaunchedEffect(isLandscapeMode) {
-        activity?.requestedOrientation = if (isLandscapeMode) {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        if (!isTvDevice) {
+            activity?.requestedOrientation = if (isLandscapeMode) {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
         }
         activity?.window?.let { window ->
             WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -385,8 +404,12 @@ fun LegacyExoPlayerScreen(
                 }
             }
             WindowInsetsControllerCompat(window, window.decorView).apply {
-                hide(WindowInsetsCompat.Type.systemBars())
-                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                if (isLandscapeMode || isTvDevice) {
+                    hide(WindowInsetsCompat.Type.systemBars())
+                    systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                } else {
+                    show(WindowInsetsCompat.Type.systemBars())
+                }
             }
         }
     }
@@ -394,8 +417,15 @@ fun LegacyExoPlayerScreen(
     // Read hardware levels initially & start regular timeline updater
     LaunchedEffect(player) {
         // Read brightness
+        // Pencereye özel parlaklık yoksa sistemin mevcut parlaklığından başla.
         val lp = activity?.window?.attributes
-        brightnessLevel = lp?.screenBrightness?.takeIf { it >= 0 } ?: 0.5f
+        brightnessLevel = lp?.screenBrightness?.takeIf { it >= 0 }
+            ?: runCatching {
+                android.provider.Settings.System.getInt(
+                    context.contentResolver, android.provider.Settings.System.SCREEN_BRIGHTNESS
+                ) / 255f
+            }.getOrNull()?.coerceIn(0.01f, 1f)
+            ?: 0.5f
 
         // Read volume
         val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toFloat()
@@ -456,7 +486,7 @@ fun LegacyExoPlayerScreen(
     var localRetryCount by remember(player) { mutableIntStateOf(0) }
 
     // Resim içinde resim: video oynarken ana ekran tuşuna basılınca küçük pencerede devam eder.
-    val isInPip = com.example.player.rememberPictureInPicture(
+    val pipState = com.example.player.rememberPictureInPicture(
         player = player,
         canEnter = isPlaying && !streamFailed,
         onDismissedInBackground = {
@@ -471,6 +501,8 @@ fun LegacyExoPlayerScreen(
             com.example.player.PlaybackForegroundService.stop(context)
         }
     )
+    SideEffect { latestPipState.value = pipState }
+    val isInPip = pipState.isInPip
     LaunchedEffect(isInPip) {
         if (isInPip) {
             controlsVisible = false
@@ -1455,6 +1487,35 @@ fun LegacyExoPlayerScreen(
                                         tint = ElectricBlue,
                                         modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
                                     )
+                                }
+                            }
+
+                            // Tam Ekran / Küçült Butonu (TV her zaman tam ekran olduğu için orada gösterilmez)
+                            if (!isTvDevice) {
+                                Surface(
+                                    onClick = {
+                                        isLandscapeMode = !isLandscapeMode
+                                        resetControlsTimer()
+                                    },
+                                    shape = CircleShape,
+                                    color = Color.Black.copy(alpha = 0.5f),
+                                    border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.6f)),
+                                    modifier = Modifier
+                                        .size(layout.playerSecondaryControlSize)
+                                        .testTag("player_fullscreen_button")
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = if (isLandscapeMode) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                            contentDescription = if (isLandscapeMode) {
+                                                stringResource(R.string.player_exit_fullscreen_desc)
+                                            } else {
+                                                stringResource(R.string.player_fullscreen_desc)
+                                            },
+                                            tint = ElectricBlue,
+                                            modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
+                                        )
+                                    }
                                 }
                             }
 

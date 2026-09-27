@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.util.Consumer
 import androidx.lifecycle.Lifecycle
@@ -24,6 +25,15 @@ import com.example.ui.tv.TvDevice
 import com.example.util.findActivity
 
 /**
+ * PiP durumu.
+ *
+ * @property isInPip uygulama şu an PiP penceresinde mi
+ * @property willEnterOnLeave kullanıcı şimdi uygulamadan çıkarsa PiP'e geçilecek mi (oynatıcı bu durumda
+ *           ON_PAUSE'da duraklatılmamalı; PiP'e geçilemezse ON_STOP'ta zaten durdurulur)
+ */
+data class PictureInPictureState(val isInPip: Boolean, val willEnterOnLeave: Boolean)
+
+/**
  * Resim içinde resim (PiP): oynatıcıda video oynarken kullanıcı ana ekran tuşuna basarsa video küçük
  * pencerede oynamaya devam eder.
  *
@@ -31,19 +41,25 @@ import com.example.util.findActivity
  * - Android 8–11: kullanıcı uygulamadan ayrılırken (`onUserLeaveHint`) PiP'e geçilir.
  * - Android TV'de ve PiP desteklemeyen cihazlarda kapalıdır.
  *
+ * Not: Uygulama dil desteği için Compose'a Activity yerine dil ayarlı bir bağlam (LocalContext) verir;
+ * bu bağlamdan (ve ondan hesaplanan LocalActivity'den) Activity bulunamaz. Bu yüzden Activity, Compose
+ * görünümünün kendi bağlamından ([LocalView]) alınır.
+ *
  * @param canEnter şu an PiP'e geçilebilir mi (ör. video oynuyor ve hata yok)
  * @param onDismissedInBackground PiP penceresi kapatıldığında (uygulama arka planda kalırken) çağrılır;
  *        oynatıcı burada durdurulmalıdır.
- * @return uygulama şu an PiP penceresinde mi
  */
 @Composable
 fun rememberPictureInPicture(
     player: Player,
     canEnter: Boolean,
     onDismissedInBackground: () -> Unit
-): Boolean {
+): PictureInPictureState {
     val context = LocalContext.current
-    val activity = remember(context) { context.findActivity() as? ComponentActivity }
+    val view = LocalView.current
+    val activity = remember(view, context) {
+        (view.context.findActivity() ?: context.findActivity()) as? ComponentActivity
+    }
     val supported = remember(activity) { activity != null && isPictureInPictureSupported(activity) }
     var inPip by remember(activity) {
         mutableStateOf(activity?.isInPictureInPictureMode == true)
@@ -63,7 +79,7 @@ fun rememberPictureInPicture(
         onDispose { activity.removeOnPictureInPictureModeChangedListener(listener) }
     }
 
-    if (!supported || activity == null) return inPip
+    if (!supported || activity == null) return PictureInPictureState(inPip, willEnterOnLeave = false)
 
     var videoSize by remember(player) { mutableStateOf(player.videoSize) }
     DisposableEffect(player) {
@@ -118,7 +134,7 @@ fun rememberPictureInPicture(
             onDispose { activity.removeOnUserLeaveHintListener(listener) }
         }
     }
-    return inPip
+    return PictureInPictureState(inPip, willEnterOnLeave = canEnter)
 }
 
 private fun isPictureInPictureSupported(context: Context): Boolean =

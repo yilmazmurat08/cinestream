@@ -543,4 +543,6 @@
     <string name="settings_color_yellow">Sarı</string>
     <string name="settings_color_green">Yeşil</string>
     <string name="settings_color_blue">Mavi</string>
+    <string name="player_fullscreen_desc">Tam ekran</string>
+    <string name="player_exit_fullscreen_desc">Küçült</string>
 </resources>

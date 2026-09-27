@@ -68,10 +68,7 @@ class IPTVApplication : Application(), ImageLoaderFactory {
         // 2. Explicitly set the custom ImageLoader globally
         Coil.setImageLoader(this)
 
-        // 3. Initialize RevenueCat SDK
-        com.example.util.SubscriptionManager.initRevenueCat(this, "REVENUECAT_API_KEY")
-
-        // 4. Perform proactive cache cleanup & storage maintenance on app startup
+        // 3. Perform proactive cache cleanup & storage maintenance on app startup
         applicationScope.launch {
             StorageOptimizer.performStartupMaintenance(this@IPTVApplication)
         }

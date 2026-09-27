@@ -68,7 +68,7 @@ object NetworkModule {
     }
 
     /**
-     * Secure OkHttpClient using system trust store. Used for official API calls (TMDB, Gemini, RevenueCat).
+     * Secure OkHttpClient using system trust store. Used for official API calls (TMDB, Gemini).
      */
     fun provideOkHttpClient(): OkHttpClient {
         val builder = OkHttpClient.Builder()
