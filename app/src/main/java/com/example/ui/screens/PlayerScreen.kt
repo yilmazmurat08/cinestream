@@ -455,6 +455,30 @@ fun LegacyExoPlayerScreen(
     var streamFailed by remember(player) { mutableStateOf(false) }
     var localRetryCount by remember(player) { mutableIntStateOf(0) }
 
+    // Resim içinde resim: video oynarken ana ekran tuşuna basılınca küçük pencerede devam eder.
+    val isInPip = com.example.player.rememberPictureInPicture(
+        player = player,
+        canEnter = isPlaying && !streamFailed,
+        onDismissedInBackground = {
+            // PiP penceresi kapatıldı: arka plana geçişteki gibi oynatmayı durdur (konum korunur).
+            try {
+                player.pause()
+                player.stop()
+                releasedOnStop = true
+            } catch (e: Exception) {
+                // Ignore
+            }
+            com.example.player.PlaybackForegroundService.stop(context)
+        }
+    )
+    LaunchedEffect(isInPip) {
+        if (isInPip) {
+            controlsVisible = false
+            showTray = false
+            showTrackSelectorSheet = false
+        }
+    }
+
     // Track state listener
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -926,279 +950,302 @@ fun LegacyExoPlayerScreen(
             )
         }
 
-        // 2. Gesture HUD Indicator overlays (Left Edge: Brightness, Right Edge: Volume)
-        AnimatedVisibility(
-            visible = showBrightnessHUD,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 28.dp)
-                .zIndex(10f)
-        ) {
-            Surface(
-                color = Color.Black.copy(alpha = 0.85f),
-                shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.2.dp, ElectricBlue.copy(alpha = 0.6f))
+        // PiP penceresinde yalnızca video görünür; kontroller, paneller ve pencereler gizlenir.
+        if (!isInPip) {
+            // 2. Gesture HUD Indicator overlays (Left Edge: Brightness, Right Edge: Volume)
+            AnimatedVisibility(
+                visible = showBrightnessHUD,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut(),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 28.dp)
+                    .zIndex(10f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                Surface(
+                    color = Color.Black.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.2.dp, ElectricBlue.copy(alpha = 0.6f))
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Brightness5,
-                        contentDescription = stringResource(R.string.player_brightness_desc),
-                        tint = ElectricBlue,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Text(
-                        text = "%${(brightnessLevel * 100).toInt()}",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Brightness5,
+                            contentDescription = stringResource(R.string.player_brightness_desc),
+                            tint = ElectricBlue,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "%${(brightnessLevel * 100).toInt()}",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
                 }
             }
-        }
 
-        AnimatedVisibility(
-            visible = showVolumeHUD,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 28.dp)
-                .zIndex(10f)
-        ) {
-            Surface(
-                color = Color.Black.copy(alpha = 0.85f),
-                shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.2.dp, ElectricBlue.copy(alpha = 0.6f))
+            AnimatedVisibility(
+                visible = showVolumeHUD,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut(),
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 28.dp)
+                    .zIndex(10f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                Surface(
+                    color = Color.Black.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.2.dp, ElectricBlue.copy(alpha = 0.6f))
                 ) {
-                    Icon(
-                        imageVector = if (volumeLevel == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                        contentDescription = stringResource(R.string.player_volume_desc),
-                        tint = ElectricBlue,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Text(
-                        text = "%${(volumeLevel * 100).toInt()}",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (volumeLevel == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                            contentDescription = stringResource(R.string.player_volume_desc),
+                            tint = ElectricBlue,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "%${(volumeLevel * 100).toInt()}",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
                 }
             }
-        }
 
-        // 3. Double Tap Rewind/Forward Visual Overlay Anim
-        if (showDoubleTapFeedback != null) {
-            Box(
-                modifier = Modifier.fillMaxSize()
+            // 3. Double Tap Rewind/Forward Visual Overlay Anim
+            if (showDoubleTapFeedback != null) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(0.4f)
+                            .align(if (showDoubleTapFeedback == "geri") Alignment.CenterStart else Alignment.CenterEnd)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = if (showDoubleTapFeedback == "geri") {
+                                        listOf(NeonPink.copy(alpha = 0.2f), Color.Transparent)
+                                    } else {
+                                        listOf(Color.Transparent, ElectricBlue.copy(alpha = 0.2f))
+                                    }
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = if (showDoubleTapFeedback == "geri") Icons.Default.Replay10 else Icons.Default.Forward10,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (showDoubleTapFeedback == "geri") stringResource(R.string.player_seek_back_10) else stringResource(R.string.player_seek_forward_10),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. Aspect Ratio Badge notification overlay
+            AnimatedVisibility(
+                visible = showAspectRatioBadge != null,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut(),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(y = (-110).dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(0.4f)
-                        .align(if (showDoubleTapFeedback == "geri") Alignment.CenterStart else Alignment.CenterEnd)
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = if (showDoubleTapFeedback == "geri") {
-                                    listOf(NeonPink.copy(alpha = 0.2f), Color.Transparent)
-                                } else {
-                                    listOf(Color.Transparent, ElectricBlue.copy(alpha = 0.2f))
-                                }
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Black.copy(alpha = 0.85f))
+                        .border(1.dp, ElectricBlue, RoundedCornerShape(16.dp))
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = if (showDoubleTapFeedback == "geri") Icons.Default.Replay10 else Icons.Default.Forward10,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (showDoubleTapFeedback == "geri") stringResource(R.string.player_seek_back_10) else stringResource(R.string.player_seek_forward_10),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        // 4. Aspect Ratio Badge notification overlay
-        AnimatedVisibility(
-            visible = showAspectRatioBadge != null,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut(),
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (-110).dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.85f))
-                    .border(1.dp, ElectricBlue, RoundedCornerShape(16.dp))
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = showAspectRatioBadge ?: "",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-
-        // 5. Screen Lock Status Overlay
-        if (isScreenLocked) {
-            AnimatedVisibility(
-                visible = showUnlockButtonBriefly,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(24.dp)
-            ) {
-                Button(
-                    onClick = {
-                        isScreenLocked = false
-                        controlsVisible = true
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black.copy(alpha = 0.75f)),
-                    shape = RoundedCornerShape(24.dp),
-                    border = PaddingValues(0.dp).let {
-                        androidx.compose.foundation.BorderStroke(1.dp, NeonPink)
-                    },
-                    // TV: düğme görününce odak ona geçer, OK ile kilit açılır.
-                    modifier = Modifier.height(48.dp).then(com.example.ui.tv.tvInitialFocus())
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LockOpen,
-                        contentDescription = stringResource(R.string.player_unlock_screen_desc),
-                        tint = NeonPink,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.player_unlock_screen_text),
+                        text = showAspectRatioBadge ?: "",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
-        }
 
-        // 6. Premium Gradient Black Overlay (for controls)
-        AnimatedVisibility(
-            visible = controlsVisible && !isScreenLocked,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF0E071A).copy(alpha = 0.85f),
-                                Color.Transparent,
-                                Color(0xFF0E071A).copy(alpha = 0.9f)
-                            )
-                        )
-                    )
-            ) {
-                // 1. Üst Bar (Top Bar Layering)
-                Row(
+            // 5. Screen Lock Status Overlay
+            if (isScreenLocked) {
+                AnimatedVisibility(
+                    visible = showUnlockButtonBriefly,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .padding(
-                            horizontal = layout.playerHorizontalPadding,
-                            vertical = if (layout.isLandscape) 8.dp else 12.dp
-                        ),
-                    verticalAlignment = Alignment.CenterVertically
+                        .align(Alignment.TopEnd)
+                        .padding(24.dp)
                 ) {
-                    // Sol Üst: Geri Butonu + Film Adı & Türü
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .size(layout.playerSecondaryControlSize)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.5f))
-                            .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                    Button(
+                        onClick = {
+                            isScreenLocked = false
+                            controlsVisible = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black.copy(alpha = 0.75f)),
+                        shape = RoundedCornerShape(24.dp),
+                        border = PaddingValues(0.dp).let {
+                            androidx.compose.foundation.BorderStroke(1.dp, NeonPink)
+                        },
+                        // TV: düğme görününce odak ona geçer, OK ile kilit açılır.
+                        modifier = Modifier.height(48.dp).then(com.example.ui.tv.tvInitialFocus())
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = stringResource(R.string.player_go_back_desc),
-                            tint = Color.White,
-                            modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.5f).dp)
+                            imageVector = Icons.Default.LockOpen,
+                            contentDescription = stringResource(R.string.player_unlock_screen_desc),
+                            tint = NeonPink,
+                            modifier = Modifier.size(20.dp)
                         )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (item.type == "SERIES" && item.season != null && item.episode != null) {
-                                "${item.cleanedName} S${item.season}B${item.episode}"
-                            } else {
-                                item.cleanedName
-                            },
+                            text = stringResource(R.string.player_unlock_screen_text),
                             color = Color.White,
-                            fontSize = (layout.titleFontSize.value - 3f).coerceIn(13f, 18f).sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = item.category,
-                            color = MutedText,
-                            fontSize = (layout.bodyFontSize.value - 1f).coerceIn(10f, 13f).sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            fontSize = 13.sp
                         )
                     }
                 }
+            }
 
-                // 2. Alt Bölüm (Playback Kontrolleri + İlerleme Çubuğu + Alt Buton Grubu)
-                Column(
+            // 6. Premium Gradient Black Overlay (for controls)
+            AnimatedVisibility(
+                visible = controlsVisible && !isScreenLocked,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+                Box(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .padding(
-                            horizontal = layout.playerHorizontalPadding,
-                            vertical = layout.playerBottomPadding
-                        ),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF0E071A).copy(alpha = 0.85f),
+                                    Color.Transparent,
+                                    Color(0xFF0E071A).copy(alpha = 0.9f)
+                                )
+                            )
+                        )
                 ) {
-                    // A. Playback Kontrolleri (Geri 10sn - Oynat/Duraklat - İleri 10sn / Önceki-Sonraki Bölüm)
+                    // 1. Üst Bar (Top Bar Layering)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(layout.controlSpacing),
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.safeDrawing)
+                            .padding(
+                                horizontal = layout.playerHorizontalPadding,
+                                vertical = if (layout.isLandscape) 8.dp else 12.dp
+                            ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (item.type == "SERIES" && currentIndex > 0) {
-                            val prevItem = siblingItems[currentIndex - 1]
+                        // Sol Üst: Geri Butonu + Film Adı & Türü
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier
+                                .size(layout.playerSecondaryControlSize)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.5f))
+                                .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = stringResource(R.string.player_go_back_desc),
+                                tint = Color.White,
+                                modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.5f).dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = if (item.type == "SERIES" && item.season != null && item.episode != null) {
+                                    "${item.cleanedName} S${item.season}B${item.episode}"
+                                } else {
+                                    item.cleanedName
+                                },
+                                color = Color.White,
+                                fontSize = (layout.titleFontSize.value - 3f).coerceIn(13f, 18f).sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = item.category,
+                                color = MutedText,
+                                fontSize = (layout.bodyFontSize.value - 1f).coerceIn(10f, 13f).sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // 2. Alt Bölüm (Playback Kontrolleri + İlerleme Çubuğu + Alt Buton Grubu)
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.safeDrawing)
+                            .padding(
+                                horizontal = layout.playerHorizontalPadding,
+                                vertical = layout.playerBottomPadding
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // A. Playback Kontrolleri (Geri 10sn - Oynat/Duraklat - İleri 10sn / Önceki-Sonraki Bölüm)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(layout.controlSpacing),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (item.type == "SERIES" && currentIndex > 0) {
+                                val prevItem = siblingItems[currentIndex - 1]
+                                IconButton(
+                                    onClick = { onPlayItem(prevItem) },
+                                    modifier = Modifier
+                                        .size(layout.playerControlSize)
+                                        .clip(CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.5f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SkipPrevious,
+                                        contentDescription = stringResource(R.string.player_previous_episode_desc),
+                                        tint = Color.White,
+                                        modifier = Modifier.size((layout.playerControlSize.value * 0.45f).dp)
+                                    )
+                                }
+                            }
+
                             IconButton(
-                                onClick = { onPlayItem(prevItem) },
+                                onClick = {
+                                    val current = player.currentPosition
+                                    player.seekTo(max(0, current - 10000))
+                                    resetControlsTimer()
+                                },
                                 modifier = Modifier
                                     .size(layout.playerControlSize)
                                     .clip(CircleShape)
@@ -1206,1298 +1253,1278 @@ fun LegacyExoPlayerScreen(
                                     .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.SkipPrevious,
-                                    contentDescription = stringResource(R.string.player_previous_episode_desc),
+                                    imageVector = Icons.Default.Replay10,
+                                    contentDescription = stringResource(R.string.player_rewind_10_desc),
                                     tint = Color.White,
-                                    modifier = Modifier.size((layout.playerControlSize.value * 0.45f).dp)
+                                    modifier = Modifier.size((layout.playerControlSize.value * 0.48f).dp)
                                 )
                             }
-                        }
 
-                        IconButton(
-                            onClick = {
-                                val current = player.currentPosition
-                                player.seekTo(max(0, current - 10000))
-                                resetControlsTimer()
-                            },
-                            modifier = Modifier
-                                .size(layout.playerControlSize)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Replay10,
-                                contentDescription = stringResource(R.string.player_rewind_10_desc),
-                                tint = Color.White,
-                                modifier = Modifier.size((layout.playerControlSize.value * 0.48f).dp)
-                            )
-                        }
-
-                        // Play / Pause Glowing Button
-                        Box(
-                            modifier = Modifier
-                                .size(layout.playPauseSize)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.sweepGradient(
-                                        colors = listOf(NeonPink, ElectricBlue, NeonPink)
+                            // Play / Pause Glowing Button
+                            Box(
+                                modifier = Modifier
+                                    .size(layout.playPauseSize)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.sweepGradient(
+                                            colors = listOf(NeonPink, ElectricBlue, NeonPink)
+                                        )
                                     )
+                                    .shadow(8.dp, shape = CircleShape, spotColor = NeonPink)
+                                    .border(2.dp, Color.White, CircleShape)
+                                    .clickable {
+                                        if (player.isPlaying) {
+                                            player.pause()
+                                        } else {
+                                            player.play()
+                                        }
+                                        resetControlsTimer()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (isPlaying) stringResource(R.string.player_pause) else stringResource(R.string.action_play),
+                                    tint = Color.White,
+                                    modifier = Modifier.size((layout.playPauseSize.value * 0.5f).dp)
                                 )
-                                .shadow(8.dp, shape = CircleShape, spotColor = NeonPink)
-                                .border(2.dp, Color.White, CircleShape)
-                                .clickable {
-                                    if (player.isPlaying) {
-                                        player.pause()
-                                    } else {
-                                        player.play()
-                                    }
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    val current = player.currentPosition
+                                    player.seekTo(min(player.duration, current + 10000))
                                     resetControlsTimer()
                                 },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (isPlaying) stringResource(R.string.player_pause) else stringResource(R.string.action_play),
-                                tint = Color.White,
-                                modifier = Modifier.size((layout.playPauseSize.value * 0.5f).dp)
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                val current = player.currentPosition
-                                player.seekTo(min(player.duration, current + 10000))
-                                resetControlsTimer()
-                            },
-                            modifier = Modifier
-                                .size(layout.playerControlSize)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Forward10,
-                                contentDescription = stringResource(R.string.player_forward_10_desc),
-                                tint = Color.White,
-                                modifier = Modifier.size((layout.playerControlSize.value * 0.48f).dp)
-                            )
-                        }
-
-                        if (item.type == "SERIES" && nextItem != null) {
-                            IconButton(
-                                onClick = { onPlayItem(nextItem) },
                                 modifier = Modifier
-                                    .size(if (isLandscape) 40.dp else 38.dp)
+                                    .size(layout.playerControlSize)
                                     .clip(CircleShape)
                                     .background(Color.Black.copy(alpha = 0.5f))
                                     .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.SkipNext,
-                                    contentDescription = stringResource(R.string.player_next_episode_desc),
+                                    imageVector = Icons.Default.Forward10,
+                                    contentDescription = stringResource(R.string.player_forward_10_desc),
                                     tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size((layout.playerControlSize.value * 0.48f).dp)
+                                )
+                            }
+
+                            if (item.type == "SERIES" && nextItem != null) {
+                                IconButton(
+                                    onClick = { onPlayItem(nextItem) },
+                                    modifier = Modifier
+                                        .size(if (isLandscape) 40.dp else 38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.5f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SkipNext,
+                                        contentDescription = stringResource(R.string.player_next_episode_desc),
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 12.dp))
+
+                        // B. İlerleme Çubuğu (Slider + Zaman Bilgileri)
+                        if (item.type != "LIVE" && item.type != "RADIO") {
+                            val maxVal = totalDuration.toFloat().coerceAtLeast(1f)
+                            Slider(
+                                value = currentPos.toFloat().coerceIn(0f, maxVal),
+                                onValueChange = { targetPos ->
+                                    currentPos = targetPos.toLong()
+                                    player.seekTo((targetPos * 1000).toLong())
+                                    resetControlsTimer()
+                                },
+                                valueRange = 0f..maxVal,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = NeonPink,
+                                    activeTrackColor = NeonPink,
+                                    inactiveTrackColor = Color.White.copy(alpha = 0.2f)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(22.dp)
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = formatTime(currentPos),
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                val remainingSec = (totalDuration - currentPos).coerceAtLeast(0L)
+                                Text(
+                                    text = "-${formatTime(remainingSec)}",
+                                    color = MutedText,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(NeonPink)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.player_live_badge),
+                                    color = NeonPink,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 12.dp))
+                        Spacer(modifier = Modifier.height(if (layout.isLandscape) 6.dp else 10.dp))
 
-                    // B. İlerleme Çubuğu (Slider + Zaman Bilgileri)
-                    if (item.type != "LIVE" && item.type != "RADIO") {
-                        val maxVal = totalDuration.toFloat().coerceAtLeast(1f)
-                        Slider(
-                            value = currentPos.toFloat().coerceIn(0f, maxVal),
-                            onValueChange = { targetPos ->
-                                currentPos = targetPos.toLong()
-                                player.seekTo((targetPos * 1000).toLong())
-                                resetControlsTimer()
-                            },
-                            valueRange = 0f..maxVal,
-                            colors = SliderDefaults.colors(
-                                thumbColor = NeonPink,
-                                activeTrackColor = NeonPink,
-                                inactiveTrackColor = Color.White.copy(alpha = 0.2f)
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(22.dp)
-                        )
+                        // C. Alt Satır: Sadece İkon İçeren Dengeli Kontrol Butonları
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                                .padding(top = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = formatTime(currentPos),
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            val remainingSec = (totalDuration - currentPos).coerceAtLeast(0L)
-                            Text(
-                                text = "-${formatTime(remainingSec)}",
-                                color = MutedText,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(NeonPink)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = stringResource(R.string.player_live_badge),
-                                color = NeonPink,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(if (layout.isLandscape) 6.dp else 10.dp))
-
-                    // C. Alt Satır: Sadece İkon İçeren Dengeli Kontrol Butonları
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Kilitle Butonu
-                        Surface(
-                            onClick = {
-                                isScreenLocked = true
-                                controlsVisible = false
-                            },
-                            shape = CircleShape,
-                            color = Color.Black.copy(alpha = 0.5f),
-                            border = BorderStroke(1.dp, NeonPink.copy(alpha = 0.6f)),
-                            modifier = Modifier.size(layout.playerSecondaryControlSize)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = stringResource(R.string.player_lock_desc),
-                                    tint = NeonPink,
-                                    modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
-                                )
-                            }
-                        }
-
-                        // Ekran Formatı (Sığdır/Kırp) Butonu
-                        Surface(
-                            onClick = {
-                                val values = AspectRatioMode.values()
-                                val nextIndex = (currentAspectRatioMode.ordinal + 1) % values.size
-                                currentAspectRatioMode = values[nextIndex]
-                                val aspectBadge = context.getString(R.string.player_aspect_badge, context.getString(currentAspectRatioMode.labelRes))
-                                showAspectRatioBadge = aspectBadge
-                                scope.launch {
-                                    delay(1500)
-                                    if (showAspectRatioBadge == aspectBadge) {
-                                        showAspectRatioBadge = null
-                                    }
+                            // Kilitle Butonu
+                            Surface(
+                                onClick = {
+                                    isScreenLocked = true
+                                    controlsVisible = false
+                                },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, NeonPink.copy(alpha = 0.6f)),
+                                modifier = Modifier.size(layout.playerSecondaryControlSize)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = stringResource(R.string.player_lock_desc),
+                                        tint = NeonPink,
+                                        modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
+                                    )
                                 }
-                                resetControlsTimer()
-                            },
-                            shape = CircleShape,
-                            color = Color.Black.copy(alpha = 0.5f),
-                            border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.6f)),
-                            modifier = Modifier.size(layout.playerSecondaryControlSize)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.AspectRatio,
-                                    contentDescription = stringResource(R.string.player_aspect_ratio_desc),
-                                    tint = ElectricBlue,
-                                    modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
-                                )
                             }
-                        }
 
-                        // Ses / Altyazı Butonu
-                        Surface(
-                            onClick = {
-                                showTrackSelectorSheet = true
-                                resetControlsTimer()
-                            },
-                            shape = CircleShape,
-                            color = Color.Black.copy(alpha = 0.5f),
-                            border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.6f)),
-                            modifier = Modifier.size(layout.playerSecondaryControlSize)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Subtitles,
-                                    contentDescription = stringResource(R.string.player_audio_subtitle_desc),
-                                    tint = ElectricBlue,
-                                    modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
-                                )
+                            // Ekran Formatı (Sığdır/Kırp) Butonu
+                            Surface(
+                                onClick = {
+                                    val values = AspectRatioMode.values()
+                                    val nextIndex = (currentAspectRatioMode.ordinal + 1) % values.size
+                                    currentAspectRatioMode = values[nextIndex]
+                                    val aspectBadge = context.getString(R.string.player_aspect_badge, context.getString(currentAspectRatioMode.labelRes))
+                                    showAspectRatioBadge = aspectBadge
+                                    scope.launch {
+                                        delay(1500)
+                                        if (showAspectRatioBadge == aspectBadge) {
+                                            showAspectRatioBadge = null
+                                        }
+                                    }
+                                    resetControlsTimer()
+                                },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.6f)),
+                                modifier = Modifier.size(layout.playerSecondaryControlSize)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.AspectRatio,
+                                        contentDescription = stringResource(R.string.player_aspect_ratio_desc),
+                                        tint = ElectricBlue,
+                                        modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
+                                    )
+                                }
                             }
-                        }
 
-                        // Bölümler / Listeler Butonu
-                        Surface(
-                            onClick = {
-                                showTray = !showTray
-                                resetControlsTimer()
-                            },
-                            shape = CircleShape,
-                            color = if (showTray) NeonPink.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.5f),
-                            border = BorderStroke(1.dp, if (showTray) NeonPink else Color.White.copy(alpha = 0.3f)),
-                            modifier = Modifier.size(layout.playerSecondaryControlSize)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.VideoLibrary,
-                                    contentDescription = if (item.type == "SERIES") stringResource(R.string.player_episodes) else stringResource(R.string.player_lists),
-                                    tint = Color.White,
-                                    modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
-                                )
+                            // Ses / Altyazı Butonu
+                            Surface(
+                                onClick = {
+                                    showTrackSelectorSheet = true
+                                    resetControlsTimer()
+                                },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.6f)),
+                                modifier = Modifier.size(layout.playerSecondaryControlSize)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Subtitles,
+                                        contentDescription = stringResource(R.string.player_audio_subtitle_desc),
+                                        tint = ElectricBlue,
+                                        modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
+                                    )
+                                }
                             }
-                        }
 
+                            // Bölümler / Listeler Butonu
+                            Surface(
+                                onClick = {
+                                    showTray = !showTray
+                                    resetControlsTimer()
+                                },
+                                shape = CircleShape,
+                                color = if (showTray) NeonPink.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, if (showTray) NeonPink else Color.White.copy(alpha = 0.3f)),
+                                modifier = Modifier.size(layout.playerSecondaryControlSize)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.VideoLibrary,
+                                        contentDescription = if (item.type == "SERIES") stringResource(R.string.player_episodes) else stringResource(R.string.player_lists),
+                                        tint = Color.White,
+                                        modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
+                                    )
+                                }
+                            }
+
+                        }
                     }
                 }
             }
-        }
 
-        // 4. Bölümler ve Öneriler Paneli (SideDrawer in Landscape / BottomSheet in Portrait)
-        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        AnimatedVisibility(
-            visible = showTray,
-            enter = if (isLandscape) slideInHorizontally(initialOffsetX = { it }) else slideInVertically(initialOffsetY = { it }),
-            exit = if (isLandscape) slideOutHorizontally(targetOffsetX = { it }) else slideOutVertically(targetOffsetY = { it }),
-            modifier = if (isLandscape) Modifier.align(Alignment.CenterEnd) else Modifier.align(Alignment.BottomCenter)
-        ) {
-            if (isLandscape) {
-                // Landscape Right SideDrawer
-                Card(
-                    shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0E071A).copy(alpha = 0.94f)),
-                    modifier = Modifier
-                        .width(320.dp)
-                        .fillMaxHeight()
-                        .border(
-                            BorderStroke(1.dp, NeonPink.copy(alpha = 0.3f)),
-                            RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
-                        )
-                        .testTag("player_side_drawer")
-                ) {
-                    Column(
+            // 4. Bölümler ve Öneriler Paneli (SideDrawer in Landscape / BottomSheet in Portrait)
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            AnimatedVisibility(
+                visible = showTray,
+                enter = if (isLandscape) slideInHorizontally(initialOffsetX = { it }) else slideInVertically(initialOffsetY = { it }),
+                exit = if (isLandscape) slideOutHorizontally(targetOffsetX = { it }) else slideOutVertically(targetOffsetY = { it }),
+                modifier = if (isLandscape) Modifier.align(Alignment.CenterEnd) else Modifier.align(Alignment.BottomCenter)
+            ) {
+                if (isLandscape) {
+                    // Landscape Right SideDrawer
+                    Card(
+                        shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E071A).copy(alpha = 0.94f)),
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (item.type == "LIVE") stringResource(R.string.player_channel_list) else if (item.type == "SERIES") stringResource(R.string.player_episodes) else stringResource(R.string.player_recommended),
-                                color = Color.White,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
+                            .width(320.dp)
+                            .fillMaxHeight()
+                            .border(
+                                BorderStroke(1.dp, NeonPink.copy(alpha = 0.3f)),
+                                RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
                             )
-                            IconButton(
-                                onClick = { showTray = false },
-                                modifier = Modifier.size(28.dp)
+                            .testTag("player_side_drawer")
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = stringResource(R.string.close),
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                Text(
+                                    text = if (item.type == "LIVE") stringResource(R.string.player_channel_list) else if (item.type == "SERIES") stringResource(R.string.player_episodes) else stringResource(R.string.player_recommended),
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+                                IconButton(
+                                    onClick = { showTray = false },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.close),
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            if (siblingItems.isNotEmpty()) {
+                                LazyColumn(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    items(siblingItems, key = { it.id }) { sib ->
+                                        val isCurrent = sib.id == item.id
+                                        Surface(
+                                            onClick = {
+                                                if (!isCurrent) {
+                                                    showTray = false
+                                                    onPlayItem(sib)
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = if (isCurrent) NeonPink.copy(alpha = 0.2f) else Color(0xFF180D2C).copy(alpha = 0.8f),
+                                            border = BorderStroke(
+                                                width = 1.dp,
+                                                color = if (isCurrent) NeonPink else Color.White.copy(alpha = 0.1f)
+                                            ),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                if (!sib.logoUrl.isNullOrEmpty()) {
+                                                    AsyncImage(
+                                                        model = sib.logoUrl,
+                                                        contentDescription = sib.cleanedName,
+                                                        modifier = Modifier
+                                                            .size(48.dp, 32.dp)
+                                                            .clip(RoundedCornerShape(6.dp)),
+                                                        contentScale = ContentScale.Crop
+                                                    )
+                                                    Spacer(modifier = Modifier.width(10.dp))
+                                                }
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = sib.cleanedName,
+                                                        color = Color.White,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    if (isCurrent) {
+                                                        Text(
+                                                            text = stringResource(R.string.player_now_playing),
+                                                            color = NeonPink,
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
+                                                if (isCurrent) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.PlayArrow,
+                                                        contentDescription = null,
+                                                        tint = NeonPink,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.player_no_content_list),
+                                        color = MutedText,
+                                        fontSize = 12.sp
+                                    )
+                                }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (siblingItems.isNotEmpty()) {
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxSize()
+                    }
+                } else {
+                    // Portrait Bottom Sheet Tray
+                    Card(
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E071A)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(210.dp)
+                            .border(
+                                BorderStroke(1.dp, NeonPink.copy(alpha = 0.2f)),
+                                RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                            )
+                            .testTag("player_channel_tray")
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                items(siblingItems, key = { it.id }) { sib ->
-                                    val isCurrent = sib.id == item.id
-                                    Surface(
-                                        onClick = {
-                                            if (!isCurrent) {
-                                                showTray = false
-                                                onPlayItem(sib)
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isCurrent) NeonPink.copy(alpha = 0.2f) else Color(0xFF180D2C).copy(alpha = 0.8f),
-                                        border = BorderStroke(
-                                            width = 1.dp,
-                                            color = if (isCurrent) NeonPink else Color.White.copy(alpha = 0.1f)
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
+                                Text(
+                                    text = if (item.type == "LIVE") stringResource(R.string.player_channel_list_category, item.category) else if (item.type == "SERIES") stringResource(R.string.player_next_episode) else stringResource(R.string.player_recommended),
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                IconButton(
+                                    onClick = { showTray = false },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.close),
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            if (siblingItems.isNotEmpty()) {
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    items(siblingItems, key = { it.id }) { sib ->
+                                        val isCurrent = sib.id == item.id
+                                        Box(
+                                            modifier = Modifier
+                                                .width(135.dp)
+                                                .height(90.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(Color(0xFF180D2C))
+                                                .then(
+                                                    if (isCurrent) {
+                                                        Modifier.border(2.dp, NeonPink, RoundedCornerShape(12.dp))
+                                                    } else {
+                                                        Modifier
+                                                    }
+                                                )
+                                                .clickable {
+                                                    if (!isCurrent) {
+                                                        showTray = false
+                                                        onPlayItem(sib)
+                                                    }
+                                                }
                                         ) {
                                             if (!sib.logoUrl.isNullOrEmpty()) {
                                                 AsyncImage(
                                                     model = sib.logoUrl,
                                                     contentDescription = sib.cleanedName,
-                                                    modifier = Modifier
-                                                        .size(48.dp, 32.dp)
-                                                        .clip(RoundedCornerShape(6.dp)),
+                                                    modifier = Modifier.fillMaxSize(),
                                                     contentScale = ContentScale.Crop
                                                 )
-                                                Spacer(modifier = Modifier.width(10.dp))
                                             }
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = sib.cleanedName,
-                                                    color = Color.White,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                if (isCurrent) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color.Black.copy(alpha = if (isCurrent) 0.35f else 0.55f))
+                                            )
+
+                                            if (isCurrent) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .align(Alignment.TopEnd)
+                                                        .padding(6.dp)
+                                                        .background(NeonPink, RoundedCornerShape(4.dp))
+                                                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.PlayArrow,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(10.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(3.dp))
                                                     Text(
-                                                        text = stringResource(R.string.player_now_playing),
-                                                        color = NeonPink,
-                                                        fontSize = 10.sp,
+                                                        text = stringResource(R.string.player_watching_now),
+                                                        color = Color.White,
+                                                        fontSize = 8.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                 }
                                             }
-                                            if (isCurrent) {
-                                                Icon(
-                                                    imageVector = Icons.Default.PlayArrow,
-                                                    contentDescription = null,
-                                                    tint = NeonPink,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.player_no_content_list),
-                                    color = MutedText,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Portrait Bottom Sheet Tray
-                Card(
-                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0E071A)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(210.dp)
-                        .border(
-                            BorderStroke(1.dp, NeonPink.copy(alpha = 0.2f)),
-                            RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                        )
-                        .testTag("player_channel_tray")
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (item.type == "LIVE") stringResource(R.string.player_channel_list_category, item.category) else if (item.type == "SERIES") stringResource(R.string.player_next_episode) else stringResource(R.string.player_recommended),
-                                color = Color.White,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            IconButton(
-                                onClick = { showTray = false },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = stringResource(R.string.close),
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (siblingItems.isNotEmpty()) {
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                items(siblingItems, key = { it.id }) { sib ->
-                                    val isCurrent = sib.id == item.id
-                                    Box(
-                                        modifier = Modifier
-                                            .width(135.dp)
-                                            .height(90.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(Color(0xFF180D2C))
-                                            .then(
-                                                if (isCurrent) {
-                                                    Modifier.border(2.dp, NeonPink, RoundedCornerShape(12.dp))
-                                                } else {
-                                                    Modifier
-                                                }
-                                            )
-                                            .clickable {
-                                                if (!isCurrent) {
-                                                    showTray = false
-                                                    onPlayItem(sib)
-                                                }
-                                            }
-                                    ) {
-                                        if (!sib.logoUrl.isNullOrEmpty()) {
-                                            AsyncImage(
-                                                model = sib.logoUrl,
-                                                contentDescription = sib.cleanedName,
-                                                modifier = Modifier.fillMaxSize(),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                        }
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.Black.copy(alpha = if (isCurrent) 0.35f else 0.55f))
-                                        )
-
-                                        if (isCurrent) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .align(Alignment.TopEnd)
-                                                    .padding(6.dp)
-                                                    .background(NeonPink, RoundedCornerShape(4.dp))
-                                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.PlayArrow,
-                                                    contentDescription = null,
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(10.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(3.dp))
-                                                Text(
-                                                    text = stringResource(R.string.player_watching_now),
-                                                    color = Color.White,
-                                                    fontSize = 8.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-
-                                        Text(
-                                            text = sib.cleanedName,
-                                            color = Color.White,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier
-                                                .align(Alignment.BottomStart)
-                                                .padding(8.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.player_no_alt_content_list),
-                                    color = MutedText,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 7.5. Kaldığın Yerden Devam Et Dialog Overlay
-        if (showResumeDialog) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.75f))
-                    .pointerInput(Unit) { detectTapGestures { } },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier
-                        .widthIn(max = 420.dp)
-                        .fillMaxWidth(0.85f)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF0F082B).copy(alpha = 0.95f))
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.linearGradient(listOf(NeonPink.copy(alpha = 0.5f), ElectricBlue.copy(alpha = 0.5f))),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .padding(28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(CineOrange.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = CineOrange,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = stringResource(R.string.player_continue_watching_question),
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    val seriesInfo = remember(item) {
-                        if (item.type == "SERIES") {
-                            com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName)
-                                ?: com.example.data.model.SeriesParser.parseEpisodeInfo(item.name)
-                        } else {
-                            null
-                        }
-                    }
-
-                    val detailText = remember(item, initialProgressSeconds, seriesInfo, context) {
-                        val timeStr = formatTime(initialProgressSeconds)
-                        if (seriesInfo != null) {
-                            context.getString(R.string.player_resume_episode, seriesInfo.season, seriesInfo.episode, timeStr)
-                        } else {
-                            context.getString(R.string.player_resume_position, timeStr)
-                        }
-                    }
-
-                    Text(
-                        text = detailText,
-                        color = SlateGray,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 20.sp
-                    )
-
-                    if (seriesInfo != null && iptvViewModel != null) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        if (aiRecapText == null) {
-                            OutlinedButton(
-                                onClick = {
-                                    isAILoadingRecap = true
-                                    aiRecapText = "Yapay zeka bülteni hazırlanıyor..."
-                                    scope.launch {
-                                        try {
-                                            iptvViewModel.getSpoilerFreePreviousEpisodesSummary(
-                                                showTitle = seriesInfo.showTitle,
-                                                season = seriesInfo.season,
-                                                episode = seriesInfo.episode
-                                            ).collect { result ->
-                                                aiRecapText = result
-                                                if (result != "Yapay zeka bülteni hazırlanıyor...") {
-                                                    isAILoadingRecap = false
-                                                }
-                                            }
-                                        } catch (e: Exception) {
-                                            aiRecapText = "Özet hazırlanamadı. Lütfen tekrar deneyin."
-                                            isAILoadingRecap = false
-                                        }
-                                    }
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = CineOrange
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, CineOrange.copy(alpha = 0.5f)),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = CineOrange,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.player_ai_summarize_spoiler_free),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
-                                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                                    .padding(14.dp)
-                            ) {
-                                if (isAILoadingRecap) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        CircularProgressIndicator(
-                                            color = CineOrange,
-                                            modifier = Modifier.size(20.dp),
-                                            strokeWidth = 2.dp
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Text(
-                                            text = stringResource(R.string.player_ai_analyzing),
-                                            color = SlateGray,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                } else {
-                                    Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = Icons.Default.AutoAwesome,
-                                                contentDescription = null,
-                                                tint = CineOrange,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = stringResource(R.string.player_ai_previous_summary_title),
-                                                color = CineOrange,
+                                                text = sib.cleanedName,
+                                                color = Color.White,
                                                 fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = aiRecapText ?: "",
-                                            color = Color.White.copy(alpha = 0.85f),
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            lineHeight = 18.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                showResumeDialog = false
-                                player.seekTo(0L)
-                                player.playWhenReady = true
-                                player.play()
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color.White,
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.player_start_over),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Button(
-                            onClick = {
-                                showResumeDialog = false
-                                player.playWhenReady = true
-                                player.play()
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                            contentPadding = PaddingValues(),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .shadow(8.dp, shape = RoundedCornerShape(14.dp), spotColor = NeonPink)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            colors = listOf(NeonPink, CineOrange)
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.player_continue),
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 7.6. Yayın açılamadı penceresi ("Kaldığın yerden devam" penceresiyle aynı görünüm)
-        if (streamFailed) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.75f))
-                    .pointerInput(Unit) { detectTapGestures { } }
-                    .testTag("player_stream_failed"),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier
-                        .widthIn(max = 420.dp)
-                        .fillMaxWidth(0.85f)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF0F082B).copy(alpha = 0.95f))
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.linearGradient(listOf(NeonPink.copy(alpha = 0.5f), ElectricBlue.copy(alpha = 0.5f))),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .verticalScroll(rememberScrollState())
-                        .padding(28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(CineOrange.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ErrorOutline,
-                            contentDescription = null,
-                            tint = CineOrange,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = stringResource(R.string.player_stream_failed_title),
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = stringResource(R.string.player_stream_failed_message),
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 13.sp,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 18.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onBack,
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color.White,
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .testTag("player_stream_failed_back")
-                        ) {
-                            Text(
-                                text = stringResource(R.string.player_back_desc),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        Button(
-                            onClick = {
-                                streamFailed = false
-                                localRetryCount = 0
-                                try {
-                                    player.setMediaItem(ExoPlayerConfigurator.buildMediaItemForUrl(item.streamUrl.trim()))
-                                    player.prepare()
-                                    player.playWhenReady = true
-                                } catch (e: Exception) {
-                                    android.util.Log.e("PlayerScreen", "Retry failed", e)
-                                    streamFailed = true
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                            contentPadding = PaddingValues(),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .shadow(8.dp, shape = RoundedCornerShape(14.dp), spotColor = NeonPink)
-                                // TV: pencere açılınca odak "Tekrar dene"de olsun.
-                                .then(com.example.ui.tv.tvInitialFocus())
-                                .testTag("player_stream_failed_retry")
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            colors = listOf(NeonPink, CineOrange)
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.detail_retry),
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 8. Custom Premium Track Selection BottomSheet
-        if (showTrackSelectorSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showTrackSelectorSheet = false },
-                containerColor = Color(0xFF0E071A),
-                scrimColor = Color.Black.copy(alpha = 0.65f),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .padding(bottom = 32.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.player_audio_subtitle_selection),
-                        color = BrokenWhite,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    val audioTracks = mutableListOf<Pair<Tracks.Group, Int>>()
-                    val subtitleTracks = mutableListOf<Pair<Tracks.Group, Int>>()
-
-                    currentTracks?.groups?.forEach { group ->
-                        if (group.type == C.TRACK_TYPE_AUDIO) {
-                            for (i in 0 until group.length) {
-                                audioTracks.add(group to i)
-                            }
-                        } else if (group.type == C.TRACK_TYPE_TEXT) {
-                            for (i in 0 until group.length) {
-                                subtitleTracks.add(group to i)
-                            }
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        // Left Column: Audio tracks
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(bottom = 10.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.VolumeUp,
-                                    contentDescription = null,
-                                    tint = ElectricBlue,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = stringResource(R.string.player_audio_language),
-                                    color = ElectricBlue,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            if (audioTracks.isNotEmpty()) {
-                                LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    itemsIndexed(audioTracks, key = { i, _ -> "audio_$i" }) { _, (group, index) ->
-                                        val format = group.getTrackFormat(index)
-                                        val isSelected = group.isTrackSelected(index)
-                                        val label = format.label ?: format.language ?: "Ses $index"
-
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(if (isSelected) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
-                                                .clickable {
-                                                    player.trackSelectionParameters = player.trackSelectionParameters
-                                                        .buildUpon()
-                                                        .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
-                                                        .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
-                                                        .addOverride(TrackSelectionOverride(group.mediaTrackGroup, index))
-                                                        .build()
-                                                    showTrackSelectorSheet = false
-                                                }
-                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = label,
-                                                color = if (isSelected) NeonPink else Color.White,
-                                                fontSize = 13.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                maxLines = 1,
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f)
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomStart)
+                                                    .padding(8.dp)
                                             )
-                                            if (isSelected) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = stringResource(R.string.selected),
-                                                    tint = NeonPink,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
                                         }
                                     }
                                 }
                             } else {
-                                Text(
-                                    text = stringResource(R.string.player_no_audio_option),
-                                    color = MutedText,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        // Right Column: Subtitles
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(bottom = 10.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Subtitles,
-                                    contentDescription = null,
-                                    tint = NeonPink,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = stringResource(R.string.player_subtitle),
-                                    color = NeonPink,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            // Option to turn subtitles off
-                            val isSubtitlesDisabled = currentTracks?.groups?.none { it.type == C.TRACK_TYPE_TEXT && it.isSelected } ?: true
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 6.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSubtitlesDisabled) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
-                                    .clickable {
-                                        player.trackSelectionParameters = player.trackSelectionParameters
-                                            .buildUpon()
-                                            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                                            .build()
-                                        showTrackSelectorSheet = false
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.player_subtitle_off),
-                                    color = if (isSubtitlesDisabled) NeonPink else Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (isSubtitlesDisabled) FontWeight.Bold else FontWeight.Normal
-                                )
-                                if (isSubtitlesDisabled) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = stringResource(R.string.player_off_desc),
-                                        tint = NeonPink,
-                                        modifier = Modifier.size(16.dp)
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.player_no_alt_content_list),
+                                        color = MutedText,
+                                        fontSize = 12.sp
                                     )
                                 }
                             }
-
-                            if (subtitleTracks.isNotEmpty()) {
-                                LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    itemsIndexed(subtitleTracks, key = { i, _ -> "sub_$i" }) { _, (group, index) ->
-                                        val format = group.getTrackFormat(index)
-                                        val isSelected = !isSubtitlesDisabled && group.isTrackSelected(index)
-                                        val label = format.label ?: format.language ?: stringResource(R.string.player_subtitle_track, index)
-
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(if (isSelected) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
-                                                .clickable {
-                                                    player.trackSelectionParameters = player.trackSelectionParameters
-                                                        .buildUpon()
-                                                        .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                                                        .clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                                                        .addOverride(TrackSelectionOverride(group.mediaTrackGroup, index))
-                                                        .build()
-                                                    showTrackSelectorSheet = false
-                                                }
-                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = label,
-                                                color = if (isSelected) NeonPink else Color.White,
-                                                fontSize = 13.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            if (isSelected) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = stringResource(R.string.selected),
-                                                    tint = NeonPink,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                Text(
-                                    text = stringResource(R.string.player_no_subtitle_option),
-                                    color = MutedText,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(vertical = 4.dp)
-                                )
-                            }
                         }
                     }
                 }
             }
-        }
 
-        if (showResumeDialog) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.75f))
-                    .clickable(enabled = false) { },
-                contentAlignment = Alignment.Center
-            ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF130C1E).copy(alpha = 0.94f)
-                    ),
+            // 7.5. Kaldığın Yerden Devam Et Dialog Overlay
+            if (showResumeDialog) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .widthIn(max = 420.dp)
-                        .padding(16.dp)
-                        .border(
-                            width = 1.2.dp,
-                            brush = Brush.verticalGradient(
-                                colors = listOf(CineOrange.copy(alpha = 0.4f), Color.Transparent)
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .shadow(24.dp, RoundedCornerShape(24.dp))
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.75f))
+                        .pointerInput(Unit) { detectTapGestures { } },
+                    contentAlignment = Alignment.Center
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
+                            .widthIn(max = 420.dp)
+                            .fillMaxWidth(0.85f)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color(0xFF0F082B).copy(alpha = 0.95f))
+                            .border(
+                                width = 1.dp,
+                                brush = Brush.linearGradient(listOf(NeonPink.copy(alpha = 0.5f), ElectricBlue.copy(alpha = 0.5f))),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .padding(28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = stringResource(R.string.player_play_desc),
-                            tint = CineOrange,
-                            modifier = Modifier.size(56.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(CineOrange.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = CineOrange,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
 
                         Text(
                             text = stringResource(R.string.player_continue_watching_question),
                             color = Color.White,
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
 
-                        val progressSec = initialProgressSeconds
-                        val totalSec = iptvViewModel?.continueWatching?.value?.find { it.itemId == item.id }?.totalSeconds ?: 3600L
-                        val percentage = if (totalSec > 0) ((progressSec.toFloat() / totalSec.toFloat()) * 100).toInt().coerceIn(1, 99) else 0
-                        val progressStr = String.format("%02d:%02d", progressSec / 60, progressSec % 60)
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        val seriesInfo = remember(item) {
+                            if (item.type == "SERIES") {
+                                com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName)
+                                    ?: com.example.data.model.SeriesParser.parseEpisodeInfo(item.name)
+                            } else {
+                                null
+                            }
+                        }
+
+                        val detailText = remember(item, initialProgressSeconds, seriesInfo, context) {
+                            val timeStr = formatTime(initialProgressSeconds)
+                            if (seriesInfo != null) {
+                                context.getString(R.string.player_resume_episode, seriesInfo.season, seriesInfo.episode, timeStr)
+                            } else {
+                                context.getString(R.string.player_resume_position, timeStr)
+                            }
+                        }
 
                         Text(
-                            text = stringResource(R.string.player_resume_progress, progressStr, percentage),
-                            color = Color(0xFFE2E2E2).copy(alpha = 0.8f),
+                            text = detailText,
+                            color = SlateGray,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
 
-                        LinearProgressIndicator(
-                            progress = { percentage.toFloat() / 100f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = CineOrange,
-                            trackColor = Color.White.copy(alpha = 0.1f)
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
+                        if (seriesInfo != null && iptvViewModel != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            if (aiRecapText == null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        isAILoadingRecap = true
+                                        aiRecapText = "Yapay zeka bülteni hazırlanıyor..."
+                                        scope.launch {
+                                            try {
+                                                iptvViewModel.getSpoilerFreePreviousEpisodesSummary(
+                                                    showTitle = seriesInfo.showTitle,
+                                                    season = seriesInfo.season,
+                                                    episode = seriesInfo.episode
+                                                ).collect { result ->
+                                                    aiRecapText = result
+                                                    if (result != "Yapay zeka bülteni hazırlanıyor...") {
+                                                        isAILoadingRecap = false
+                                                    }
+                                                }
+                                            } catch (e: Exception) {
+                                                aiRecapText = "Özet hazırlanamadı. Lütfen tekrar deneyin."
+                                                isAILoadingRecap = false
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = CineOrange
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CineOrange.copy(alpha = 0.5f)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = CineOrange,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.player_ai_summarize_spoiler_free),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
+                                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                                        .padding(14.dp)
+                                ) {
+                                    if (isAILoadingRecap) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            CircularProgressIndicator(
+                                                color = CineOrange,
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = stringResource(R.string.player_ai_analyzing),
+                                                color = SlateGray,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    } else {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = CineOrange,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = stringResource(R.string.player_ai_previous_summary_title),
+                                                    color = CineOrange,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                text = aiRecapText ?: "",
+                                                color = Color.White.copy(alpha = 0.85f),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                lineHeight = 18.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(28.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             OutlinedButton(
                                 onClick = {
                                     showResumeDialog = false
-                                    player.seekTo(0)
+                                    player.seekTo(0L)
                                     player.playWhenReady = true
                                     player.play()
                                 },
-                                shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color.White
+                                    contentColor = Color.White,
                                 ),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                                modifier = Modifier.weight(1f)
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
                             ) {
                                 Text(
                                     text = stringResource(R.string.player_start_over),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
 
                             Button(
                                 onClick = {
                                     showResumeDialog = false
-                                    player.seekTo(initialProgressSeconds * 1000)
                                     player.playWhenReady = true
                                     player.play()
                                 },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = CineOrange,
-                                    contentColor = Color.White
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                contentPadding = PaddingValues(),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .shadow(8.dp, shape = RoundedCornerShape(14.dp), spotColor = NeonPink)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(NeonPink, CineOrange)
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.player_continue),
+                                        color = Color.White,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 7.6. Yayın açılamadı penceresi ("Kaldığın yerden devam" penceresiyle aynı görünüm)
+            if (streamFailed) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.75f))
+                        .pointerInput(Unit) { detectTapGestures { } }
+                        .testTag("player_stream_failed"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 420.dp)
+                            .fillMaxWidth(0.85f)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color(0xFF0F082B).copy(alpha = 0.95f))
+                            .border(
+                                width = 1.dp,
+                                brush = Brush.linearGradient(listOf(NeonPink.copy(alpha = 0.5f), ElectricBlue.copy(alpha = 0.5f))),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .verticalScroll(rememberScrollState())
+                            .padding(28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(CineOrange.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ErrorOutline,
+                                contentDescription = null,
+                                tint = CineOrange,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Text(
+                            text = stringResource(R.string.player_stream_failed_title),
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = stringResource(R.string.player_stream_failed_message),
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(28.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = onBack,
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color.White,
                                 ),
-                                modifier = Modifier.weight(1f)
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .testTag("player_stream_failed_back")
                             ) {
                                 Text(
-                                    text = stringResource(R.string.player_continue),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = stringResource(R.string.player_back_desc),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
+                            }
+
+                            Button(
+                                onClick = {
+                                    streamFailed = false
+                                    localRetryCount = 0
+                                    try {
+                                        player.setMediaItem(ExoPlayerConfigurator.buildMediaItemForUrl(item.streamUrl.trim()))
+                                        player.prepare()
+                                        player.playWhenReady = true
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("PlayerScreen", "Retry failed", e)
+                                        streamFailed = true
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                contentPadding = PaddingValues(),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .shadow(8.dp, shape = RoundedCornerShape(14.dp), spotColor = NeonPink)
+                                    // TV: pencere açılınca odak "Tekrar dene"de olsun.
+                                    .then(com.example.ui.tv.tvInitialFocus())
+                                    .testTag("player_stream_failed_retry")
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(NeonPink, CineOrange)
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.detail_retry),
+                                        color = Color.White,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 8. Custom Premium Track Selection BottomSheet
+            if (showTrackSelectorSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showTrackSelectorSheet = false },
+                    containerColor = Color(0xFF0E071A),
+                    scrimColor = Color.Black.copy(alpha = 0.65f),
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 32.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.player_audio_subtitle_selection),
+                            color = BrokenWhite,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        val audioTracks = mutableListOf<Pair<Tracks.Group, Int>>()
+                        val subtitleTracks = mutableListOf<Pair<Tracks.Group, Int>>()
+
+                        currentTracks?.groups?.forEach { group ->
+                            if (group.type == C.TRACK_TYPE_AUDIO) {
+                                for (i in 0 until group.length) {
+                                    audioTracks.add(group to i)
+                                }
+                            } else if (group.type == C.TRACK_TYPE_TEXT) {
+                                for (i in 0 until group.length) {
+                                    subtitleTracks.add(group to i)
+                                }
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            // Left Column: Audio tracks
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(bottom = 10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VolumeUp,
+                                        contentDescription = null,
+                                        tint = ElectricBlue,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = stringResource(R.string.player_audio_language),
+                                        color = ElectricBlue,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                if (audioTracks.isNotEmpty()) {
+                                    LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        itemsIndexed(audioTracks, key = { i, _ -> "audio_$i" }) { _, (group, index) ->
+                                            val format = group.getTrackFormat(index)
+                                            val isSelected = group.isTrackSelected(index)
+                                            val label = format.label ?: format.language ?: "Ses $index"
+
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(if (isSelected) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
+                                                    .clickable {
+                                                        player.trackSelectionParameters = player.trackSelectionParameters
+                                                            .buildUpon()
+                                                            .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+                                                            .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                                                            .addOverride(TrackSelectionOverride(group.mediaTrackGroup, index))
+                                                            .build()
+                                                        showTrackSelectorSheet = false
+                                                    }
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSelected) NeonPink else Color.White,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                if (isSelected) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = stringResource(R.string.selected),
+                                                        tint = NeonPink,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text(
+                                        text = stringResource(R.string.player_no_audio_option),
+                                        color = MutedText,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            // Right Column: Subtitles
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(bottom = 10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Subtitles,
+                                        contentDescription = null,
+                                        tint = NeonPink,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = stringResource(R.string.player_subtitle),
+                                        color = NeonPink,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                // Option to turn subtitles off
+                                val isSubtitlesDisabled = currentTracks?.groups?.none { it.type == C.TRACK_TYPE_TEXT && it.isSelected } ?: true
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 6.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSubtitlesDisabled) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
+                                        .clickable {
+                                            player.trackSelectionParameters = player.trackSelectionParameters
+                                                .buildUpon()
+                                                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                                                .build()
+                                            showTrackSelectorSheet = false
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.player_subtitle_off),
+                                        color = if (isSubtitlesDisabled) NeonPink else Color.White,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSubtitlesDisabled) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                    if (isSubtitlesDisabled) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = stringResource(R.string.player_off_desc),
+                                            tint = NeonPink,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+
+                                if (subtitleTracks.isNotEmpty()) {
+                                    LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        itemsIndexed(subtitleTracks, key = { i, _ -> "sub_$i" }) { _, (group, index) ->
+                                            val format = group.getTrackFormat(index)
+                                            val isSelected = !isSubtitlesDisabled && group.isTrackSelected(index)
+                                            val label = format.label ?: format.language ?: stringResource(R.string.player_subtitle_track, index)
+
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(if (isSelected) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
+                                                    .clickable {
+                                                        player.trackSelectionParameters = player.trackSelectionParameters
+                                                            .buildUpon()
+                                                            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                                                            .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                                            .addOverride(TrackSelectionOverride(group.mediaTrackGroup, index))
+                                                            .build()
+                                                        showTrackSelectorSheet = false
+                                                    }
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSelected) NeonPink else Color.White,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                if (isSelected) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = stringResource(R.string.selected),
+                                                        tint = NeonPink,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text(
+                                        text = stringResource(R.string.player_no_subtitle_option),
+                                        color = MutedText,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showResumeDialog) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.75f))
+                        .clickable(enabled = false) { },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFF130C1E).copy(alpha = 0.94f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .widthIn(max = 420.dp)
+                            .padding(16.dp)
+                            .border(
+                                width = 1.2.dp,
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(CineOrange.copy(alpha = 0.4f), Color.Transparent)
+                                ),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .shadow(24.dp, RoundedCornerShape(24.dp))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = stringResource(R.string.player_play_desc),
+                                tint = CineOrange,
+                                modifier = Modifier.size(56.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = stringResource(R.string.player_continue_watching_question),
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            val progressSec = initialProgressSeconds
+                            val totalSec = iptvViewModel?.continueWatching?.value?.find { it.itemId == item.id }?.totalSeconds ?: 3600L
+                            val percentage = if (totalSec > 0) ((progressSec.toFloat() / totalSec.toFloat()) * 100).toInt().coerceIn(1, 99) else 0
+                            val progressStr = String.format("%02d:%02d", progressSec / 60, progressSec % 60)
+
+                            Text(
+                                text = stringResource(R.string.player_resume_progress, progressStr, percentage),
+                                color = Color(0xFFE2E2E2).copy(alpha = 0.8f),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            LinearProgressIndicator(
+                                progress = { percentage.toFloat() / 100f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = CineOrange,
+                                trackColor = Color.White.copy(alpha = 0.1f)
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        showResumeDialog = false
+                                        player.seekTo(0)
+                                        player.playWhenReady = true
+                                        player.play()
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = Color.White
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.player_start_over),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        showResumeDialog = false
+                                        player.seekTo(initialProgressSeconds * 1000)
+                                        player.playWhenReady = true
+                                        player.play()
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = CineOrange,
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.player_continue),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
