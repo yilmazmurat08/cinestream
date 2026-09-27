@@ -2,7 +2,6 @@ package com.example.data.db
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabaseCorruptException
-import android.database.sqlite.SQLiteDiskIOException
 import android.database.sqlite.SQLiteException
 import android.util.Log
 import androidx.room.Database
@@ -84,6 +83,8 @@ abstract class AppDatabase : RoomDatabase() {
                     DB_NAME
                 )
                     .applyMigrationPolicy()
+                    // SQLite bozulma algılarsa dosyalar silinmeden önce yedeklenir.
+                    .openHelperFactory(BackupOnCorruptionOpenHelperFactory())
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onOpen(db: SupportSQLiteDatabase) {
                             super.onOpen(db)
@@ -119,6 +120,7 @@ abstract class AppDatabase : RoomDatabase() {
                         DB_NAME
                     )
                         .applyMigrationPolicy()
+                        .openHelperFactory(BackupOnCorruptionOpenHelperFactory())
                         .build()
                     recoveredDb.openHelper.readableDatabase
                     recoveredDb
@@ -131,7 +133,8 @@ abstract class AppDatabase : RoomDatabase() {
         private fun isCorruptionException(throwable: Throwable): Boolean {
             var current: Throwable? = throwable
             while (current != null) {
-                if (current is SQLiteDatabaseCorruptException || current is SQLiteDiskIOException) {
+                // SQLiteDiskIOException (ör. disk dolu) geçicidir; bozulma sayılıp veri silinmez.
+                if (current is SQLiteDatabaseCorruptException) {
                     return true
                 }
                 if (current is SQLiteException && current.message?.contains("corrupt", ignoreCase = true) == true) {
@@ -142,13 +145,16 @@ abstract class AppDatabase : RoomDatabase() {
             return false
         }
 
+        /** Gerçekten bozulmuş veritabanını yedeğe taşır (silmez). DB_NAME.corrupt-<zaman> olarak kalır. */
         fun recoverCorruptedDatabase(context: Context) {
             synchronized(this) {
                 try {
                     INSTANCE?.close()
                     INSTANCE = null
-                    context.applicationContext.deleteDatabase(DB_NAME)
-                    Log.w(TAG, "Corrupted SQLite database safely reset.")
+                    // Silmek yerine yedeğe taşı: kullanıcı verisi kurtarılabilir kalır, uygulama temiz bir
+                    // veritabanıyla açılır.
+                    val backup = CorruptionBackup.move(context.applicationContext.getDatabasePath(DB_NAME))
+                    Log.w(TAG, "Corrupted SQLite database moved aside: ${backup?.name}")
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to reset corrupted database", e)
                 }
