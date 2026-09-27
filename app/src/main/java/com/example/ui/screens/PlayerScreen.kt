@@ -90,11 +90,11 @@ import kotlinx.coroutines.coroutineScope
 import kotlin.math.max
 import kotlin.math.min
 
-enum class AspectRatioMode(val label: String) {
-    FIT("Sığdır (Fit)"),
-    FILL("Doldur (Fill)"),
-    ZOOM("Yakınlaştır (Zoom)"),
-    SIXTEEN_NINE("16:9 Geniş Ekran")
+enum class AspectRatioMode(val labelRes: Int) {
+    FIT(R.string.player_aspect_fit),
+    FILL(R.string.player_aspect_fill),
+    ZOOM(R.string.player_aspect_zoom),
+    SIXTEEN_NINE(R.string.player_aspect_16_9)
 }
 
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
@@ -1027,7 +1027,7 @@ fun LegacyExoPlayerScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (showDoubleTapFeedback == "geri") "10 Sn Geri" else "10 Sn İleri",
+                            text = if (showDoubleTapFeedback == "geri") stringResource(R.string.player_seek_back_10) else stringResource(R.string.player_seek_forward_10),
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
@@ -1258,7 +1258,7 @@ fun LegacyExoPlayerScreen(
                         ) {
                             Icon(
                                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (isPlaying) "Duraklat" else "Oynat",
+                                contentDescription = if (isPlaying) stringResource(R.string.player_pause) else stringResource(R.string.action_play),
                                 tint = Color.White,
                                 modifier = Modifier.size((layout.playPauseSize.value * 0.5f).dp)
                             )
@@ -1407,10 +1407,11 @@ fun LegacyExoPlayerScreen(
                                 val values = AspectRatioMode.values()
                                 val nextIndex = (currentAspectRatioMode.ordinal + 1) % values.size
                                 currentAspectRatioMode = values[nextIndex]
-                                showAspectRatioBadge = "Ekran Oranı: ${currentAspectRatioMode.label}"
+                                val aspectBadge = context.getString(R.string.player_aspect_badge, context.getString(currentAspectRatioMode.labelRes))
+                                showAspectRatioBadge = aspectBadge
                                 scope.launch {
                                     delay(1500)
-                                    if (showAspectRatioBadge == "Ekran Oranı: ${currentAspectRatioMode.label}") {
+                                    if (showAspectRatioBadge == aspectBadge) {
                                         showAspectRatioBadge = null
                                     }
                                 }
@@ -1466,7 +1467,7 @@ fun LegacyExoPlayerScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.VideoLibrary,
-                                    contentDescription = if (item.type == "SERIES") "Bölümler" else "Listeler",
+                                    contentDescription = if (item.type == "SERIES") stringResource(R.string.player_episodes) else stringResource(R.string.player_lists),
                                     tint = Color.White,
                                     modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
                                 )
@@ -1511,7 +1512,7 @@ fun LegacyExoPlayerScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (item.type == "LIVE") "Kanal Listesi" else if (item.type == "SERIES") "Bölümler" else "Önerilen İçerikler",
+                                text = if (item.type == "LIVE") stringResource(R.string.player_channel_list) else if (item.type == "SERIES") stringResource(R.string.player_episodes) else stringResource(R.string.player_recommended),
                                 color = Color.White,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold
@@ -1637,7 +1638,7 @@ fun LegacyExoPlayerScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (item.type == "LIVE") "Kanal Listesi (${item.category})" else if (item.type == "SERIES") "Sıradaki Bölüm" else "Önerilen İçerikler",
+                                text = if (item.type == "LIVE") stringResource(R.string.player_channel_list_category, item.category) else if (item.type == "SERIES") stringResource(R.string.player_next_episode) else stringResource(R.string.player_recommended),
                                 color = Color.White,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold
@@ -1814,12 +1815,12 @@ fun LegacyExoPlayerScreen(
                         }
                     }
 
-                    val detailText = remember(item, initialProgressSeconds, seriesInfo) {
+                    val detailText = remember(item, initialProgressSeconds, seriesInfo, context) {
                         val timeStr = formatTime(initialProgressSeconds)
                         if (seriesInfo != null) {
-                            "${seriesInfo.season}. Sezon, ${seriesInfo.episode}. Bölüm — $timeStr. dakikadasınız."
+                            context.getString(R.string.player_resume_episode, seriesInfo.season, seriesInfo.episode, timeStr)
                         } else {
-                            "Kaldığınız yer — $timeStr"
+                            context.getString(R.string.player_resume_position, timeStr)
                         }
                     }
 
@@ -2325,7 +2326,7 @@ fun LegacyExoPlayerScreen(
                                     itemsIndexed(subtitleTracks, key = { i, _ -> "sub_$i" }) { _, (group, index) ->
                                         val format = group.getTrackFormat(index)
                                         val isSelected = !isSubtitlesDisabled && group.isTrackSelected(index)
-                                        val label = format.label ?: format.language ?: "Altyazı $index"
+                                        val label = format.label ?: format.language ?: stringResource(R.string.player_subtitle_track, index)
 
                                         Row(
                                             modifier = Modifier
@@ -2434,7 +2435,7 @@ fun LegacyExoPlayerScreen(
                         val progressStr = String.format("%02d:%02d", progressSec / 60, progressSec % 60)
 
                         Text(
-                            text = "Kaldığın yer: $progressStr (%$percentage tamamlandı)",
+                            text = stringResource(R.string.player_resume_progress, progressStr, percentage),
                             color = Color(0xFFE2E2E2).copy(alpha = 0.8f),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,

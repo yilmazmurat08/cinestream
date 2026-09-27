@@ -1,4 +1,5 @@
 package com.example
+import androidx.compose.ui.res.stringResource
 
 import android.os.Bundle
 import android.os.Build
@@ -187,7 +188,7 @@ class MainActivity : ComponentActivity() {
                                 if (showIntroSplash) {
                                     IntroSplashScreen(
                                         appName = "CineStream",
-                                        tagline = "Sınırsız Eğlence, İzlemenin Daha Akıllı Hali",
+                                        tagline = androidx.compose.ui.res.stringResource(R.string.intro_tagline),
                                         onIntroFinished = {
                                             showIntroSplash = false
                                         }
@@ -379,7 +380,7 @@ class MainActivity : ComponentActivity() {
                                                     } else {
                                                         android.widget.Toast.makeText(
                                                             this@MainActivity,
-                                                            "\"${finalItem.cleanedName}\" listenizde bulunamadı.",
+                                                            com.example.util.LocaleHelper.getString(this@MainActivity, R.string.toast_not_in_library, finalItem.cleanedName),
                                                             android.widget.Toast.LENGTH_LONG
                                                         ).show()
                                                     }

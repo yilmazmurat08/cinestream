@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.example.R
 
 import android.content.Context
 import com.example.ui.theme.DeepPurpleBg
@@ -63,7 +64,7 @@ fun formatYouTubeWatchUrl(input: String?): String? {
 fun openYoutubeTrailerExternally(context: Context, rawTrailerUrl: String?) {
     val cleanUrl = formatYouTubeWatchUrl(rawTrailerUrl) ?: rawTrailerUrl
     if (cleanUrl.isNullOrBlank()) {
-        android.widget.Toast.makeText(context, "Fragman bulunamadı", android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(context, context.getString(R.string.trailer_not_found), android.widget.Toast.LENGTH_SHORT).show()
         return
     }
 
@@ -89,7 +90,7 @@ fun openYoutubeTrailerExternally(context: Context, rawTrailerUrl: String?) {
             context.startActivity(browserIntent)
         } catch (e2: Exception) {
             Log.e("TrailerPlayer", "Fragman açılamadı: ${e2.message}")
-            android.widget.Toast.makeText(context, "Fragman açılamadı", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, context.getString(R.string.trailer_open_failed), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 }

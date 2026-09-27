@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -210,7 +212,7 @@ fun RankedCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Oynat",
+                            contentDescription = stringResource(R.string.action_play),
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )

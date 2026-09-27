@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.AnimatedVisibility
@@ -37,18 +39,20 @@ import com.example.ui.IPTVViewModel
 @Composable
 fun ParentalPinDialog(
     viewModel: IPTVViewModel,
-    title: String = "Ebeveyn Kilidi",
-    subtitle: String = "Bu içeriğe erişmek için 4 haneli PIN kodunuzu girin.",
+    title: String = stringResource(R.string.pin_title),
+    subtitle: String = stringResource(R.string.pin_subtitle),
     onDismiss: () -> Unit,
     onSuccess: () -> Unit
 ) {
     var pinValue by remember { mutableStateOf("") }
     var isPinVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val pinIncompleteText = stringResource(R.string.pin_incomplete)
+    val pinIncorrectText = stringResource(R.string.parental_pin_incorrect)
 
     fun submitPin() {
         if (pinValue.length < 4) {
-            errorMessage = "Lütfen 4 haneli PIN kodunu eksiksiz girin."
+            errorMessage = pinIncompleteText
             return
         }
         val isCorrect = viewModel.verifyParentalPin(pinValue)
@@ -57,7 +61,7 @@ fun ParentalPinDialog(
             errorMessage = null
             onSuccess()
         } else {
-            errorMessage = "Hatalı PIN kodu! Lütfen tekrar deneyin."
+            errorMessage = pinIncorrectText
             pinValue = ""
         }
     }
@@ -116,7 +120,7 @@ fun ParentalPinDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Kapat",
+                            contentDescription = stringResource(R.string.action_close),
                             tint = Color.White.copy(alpha = 0.7f)
                         )
                     }
@@ -156,7 +160,7 @@ fun ParentalPinDialog(
                                     viewModel.unlockSafeSession(15)
                                     onSuccess()
                                 } else {
-                                    errorMessage = "Hatalı PIN kodu! Lütfen tekrar deneyin."
+                                    errorMessage = pinIncorrectText
                                 }
                             }
                         }
@@ -173,7 +177,7 @@ fun ParentalPinDialog(
                         IconButton(onClick = { isPinVisible = !isPinVisible }) {
                             Icon(
                                 imageVector = if (isPinVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (isPinVisible) "PIN Gizle" else "PIN Göster",
+                                contentDescription = if (isPinVisible) stringResource(R.string.pin_hide) else stringResource(R.string.pin_show),
                                 tint = Color(0xFFB0AEC7)
                             )
                         }
@@ -217,7 +221,7 @@ fun ParentalPinDialog(
                             .height(46.dp)
                             .testTag("cancel_pin_button")
                     ) {
-                        Text("İptal", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.action_cancel), color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.SemiBold)
                     }
 
                     Button(

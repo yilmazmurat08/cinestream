@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -143,13 +145,13 @@ fun PersonDetailDialog(
                         .size(36.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.15f))
-                        .clickable(onClick = onDismiss, onClickLabel = "Kapat")
+                        .clickable(onClick = onDismiss, onClickLabel = stringResource(R.string.action_close))
                         .testTag("close_person_dialog"),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Kapat",
+                        contentDescription = stringResource(R.string.action_close),
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
@@ -263,7 +265,7 @@ private fun PersonSearchBar(state: PersonWorksUiState) {
             )
         } else if (state.inLibrary.isNotEmpty()) {
             Text(
-                text = "${state.inLibrary.size} sonuç",
+                text = stringResource(R.string.person_result_count, state.inLibrary.size),
                 color = PalePurpleText,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
@@ -275,9 +277,9 @@ private fun PersonSearchBar(state: PersonWorksUiState) {
 @Composable
 private fun SearchStatus(state: PersonWorksUiState, onRetry: () -> Unit) {
     val text = when (state.phase) {
-        PersonWorksPhase.SEARCHING_LIBRARY -> "Kütüphanen taranıyor…"
-        PersonWorksPhase.FETCHING_TMDB -> "TMDB'den filmografisi alınıyor…"
-        PersonWorksPhase.MATCHING -> "${state.tmdbCreditCount ?: 0} yapım bulundu, kütüphanende aranıyor…"
+        PersonWorksPhase.SEARCHING_LIBRARY -> stringResource(R.string.person_status_library)
+        PersonWorksPhase.FETCHING_TMDB -> stringResource(R.string.person_status_tmdb)
+        PersonWorksPhase.MATCHING -> stringResource(R.string.person_status_matching, state.tmdbCreditCount ?: 0)
         PersonWorksPhase.DONE -> null
     }
     if (text != null) {
@@ -298,7 +300,7 @@ private fun SearchStatus(state: PersonWorksUiState, onRetry: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "TMDB'ye ulaşılamadı: $problem. Sonuçlar sadece listendeki oyuncu bilgilerinden.",
+                text = stringResource(R.string.person_tmdb_unreachable, problem),
                 color = LiveGold,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
@@ -326,7 +328,7 @@ private fun PersonWorksGrid(
     ) {
         if (state.inLibrary.isNotEmpty()) {
             item(key = "header_in_library", span = { GridItemSpan(maxLineSpan) }) {
-                SectionTitle("Kütüphanende var")
+                SectionTitle(stringResource(R.string.person_in_library))
             }
             items(state.inLibrary, key = { it.uiKey }) { match ->
                 LibraryWorkCard(match = match, onClick = { onItemClick(match.item) })
@@ -339,7 +341,7 @@ private fun PersonWorksGrid(
 
         if (state.notInLibrary.isNotEmpty()) {
             item(key = "header_not_in_library", span = { GridItemSpan(maxLineSpan) }) {
-                SectionTitle("Kütüphanende yok")
+                SectionTitle(stringResource(R.string.person_not_in_library))
             }
             items(state.notInLibrary, key = { "tmdb_${it.key}" }) { credit ->
                 MissingWorkCard(credit = credit)
@@ -362,7 +364,7 @@ private fun PersonWorksGrid(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Kütüphanende bu kişinin başka yapımı bulunamadı.",
+                        text = stringResource(R.string.person_no_other_works),
                         color = SlateGray,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
@@ -413,9 +415,10 @@ private fun PosterBox(url: String?, contentDescription: String, modifier: Modifi
     }
 }
 
+@Composable
 private fun workSubtitle(isSeries: Boolean, year: Int?): String? = when {
-    isSeries && year != null -> "Dizi, $year"
-    isSeries -> "Dizi"
+    isSeries && year != null -> stringResource(R.string.person_series_year, year)
+    isSeries -> stringResource(R.string.person_series)
     year != null -> year.toString()
     else -> null
 }

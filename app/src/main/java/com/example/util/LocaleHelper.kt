@@ -77,6 +77,21 @@ object LocaleHelper {
     }
 
     /**
+     * Uygulama içinde seçilen dile (TR/EN) göre metin döndürür. ViewModel, servis ve bildirim gibi
+     * Activity dışı kodlarda kullanılır; Android 7+ uygulama bağlamı seçilen dili kendiliğinden bilmez.
+     */
+    fun getString(context: Context, resId: Int, vararg formatArgs: Any): String {
+        val localized = try {
+            val config = Configuration(context.resources.configuration)
+            config.setLocale(Locale(getSavedLanguage(context)))
+            context.createConfigurationContext(config)
+        } catch (e: Exception) {
+            context
+        }
+        return if (formatArgs.isEmpty()) localized.getString(resId) else localized.getString(resId, *formatArgs)
+    }
+
+    /**
      * Wraps attachBaseContext for Activities to enforce saved Locale on startup.
      */
     fun wrap(context: Context): ContextWrapper {

@@ -103,9 +103,8 @@ fun DescriptionCard(
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
-    val displayText = text.trim().ifBlank {
-        "Bu içerik için özet bilgisi bulunmuyor."
-    }
+    val noSummaryText = stringResource(R.string.detail_no_summary)
+    val displayText = text.trim().ifBlank { noSummaryText }
 
     Column(
         modifier = modifier
@@ -137,7 +136,7 @@ fun DescriptionCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isExpanded) "Daha Az Göster" else "Devamını Oku...",
+                    text = if (isExpanded) stringResource(R.string.detail_show_less) else stringResource(R.string.detail_read_more),
                     color = Color(0xFFA855F7),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -176,7 +175,7 @@ fun GeminiSpoilerFreeSummaryCard(
                             withContext(Dispatchers.Main) {
                                 isLoading = false
                                 if (summary == "AI Özeti şu an oluşturulamadı") {
-                                    errorMessage = summary
+                                    errorMessage = context.getString(R.string.detail_ai_summary_failed)
                                 } else {
                                     aiSummary = summary
                                     isExpanded = true
@@ -185,7 +184,7 @@ fun GeminiSpoilerFreeSummaryCard(
                         } catch (e: Exception) {
                             withContext(Dispatchers.Main) {
                                 isLoading = false
-                                errorMessage = "AI Özeti şu an oluşturulamadı"
+                                errorMessage = context.getString(R.string.detail_ai_summary_failed)
                             }
                         }
                     }
@@ -298,7 +297,7 @@ fun GeminiSpoilerFreeSummaryCard(
                         )
                     }
                     Text(
-                        text = if (isExpanded) "Daralt" else "Genişlet",
+                        text = if (isExpanded) stringResource(R.string.detail_collapse) else stringResource(R.string.detail_expand),
                         color = Color.White.copy(alpha = 0.6f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
@@ -400,7 +399,7 @@ fun SimilarMoviesSection(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "AI Önerileri",
+                text = stringResource(R.string.detail_ai_recommendations),
                 color = if (currentThemeIsDark) Color.White else Color(0xFF1E1E24),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold

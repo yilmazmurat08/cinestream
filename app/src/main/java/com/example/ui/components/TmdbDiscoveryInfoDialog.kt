@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
@@ -65,9 +67,9 @@ fun TmdbDiscoveryInfoDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = if (isSeries)
-                        "Bu dizi şu anda gündemde ve popüler, ancak kütüphanende henüz bulunmuyor. IPTV sağlayıcın eklediğinde burada, kendi listende görünecek."
+                        stringResource(R.string.tmdb_info_series)
                     else
-                        "Bu film şu anda sinemalarda gösteriliyor, henüz kütüphanende değil. IPTV sağlayıcın eklediğinde burada, kendi listende görünecek.",
+                        stringResource(R.string.tmdb_info_movie),
                     color = SlateGray,
                     fontSize = 13.sp,
                     lineHeight = 19.sp,
@@ -79,7 +81,7 @@ fun TmdbDiscoveryInfoDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = CineOrange),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Anladım", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.action_got_it), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -177,7 +179,7 @@ fun LiveTvHeaderBanner(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "CANLI YAYIN & TV EPG REHBERİ",
+                        text = stringResource(R.string.media_live_epg_badge),
                         color = Color.White,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.ExtraBold,
