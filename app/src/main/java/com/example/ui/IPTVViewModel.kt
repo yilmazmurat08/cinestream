@@ -2476,8 +2476,13 @@ class IPTVViewModel(
             _isLoading.value = true
             try {
                 repository.fetchFromNetwork()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                // İnternet yoksa / liste bozuksa ve önbellekte kanal yoksa kullanıcı sessiz bir boş ekran
+                // yerine uygulamanın hata bandını görsün (önbellekteki kanallar varsa sync hata atmaz).
+                Log.w("IPTVViewModel", "refreshPlaylists failed: ${e.message}")
+                ErrorHandlingManager.emitThrowable(e)
             } finally {
                 _isLoading.value = false
                 withContext(Dispatchers.Main) {
