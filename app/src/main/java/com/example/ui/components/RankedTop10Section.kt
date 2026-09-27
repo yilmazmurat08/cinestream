@@ -37,6 +37,7 @@ import com.example.ui.theme.CineOrange
 fun RankedTop10Section(
     title: String,
     items: List<IPTVItem>,
+    displayTitle: String = title,
     onItemClick: (IPTVItem) -> Unit,
     onItemLongClick: ((IPTVItem) -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -66,7 +67,7 @@ fun RankedTop10Section(
                 modifier = Modifier.padding(end = 8.dp)
             )
             Text(
-                text = title,
+                text = displayTitle,
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,

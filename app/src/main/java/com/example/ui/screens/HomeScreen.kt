@@ -518,6 +518,7 @@ fun HomeScreen(
                                 item(key = "top10_movies") {
                                     com.example.ui.components.RankedTop10Section(
                                         title = "🔥 Bugün Trend Filmler",
+                                        displayTitle = stringResource(R.string.home_top10_movies),
                                         items = top10Movies,
                                         onItemClick = { item ->
                                             val matched = viewModel.findMatchedItem(item)
@@ -540,6 +541,7 @@ fun HomeScreen(
                                 item(key = "top10_series") {
                                     com.example.ui.components.RankedTop10Section(
                                         title = "📺 Popüler Diziler",
+                                        displayTitle = stringResource(R.string.home_top10_series),
                                         items = top10Series,
                                         onItemClick = { item ->
                                             val matched = viewModel.findMatchedItem(item)
@@ -557,6 +559,7 @@ fun HomeScreen(
                                 item(key = "top10_live") {
                                     com.example.ui.components.RankedTop10Section(
                                         title = "🔴 Popüler Kanallar",
+                                        displayTitle = stringResource(R.string.home_top10_channels),
                                         items = top10Live,
                                         onItemClick = { item ->
                                             val matched = viewModel.findMatchedItem(item)
@@ -634,7 +637,7 @@ fun HomeScreen(
                                             Spacer(modifier = Modifier.width(6.dp))
                                         }
                                         Text(
-                                            text = if (isShowingAIResults) "AI Önerileri: \"$searchQuery\"" else "Arama Sonuçları: \"$searchQuery\"",
+                                            text = if (isShowingAIResults) stringResource(R.string.home_ai_results, searchQuery) else stringResource(R.string.home_search_results, searchQuery),
                                             color = contentColor,
                                             fontSize = 20.sp,
                                             fontWeight = FontWeight.Bold
@@ -643,7 +646,7 @@ fun HomeScreen(
                                     if (isShowingAIResults) {
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Yapay zeka, sorgunu yorumlayarak kütüphanenden en uygun içerikleri seçti — bunlar birebir kelime eşleşmesi değil.",
+                                            text = stringResource(R.string.home_ai_results_hint),
                                             color = contentColor.copy(alpha = 0.6f),
                                             fontSize = 12.sp
                                         )
@@ -1042,7 +1045,7 @@ fun HomeScreen(
                                     item(key = "mood_recs_section") {
                                         Column(modifier = Modifier.padding(vertical = 16.dp)) {
                                             Text(
-                                                text = "Yapay Zeka Asistanı",
+                                                text = stringResource(R.string.home_ai_assistant),
                                                 color = contentColor,
                                                 fontSize = 19.sp,
                                                 fontWeight = FontWeight.ExtraBold,
@@ -1083,7 +1086,7 @@ fun HomeScreen(
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Default.AutoAwesome,
-                                                            contentDescription = "AI Asistanı",
+                                                            contentDescription = stringResource(R.string.home_ai_assistant_desc),
                                                             tint = CineOrange,
                                                             modifier = Modifier.size(24.dp)
                                                         )
@@ -1093,14 +1096,14 @@ fun HomeScreen(
 
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(
-                                                            text = "Ne İzleyeceğine Karar Veremedin mi?",
+                                                            text = stringResource(R.string.home_ai_card_title),
                                                             color = Color.White,
                                                             fontSize = 16.sp,
                                                             fontWeight = FontWeight.Bold
                                                         )
                                                         Spacer(modifier = Modifier.height(4.dp))
                                                         Text(
-                                                            text = "Yapay zeka asistanımızla konuş, sana en uygun film veya diziyi bulsun!",
+                                                            text = stringResource(R.string.home_ai_card_body),
                                                             color = MutedText,
                                                             fontSize = 12.sp,
                                                             fontWeight = FontWeight.Normal,
@@ -1157,7 +1160,14 @@ fun HomeScreen(
                                                             )
                                                             Spacer(modifier = Modifier.width(6.dp))
                                                             Text(
-                                                                text = genreName,
+                                                                text = when (genreName) {
+                                                                    "Korku" -> stringResource(R.string.home_genre_horror)
+                                                                    "Komedi" -> stringResource(R.string.home_genre_comedy)
+                                                                    "Dram" -> stringResource(R.string.home_genre_drama)
+                                                                    "Tarih & Savaş" -> stringResource(R.string.home_genre_history_war)
+                                                                    "Aksiyon & Macera" -> stringResource(R.string.home_genre_action_adventure)
+                                                                    else -> genreName
+                                                                },
                                                                 color = Color.White,
                                                                 fontSize = 12.sp,
                                                                 fontWeight = FontWeight.Bold
@@ -1239,6 +1249,7 @@ fun HomeScreen(
                     FolderGridScreen(
                         groups = liveGroups,
                         title = "Canlı Yayın",
+                        displayTitle = stringResource(R.string.home_folder_live),
                         viewModel = viewModel,
                         onPlayItem = onPlayItem,
                         continueWatching = continueWatching.filter { it.itemType == "LIVE" },
@@ -1281,7 +1292,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Klasörlere Dön",
+                                    text = stringResource(R.string.home_back_to_folders),
                                     color = Color.White,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
@@ -1293,6 +1304,7 @@ fun HomeScreen(
                     FolderGridScreen(
                         groups = movieGroups,
                         title = "Sinema Klasörleri",
+                        displayTitle = stringResource(R.string.home_folder_movies),
                         viewModel = viewModel,
                         onPlayItem = onPlayItem,
                         continueWatching = continueWatching.filter { it.itemType == "MOVIE" },
@@ -1429,6 +1441,7 @@ fun HomeScreen(
                         FolderGridScreen(
                             groups = seriesGroups,
                             title = "Dizi Klasörleri",
+                            displayTitle = stringResource(R.string.home_folder_series),
                             viewModel = viewModel,
                             onPlayItem = onPlayItem,
                             continueWatching = continueWatching.filter { it.itemType == "SERIES" },
@@ -1806,10 +1819,10 @@ fun ContinueWatchingCard(
             ) {
                 Text(
                     text = when (cw.itemType) {
-                        "LIVE" -> "CANLI"
-                        "RADIO" -> "RADYO"
-                        "MOVIE" -> "FİLM"
-                        "SERIES" -> "DİZİ"
+                        "LIVE" -> stringResource(R.string.home_badge_live)
+                        "RADIO" -> stringResource(R.string.home_badge_radio)
+                        "MOVIE" -> stringResource(R.string.home_badge_movie)
+                        "SERIES" -> stringResource(R.string.home_badge_series)
                         else -> cw.itemType
                     },
                     color = Color.White,
@@ -1830,7 +1843,7 @@ fun ContinueWatchingCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Kaldır",
+                    contentDescription = stringResource(R.string.home_remove_desc),
                     tint = Color.White,
                     modifier = Modifier.size(12.dp)
                 )
@@ -2158,7 +2171,7 @@ fun RadioGlassCard(
                                 }
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = if (isBuffering) "YÜKLENİYOR" else if (isPlaying) "YAYINDA" else "DURAKLATILDI",
+                                    text = if (isBuffering) stringResource(R.string.home_radio_loading) else if (isPlaying) stringResource(R.string.home_radio_on_air) else stringResource(R.string.home_radio_paused),
                                     color = neonPurple,
                                     fontSize = 8.sp,
                                     fontWeight = FontWeight.ExtraBold,
@@ -2504,7 +2517,7 @@ fun NextEpisodeCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Kaldır",
+                    contentDescription = stringResource(R.string.home_remove_desc),
                     tint = Color.White,
                     modifier = Modifier.size(12.dp)
                 )
@@ -2585,7 +2598,7 @@ fun TrailerBoxSection(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "🎬 Fragman Kutusu",
+                text = stringResource(R.string.home_trailer_box),
                 color = Color.White,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.ExtraBold
@@ -2847,7 +2860,7 @@ fun DuelContenderCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "İzle",
+                    contentDescription = stringResource(R.string.home_watch_desc),
                     tint = Color.White,
                     modifier = Modifier.size(14.dp)
                 )
@@ -2976,7 +2989,7 @@ fun CineStreamTopBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "AI Film Asistanı",
+                            contentDescription = stringResource(R.string.home_ai_movie_assistant_desc),
                             tint = CineOrange,
                             modifier = Modifier.size(15.dp)
                         )

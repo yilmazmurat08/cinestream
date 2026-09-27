@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -80,6 +81,7 @@ import com.example.ui.theme.rememberAppAdaptiveLayout
 fun FolderGridScreen(
     groups: List<IPTVGroup>,
     title: String,
+    displayTitle: String = title,
     viewModel: IPTVViewModel,
     onPlayItem: (IPTVItem) -> Unit,
     continueWatching: List<ContinueWatching> = emptyList(),
@@ -151,6 +153,7 @@ fun FolderGridScreen(
             FolderListLayout(
                 groups = groups,
                 title = title,
+                displayTitle = displayTitle,
                 onFolderClick = { clickedGroup ->
                     val isAdult = viewModel.isAdultContent(clickedGroup)
                     if (isAdult && isParentalLockEnabled && !isSafeSessionActive) {
@@ -179,8 +182,8 @@ fun FolderGridScreen(
     if (pendingAdultGroup != null) {
         com.example.ui.components.ParentalPinDialog(
             viewModel = viewModel,
-            title = "Ebeveyn Kilidi",
-            subtitle = "Bu kategoriyi açmak için PIN kodunuzu girin. Doğrulama sonrası 15 dakika boyunca Güvenli Oturum aktif kalır.",
+            title = stringResource(R.string.folder_pin_title),
+            subtitle = stringResource(R.string.folder_pin_subtitle),
             onDismiss = { pendingAdultGroup = null },
             onSuccess = {
                 viewModel.unlockSafeSession(15)
@@ -255,7 +258,7 @@ fun SafeSessionIndicator(
                         )
                     }
                     Text(
-                        text = "Kalan Süre: $formattedTime (PIN sormadan erişim)",
+                        text = stringResource(R.string.folder_safe_session_remaining, formattedTime),
                         color = Color(0xFFB0AEC7),
                         fontSize = 11.sp
                     )
@@ -294,6 +297,7 @@ fun SafeSessionIndicator(
 fun FolderListLayout(
     groups: List<IPTVGroup>,
     title: String,
+    displayTitle: String = title,
     onFolderClick: (IPTVGroup) -> Unit,
     onPlayItem: (IPTVItem) -> Unit = {},
     continueWatching: List<ContinueWatching> = emptyList(),
@@ -335,7 +339,7 @@ fun FolderListLayout(
                     modifier = Modifier.padding(end = 10.dp)
                 )
                 Text(
-                    text = title,
+                    text = displayTitle,
                     color = Color(0xFFF5F5F7),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -507,75 +511,76 @@ fun FolderCard(
     val isMovie = group.type == "MOVIE"
     val isSeries = group.type == "SERIES"
     
+    val context = LocalContext.current
     val (cardBg, accentColor, tagline) = remember(nameLower, isLive, isMovie, isSeries, isAdult, isLocked) {
         val defaultTagline = when {
-            isAdult -> "Yetişkin İçerik Kategorisi"
-            isLive -> "Canlı Televizyon Kanalları"
-            isMovie -> "Popüler Sinema Filmleri"
-            isSeries -> "Popüler Dizi Sezonları"
-            else -> "Seçkin İçerik Arşivi"
+            isAdult -> context.getString(R.string.folder_tag_adult)
+            isLive -> context.getString(R.string.folder_tag_live)
+            isMovie -> context.getString(R.string.folder_tag_movie)
+            isSeries -> context.getString(R.string.folder_tag_series)
+            else -> context.getString(R.string.folder_tag_other)
         }
         
         when {
             isAdult -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF2E0854), Color(0xFF4A0E4E))),
                 Color(0xFFE040FB),
-                if (isLocked) "PIN Doğrulaması Gereklidir" else if (isSafeSessionUnlocked) "Güvenli Oturum ile Açık" else defaultTagline
+                if (isLocked) context.getString(R.string.folder_tag_pin_required) else if (isSafeSessionUnlocked) context.getString(R.string.folder_tag_safe_session) else defaultTagline
             )
             nameLower.contains("netflix") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF0F0F0F), Color(0xFF1F1F1F))),
                 Color(0xFFE50914),
-                if (isLive) "Netflix Canlı Yayın Kuşağı" else if (isMovie) "Netflix Özel Sinema Kuşağı" else if (isSeries) "Netflix Popüler Dizileri" else "Netflix Özel İçerikleri"
+                if (isLive) context.getString(R.string.folder_tag_netflix_live) else if (isMovie) context.getString(R.string.folder_tag_netflix_movie) else if (isSeries) context.getString(R.string.folder_tag_netflix_series) else context.getString(R.string.folder_tag_netflix_other)
             )
             nameLower.contains("prime") || nameLower.contains("amazon") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF0D1B2A), Color(0xFF1B263B))),
                 Color(0xFF00A8E1),
-                if (isLive) "Prime Canlı Yayınları" else if (isMovie) "Prime Video Özel Filmleri" else if (isSeries) "Prime Orijinal Dizileri" else "Prime Video Ayrıcalıklı İçerikleri"
+                if (isLive) context.getString(R.string.folder_tag_prime_live) else if (isMovie) context.getString(R.string.folder_tag_prime_movie) else if (isSeries) context.getString(R.string.folder_tag_prime_series) else context.getString(R.string.folder_tag_prime_other)
             )
             nameLower.contains("disney") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF020024), Color(0xFF090979), Color(0xFF1E3A8A))),
                 Color(0xFF38BDF8),
-                if (isLive) "Disney Canlı Kanalları" else if (isMovie) "Disney+ Sihirli Filmleri" else if (isSeries) "Disney+ Orijinal Dizileri" else "Sihirli Dünyalar & Animasyonlar"
+                if (isLive) context.getString(R.string.folder_tag_disney_live) else if (isMovie) context.getString(R.string.folder_tag_disney_movie) else if (isSeries) context.getString(R.string.folder_tag_disney_series) else context.getString(R.string.folder_tag_disney_other)
             )
             nameLower.contains("blu") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF030712), Color(0xFF1E3A8A))),
                 Color(0xFF3B82F6),
-                if (isLive) "BluTV Canlı Yayınları" else if (isMovie) "BluTV Özel Sinema Arşivi" else if (isSeries) "BluTV Özel Dizileri" else "Türkiye'nin İnternet Televizyonu"
+                if (isLive) context.getString(R.string.folder_tag_blu_live) else if (isMovie) context.getString(R.string.folder_tag_blu_movie) else if (isSeries) context.getString(R.string.folder_tag_blu_series) else context.getString(R.string.folder_tag_blu_other)
             )
             nameLower.contains("exxen") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF0F172A), Color(0xFF1E293B))),
                 Color(0xFFFACC15),
-                if (isLive) "Exxen Spor & Canlı Yayınlar" else if (isMovie) "Exxen Eğlenceli Filmleri" else if (isSeries) "Exxen Komedi & Drama Dizileri" else "Eğlenceli Şovlar & Yapımlar"
+                if (isLive) context.getString(R.string.folder_tag_exxen_live) else if (isMovie) context.getString(R.string.folder_tag_exxen_movie) else if (isSeries) context.getString(R.string.folder_tag_exxen_series) else context.getString(R.string.folder_tag_exxen_other)
             )
             nameLower.contains("gain") || nameLower.contains("gaın") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF1C1917), Color(0xFF292524))),
                 Color(0xFF22C55E),
-                if (isLive) "Gain Canlı Yayın Kuşağı" else if (isMovie) "Gain Kaliteli Sinema Yapımları" else if (isSeries) "Gain Özgün Hikayeleri & Dizileri" else "Kısa ve Kaliteli Özgün Hikayeler"
+                if (isLive) context.getString(R.string.folder_tag_gain_live) else if (isMovie) context.getString(R.string.folder_tag_gain_movie) else if (isSeries) context.getString(R.string.folder_tag_gain_series) else context.getString(R.string.folder_tag_gain_other)
             )
             nameLower.contains("apple") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF000000), Color(0xFF27272A))),
                 Color.White,
-                if (isLive) "Apple TV Canlı Yayınları" else if (isMovie) "Apple Orijinal Sinema Filmleri" else if (isSeries) "Apple Orijinal Dizileri" else "Ödüllü Yapımlar & Apple Orijinalleri"
+                if (isLive) context.getString(R.string.folder_tag_apple_live) else if (isMovie) context.getString(R.string.folder_tag_apple_movie) else if (isSeries) context.getString(R.string.folder_tag_apple_series) else context.getString(R.string.folder_tag_apple_other)
             )
             nameLower.contains("bein") || nameLower.contains("connect") || nameLower.contains("tod") || nameLower.contains("spor") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF1E1B4B), Color(0xFF311042))),
                 Color(0xFFD946EF),
-                if (isLive) "Canlı Maçlar & Spor Kanalları" else if (isMovie) "TOD Premium Sinema Filmleri" else if (isSeries) "TOD Popüler Dizileri" else "Premium Spor & Eğlence Platformu"
+                if (isLive) context.getString(R.string.folder_tag_sport_live) else if (isMovie) context.getString(R.string.folder_tag_sport_movie) else if (isSeries) context.getString(R.string.folder_tag_sport_series) else context.getString(R.string.folder_tag_sport_other)
             )
             nameLower.contains("belgesel") || nameLower.contains("docu") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF064E3B), Color(0xFF022C22))),
                 Color(0xFF34D399),
-                "Doğa, Bilim & Tarih Belgeselleri"
+                context.getString(R.string.folder_tag_documentary)
             )
             nameLower.contains("haber") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF450A0A), Color(0xFF1E0101))),
                 Color(0xFFEF4444),
-                "Güncel Haberler & Canlı Gelişmeler"
+                context.getString(R.string.folder_tag_news)
             )
             nameLower.contains("çocuk") || nameLower.contains("kids") || nameLower.contains("animasyon") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF1E1B4B), Color(0xFF1E3A8A))),
                 Color(0xFFF472B6),
-                "Eğlenceli Çocuk & Animasyon Kanalları"
+                context.getString(R.string.folder_tag_kids)
             )
             else -> {
                 val fallbackColor = when {
@@ -714,7 +719,7 @@ fun FolderCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "${group.items.size} ${if (isLive) "Kanal" else "Yayın"}",
+                            text = if (isLive) stringResource(R.string.folder_count_channels, group.items.size) else stringResource(R.string.folder_count_streams, group.items.size),
                             color = accentColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
@@ -1429,7 +1434,7 @@ fun FolderItemCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (item.type == "LIVE") "Canlı Yayın" else "Film",
+                    text = if (item.type == "LIVE") stringResource(R.string.folder_item_live) else stringResource(R.string.folder_item_movie),
                     color = SlateGray, // High-contrast light Slate Gray
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -1547,7 +1552,7 @@ fun TvShowFolderCard(
                             .padding(horizontal = 4.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "$epCount Bölüm",
+                            text = stringResource(R.string.folder_episode_count, epCount),
                             color = Color.White,
                             fontSize = 7.sp,
                             fontWeight = FontWeight.Bold,
@@ -1572,7 +1577,7 @@ fun TvShowFolderCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (show.seasons.isNotEmpty()) "${show.seasons.size} Sezon" else show.category.ifBlank { "Dizi" },
+                    text = if (show.seasons.isNotEmpty()) stringResource(R.string.folder_season_count, show.seasons.size) else show.category.ifBlank { stringResource(R.string.folder_series_fallback) },
                     color = SlateGray, // High-contrast light Slate Gray
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -1662,7 +1667,7 @@ fun LiveChannelCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "@$groupName • Canlı",
+                    text = stringResource(R.string.folder_channel_live_suffix, groupName),
                     color = SlateGray,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -1823,7 +1828,7 @@ fun CompactEPGSection(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Şimdi: $activeProgramTitle",
+                    text = stringResource(R.string.folder_now_playing, activeProgramTitle),
                     color = Color.White.copy(alpha = 0.65f),
                     fontSize = 11.sp,
                     maxLines = 1,
