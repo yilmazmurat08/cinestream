@@ -693,6 +693,38 @@ fun LegacyExoPlayerScreen(
     androidx.activity.compose.BackHandler(enabled = controlsVisible && !showTray && !isScreenLocked) {
         controlsVisible = false
     }
+    // Kanal/bölüm listesi açıkken Geri önce listeyi kapatır (sonraki basış kontrolleri gizler / çıkar).
+    androidx.activity.compose.BackHandler(enabled = showTray) {
+        showTray = false
+    }
+    // Kilit açma düğmesi kaybolunca kumanda tuşları yeniden oynatıcıya gelsin.
+    LaunchedEffect(showUnlockButtonBriefly) {
+        if (!showUnlockButtonBriefly && isScreenLocked) {
+            delay(150)
+            try {
+                tvKeyFocusRequester.requestFocus()
+            } catch (_: Exception) {
+            }
+        }
+    }
+    fun showUnlockHint() {
+        showUnlockButtonBriefly = true
+        scope.launch {
+            delay(3000)
+            showUnlockButtonBriefly = false
+        }
+    }
+    // CH+/CH-: oynatıcının kanal listesindeki (canlı kanallar) sonraki/önceki kanal.
+    fun switchChannel(step: Int) {
+        val channels = iptvViewModel?.liveChannels?.value?.takeIf { it.isNotEmpty() } ?: return
+        val index = channels.indexOfFirst { it.id == item.id }
+        val target = if (index == -1) {
+            channels.first()
+        } else {
+            channels[(index + step).mod(channels.size)]
+        }
+        if (target.id != item.id) onPlayItem(target)
+    }
     fun tvSeekBy(deltaMs: Long) {
         if (!player.isCurrentMediaItemSeekable) return
         val duration = player.duration
@@ -709,15 +741,24 @@ fun LegacyExoPlayerScreen(
         modifier = modifier
             .fillMaxSize()
             .background(DeepPurpleBg)
+            .then(com.example.ui.tv.tvChannelKeys(enabled = item.type == "LIVE") { step -> switchChannel(step) })
             .then(
                 com.example.ui.tv.tvPlayerKeys(
                     focusRequester = tvKeyFocusRequester,
-                    isOverlayHidden = { !controlsVisible && !isScreenLocked && !showTray },
-                    onShowControls = {
-                        controlsVisible = true
-                        resetControlsTimer()
+                    // Kilitliyken de tuşlar burada yakalanır: kilit açma düğmesi gösterilir, sarma yapılmaz.
+                    // Kilit açma düğmesi görünürken tuşlar ona gider (OK = kilidi aç).
+                    isOverlayHidden = {
+                        !showTray && if (isScreenLocked) !showUnlockButtonBriefly else !controlsVisible
                     },
-                    onSeek = { deltaMs -> tvSeekBy(deltaMs) },
+                    onShowControls = {
+                        if (isScreenLocked) {
+                            showUnlockHint()
+                        } else {
+                            controlsVisible = true
+                            resetControlsTimer()
+                        }
+                    },
+                    onSeek = { deltaMs -> if (isScreenLocked) showUnlockHint() else tvSeekBy(deltaMs) },
                     onPlayPause = {
                         if (player.isPlaying) player.pause() else player.play()
                         controlsVisible = true
@@ -1060,7 +1101,8 @@ fun LegacyExoPlayerScreen(
                     border = PaddingValues(0.dp).let {
                         androidx.compose.foundation.BorderStroke(1.dp, NeonPink)
                     },
-                    modifier = Modifier.height(48.dp)
+                    // TV: düğme görününce odak ona geçer, OK ile kilit açılır.
+                    modifier = Modifier.height(48.dp).then(com.example.ui.tv.tvInitialFocus())
                 ) {
                     Icon(
                         imageVector = Icons.Default.LockOpen,
