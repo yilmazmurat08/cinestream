@@ -75,7 +75,11 @@ android {
       isIncludeAndroidResources = true
       // Stres testleri (com.example.stress) yalnızca istenince çalışır:
       // ./gradlew testDebugUnitTest -Pstress=true --tests 'com.example.stress.*'
-      all { it.systemProperty("cinestream.stress", project.findProperty("stress")?.toString() ?: "false") }
+      all {
+        it.systemProperty("cinestream.stress", project.findProperty("stress")?.toString() ?: "false")
+        // Birden çok Android sürümünü (TV testleri) yükleyen Robolectric testleri için yeterli bellek.
+        it.maxHeapSize = "3g"
+      }
     }
   }
   // MigrationTestHelper şema JSON'larını test assets'inden okur.

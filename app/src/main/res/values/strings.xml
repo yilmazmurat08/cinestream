@@ -546,4 +546,9 @@
     <string name="player_exit_fullscreen_desc">Küçült</string>
     <string name="player_previous_channel_desc">Önceki kanal</string>
     <string name="player_next_channel_desc">Sonraki kanal</string>
+    <string name="crash_report_title">Uygulama beklenmedik şekilde kapandı</string>
+    <string name="crash_report_body">Aşağıdaki hata kaydının fotoğrafını çekip geliştiriciye gönderin; sorun bu kayıtla bulunup düzeltilebilir.</string>
+    <string name="crash_report_empty">Hata kaydı okunamadı.</string>
+    <string name="crash_report_open">Uygulamayı aç</string>
+    <string name="crash_report_close">Kapat</string>
 </resources>

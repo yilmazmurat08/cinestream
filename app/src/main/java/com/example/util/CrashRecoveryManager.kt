@@ -40,6 +40,7 @@ object CrashRecoveryManager {
     private const val KEY_LAST_CRASH_TIMESTAMP = "last_crash_timestamp"
     private const val KEY_LAST_CRASH_CATEGORY = "last_crash_category"
     private const val KEY_LAST_CRASH_MESSAGE = "last_crash_message"
+    private const val KEY_PENDING_REPORT_FILE = "pending_crash_report_file"
     private const val CRASH_WINDOW_MS = 15_000L // 15 seconds from launch is considered startup window
 
     private var appStartTimeMs: Long = 0L
@@ -160,7 +161,8 @@ object CrashRecoveryManager {
     /**
      * Records crash metadata safely without blocking or triggering destructive actions on the dying thread.
      */
-    private fun handleUncaughtException(context: Context, thread: Thread, throwable: Throwable) {
+    @androidx.annotation.VisibleForTesting
+    internal fun handleUncaughtException(context: Context, thread: Thread, throwable: Throwable) {
         val category = categorizeThrowable(throwable)
         val timeSinceStart = System.currentTimeMillis() - appStartTimeMs
         val isStartupCrash = timeSinceStart in 0..CRASH_WINDOW_MS
@@ -176,7 +178,11 @@ object CrashRecoveryManager {
                 .apply()
 
             // Write a persistent crash log snippet to disk for diagnostics
-            writeCrashLogFile(context, category, thread.name, throwable)
+            val logFile = writeCrashLogFile(context, category, thread.name, throwable)
+            // Bir sonraki açılışta hata raporu ekranı gösterilsin (commit: süreç hemen kapanacak).
+            if (logFile != null) {
+                prefs.edit().putString(KEY_PENDING_REPORT_FILE, logFile.absolutePath).commit()
+            }
         } catch (e: Throwable) {
             Log.e(TAG, "Failed to write crash telemetry", e)
         }
@@ -226,8 +232,8 @@ object CrashRecoveryManager {
         }
     }
 
-    private fun writeCrashLogFile(context: Context, category: CrashCategory, threadName: String, throwable: Throwable) {
-        try {
+    private fun writeCrashLogFile(context: Context, category: CrashCategory, threadName: String, throwable: Throwable): File? {
+        return try {
             val logDir = File(context.filesDir, "crash_logs")
             if (!logDir.exists()) logDir.mkdirs()
 
@@ -242,6 +248,22 @@ object CrashRecoveryManager {
                 appendLine(throwable.stackTraceToString())
             }
             logFile.writeText(DiagnosticLog.redact(content))
+            logFile
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    /** Henüz kullanıcıya gösterilmemiş bir çökme raporu varsa dosyasını döndürür. */
+    fun pendingCrashReport(context: Context): File? = try {
+        getPrefs(context).getString(KEY_PENDING_REPORT_FILE, null)?.let { File(it) }?.takeIf { it.exists() }
+    } catch (e: Throwable) {
+        null
+    }
+
+    fun clearPendingCrashReport(context: Context) {
+        try {
+            getPrefs(context).edit().remove(KEY_PENDING_REPORT_FILE).apply()
         } catch (e: Throwable) {
             // Ignore
         }

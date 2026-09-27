@@ -44,6 +44,11 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".CrashReportActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
+            android:theme="@style/Theme.MyApplication" />
         <service
             android:name=".player.PlaybackForegroundService"
             android:foregroundServiceType="mediaPlayback"
