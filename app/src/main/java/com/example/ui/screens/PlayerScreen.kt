@@ -287,6 +287,7 @@ fun LegacyExoPlayerScreen(
     }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var releasedOnStop by remember(player) { mutableStateOf(false) }
     DisposableEffect(lifecycleOwner, player) {
         com.example.player.PlaybackForegroundService.start(
             context,
@@ -309,9 +310,28 @@ fun LegacyExoPlayerScreen(
                     if (!inPip) {
                         try {
                             player.pause()
+                            // Ekran kapandı / uygulama arka planda: kod çözücü ve tamponları serbest bırak,
+                            // konum korunur. Geri dönüldüğünde (ON_START) yeniden hazırlanır.
+                            player.stop()
+                            releasedOnStop = true
                         } catch (e: Exception) {
                             // Ignore
                         }
+                        com.example.player.PlaybackForegroundService.stop(context)
+                    }
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_START -> {
+                    if (releasedOnStop) {
+                        releasedOnStop = false
+                        try {
+                            player.prepare()
+                        } catch (e: Exception) {
+                            // Ignore
+                        }
+                        com.example.player.PlaybackForegroundService.start(
+                            context,
+                            item.cleanedName.ifEmpty { item.name }
+                        )
                     }
                 }
                 else -> {}

@@ -43,7 +43,8 @@ class PlaybackForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val title = intent?.getStringExtra(EXTRA_TITLE)?.takeIf { it.isNotBlank() } ?: "CineStream"
         startForeground(NOTIFICATION_ID, buildNotification(title))
-        return START_STICKY
+        // Süreç öldürülürse oynatıcı olmadan yeniden başlayıp boş bir "oynatılıyor" bildirimi bırakmasın.
+        return START_NOT_STICKY
     }
 
     private fun buildNotification(title: String): Notification {
