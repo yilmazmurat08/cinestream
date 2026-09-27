@@ -68,7 +68,7 @@ fun AdaptiveSampleGridPreview() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(sampleItems.size) { index ->
+            items(sampleItems.size, key = { sampleItems[it].id }, contentType = { "media_card" }) { index ->
                 MediaCard(
                     item = sampleItems[index],
                     onClick = {},

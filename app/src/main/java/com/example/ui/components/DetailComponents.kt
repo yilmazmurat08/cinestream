@@ -413,7 +413,7 @@ fun SimilarMoviesSection(
                 contentPadding = PaddingValues(end = 16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(4) {
+                items(4, key = { "similar_skeleton_$it" }, contentType = { "skeleton" }) {
                     Box(
                         modifier = Modifier
                             .width(110.dp)
@@ -629,7 +629,7 @@ fun CastSection(
                     contentPadding = PaddingValues(end = 16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(5) {
+                    items(5, key = { "cast_skeleton_$it" }, contentType = { "skeleton" }) {
                         ShimmerCircularActorItem()
                     }
                 }

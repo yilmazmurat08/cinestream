@@ -373,7 +373,7 @@ fun VerticalEPGComponent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(timeSlots) { slot ->
+            items(timeSlots, key = { it }, contentType = { "time_slot" }) { slot ->
                 val isSelected = selectedTimeSlot == slot
                 val bgColor by animateColorAsState(if (isSelected) CineOrange else MidPurpleBg.copy(alpha = 0.5f), label = "slotBg")
                 val textColor = if (isSelected) Color.Black else Color.White

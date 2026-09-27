@@ -2005,7 +2005,7 @@ fun GlassmorphismRadioRow(
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                items(4) {
+                items(4, key = { "radio_skeleton_$it" }, contentType = { "skeleton" }) {
                     ShimmerRadioItem()
                 }
             }
