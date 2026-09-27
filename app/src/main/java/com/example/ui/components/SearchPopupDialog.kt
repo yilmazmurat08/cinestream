@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -86,7 +88,7 @@ fun SearchPopupDialog(
                         onValueChange = onQueryChange,
                         placeholder = {
                             Text(
-                                "Film, dizi, kanal veya AI ile arayın...",
+                                stringResource(R.string.search_popup_placeholder),
                                 color = Color.White.copy(alpha = 0.5f),
                                 fontSize = 13.sp
                             )
@@ -94,7 +96,7 @@ fun SearchPopupDialog(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = "Arama",
+                                contentDescription = stringResource(R.string.search_desc),
                                 tint = AccentNeonPurple,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -105,7 +107,7 @@ fun SearchPopupDialog(
                                     IconButton(onClick = { onQueryChange("") }) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = "Temizle",
+                                            contentDescription = stringResource(R.string.action_clear),
                                             tint = Color.White.copy(alpha = 0.7f),
                                             modifier = Modifier.size(18.dp)
                                         )
@@ -156,7 +158,7 @@ fun SearchPopupDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Kapat",
+                            contentDescription = stringResource(R.string.action_close),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -164,7 +166,7 @@ fun SearchPopupDialog(
                 }
 
                 Text(
-                    text = "✨ ile ruh haline/temaya göre yapay zeka araması yapabilirsin (ör. \"korkutucu\", \"hafta sonu için\")",
+                    text = stringResource(R.string.search_ai_hint),
                     color = CineOrange.copy(alpha = 0.85f),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 6.dp)
@@ -181,7 +183,7 @@ fun SearchPopupDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (searchQuery.isBlank()) "Aramak istediğiniz içeriğin adını yazın..." else "Sonuç bulunamadı",
+                            text = if (searchQuery.isBlank()) stringResource(R.string.search_type_prompt) else stringResource(R.string.search_no_results),
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 14.sp
                         )
@@ -234,7 +236,7 @@ fun SearchPopupDialog(
                                 IconButton(onClick = { onItemClick(item) }) {
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = "Oynat",
+                                        contentDescription = stringResource(R.string.action_play),
                                         tint = CineOrange,
                                         modifier = Modifier.size(24.dp)
                                     )

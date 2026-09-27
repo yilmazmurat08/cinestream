@@ -51,9 +51,9 @@ class PlaybackForegroundService : Service() {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "Oynatma", NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, com.example.util.LocaleHelper.getString(this, com.example.R.string.notif_playback_channel), NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "İçerik oynatılırken gösterilen bildirim"
+                description = com.example.util.LocaleHelper.getString(this@PlaybackForegroundService, com.example.R.string.notif_playback_channel_desc)
                 setShowBadge(false)
             }
             manager.createNotificationChannel(channel)
@@ -69,7 +69,7 @@ class PlaybackForegroundService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle("Şu an oynatılıyor")
+            .setContentTitle(com.example.util.LocaleHelper.getString(this, com.example.R.string.notif_playback_title))
             .setContentText(title)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)

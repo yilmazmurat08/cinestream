@@ -1,4 +1,6 @@
 package com.example.ui.screens
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import android.net.Uri
 import androidx.annotation.OptIn
@@ -66,7 +68,7 @@ fun MultiScreen(
 
     val multiScreenContext = LocalContext.current
     DisposableEffect(Unit) {
-        com.example.player.PlaybackForegroundService.start(multiScreenContext, "Çoklu Ekran Yayını")
+        com.example.player.PlaybackForegroundService.start(multiScreenContext, com.example.util.LocaleHelper.getString(multiScreenContext, R.string.multi_notification))
         onDispose {
             com.example.player.PlaybackForegroundService.stop(multiScreenContext)
         }
@@ -148,13 +150,13 @@ fun TemplateSelectionScreen(
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = "Çoklu Ekran İzleme",
+                    text = stringResource(R.string.multi_title),
                     color = Color.White,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Aynı anda birden fazla yayını canlı takip edin",
+                    text = stringResource(R.string.multi_subtitle),
                     color = Color(0xFF64748B),
                     fontSize = 13.sp
                 )
@@ -164,7 +166,7 @@ fun TemplateSelectionScreen(
         Spacer(modifier = Modifier.height(48.dp))
 
         Text(
-            text = "YAYIN ŞABLONU SEÇİN",
+            text = stringResource(R.string.multi_choose_layout),
             color = Color(0xFFE50914),
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
@@ -176,8 +178,8 @@ fun TemplateSelectionScreen(
 
         // Layout Option 1: Side by Side (2 columns)
         TemplateCard(
-            title = "İkili Ekran (Yan Yana)",
-            description = "Ekranı dikeyde ikiye böler, maç ve haberleri yan yana takip etmek için idealdir.",
+            title = stringResource(R.string.multi_layout_side),
+            description = stringResource(R.string.multi_layout_side_desc),
             icon = Icons.Default.VerticalSplit,
             onClick = { onSelectLayout(MultiScreenLayout.DUAL_SIDE_BY_SIDE) }
         )
@@ -186,8 +188,8 @@ fun TemplateSelectionScreen(
 
         // Layout Option 2: Top / Bottom (2 rows)
         TemplateCard(
-            title = "İkili Ekran (Alt Alta)",
-            description = "Ekranı yatayda ikiye böler. Sinema ve spor kanalları için geniş açılı izleme sunar.",
+            title = stringResource(R.string.multi_layout_stack),
+            description = stringResource(R.string.multi_layout_stack_desc),
             icon = Icons.Default.HorizontalSplit,
             onClick = { onSelectLayout(MultiScreenLayout.DUAL_TOP_BOTTOM) }
         )
@@ -196,8 +198,8 @@ fun TemplateSelectionScreen(
 
         // Layout Option 3: 4-Way Grid (Quad grid)
         TemplateCard(
-            title = "Dörtlü Ekran (Izgara)",
-            description = "Ekranı 4 eşit hücreye böler. Tüm IPTV yayın akışını tek bir yerden kontrol edin.",
+            title = stringResource(R.string.multi_layout_grid),
+            description = stringResource(R.string.multi_layout_grid_desc),
             icon = Icons.Default.GridView,
             onClick = { onSelectLayout(MultiScreenLayout.QUAD_GRID) }
         )
@@ -298,7 +300,7 @@ fun ActiveMultiViewScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Dashboard,
-                        contentDescription = "Şablon Değiştir",
+                        contentDescription = stringResource(R.string.multi_change_layout),
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
@@ -306,13 +308,13 @@ fun ActiveMultiViewScreen(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Çoklu Canlı İzleme",
+                        text = stringResource(R.string.multi_live_title),
                         color = Color.White,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Ses odaklı hücrenin ses düzeyi açıktır.",
+                        text = stringResource(R.string.multi_audio_hint),
                         color = Color(0xFF64748B),
                         fontSize = 11.sp
                     )
@@ -330,7 +332,7 @@ fun ActiveMultiViewScreen(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Sıfırla", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.multi_reset), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -359,7 +361,7 @@ fun ActiveMultiViewScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Mobil veri bağlantısı aktif. Aynı anda birden çok yayın yüksek miktarda veri tüketebilir.",
+                        text = stringResource(R.string.multi_mobile_data_warning),
                         color = Color.White,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -569,13 +571,13 @@ fun MultiScreenCell(
                     ) {
                         Icon(
                             imageVector = if (isFocused) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
-                            contentDescription = if (isFocused) "Ses Açık" else "Sessiz",
+                            contentDescription = if (isFocused) stringResource(R.string.multi_audio_on) else stringResource(R.string.multi_muted),
                             tint = Color.White,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (isFocused) "SES AKTİF" else "SESSİZ",
+                            text = if (isFocused) stringResource(R.string.multi_audio_active) else stringResource(R.string.multi_muted_badge),
                             color = Color.White,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Bold
@@ -600,7 +602,7 @@ fun MultiScreenCell(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Kanal Değiştir",
+                        contentDescription = stringResource(R.string.multi_change_channel),
                         tint = Color.White,
                         modifier = Modifier.size(14.dp)
                     )
@@ -811,7 +813,7 @@ fun ChannelSelectorDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Kanal Ekle/Değiştir",
+                        text = stringResource(R.string.multi_add_channel),
                         color = Color.White,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold
@@ -912,7 +914,7 @@ fun ChannelSelectorDialog(
                                 modifier = Modifier.padding(end = 6.dp)
                             )
                             Text(
-                                text = category,
+                                text = if (category == "Tümü") stringResource(R.string.common_all) else category,
                                 color = if (isSelected) Color.White else Color(0xFFCBD5E1),
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -932,7 +934,7 @@ fun ChannelSelectorDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Sonuç bulunamadı",
+                            text = stringResource(R.string.multi_no_results),
                             color = Color(0xFF64748B),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -993,7 +995,7 @@ fun ChannelSelectorDialog(
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
-                                        text = "SEÇ",
+                                        text = stringResource(R.string.multi_select),
                                         color = Color(0xFFE50914),
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold

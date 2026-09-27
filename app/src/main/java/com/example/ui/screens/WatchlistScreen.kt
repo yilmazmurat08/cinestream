@@ -122,7 +122,7 @@ fun WatchlistScreen(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "İzleme Listem",
+                    text = stringResource(R.string.watchlist_title),
                     color = contentColor,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -130,7 +130,7 @@ fun WatchlistScreen(
                     modifier = Modifier.testTag("watchlist_title")
                 )
                 Text(
-                    text = "${favorites.size} içerik yerel veritabanında saklanıyor",
+                    text = stringResource(R.string.watchlist_count, favorites.size),
                     color = contentColor.copy(alpha = 0.6f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
@@ -147,7 +147,7 @@ fun WatchlistScreen(
                 onValueChange = { searchQuery = it },
                 placeholder = {
                     Text(
-                        "İzleme listesinde ara...",
+                        stringResource(R.string.watchlist_search_hint),
                         color = contentColor.copy(alpha = 0.4f),
                         fontSize = 13.sp
                     )
@@ -261,7 +261,7 @@ fun WatchlistScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "İzleme Listeniz Henüz Boş",
+                        text = stringResource(R.string.watchlist_empty_title),
                         color = contentColor,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
@@ -271,7 +271,7 @@ fun WatchlistScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Beğendiğiniz film, dizi veya canlı yayınları 'İzleme Listeme Ekle' butonuna basarak kaydedebilirsiniz. İçerikleriniz Room veritabanı ile cihazınızda saklanır.",
+                        text = stringResource(R.string.watchlist_empty_body),
                         color = contentColor.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
@@ -294,7 +294,7 @@ fun WatchlistScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "İçerikleri Keşfet",
+                            text = stringResource(R.string.watchlist_discover),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -309,7 +309,7 @@ fun WatchlistScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Arama kriterlerinize uygun içerik bulunamadı.",
+                    text = stringResource(R.string.watchlist_no_match),
                     color = contentColor.copy(alpha = 0.6f),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
@@ -418,7 +418,7 @@ fun WatchlistScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
-                                        contentDescription = "Listeden Çıkar",
+                                        contentDescription = stringResource(R.string.watchlist_remove),
                                         tint = CineRed,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -436,7 +436,7 @@ fun WatchlistScreen(
                                 )
 
                                 Text(
-                                    text = if (item.type == "MOVIE") "Film" else if (item.type == "SERIES") "Dizi" else "Canlı",
+                                    text = if (item.type == "MOVIE") stringResource(R.string.watchlist_type_movie) else if (item.type == "SERIES") stringResource(R.string.watchlist_type_series) else stringResource(R.string.watchlist_type_live),
                                     color = CineOrange,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,

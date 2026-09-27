@@ -24,7 +24,7 @@ class NotificationWorker(
 
     private fun sendReminderNotification() {
         val channelId = "cinestream_reminders"
-        val channelName = "CineStream Hatırlatıcıları"
+        val channelName = com.example.util.LocaleHelper.getString(context, com.example.R.string.notif_reminder_channel)
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // Create channel for Android O and above
@@ -56,10 +56,10 @@ class NotificationWorker(
         // Notification builders
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_media_play) // Sinematik play butonu
-            .setContentTitle("🎬 CINESTREAM Işıklarını Yaktı!")
-            .setContentText("Seni özledik! Trend listesindeki en yeni filmler ve canlı yayın kanalları seni bekliyor. Bu akşam ekran başına geçmeye ne dersin? 🍿")
+            .setContentTitle(com.example.util.LocaleHelper.getString(context, com.example.R.string.notif_reminder_title))
+            .setContentText(com.example.util.LocaleHelper.getString(context, com.example.R.string.notif_reminder_text))
             .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("Seni özledik! Trend listesindeki en yeni filmler ve canlı yayın kanalları seni bekliyor. Bu akşam ekran başına geçmeye ne dersin? 🍿")
+                .bigText(com.example.util.LocaleHelper.getString(context, com.example.R.string.notif_reminder_text))
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)

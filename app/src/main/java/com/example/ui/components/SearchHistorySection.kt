@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -75,7 +77,7 @@ fun SearchHistorySection(
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = "Temizle",
+                    text = stringResource(R.string.search_history_clear),
                     color = CineOrange,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
@@ -123,7 +125,7 @@ fun SearchHistorySection(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Arama geçmişinden sil",
+                                contentDescription = stringResource(R.string.search_history_delete_desc),
                                 tint = mutedColor,
                                 modifier = Modifier.size(12.dp)
                             )

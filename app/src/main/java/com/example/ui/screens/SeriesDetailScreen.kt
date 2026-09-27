@@ -806,9 +806,9 @@ fun SeriesDetailScreen(
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
                                                 text = if (lastWatchedEpisode != null) {
-                                                    "En son izlediğiniz: Sezon ${lastWatchedEpisode.first}, Bölüm ${lastWatchedEpisode.second.episodeNumber}. Spoiler yemeden önceki bölümlerin heyecanlı bir özetini okuyun!"
+                                                    stringResource(R.string.series_recap_last_watched, lastWatchedEpisode.first, lastWatchedEpisode.second.episodeNumber)
                                                 } else {
-                                                    "Diziyi izlemeye başlamadan önce veya kaldığınız yere kadar olan bölümlerin spoiler-free özetini çıkarın."
+                                                    stringResource(R.string.series_recap_start)
                                                 },
                                                 color = if (currentTheme.isDark) Color.White.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.5f),
                                                 fontSize = 11.sp,
@@ -1086,7 +1086,7 @@ fun EpisodeRowItem(
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = "Bölüm $index",
+                        text = stringResource(R.string.series_episode_n, index),
                         color = Color.White,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
@@ -1111,7 +1111,7 @@ fun EpisodeRowItem(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
-                    text = "${episode.seasonNumber}. Sezon • ${episode.episodeNumber}. Bölüm",
+                    text = stringResource(R.string.series_season_episode, episode.seasonNumber, episode.episodeNumber),
                     color = if (currentTheme.isDark) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
@@ -1196,7 +1196,7 @@ fun AIRecapDialog(
                     )
                 }
             } catch (e: Throwable) {
-                recapText = "Önceki bölümlerin spoiler-suz özeti şu anda hazırlanamıyor."
+                recapText = context.getString(R.string.series_recap_unavailable)
             } finally {
                 isLoading = false
             }
@@ -1258,7 +1258,7 @@ fun AIRecapDialog(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (isNotWatched) showTitle else "$showTitle - S${season}E${episode} Öncesi",
+                        text = if (isNotWatched) showTitle else stringResource(R.string.series_recap_before, showTitle, season.toString(), episode.toString()),
                         color = if (currentTheme.isDark) Color.White.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.5f),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -1377,7 +1377,7 @@ fun AIRecapDialog(
                         }
                     } else {
                         Text(
-                            text = recapText ?: "Önceki bölümlerin spoiler-suz özeti şu anda hazırlanamıyor.",
+                            text = recapText ?: stringResource(R.string.series_recap_unavailable),
                             color = if (currentTheme.isDark) Color.White.copy(alpha = 0.95f) else Color.Black.copy(alpha = 0.85f),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,

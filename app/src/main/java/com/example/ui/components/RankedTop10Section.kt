@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -35,6 +37,7 @@ import com.example.ui.theme.CineOrange
 fun RankedTop10Section(
     title: String,
     items: List<IPTVItem>,
+    displayTitle: String = title,
     onItemClick: (IPTVItem) -> Unit,
     onItemLongClick: ((IPTVItem) -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -64,7 +67,7 @@ fun RankedTop10Section(
                 modifier = Modifier.padding(end = 8.dp)
             )
             Text(
-                text = title,
+                text = displayTitle,
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
@@ -210,7 +213,7 @@ fun RankedCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Oynat",
+                            contentDescription = stringResource(R.string.action_play),
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )

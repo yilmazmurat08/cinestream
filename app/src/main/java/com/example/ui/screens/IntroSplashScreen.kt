@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import androidx.compose.ui.res.stringResource
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -52,7 +53,7 @@ private data class Particle(
 @Composable
 fun IntroSplashScreen(
     appName: String = "CineStream",
-    tagline: String = "Sınırsız Eğlence, İzlemenin Daha Akıllı Hali",
+    tagline: String = stringResource(R.string.intro_tagline),
     onIntroFinished: () -> Unit
 ) {
     val purpleNeon = Color(0xFFDF55F7)
@@ -435,7 +436,7 @@ fun IntroSplashScreen(
 fun IntroSplashScreenPreview() {
     IntroSplashScreen(
         appName = "CineStream",
-        tagline = "Sınırsız Eğlence, İzlemenin Daha Akıllı Hali",
+        tagline = stringResource(R.string.intro_tagline),
         onIntroFinished = {}
     )
 }

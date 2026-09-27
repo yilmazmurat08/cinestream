@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -176,7 +178,7 @@ fun HeroBannerCard(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Refresh,
-                    contentDescription = "Farklı bir öneri getir",
+                    contentDescription = stringResource(R.string.featured_refresh_desc),
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
@@ -214,7 +216,7 @@ fun HeroBannerCard(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Öne Çıkan",
+                text = stringResource(R.string.featured_badge),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = Color.White
             )
@@ -319,7 +321,7 @@ fun HeroBannerCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Oynat",
+                        text = stringResource(R.string.action_play),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -342,7 +344,7 @@ fun HeroBannerCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Detay",
+                        text = stringResource(R.string.action_details),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }

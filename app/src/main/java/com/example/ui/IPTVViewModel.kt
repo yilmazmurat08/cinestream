@@ -1737,13 +1737,13 @@ class IPTVViewModel(
                                 pass = xtreamFromM3u.third
                             ) { progress -> _importProgress.value = progress }
                             if (count <= 0) {
-                                errors.add("Xtream hesabından içerik alınamadı. Sunucu adresi, kullanıcı adı veya şifreyi kontrol edin.")
+                                errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_xtream_empty))
                             } else {
                                 anySucceeded = true
                             }
                         } catch (e: Exception) {
                             Log.w("IPTVViewModel", "setupPlaylists Xtream(M3U) import failed: ${e.message}")
-                            errors.add("İçerik alınamadı: ${e.message ?: "bilinmeyen hata"}")
+                            errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_content, e.message ?: com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.unknown_error_word)))
                         }
                     } else {
                         try {
@@ -1751,13 +1751,13 @@ class IPTVViewModel(
                                 _importProgress.value = progress
                             }
                             if (count <= 0) {
-                                errors.add("M3U listesi indirilemedi veya boş döndü. Lütfen linki kontrol edin.")
+                                errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_m3u_empty))
                             } else {
                                 anySucceeded = true
                             }
                         } catch (e: Exception) {
                             Log.w("IPTVViewModel", "setupPlaylists M3U import failed: ${e.message}")
-                            errors.add("M3U listesi indirilemedi: ${e.message ?: "bilinmeyen hata"}")
+                            errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_m3u, e.message ?: com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.unknown_error_word)))
                         }
                     }
                 }
@@ -1772,18 +1772,18 @@ class IPTVViewModel(
                             pass = xcodePass.trim()
                         ) { progress -> _importProgress.value = progress }
                         if (count <= 0) {
-                            errors.add("Xtream hesabından içerik alınamadı. Sunucu adresi, kullanıcı adı veya şifreyi kontrol edin.")
+                            errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_xtream_empty))
                         } else {
                             anySucceeded = true
                         }
                     } catch (e: Exception) {
                         Log.w("IPTVViewModel", "setupPlaylists Xtream import failed: ${e.message}")
-                        errors.add("Xtream hesabından içerik alınamadı: ${e.message ?: "bilinmeyen hata"}")
+                        errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_xtream, e.message ?: com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.unknown_error_word)))
                     }
                 }
 
                 if (!anySucceeded && errors.isEmpty()) {
-                    errors.add("Girilen bilgilerle içerik alınamadı. Lütfen linki veya Xtream bilgilerini kontrol edip tekrar deneyin.")
+                    errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_nothing))
                 }
 
                 if (errors.isNotEmpty()) {
@@ -1795,7 +1795,7 @@ class IPTVViewModel(
                 }
             } catch (e: Exception) {
                 Log.e("IPTVViewModel", "setupPlaylists beklenmeyen hata", e)
-                _playlistSetupError.value = "Beklenmeyen bir hata oluştu: ${e.message ?: "bilinmeyen"}"
+                _playlistSetupError.value = com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_unexpected, e.message ?: com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.unknown_error_word))
             } finally {
                 _isLoading.value = false
                 onFinished()
@@ -2337,15 +2337,15 @@ class IPTVViewModel(
                         pass = xtreamFromM3u.third
                     )
                     if (count <= 0) {
-                        ErrorHandlingManager.emitThrowable(
-                            java.io.IOException("'$name' Xtream hesabından içerik alınamadı. Sunucu adresi, kullanıcı adı veya şifreyi kontrol edin.")
+                        ErrorHandlingManager.emitError(
+                            AppError.Unknown(userFriendlyMessage = com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.playlist_error_xtream_empty, name))
                         )
                     }
                 } else {
                     val count = repository.importRemotePlaylist(name, urlString)
                     if (count <= 0) {
-                        ErrorHandlingManager.emitThrowable(
-                            java.io.IOException("'$name' listesi indirilemedi veya boş döndü. Lütfen linki kontrol edin.")
+                        ErrorHandlingManager.emitError(
+                            AppError.Unknown(userFriendlyMessage = com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.playlist_error_m3u_empty, name))
                         )
                     }
                 }
@@ -2372,8 +2372,8 @@ class IPTVViewModel(
                         pass = password.trim()
                     )
                     if (count <= 0) {
-                        ErrorHandlingManager.emitThrowable(
-                            java.io.IOException("'$name' Xtream hesabından içerik alınamadı. Sunucu adresi, kullanıcı adı veya şifreyi kontrol edin.")
+                        ErrorHandlingManager.emitError(
+                            AppError.Unknown(userFriendlyMessage = com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.playlist_error_xtream_empty, name))
                         )
                     }
                 } catch (ce: CancellationException) {
