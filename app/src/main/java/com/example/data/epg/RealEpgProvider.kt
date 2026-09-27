@@ -22,7 +22,7 @@ object RealEpgProvider {
 
     suspend fun fetchProgramsFromUrl(epgUrl: String): Map<String, List<EPGProgram>> = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
-        val client = com.example.data.api.NetworkModule.unsafeIptvOkHttpClient
+        val client = com.example.data.api.NetworkModule.iptvOkHttpClient
         val request = Request.Builder().url(epgUrl).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {

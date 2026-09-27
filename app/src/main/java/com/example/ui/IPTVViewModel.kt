@@ -466,21 +466,6 @@ class IPTVViewModel(
     val manualEpgUrl: StateFlow<String> = settingsRepository.manualEpgUrlFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    // Yetişkin içerik filtresi: init bloklarındaki arka plan işleri de kullandığı için en üstte tanımlı.
-    private val adultKeywords = listOf(
-        "+18", "18+", "adult", "adults", "erotik", "erotic", "xxx", "porn", "porno",
-        "nsfw", "yetiskin", "yetişkin", "for adult", "mature", "hentai", "sex",
-        "brazzers", "playboy", "hustler", "redlight", "strip", "babes", "onlyfans",
-        "hardcore", "softcore", "sensual", "ecchi", "cams", "erotica"
-    )
-
-    private val adultPrefixRegex = Regex("""^\s*(?:\[\s*)?xx\s*[:|\]\-]""", RegexOption.IGNORE_CASE)
-
-    private val adultRegex = Regex(
-        """(?:\b|[^a-zA-Z0-9])(\+?18\+?|xxx|adults?|porn(?:o)?|erotik|erotic|nsfw|yetiskin|yetişkin|hentai|sex|brazzers)(?:\b|[^a-zA-Z0-9])""",
-        RegexOption.IGNORE_CASE
-    )
-
     init {
         // Eski sürümlerin 12 saatlik "öne çıkan film" kaydını sil (artık her girişte yeniden seçiliyor).
         com.example.data.repository.FeaturedMovieRepository.clearLegacyCache(application)
@@ -2655,18 +2640,8 @@ class IPTVViewModel(
         }
     }
 
-    fun isAdultContent(category: String, name: String = ""): Boolean {
-        val lowerCat = category.lowercase(java.util.Locale.ROOT)
-        val lowerName = name.lowercase(java.util.Locale.ROOT)
-        if (adultKeywords.any { kw -> lowerCat.contains(kw) || lowerName.contains(kw) }) {
-            return true
-        }
-        // Birçok sağlayıcı yetişkin kanalları "XX:" önekiyle işaretler (ör. "XX: Türk & Altyazılı").
-        if (adultPrefixRegex.containsMatchIn(name) || adultPrefixRegex.containsMatchIn(category)) {
-            return true
-        }
-        return adultRegex.containsMatchIn(category) || (name.isNotEmpty() && adultRegex.containsMatchIn(name))
-    }
+    fun isAdultContent(category: String, name: String = ""): Boolean =
+        com.example.util.AdultContentFilter.isAdult(category, name)
 
     fun isAdultContent(item: IPTVItem): Boolean {
         return isAdultContent(item.category, item.cleanedName.ifBlank { item.name })

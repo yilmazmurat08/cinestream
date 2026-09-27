@@ -112,7 +112,7 @@ fun CinemaPlaceholder(
 }
 
 /**
- * SafeAsyncImage relies on the application-wide Unsafe ImageLoader for loading SSL/Cleartext images
+ * SafeAsyncImage relies on the application-wide ImageLoader (standard certificate validation) for loading images
  * without handshake exceptions. Fallbacks to Shimmer on loading and CinemaPlaceholder on error.
  */
 @Composable
