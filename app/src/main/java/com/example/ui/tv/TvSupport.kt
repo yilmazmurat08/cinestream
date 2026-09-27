@@ -52,8 +52,14 @@ object TvDevice {
     @Volatile
     private var cached: Boolean? = null
 
+    /** Yalnızca testler için: Robolectric'te TV / telefon davranışını zorlar (null = gerçek tespit). */
+    @androidx.annotation.VisibleForTesting
+    @Volatile
+    var overrideForTest: Boolean? = null
+
     /** TV (Android TV / Google TV / TV kutusu) mu? Sonuç önbelleğe alınır. */
     fun isTv(context: Context): Boolean {
+        overrideForTest?.let { return it }
         cached?.let { return it }
         val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
         val result = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
