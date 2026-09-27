@@ -64,12 +64,16 @@ data class AppAdaptiveLayout(
     val dialogMaxWidth: Dp,
     val titleFontSize: TextUnit,
     val subtitleFontSize: TextUnit,
-    val bodyFontSize: TextUnit
+    val bodyFontSize: TextUnit,
+    /** Android TV / Google TV: içerik kenarlarda TV güvenli alanına (≥48dp) çekilir. */
+    val isTv: Boolean = false
 )
 
 @Composable
 fun rememberAppAdaptiveLayout(): AppAdaptiveLayout {
     val configuration = LocalConfiguration.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isTvDevice = remember { com.example.ui.tv.TvDevice.isTv(context) }
     val widthDp = configuration.screenWidthDp
     val heightDp = configuration.screenHeightDp
     val isLandscape = widthDp > heightDp
@@ -99,7 +103,7 @@ fun rememberAppAdaptiveLayout(): AppAdaptiveLayout {
         }
     }
 
-    return remember(widthSizeClass, heightSizeClass, widthDp, heightDp, isLandscape) {
+    val computed = remember(widthSizeClass, heightSizeClass, widthDp, heightDp, isLandscape) {
         val isTablet = shortestSideDp >= 600
         val isCompact = shortestSideDp < 600
 
@@ -243,5 +247,22 @@ fun rememberAppAdaptiveLayout(): AppAdaptiveLayout {
             base
         }
     }
+    return remember(computed, isTvDevice) {
+        if (isTvDevice) {
+            computed.copy(
+                isTv = true,
+                screenPadding = computed.screenPadding.coerceAtLeast(TV_SAFE_HORIZONTAL),
+                horizontalContentPadding = computed.horizontalContentPadding.coerceAtLeast(TV_SAFE_HORIZONTAL),
+                playerHorizontalPadding = computed.playerHorizontalPadding.coerceAtLeast(TV_SAFE_HORIZONTAL),
+                playerBottomPadding = computed.playerBottomPadding.coerceAtLeast(TV_SAFE_VERTICAL)
+            )
+        } else {
+            computed
+        }
+    }
 }
+
+/** Google TV tasarım yönergelerindeki güvenli alan: yatayda %5 (48dp), dikeyde %5 (27dp). */
+private val TV_SAFE_HORIZONTAL = 48.dp
+private val TV_SAFE_VERTICAL = 27.dp
 

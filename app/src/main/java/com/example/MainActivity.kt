@@ -15,6 +15,12 @@ import androidx.compose.animation.SharedTransitionLayout
 import com.example.ui.theme.LocalSharedTransitionScope
 import com.example.ui.theme.LocalAnimatedVisibilityScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -209,6 +215,12 @@ class MainActivity : ComponentActivity() {
                                         when (screen) {
                                             is ActiveScreen.Dashboard -> {
                                                 HomeScreen(
+                                                    // Yatay kullanımda yandaki gezinme çubuğu ve kamera çentiği içeriği örtmesin.
+                                                    modifier = Modifier.windowInsetsPadding(
+                                                        WindowInsets.displayCutout
+                                                            .union(WindowInsets.navigationBars)
+                                                            .only(WindowInsetsSides.Horizontal)
+                                                    ),
                                                     viewModel = viewModel,
                                                     onNavigateToChat = {
                                                         navigateTo(ActiveScreen.MovieFinderChat)

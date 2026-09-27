@@ -331,6 +331,8 @@ fun DetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
+                        // Kaydırılan içeriğin sonu gezinme çubuğunun altında kalmasın (kart arka planı yine kenara kadar uzanır).
+                        .navigationBarsPadding()
                 ) {
                     // Transparent Spacer to show Hero Cover underneath
                     Spacer(
