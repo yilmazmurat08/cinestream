@@ -101,6 +101,22 @@ class MainActivity : ComponentActivity() {
 
     private val multiScreenViewModel: MultiScreenViewModel by viewModels()
 
+    // Uygulama arka plana gidip geri geldiğinde Öne Çıkan içerikler yenilenir (ilk açılışta zaten yeni seçilir).
+    private var wentToBackground = false
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations && !isInPictureInPictureMode) wentToBackground = true
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (wentToBackground) {
+            wentToBackground = false
+            viewModel.onAppReturnedToForeground()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val lang = com.example.util.LocaleHelper.getSavedLanguage(this)
         com.example.util.LocaleHelper.updateResources(this, lang)

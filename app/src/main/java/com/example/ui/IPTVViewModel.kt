@@ -54,7 +54,6 @@ class IPTVViewModel(
     private val tmdbRepository = TMDBRepository(application, repository)
 
     // Featured Movie Repository (12 Hours Random M3U Movie)
-    private val featuredMovieRepository = com.example.data.repository.FeaturedMovieRepository(application)
 
     // Settings Repository Integration
     private val settingsRepository = com.example.data.repository.SettingsRepository(application)
@@ -481,6 +480,8 @@ class IPTVViewModel(
     )
 
     init {
+        // Eski sürümlerin 12 saatlik "öne çıkan film" kaydını sil (artık her girişte yeniden seçiliyor).
+        com.example.data.repository.FeaturedMovieRepository.clearLegacyCache(application)
         viewModelScope.launch(coroutineExceptionHandler) {
             combine(playlists, settingsRepository.manualEpgUrlFlow) { list, manualUrl ->
                 Pair(manualUrl.trim(), list.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl)
@@ -1132,21 +1133,15 @@ class IPTVViewModel(
     }
 
     /**
-     * 12 Saatte bir M3U'dan rastgele film seçen mekanizma
+     * Öne çıkan filmi seçer (uygulamaya her girişte yeni bir film; kaydedilmez).
      */
     fun loadFeaturedMovie(m3uItems: List<IPTVItem> = _allItems.value, forceUpdate: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             try {
-                // 1. Önbellekteki kayıtlı filmi kontrol et
-                val cached = featuredMovieRepository.getCachedFeaturedMovie()
-                if (cached != null && !featuredMovieRepository.shouldUpdate() && !forceUpdate) {
-                    val matchedIptv = m3uItems.firstOrNull { it.name.equals(cached.title, ignoreCase = true) }
-                    _featuredMovie.value = cached.copy(
-                        streamUrl = matchedIptv?.streamUrl ?: cached.streamUrl,
-                        iptvItem = matchedIptv
-                    )
-                    return@launch
-                }
+                // 1. Öne çıkan film telefona kaydedilmez; uygulamaya her girişte yeniden seçilir. Bu oturumda
+                // zaten seçildiyse (ör. favori ekleme gibi kütüphane güncellemelerinde) değiştirilmez.
+                val current = _featuredMovie.value
+                if (current != null && !forceUpdate) return@launch
 
                 // 2. TAMAMEN TMDB'YE BAĞLI: eskiden burada kullanıcının kendi
                 // playlist'inden RASTGELE bir film seçilip üzerine TMDB bilgisi
@@ -1210,11 +1205,8 @@ class IPTVViewModel(
                         iptvItem = selectedMovie
                     )
 
-                    // 5. Kaydet ve UI'a bas
-                    featuredMovieRepository.saveFeaturedMovie(featured)
+                    // 5. UI'a bas
                     _featuredMovie.value = featured
-                } else if (cached != null) {
-                    _featuredMovie.value = cached
                 }
             } catch (e: Exception) {
                 Log.e("IPTVViewModel", "Error loading featured movie", e)
@@ -1225,6 +1217,16 @@ class IPTVViewModel(
     fun refreshFeaturedMovie() {
         loadFeaturedMovie(movies.value, forceUpdate = true)
         loadFeaturedCarousel(movies.value)
+    }
+
+    /** Kullanıcı uygulamaya geri döndüğünde (arka plandan) Öne Çıkan içerikleri yenilenir. */
+    fun onAppReturnedToForeground() {
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            val items = repository.getItemsByTypeDirect("MOVIE")
+            if (items.isEmpty()) return@launch
+            loadFeaturedMovie(items, forceUpdate = true)
+            loadFeaturedCarousel(items)
+        }
     }
 
     private fun isAdultFeatured(movie: com.example.data.repository.FeaturedMovie): Boolean =
