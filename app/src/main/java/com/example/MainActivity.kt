@@ -60,6 +60,33 @@ sealed class ActiveScreen {
     data class Player(val item: IPTVItem) : ActiveScreen()
     object MultiScreen : ActiveScreen()
     object MovieFinderChat : ActiveScreen()
+
+    companion object {
+        /**
+         * Sistem uygulamayı arka planda kapatıp geri açtığında (süreç ölümü) kullanıcı açık olduğu
+         * ekrana döner. IPTVItem Serializable olduğu için Bundle'a doğrudan yazılabilir.
+         */
+        val Saver: androidx.compose.runtime.saveable.Saver<ActiveScreen, Any> =
+            androidx.compose.runtime.saveable.Saver(
+                save = { screen ->
+                    when (screen) {
+                        is Dashboard -> arrayListOf<java.io.Serializable>("dashboard")
+                        is Player -> arrayListOf("player", screen.item)
+                        is MultiScreen -> arrayListOf<java.io.Serializable>("multi")
+                        is MovieFinderChat -> arrayListOf<java.io.Serializable>("chat")
+                    }
+                },
+                restore = { saved ->
+                    val list = saved as? List<*>
+                    when (list?.getOrNull(0)) {
+                        "player" -> (list.getOrNull(1) as? IPTVItem)?.let { Player(it) } ?: Dashboard
+                        "multi" -> MultiScreen
+                        "chat" -> MovieFinderChat
+                        else -> Dashboard
+                    }
+                }
+            )
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -125,7 +152,7 @@ class MainActivity : ComponentActivity() {
                         val isSetupComplete by viewModel.isSetupComplete.collectAsState()
                         val seriesList by viewModel.allSeries.collectAsState()
                         var showIntroSplash by rememberSaveable { mutableStateOf(true) }
-                        var currentScreen by remember { mutableStateOf<ActiveScreen>(ActiveScreen.Dashboard) }
+                        var currentScreen by rememberSaveable(stateSaver = ActiveScreen.Saver) { mutableStateOf<ActiveScreen>(ActiveScreen.Dashboard) }
                         var lastNavigationTimeMs by remember { mutableLongStateOf(0L) }
                         var activeError by remember { mutableStateOf<AppError?>(null) }
 
