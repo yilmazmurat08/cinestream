@@ -27,6 +27,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -450,9 +451,12 @@ fun LegacyExoPlayerScreen(
         }
     }
 
+    // Yayın tüm denemelere rağmen açılamazsa hata penceresi gösterilir ("Tekrar dene" sayacı sıfırlar).
+    var streamFailed by remember(player) { mutableStateOf(false) }
+    var localRetryCount by remember(player) { mutableIntStateOf(0) }
+
     // Track state listener
     DisposableEffect(player) {
-        var localRetryCount = 0
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
@@ -501,25 +505,15 @@ fun LegacyExoPlayerScreen(
 
                 val maxRetries = if (isHttpError) 2 else 4
                 if (localRetryCount >= maxRetries) {
-                    android.util.Log.e("PlayerScreen", "Max retries ($maxRetries) reached for $rawUrl. Switching to high-reliability backup stream.")
-                    val backupUrl = if (item.type == "MOVIE" || item.type == "SERIES") {
-                        "https://vjs.zencdn.net/v/oceans.mp4"
-                    } else {
-                        "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-                    }
-                    val backupItem = ExoPlayerConfigurator.buildMediaItemForUrl(backupUrl)
+                    // Önceden burada ilgisiz bir test videosu (okyanus / test yayını) açılıyordu.
+                    // Artık oynatma durdurulur ve kullanıcıya anlaşılır bir hata penceresi gösterilir.
+                    android.util.Log.e("PlayerScreen", "Max retries ($maxRetries) reached for ${com.example.util.DiagnosticLog.redact(rawUrl)}")
                     try {
-                        player.setMediaItem(backupItem)
-                        player.prepare()
-                        player.playWhenReady = true
+                        player.stop()
                     } catch (e: Exception) {
-                        android.util.Log.e("PlayerScreen", "Error preparing backup stream", e)
+                        android.util.Log.e("PlayerScreen", "Error stopping failed stream", e)
                     }
-                    android.widget.Toast.makeText(
-                        context,
-                        context.getString(R.string.player_backup_stream_started),
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
+                    streamFailed = true
                     return
                 }
 
@@ -734,7 +728,9 @@ fun LegacyExoPlayerScreen(
                     // Kilitliyken de tuşlar burada yakalanır: kilit açma düğmesi gösterilir, sarma yapılmaz.
                     // Kilit açma düğmesi görünürken tuşlar ona gider (OK = kilidi aç).
                     isOverlayHidden = {
-                        !showTray && if (isScreenLocked) !showUnlockButtonBriefly else !controlsVisible
+                        // Hata penceresi açıkken tuşlar pencerenin düğmelerine gider.
+                        !showTray && !streamFailed &&
+                            if (isScreenLocked) !showUnlockButtonBriefly else !controlsVisible
                     },
                     onShowControls = {
                         if (isScreenLocked) {
@@ -2004,6 +2000,142 @@ fun LegacyExoPlayerScreen(
                                     color = Color.White,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 7.6. Yayın açılamadı penceresi ("Kaldığın yerden devam" penceresiyle aynı görünüm)
+        if (streamFailed) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.75f))
+                    .pointerInput(Unit) { detectTapGestures { } }
+                    .testTag("player_stream_failed"),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 420.dp)
+                        .fillMaxWidth(0.85f)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF0F082B).copy(alpha = 0.95f))
+                        .border(
+                            width = 1.dp,
+                            brush = Brush.linearGradient(listOf(NeonPink.copy(alpha = 0.5f), ElectricBlue.copy(alpha = 0.5f))),
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                        .verticalScroll(rememberScrollState())
+                        .padding(28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(CineOrange.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ErrorOutline,
+                            contentDescription = null,
+                            tint = CineOrange,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = stringResource(R.string.player_stream_failed_title),
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = stringResource(R.string.player_stream_failed_message),
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onBack,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White,
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .testTag("player_stream_failed_back")
+                        ) {
+                            Text(
+                                text = stringResource(R.string.player_back_desc),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                streamFailed = false
+                                localRetryCount = 0
+                                try {
+                                    player.setMediaItem(ExoPlayerConfigurator.buildMediaItemForUrl(item.streamUrl.trim()))
+                                    player.prepare()
+                                    player.playWhenReady = true
+                                } catch (e: Exception) {
+                                    android.util.Log.e("PlayerScreen", "Retry failed", e)
+                                    streamFailed = true
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .shadow(8.dp, shape = RoundedCornerShape(14.dp), spotColor = NeonPink)
+                                // TV: pencere açılınca odak "Tekrar dene"de olsun.
+                                .then(com.example.ui.tv.tvInitialFocus())
+                                .testTag("player_stream_failed_retry")
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(NeonPink, CineOrange)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.detail_retry),
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }

@@ -168,7 +168,8 @@
     <string name="player_off_desc">Kapatıldı</string>
     <string name="player_no_subtitle_option">Bu yayın için altyazı seçeneği bulunamadı.</string>
     <string name="player_play_desc">Oynat</string>
-    <string name="player_backup_stream_started">Yayın sunucusu yanıt vermedi. Yedek akış başlatıldı.</string>
+    <string name="player_stream_failed_title">Yayın açılamadı</string>
+    <string name="player_stream_failed_message">Yayın sunucusu yanıt vermiyor ya da bu içerik şu an kullanılamıyor. Birazdan tekrar deneyebilir ya da başka bir içerik seçebilirsiniz.</string>
     <string name="folder_safe_session_desc">Güvenli Oturum</string>
     <string name="folder_safe_session_active">Güvenli Oturum Aktif</string>
     <string name="folder_lock">Kilitle</string>

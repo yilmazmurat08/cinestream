@@ -169,7 +169,8 @@
     <string name="player_off_desc">Off</string>
     <string name="player_no_subtitle_option">No subtitle option found for this stream.</string>
     <string name="player_play_desc">Play</string>
-    <string name="player_backup_stream_started">Stream server did not respond. Backup stream started.</string>
+    <string name="player_stream_failed_title">Couldn\'t play this stream</string>
+    <string name="player_stream_failed_message">The stream server isn\'t responding or this content is unavailable right now. You can try again in a moment or pick something else.</string>
     <string name="folder_safe_session_desc">Safe Session</string>
     <string name="folder_safe_session_active">Safe Session Active</string>
     <string name="folder_lock">Lock</string>

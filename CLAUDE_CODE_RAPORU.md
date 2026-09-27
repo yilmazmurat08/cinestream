@@ -224,8 +224,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 3. **Cleartext (HTTP) trafiği açık** (`usesCleartextTraffic="true"`, `cleartextTrafficPermitted="true"`): IPTV/Xtream sunucularının çoğu ve yayın adresleri `http://` kullanır; liste adreslerini kullanıcı girdiği için alan adları önceden bilinemez, bu yüzden gerekli.
    *Öneri:* `network_security_config.xml`'e `api.themoviedb.org`, `generativelanguage.googleapis.com`, `api.revenuecat.com` için `cleartextTrafficPermitted="false"` alan adı kuralları eklenebilir.
 4. ~~**VLC oynatıcı hiç açılmıyor**~~ — **Yapıldı (onayınızla, ikinci PR):** `libvlc-all` bağımlılığı, `VideoPlayerScreen.kt`, `PlayerViewModel.kt` ve VLC ProGuard kuralları kaldırıldı; `PlayerScreen` doğrudan (zaten her zaman açılan) ExoPlayer oynatıcısını gösteriyor. Debug APK 230 → 31 MB, imzasız release APK 206 → 6,9 MB. APK'da kalan native kütüphaneler (AndroidX) 16 KB hizalı.
-5. **Yayın açılamazsa ilgisiz bir test videosu oynatılıyor:** `PlayerScreen` birkaç denemeden sonra `https://vjs.zencdn.net/v/oceans.mp4` (film/dizi) veya `https://test-streams.mux.dev/...` (canlı) açıyor. Kullanıcı kendi kanalı yerine okyanus videosu görüyor.
-   *Öneri:* Bunun yerine "Yayın açılamadı" mesajı + "Tekrar dene" düğmesi.
+5. ~~**Yayın açılamazsa ilgisiz bir test videosu oynatılıyor**~~ — **Yapıldı (onayınızla, üçüncü PR):** Tüm denemeler bitince artık okyanus/test videosu açılmıyor; oynatma durduruluyor ve "Kaldığın yerden devam" penceresiyle aynı görünümde **"Yayın açılamadı"** penceresi çıkıyor (açıklama + "Geri" / "Tekrar Deneyin"). "Tekrar Deneyin" deneme sayacını sıfırlayıp yayını baştan dener. TV'de pencere açılınca odak "Tekrar Deneyin" düğmesinde; kumanda tuşları pencereye gidiyor. Yeni metinler TR+EN eklendi, eski "Yedek akış başlatıldı" metni kaldırıldı; hata loguna yazılan adres maskeleniyor. Not: ExoPlayer'ın oynatma iş parçacığı Robolectric'te ilerlemediği için bu akış otomatik testle doğrulanamadı; elle kontrol listesine eklendi.
 6. **Firebase AI ve App Check bağımlılıkları kullanılmıyor.** Gemini, REST API ile ve anahtar adres içinde (`?key=`) gönderilerek çağrılıyor.
    *Öneri:* Kullanılmayan bağımlılıkları kaldırmak ya da anahtarı `x-goog-api-key` başlığıyla göndermek. Gemini davranışına dokunmamam istendiği için değiştirmedim.
 7. **`RECORD_AUDIO` izni ve ses tanıma `queries` tanımlı ama kodda sesli arama yok.** Play hassas izinler için gerekçe ister.
@@ -265,6 +264,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 3. Telefonun kendi Ayarlar → Ekran → Yazı boyutu seçeneğini en büyüğe alın: açılış başlığı taşmamalı; Liste ekle, Profil düzenle, PIN pencereleri kaydırılabilmeli, düğmeler görünür olmalı.
 4. Uçak modunda aşağı çekip yenileyin: önbellekte liste yoksa üstte "İnternet bağlantısı…" bandı görünmeli.
 5. Bir liste yenilenirken Wi-Fi'ı kapatın: mevcut kanallarınız silinmemeli.
+5b. Çalışmayan (kapalı) bir kanal/film açın: test videosu yerine "Yayın açılamadı" penceresi çıkmalı; "Tekrar Deneyin" ve "Geri" çalışmalı. Dili İngilizce yapınca pencere İngilizce olmalı.
 6. Bir film açın, ana ekran tuşuna basın, 1 dk sonra geri dönün: oynatıcı aynı yerde, duraklatılmış olmalı; bildirim arka plandayken kaybolmalı.
 7. Uygulamayı "son uygulamalar"dan kapatın: "Şu an oynatılıyor" bildirimi kalmamalı.
 8. Dili İngilizceye çevirin: Ayarlar'daki Tema bölümü İngilizce olmalı.
@@ -275,6 +275,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 3. Bir karta OK'ye basın → detay paneli: yön tuşlarıyla panelin dışına çıkılamamalı. Geri'ye basın: panel kapanmalı ve odak açtığınız karta dönmeli.
 4. Radyo satırında bir kartta OK'yi basılı tutun: favoriye eklenmeli; kısa basış radyoyu çalmalı.
 5. Canlı bir kanal açın: CH+ / CH- ile sonraki/önceki kanala geçmeli.
+5a. Çalışmayan bir kanal açın: birkaç saniye sonra test videosu değil, "Yayın açılamadı" penceresi çıkmalı; odak "Tekrar Deneyin"de olmalı, OK ile yeniden denenmeli, "Geri" ile oynatıcıdan çıkılmalı.
 6. Oynatıcıda kanal listesini açın, Geri'ye basın: önce liste kapanmalı; tekrar Geri → kontroller gizlenmeli; tekrar Geri → oynatıcıdan çıkılmalı.
 7. Oynatıcıda ekranı kilitleyin, sonra OK'ye basın: "Kilidi aç" düğmesi görünmeli ve odakta olmalı; OK ile kilit açılmalı.
 8. Arama / PIN / profil alanına gelip OK'ye basın: ekran klavyesi açılmalı.
