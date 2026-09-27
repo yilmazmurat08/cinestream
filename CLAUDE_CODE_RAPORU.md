@@ -204,7 +204,7 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 
 | | Başlangıç | Son |
 |---|---|---|
-| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **111 (111 geçti, 0 başarısız)** |
+| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **112 (112 geçti, 0 başarısız)** |
 | lintDebug | 26 hata / 268 uyarı | 0 hata / 159 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
 | APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
@@ -225,6 +225,7 @@ Eklenen testler:
 | `MainActivityRecreateTest` | 5 | Telefon dikey, 320 dp + 2.0 yazı boyutu, yatay→dikey, tablet, TV: `recreate()` sonrası çökme yok, splash tekrar oynamıyor |
 | `DiagnosticLogTest` | 4 | Anahtar/jeton/şifre maskeleme |
 | `DatabaseCorruptionBackupTest` | 3 | Bozuk veritabanı silinmeden yedekleniyor (elle kurtarma ve SQLite açılışı); sağlam veritabanında yedek alınmıyor |
+| `TmdbCacheTrimTest` | 1 | Oyuncu/yönetmen önbelleği 200 kayda indiriliyor |
 | `FeaturedLegacyCacheTest` | 1 | Eski öne çıkan film kaydı siliniyor |
 | `FeaturedHeroCarouselTest` | 3 | Öne Çıkan alanı 5 sn'de kendiliğinden geçiyor, sola kaydırınca sonraki film geliyor; yetişkin içerik listeye girmiyor, aynı başlık bir kez |
 | `PictureInPictureTest` | 5 | Dil ayarlı bağlamda da PiP: Android 8–11'de ana ekrana çıkınca PiP'e geçiş, duraklatılmışken geçmeme, Android 12+ otomatik geçiş hazır, TV'de kapalı; ağ ayarında `image.tmdb.org` HTTP'ye açık ve kullanıcı sertifikalarına güveniliyor |
@@ -263,7 +264,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 
 17. **RevenueCat kaldırıldı (onayınızla, sekizinci PR):** PRO ödemeleri Google Play ile kurulacağı için RevenueCat kütüphanesi, başlatma kodu, ProGuard kuralı ve ağ ayarı kaldırıldı. `SubscriptionManager` artık sadece ürün adlarını tutuyor; satın alma/geri yükleme, ödeme altyapısı kurulana kadar önceki gibi "servis kullanılabilir değil" diyor. PRO ekranının görünümü değişmedi.
 18. **Öne Çıkan alanı kaydırmalı oldu (onayınızla, dokuzuncu PR):** Ana sayfadaki Öne Çıkan kartı artık öne çıkan film + kütüphaneden rastgele seçilen 7 filmi (afişi olan, oynatılabilir) gösteriyor. 5 saniyede bir kendiliğinden ya da parmakla sola/sağa kaydırınca değişiyor, sonsuz dönüyor; kaydırınca 5 sn baştan başlıyor. Kartın görünümü ve boyutu aynı. Yetişkin içerik hem film seçiminde hem gösterilecek listede ayrıca filtreleniyor (eski öne çıkan film seçiminde bu filtre yoktu, eklendi). Kütüphane güncellendiğinde (ör. favori ekleme) kartlar karışmıyor. TV'de odak kartın içindeyken otomatik geçiş duruyor. İçerikler kendiliğinden değiştiği için eski manuel "yenile" düğmesi kaldırıldı (onuncu PR). `FeaturedHeroCarouselTest` ile test ediliyor.
-19. **Öne Çıkan içerikleri her girişte değişiyor, eski veriler temizleniyor (onayınızla, dokuzuncu PR):** Öne çıkan film artık 12 saatliğine telefona kaydedilmiyor; uygulama her açıldığında ve arka plandan her dönüşte (PiP ve ekran döndürme hariç) öne çıkan film ve kaydırmalı alandaki filmler yeniden seçiliyor. Eski sürümün kaydı (`featured_movie_prefs`) siliniyor. Ayrıca TMDB bilgi önbelleğinin 30 günü dolan kayıtları hiç silinmiyordu ve veritabanı sürekli büyüyordu; artık her açılışta süresi dolanlar siliniyor (listeler, favoriler ve izleme geçmişi etkilenmez). Afiş resimleri zaten boyut sınırlı önbellekte (cihaz belleğine göre 100–250 MB, 150 MB'ı aşınca eski dosyalar siliniyor).
+19. **Öne Çıkan içerikleri her girişte değişiyor, eski veriler temizleniyor (onayınızla, dokuzuncu PR):** Öne çıkan film artık 12 saatliğine telefona kaydedilmiyor; uygulama her açıldığında ve arka plandan her dönüşte (PiP ve ekran döndürme hariç) öne çıkan film ve kaydırmalı alandaki filmler yeniden seçiliyor. Eski sürümün kaydı (`featured_movie_prefs`) siliniyor. Ayrıca TMDB bilgi önbelleğinin 30 günü dolan kayıtları hiç silinmiyordu ve veritabanı sürekli büyüyordu; artık her açılışta süresi dolanlar siliniyor; oyuncu/yönetmen önbelleğinin 200 kayıt sınırını bazı kayıt yolları atlıyordu, o da her açılışta 200 kayda indiriliyor (listeler, favoriler ve izleme geçmişi etkilenmez). Afiş resimleri zaten boyut sınırlı önbellekte (cihaz belleğine göre 100–250 MB, 150 MB'ı aşınca eski dosyalar siliniyor).
 
 ---
 
