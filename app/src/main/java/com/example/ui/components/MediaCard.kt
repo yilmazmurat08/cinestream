@@ -78,6 +78,7 @@ fun MediaCard(
                 color = if (currentTheme.isDark) CineBorder else Color.Black.copy(alpha = 0.08f),
                 shape = RoundedCornerShape(16.dp)
             )
+            .then(com.example.ui.tv.tvRestorableFocus())
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,

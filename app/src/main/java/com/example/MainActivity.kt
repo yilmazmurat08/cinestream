@@ -144,6 +144,21 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        // TV: detay paneli kapanınca odak paneli açan karta geri dönsün.
+                        val isTvDevice = remember { com.example.ui.tv.TvDevice.isTv(this@MainActivity) }
+                        val detailOpen = selectedItem != null
+                        var focusBeforeDetail by remember { mutableStateOf<java.lang.ref.WeakReference<androidx.compose.ui.focus.FocusRequester>?>(null) }
+                        LaunchedEffect(detailOpen) {
+                            if (!isTvDevice) return@LaunchedEffect
+                            if (detailOpen) {
+                                focusBeforeDetail = com.example.ui.tv.TvFocusMemory.snapshot()
+                            } else if (focusBeforeDetail != null) {
+                                kotlinx.coroutines.delay(350) // panelin kapanma animasyonu
+                                com.example.ui.tv.TvFocusMemory.restore(focusBeforeDetail)
+                                focusBeforeDetail = null
+                            }
+                        }
+
                         // System Back Button Handling to avoid accidental exits and improve UX
                         if (selectedItem != null) {
                             androidx.activity.compose.BackHandler {

@@ -336,6 +336,7 @@ fun WatchlistScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
+                            .then(com.example.ui.tv.tvRestorableFocus())
                             .combinedClickable(
                                 onClick = { onSelectItem(item) },
                                 onLongClick = { }

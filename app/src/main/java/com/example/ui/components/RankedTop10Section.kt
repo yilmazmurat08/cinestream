@@ -111,6 +111,7 @@ fun RankedCard(
         modifier = modifier
             .width(overallWidth)
             .padding(vertical = 4.dp)
+            .then(com.example.ui.tv.tvRestorableFocus())
             .clickable { onClick() }
             .testTag("ranked_card_${index + 1}")
     ) {

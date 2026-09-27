@@ -25,6 +25,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
@@ -283,3 +284,72 @@ fun tvChannelKeys(enabled: Boolean, onChannelStep: (Int) -> Unit): Modifier =
             else -> false
         }
     }
+
+/**
+ * Compose 1.7'de combinedClickable kumandanın OK tuşunu basılı tutmayı uzun basış saymaz; bu yüzden
+ * uzun basışla yapılan işlemlere TV'de ulaşılamazdı. TV'de OK/Enter kısa basış = [onClick],
+ * basılı tutma (tuş tekrarı) = [onLongClick]. combinedClickable'dan ÖNCE eklenmelidir. Telefonda etkisizdir.
+ */
+fun tvLongPressKeys(onClick: () -> Unit, onLongClick: (() -> Unit)?): Modifier = Modifier.composed {
+    val context = LocalContext.current
+    if (onLongClick == null || !remember { TvDevice.isTv(context) }) return@composed Modifier
+    // Yeniden çizimlerde (ör. favori değişince) korunmalı: remember'lanmış tek elemanlı tutucu.
+    val longFired = remember { BooleanArray(1) }
+    Modifier.onPreviewKeyEvent { event ->
+        val isOk = event.key == Key.DirectionCenter || event.key == Key.Enter || event.key == Key.NumPadEnter
+        if (!isOk) return@onPreviewKeyEvent false
+        when (event.type) {
+            KeyEventType.KeyDown -> {
+                if (event.nativeKeyEvent.repeatCount == 0) {
+                    longFired[0] = false
+                } else if (!longFired[0]) {
+                    longFired[0] = true
+                    onLongClick()
+                }
+                true
+            }
+            KeyEventType.KeyUp -> {
+                if (!longFired[0]) onClick()
+                longFired[0] = false
+                true
+            }
+            else -> false
+        }
+    }
+}
+
+/**
+ * Detay paneli kapanınca odağın paneli açan karta dönmesi için. Kartlar TV'de odak aldıkça
+ * kendi FocusRequester'larını buraya bildirir; panel açılırken [snapshot], kapanınca [restore] çağrılır.
+ * Zayıf referans tutar; kart ekrandan kalkmışsa geri yükleme sessizce atlanır.
+ */
+object TvFocusMemory {
+    @Volatile
+    private var last: java.lang.ref.WeakReference<FocusRequester>? = null
+
+    internal fun remember(requester: FocusRequester) {
+        last = java.lang.ref.WeakReference(requester)
+    }
+
+    fun snapshot(): java.lang.ref.WeakReference<FocusRequester>? = last
+
+    fun restore(saved: java.lang.ref.WeakReference<FocusRequester>?): Boolean {
+        val requester = saved?.get() ?: return false
+        return try {
+            requester.requestFocus()
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+}
+
+/** Tıklanabilir kartın clickable/combinedClickable'ından ÖNCE eklenir. Telefonda etkisizdir. */
+fun tvRestorableFocus(): Modifier = Modifier.composed {
+    val context = LocalContext.current
+    if (!remember { TvDevice.isTv(context) }) return@composed Modifier
+    val requester = remember { FocusRequester() }
+    Modifier
+        .focusRequester(requester)
+        .onFocusChanged { if (it.isFocused) TvFocusMemory.remember(requester) }
+}

@@ -1701,6 +1701,7 @@ fun PosterBottomTextCard(
         modifier = cardModifier
             .scale(scale)
             .hoverable(interactionSource)
+            .then(com.example.ui.tv.tvRestorableFocus())
             .clickable { onClick() }
             .testTag("search_media_card_${item.id}"),
         horizontalAlignment = Alignment.Start
@@ -1763,6 +1764,7 @@ fun ContinueWatchingCard(
             .width((layout.cardWidth * 1.8f).coerceAtLeast(200.dp))
             .aspectRatio(16f / 9f)
             .border(1.dp, if (currentTheme.isDark) CineBorder else Color.Black.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+            .then(com.example.ui.tv.tvRestorableFocus())
             .clickable(onClick = onClick)
             .testTag("continue_watching_card_${cw.itemId}")
     ) {
@@ -2069,6 +2071,9 @@ fun RadioGlassCard(
         ),
         modifier = cardModifier
             .scale(scale)
+            // TV: OK'yi basılı tutmak da uzun basış (favoriye ekle) sayılır.
+            .then(com.example.ui.tv.tvLongPressKeys(onClick = onClick, onLongClick = onLongClick))
+            .then(com.example.ui.tv.tvRestorableFocus())
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -2357,6 +2362,7 @@ fun LegendCard(
     Card(
         onClick = onClick,
         modifier = Modifier
+            .then(com.example.ui.tv.tvRestorableFocus())
             .width(layout.cardWidth)
             .aspectRatio(2f / 3f),
         shape = RoundedCornerShape(18.dp),
@@ -2463,6 +2469,7 @@ fun NextEpisodeCard(
         modifier = Modifier
             .width((layout.cardWidth * 1.8f).coerceAtLeast(200.dp))
             .aspectRatio(16f / 9f)
+            .then(com.example.ui.tv.tvRestorableFocus())
             .clickable { onPlay(nextItem) }
             .testTag("next_episode_card_${nextItem.id}")
     ) {
@@ -2615,7 +2622,7 @@ fun TrailerBoxCard(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1633)),
-        modifier = Modifier.width(220.dp)
+        modifier = Modifier.width(220.dp).then(com.example.ui.tv.tvRestorableFocus())
     ) {
         Box(
             modifier = Modifier
@@ -2776,7 +2783,7 @@ fun DuelContenderCard(
         shape = RoundedCornerShape(16.dp),
         color = Color.White.copy(alpha = 0.05f),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-        modifier = modifier
+        modifier = modifier.then(com.example.ui.tv.tvRestorableFocus())
     ) {
         Column(
             modifier = Modifier

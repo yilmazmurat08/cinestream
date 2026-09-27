@@ -631,6 +631,7 @@ fun FolderCard(
                 ambientColor = accentColor
             )
             .hoverable(interactionSource)
+            .then(com.example.ui.tv.tvRestorableFocus())
             .clickable(
                 interactionSource = interactionSource,
                 // Telefonda görünüm aynı (vurgu yok); TV'de kumanda odağı görünür.
@@ -1330,6 +1331,7 @@ fun FolderItemCard(
             .scale(scale)
             .shadow(shadowElevation, RoundedCornerShape(12.dp))
             .hoverable(interactionSource)
+            .then(com.example.ui.tv.tvRestorableFocus())
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick

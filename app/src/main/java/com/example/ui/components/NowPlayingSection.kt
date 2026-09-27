@@ -99,6 +99,7 @@ fun NowPlayingSection(
                         .clip(RoundedCornerShape(50))
                         .background(Color.White.copy(alpha = 0.08f))
                         .border(1.dp, AccentNeonPurple.copy(alpha = 0.4f), RoundedCornerShape(50))
+                        .then(com.example.ui.tv.tvRestorableFocus())
                         .clickable(onClickLabel = if (english) "Change country" else "Ülkeyi değiştir") { showPicker = true }
                         .padding(start = 10.dp, end = 4.dp, top = 5.dp, bottom = 5.dp)
                         .testTag("now_playing_region_chip"),
