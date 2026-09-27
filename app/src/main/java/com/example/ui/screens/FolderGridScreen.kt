@@ -633,7 +633,8 @@ fun FolderCard(
             .hoverable(interactionSource)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                // Telefonda görünüm aynı (vurgu yok); TV'de kumanda odağı görünür.
+                indication = com.example.ui.tv.tvFocusIndicationOrNull(),
                 onClick = onClick
             )
             .border(

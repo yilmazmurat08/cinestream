@@ -235,3 +235,51 @@ fun tvPlayerKeys(
         }
     }
     .focusable()
+
+/**
+ * `indication = null` kullanan özel tıklanabilir öğeler için: TV'de TvFocusIndication (mor çerçeve),
+ * telefonda null döner; böylece telefondaki görünüm değişmez, TV'de odak görünür olur.
+ */
+@Composable
+fun tvFocusIndicationOrNull(): androidx.compose.foundation.Indication? {
+    val context = LocalContext.current
+    return if (remember { TvDevice.isTv(context) }) TvFocusIndication else null
+}
+
+/**
+ * TV'de ekran/diyalog açıldığında ilk odağın bu öğeye gelmesini sağlar. Telefonda etkisizdir
+ * (dokunmatik ekranda görünür bir odak vurgusu oluşmaz).
+ */
+fun tvInitialFocus(key: Any? = Unit): Modifier = Modifier.composed {
+    val context = LocalContext.current
+    if (!remember { TvDevice.isTv(context) }) return@composed Modifier
+    val requester = remember { FocusRequester() }
+    LaunchedEffect(key) {
+        delay(120)
+        try {
+            requester.requestFocus()
+        } catch (_: Exception) {
+        }
+    }
+    Modifier.focusRequester(requester)
+}
+
+/**
+ * Canlı yayında kumandanın CH+/CH- (Kanal yukarı/aşağı, Sayfa yukarı/aşağı) tuşları.
+ * [onChannelStep] +1 sonraki, -1 önceki kanal için çağrılır. Diğer tuşlara dokunmaz.
+ */
+fun tvChannelKeys(enabled: Boolean, onChannelStep: (Int) -> Unit): Modifier =
+    if (!enabled) Modifier else Modifier.onPreviewKeyEvent { event ->
+        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+        when (event.key) {
+            Key.ChannelUp, Key.PageUp -> {
+                onChannelStep(1)
+                true
+            }
+            Key.ChannelDown, Key.PageDown -> {
+                onChannelStep(-1)
+                true
+            }
+            else -> false
+        }
+    }

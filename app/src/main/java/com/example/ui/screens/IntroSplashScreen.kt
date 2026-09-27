@@ -225,6 +225,8 @@ fun IntroSplashScreen(
                     radius = 1200f
                 )
             )
+            // TV: kumandanın OK tuşuyla da atlanabilsin (tam ekran alan, odak çerçevesi çizilmez).
+            .then(com.example.ui.tv.tvInitialFocus())
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null

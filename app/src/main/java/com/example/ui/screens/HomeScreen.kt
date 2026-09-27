@@ -361,7 +361,8 @@ fun HomeScreen(
                                         .clip(RoundedCornerShape(16.dp))
                                         .clickable(
                                             interactionSource = remember { MutableInteractionSource() },
-                                            indication = null
+                                            // Telefonda görünüm aynı (vurgu yok); TV'de kumanda odağı görünür.
+                                            indication = com.example.ui.tv.tvFocusIndicationOrNull()
                                         ) {
                                             viewModel.setSelectedTypeFilter(navItem.filterType)
                                         }
