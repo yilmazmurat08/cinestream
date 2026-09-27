@@ -560,4 +560,17 @@
     <string name="mode_select_footer">Seçiminizi daha sonra Ayarlar\'dan değiştirebilirsiniz.</string>
     <string name="settings_view_mode">Görünüm modu</string>
     <string name="settings_view_mode_desc">Telefon arayüzü veya kumandaya uygun TV arayüzü.</string>
+    <string name="tv_live">Canlı TV</string>
+    <string name="tv_movies">Filmler</string>
+    <string name="tv_series">Diziler</string>
+    <string name="tv_saved">Kaydedilenler</string>
+    <string name="tv_profile_settings">Profil / Ayarlar</string>
+    <string name="tv_continue_watching">İzlemeye Devam Et</string>
+    <string name="tv_ask_assistant">Asistana sor</string>
+    <string name="tv_search">Ara</string>
+    <string name="tv_resume">Devam et</string>
+    <string name="tv_next_movie_tag">Sıradaki film ne olsun?</string>
+    <string name="tv_now_playing">Şimdi: %1$s</string>
+    <string name="tv_exit_hint">Çıkmak için tekrar Geri\'ye basın</string>
+    <string name="tv_season_episode">Sezon %1$d · Bölüm %2$d</string>
 </resources>

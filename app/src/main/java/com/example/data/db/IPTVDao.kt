@@ -6,6 +6,7 @@ import com.example.data.model.IPTVItem
 import com.example.data.model.Playlist
 import com.example.data.model.PersonDetailsEntity
 import com.example.data.model.SearchHistory
+import com.example.data.model.XtreamSeriesCatalogEntity
 import com.example.data.model.AiRecommendationHistory
 import com.example.data.model.tmdb.TmdbCacheEntity
 import kotlinx.coroutines.flow.Flow
@@ -71,6 +72,15 @@ interface IPTVDao {
 
     @androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun insertXtreamSeriesCatalog(items: List<com.example.data.model.XtreamSeriesCatalogEntity>)
+
+    // --- TV ana sayfası (Top Shelf) için rastgele seçim: tüm listeyi belleğe almadan, veritabanında ---
+    /** Görseli olan rastgele öğeler; özeti kayıtlı olanlar önce gelir. */
+    @Query("SELECT * FROM iptv_items WHERE type = :type AND logoUrl IS NOT NULL AND logoUrl != '' ORDER BY (summary != '') DESC, RANDOM() LIMIT :limit")
+    suspend fun randomItemsWithImage(type: String, limit: Int): List<IPTVItem>
+
+    /** Kapak görseli olan rastgele diziler (Xtream kataloğu); konusu kayıtlı olanlar önce. */
+    @Query("SELECT * FROM xtream_series_catalog WHERE coverUrl != '' ORDER BY (plot != '') DESC, RANDOM() LIMIT :limit")
+    suspend fun randomSeriesCatalog(limit: Int): List<XtreamSeriesCatalogEntity>
 
     @Query("SELECT * FROM xtream_series_catalog WHERE canonicalKey = :key LIMIT 1")
     suspend fun findXtreamSeriesByCanonicalKey(key: String): com.example.data.model.XtreamSeriesCatalogEntity?

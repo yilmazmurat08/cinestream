@@ -289,7 +289,14 @@ class MainActivity : ComponentActivity() {
                                         label = "screen_transition"
                                     ) { screen ->
                                         when (screen) {
-                                            is ActiveScreen.Dashboard -> {
+                                            is ActiveScreen.Dashboard -> if (viewMode == com.example.data.repository.ViewMode.TV) {
+                                                com.example.ui.tv.TvApp(
+                                                    viewModel = viewModel,
+                                                    onPlayItem = { item -> navigateTo(ActiveScreen.Player(item)) },
+                                                    onPlayContinue = { cw -> navigateTo(ActiveScreen.Player(continueWatchingItem(cw))) },
+                                                    onOpenAssistant = { navigateTo(ActiveScreen.MovieFinderChat) }
+                                                )
+                                            } else {
                                                 HomeScreen(
                                                     // Yatay kullanımda yandaki gezinme çubuğu ve kamera çentiği içeriği örtmesin.
                                                     modifier = Modifier.windowInsetsPadding(
@@ -305,17 +312,7 @@ class MainActivity : ComponentActivity() {
                                                         navigateTo(ActiveScreen.Player(item))
                                                     },
                                                     onPlayContinueWatching = { cw ->
-                                                        val item = IPTVItem(
-                                                            id = cw.itemId,
-                                                            playlistId = 1,
-                                                            name = cw.itemName,
-                                                            cleanedName = cw.itemName,
-                                                            logoUrl = cw.itemLogo,
-                                                            streamUrl = cw.streamUrl,
-                                                            category = cw.category,
-                                                            type = cw.itemType
-                                                        )
-                                                        navigateTo(ActiveScreen.Player(item))
+                                                        navigateTo(ActiveScreen.Player(continueWatchingItem(cw)))
                                                     },
                                                     onNavigateToMultiScreen = {
                                                         navigateTo(ActiveScreen.MultiScreen)
@@ -497,3 +494,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+/** İzlemeye Devam Et kaydından oynatıcıya verilecek öğe (telefon ve TV ana sayfası aynı şekilde kullanır). */
+internal fun continueWatchingItem(cw: com.example.data.model.ContinueWatching): IPTVItem = IPTVItem(
+    id = cw.itemId,
+    playlistId = 1,
+    name = cw.itemName,
+    cleanedName = cw.itemName,
+    logoUrl = cw.itemLogo,
+    streamUrl = cw.streamUrl,
+    category = cw.category,
+    type = cw.itemType
+)

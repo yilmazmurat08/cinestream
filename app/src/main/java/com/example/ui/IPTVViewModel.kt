@@ -141,6 +141,74 @@ class IPTVViewModel(
     val appLanguage: StateFlow<String> = settingsRepository.appLanguageFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.util.LocaleHelper.getSavedLanguage(application))
 
+    // --- TV ana sayfası (Top Shelf) ---
+    private val heroShelf by lazy {
+        com.example.data.repository.HeroShelfRepository(
+            dao = com.example.data.db.AppDatabase.getDatabase(getApplication()).iptvDao(),
+            tmdb = tmdbRepository,
+            tmdbApiKey = { tmdbApiKey.value }
+        )
+    }
+
+    /**
+     * TV ana sayfası hero içeriği. [section]: "LIVE", "MOVIE", "SERIES", "SAVED", "CONTINUE" veya varsayılan
+     * (rastgele film). Veri yoksa null döner.
+     */
+    suspend fun tvShelfContent(section: String, continueItem: ContinueWatching? = null): com.example.data.repository.ShelfContent? =
+        withContext(Dispatchers.IO) {
+            try {
+                when (section) {
+                    "LIVE" -> heroShelf.randomChannel { currentProgramTitle(it) }
+                    "MOVIE" -> heroShelf.randomMovie()
+                    "SERIES" -> heroShelf.randomSeries()
+                    "SAVED" -> repository.favoriteItemsFlow.first()
+                        .filterNot { isAdultContent(it) }
+                        .filter { !it.logoUrl.isNullOrBlank() }
+                        .randomOrNull()
+                        ?.let { shelfFor(it) }
+                    "CONTINUE" -> continueItem?.let { cw ->
+                        shelfFor(
+                            repository.getItemByIdDirect(cw.itemId) ?: IPTVItem(
+                                id = cw.itemId, playlistId = 1, name = cw.itemName, cleanedName = cw.itemName,
+                                logoUrl = cw.itemLogo, streamUrl = cw.streamUrl, category = cw.category, type = cw.itemType
+                            )
+                        )
+                    }
+                    else -> heroShelf.randomMovie()
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w("IPTVViewModel", "TV shelf content failed", e)
+                null
+            }
+        }
+
+    /** Tek bir öğenin hero içeriği: kanal logosu + EPG, dizi bölümünde dizi adı, filmde kendi bilgisi. */
+    private suspend fun shelfFor(item: IPTVItem): com.example.data.repository.ShelfContent = when (item.type) {
+        "LIVE" -> com.example.data.repository.ShelfContent(
+            key = "live-${item.id}", title = item.cleanedName.ifBlank { item.name }, rating = null,
+            year = null, genre = item.category.takeIf { it.isNotBlank() }, overview = null,
+            imageUrl = item.logoUrl, imageKind = com.example.data.repository.ShelfImageKind.LOGO,
+            nowPlaying = currentProgramTitle(item), item = item
+        )
+        "SERIES" -> {
+            val show = (com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName.ifBlank { item.name })
+                ?: com.example.data.model.SeriesParser.parseEpisodeInfo(item.name))?.showTitle?.takeIf { it.isNotBlank() }
+            heroShelf.fromItem(item, titleOverride = show, type = "SERIES")
+        }
+        else -> heroShelf.fromItem(item)
+    }
+
+    /** Kanalın EPG'deki şu anki programı (EPG yoksa null). */
+    fun currentProgramTitle(channel: IPTVItem): String? {
+        val key = channel.tvgId?.lowercase(java.util.Locale.ROOT)?.trim().orEmpty()
+        if (key.isEmpty()) return null
+        val now = System.currentTimeMillis()
+        return _realEpgPrograms.value[key]?.firstOrNull { now >= it.startEpochMillis && now < it.endEpochMillis }?.title
+            ?.takeIf { it.isNotBlank() }
+    }
+
     /** Görünüm modu (Telefon / TV); bkz. [com.example.data.repository.ViewMode]. */
     val viewMode: StateFlow<String> = settingsRepository.viewModeFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, com.example.data.repository.ViewMode.LOADING)
