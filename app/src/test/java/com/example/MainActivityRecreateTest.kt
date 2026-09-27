@@ -35,6 +35,8 @@ class MainActivityRecreateTest {
         rule.mainClock.advanceTimeBy(6_000)
         rule.waitForIdle()
         rule.onNode(hasTestTag("cinestream_intro_stage")).assertDoesNotExist()
+        rule.chooseViewModeIfAsked(clock = rule.mainClock)
+        rule.waitForIdle()
     }
 
     private fun assertLoginVisibleAfterRecreate() {

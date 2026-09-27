@@ -179,6 +179,7 @@ class MainActivity : ComponentActivity() {
                         val userEmail by viewModel.userEmail.collectAsState()
                         val selectedItem by viewModel.selectedItem.collectAsState()
                         val isSetupComplete by viewModel.isSetupComplete.collectAsState()
+                        val viewMode by viewModel.viewMode.collectAsState()
                         val seriesList by viewModel.allSeries.collectAsState()
                         var showIntroSplash by rememberSaveable { mutableStateOf(true) }
                         var currentScreen by rememberSaveable(stateSaver = ActiveScreen.Saver) { mutableStateOf<ActiveScreen>(ActiveScreen.Dashboard) }
@@ -249,7 +250,7 @@ class MainActivity : ComponentActivity() {
                                             showIntroSplash = false
                                         }
                                     )
-                                } else if (!isStateReady) {
+                                } else if (!isStateReady || viewMode == com.example.data.repository.ViewMode.LOADING) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
@@ -262,6 +263,9 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier.size(36.dp)
                                         )
                                     }
+                                } else if (viewMode == com.example.data.repository.ViewMode.UNSET) {
+                                    // İlk açılış: görünüm modu (Telefon / TV) seçimi; sonraki açılışlarda sorulmaz.
+                                    com.example.ui.tv.ModeSelectionScreen(onSelect = { mode -> viewModel.setViewMode(mode) })
                                 } else if (userEmail == null || !isSetupComplete) {
                                     val savedApiKey by viewModel.geminiApiKey.collectAsState()
                                     LoginScreen(

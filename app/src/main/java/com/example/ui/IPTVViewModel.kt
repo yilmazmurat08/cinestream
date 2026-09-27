@@ -141,6 +141,14 @@ class IPTVViewModel(
     val appLanguage: StateFlow<String> = settingsRepository.appLanguageFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.util.LocaleHelper.getSavedLanguage(application))
 
+    /** Görünüm modu (Telefon / TV); bkz. [com.example.data.repository.ViewMode]. */
+    val viewMode: StateFlow<String> = settingsRepository.viewModeFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.example.data.repository.ViewMode.LOADING)
+
+    fun setViewMode(mode: String) {
+        viewModelScope.launch(coroutineExceptionHandler) { settingsRepository.setViewMode(mode) }
+    }
+
     val screenOrientation: StateFlow<String> = settingsRepository.screenOrientationFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "AUTO")
 

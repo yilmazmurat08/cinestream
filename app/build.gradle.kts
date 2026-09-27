@@ -143,6 +143,8 @@ dependencies {
   // implementation(libs.androidx.camera.view)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
+  // Android TV arayüzü (TV modu) için Compose for TV bileşenleri.
+  implementation(libs.androidx.tv.material)
   implementation(libs.androidx.compose.material3)
   implementation("androidx.compose.material3:material3-window-size-class")
   implementation(libs.androidx.compose.ui)

@@ -552,4 +552,13 @@
     <string name="crash_report_empty">The error log could not be read.</string>
     <string name="crash_report_open">Open app</string>
     <string name="crash_report_close">Close</string>
+    <string name="mode_select_title">Choose a view mode</string>
+    <string name="mode_select_subtitle">How will you use CineStream on this device?</string>
+    <string name="mode_phone">Phone</string>
+    <string name="mode_phone_hint">For touch screens</string>
+    <string name="mode_tv">TV</string>
+    <string name="mode_tv_hint">Big screen with a remote</string>
+    <string name="mode_select_footer">You can change this later in Settings.</string>
+    <string name="settings_view_mode">View mode</string>
+    <string name="settings_view_mode_desc">Phone interface or the remote-friendly TV interface.</string>
 </resources>

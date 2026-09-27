@@ -551,4 +551,13 @@
     <string name="crash_report_empty">Hata kaydı okunamadı.</string>
     <string name="crash_report_open">Uygulamayı aç</string>
     <string name="crash_report_close">Kapat</string>
+    <string name="mode_select_title">Görünüm modunu seçin</string>
+    <string name="mode_select_subtitle">CineStream\'i bu cihazda nasıl kullanacaksınız?</string>
+    <string name="mode_phone">Telefon</string>
+    <string name="mode_phone_hint">Dokunmatik ekran için</string>
+    <string name="mode_tv">TV</string>
+    <string name="mode_tv_hint">Kumanda ile büyük ekran</string>
+    <string name="mode_select_footer">Seçiminizi daha sonra Ayarlar\'dan değiştirebilirsiniz.</string>
+    <string name="settings_view_mode">Görünüm modu</string>
+    <string name="settings_view_mode_desc">Telefon arayüzü veya kumandaya uygun TV arayüzü.</string>
 </resources>

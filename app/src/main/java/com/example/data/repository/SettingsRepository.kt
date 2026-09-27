@@ -37,6 +37,21 @@ class SettingsRepository(private val context: Context) {
         val USER_NAME = stringPreferencesKey("user_name")
         val PROFILE_AVATAR = stringPreferencesKey("profile_avatar")
         val MANUAL_EPG_URL = stringPreferencesKey("manual_epg_url")
+        val VIEW_MODE = stringPreferencesKey("view_mode")
+    }
+
+    /** Görünüm modu: [ViewMode.PHONE] / [ViewMode.TV]; hiç seçilmediyse [ViewMode.UNSET] (ilk açılışta sorulur). */
+    val viewModeFlow: Flow<String> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.map { preferences ->
+            preferences[VIEW_MODE] ?: ViewMode.UNSET
+        }
+
+    suspend fun setViewMode(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[VIEW_MODE] = mode
+        }
     }
 
     val manualEpgUrlFlow: Flow<String> = context.dataStore.data
@@ -373,4 +388,13 @@ class SettingsRepository(private val context: Context) {
             e.printStackTrace()
         }
     }
+}
+
+/** Uygulamanın arayüz modu (telefon arayüzü / TV arayüzü). */
+object ViewMode {
+    const val PHONE = "PHONE"
+    const val TV = "TV"
+    const val UNSET = "UNSET"
+    /** Ayar henüz okunmadı (açılışta seçim ekranının bir an görünmesini önler). */
+    const val LOADING = "LOADING"
 }
