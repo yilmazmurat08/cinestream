@@ -269,7 +269,6 @@
     <string name="detail_collapse">Daralt</string>
     <string name="detail_expand">Genişlet</string>
     <string name="detail_ai_recommendations">AI Önerileri</string>
-    <string name="featured_refresh_desc">Farklı bir öneri getir</string>
     <string name="featured_badge">Öne Çıkan</string>
     <string name="person_result_count">%1$d sonuç</string>
     <string name="person_status_library">Kütüphanen taranıyor…</string>
@@ -545,4 +544,6 @@
     <string name="settings_color_blue">Mavi</string>
     <string name="player_fullscreen_desc">Tam ekran</string>
     <string name="player_exit_fullscreen_desc">Küçült</string>
+    <string name="player_previous_channel_desc">Önceki kanal</string>
+    <string name="player_next_channel_desc">Sonraki kanal</string>
 </resources>

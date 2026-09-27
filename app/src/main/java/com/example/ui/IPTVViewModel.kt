@@ -474,6 +474,8 @@ class IPTVViewModel(
         "hardcore", "softcore", "sensual", "ecchi", "cams", "erotica"
     )
 
+    private val adultPrefixRegex = Regex("""^\s*(?:\[\s*)?xx\s*[:|\]\-]""", RegexOption.IGNORE_CASE)
+
     private val adultRegex = Regex(
         """(?:\b|[^a-zA-Z0-9])(\+?18\+?|xxx|adults?|porn(?:o)?|erotik|erotic|nsfw|yetiskin|yetişkin|hentai|sex|brazzers)(?:\b|[^a-zA-Z0-9])""",
         RegexOption.IGNORE_CASE
@@ -482,6 +484,14 @@ class IPTVViewModel(
     init {
         // Eski sürümlerin 12 saatlik "öne çıkan film" kaydını sil (artık her girişte yeniden seçiliyor).
         com.example.data.repository.FeaturedMovieRepository.clearLegacyCache(application)
+        // TMDB önbellekleri birikmesin: süresi (30 gün) dolan film bilgileri silinir, oyuncu/yönetmen
+        // önbelleği 200 kayıtla sınırlanır. Sadece önbellek silinir; listeler/favoriler/geçmiş etkilenmez.
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            repository.trimOversizedItemFields()
+            repository.trimTmdbCaches(
+                System.currentTimeMillis() - com.example.data.repository.TMDBRepository.CACHE_TTL_MS
+            )
+        }
         viewModelScope.launch(coroutineExceptionHandler) {
             combine(playlists, settingsRepository.manualEpgUrlFlow) { list, manualUrl ->
                 Pair(manualUrl.trim(), list.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl)
@@ -1212,11 +1222,6 @@ class IPTVViewModel(
                 Log.e("IPTVViewModel", "Error loading featured movie", e)
             }
         }
-    }
-
-    fun refreshFeaturedMovie() {
-        loadFeaturedMovie(movies.value, forceUpdate = true)
-        loadFeaturedCarousel(movies.value)
     }
 
     /** Kullanıcı uygulamaya geri döndüğünde (arka plandan) Öne Çıkan içerikleri yenilenir. */
@@ -2656,12 +2661,24 @@ class IPTVViewModel(
         if (adultKeywords.any { kw -> lowerCat.contains(kw) || lowerName.contains(kw) }) {
             return true
         }
+        // Birçok sağlayıcı yetişkin kanalları "XX:" önekiyle işaretler (ör. "XX: Türk & Altyazılı").
+        if (adultPrefixRegex.containsMatchIn(name) || adultPrefixRegex.containsMatchIn(category)) {
+            return true
+        }
         return adultRegex.containsMatchIn(category) || (name.isNotEmpty() && adultRegex.containsMatchIn(name))
     }
 
     fun isAdultContent(item: IPTVItem): Boolean {
         return isAdultContent(item.category, item.cleanedName.ifBlank { item.name })
     }
+
+    /**
+     * Oynatıcıdaki kanal listesi ve kanal ileri/geri için kanal halkası (izlenen kanal dahil, liste sırasıyla):
+     * izlenen kanalın klasöründeki (kategorisindeki) kanallar. Yetişkin olmayan bir kanal izlenirken yetişkin
+     * kanallar asla girmez. Klasörde başka kanal yoksa tüm (uygun) kanallar kullanılır.
+     */
+    fun channelRingFor(current: IPTVItem, allChannels: List<IPTVItem>): List<IPTVItem> =
+        buildChannelRing(current, allChannels) { isAdultContent(it) }
 
     fun isAdultContent(group: IPTVGroup): Boolean {
         if (isAdultContent(group.name)) return true
@@ -2690,3 +2707,20 @@ internal fun buildHeroSlides(
     (listOfNotNull(featured) + carousel)
         .filterNot(isAdult)
         .distinctBy { it.title.trim().lowercase(java.util.Locale.ROOT) }
+
+/** Bkz. [IPTVViewModel.channelRingFor]. */
+internal fun buildChannelRing(
+    current: IPTVItem,
+    allChannels: List<IPTVItem>,
+    isAdult: (IPTVItem) -> Boolean
+): List<IPTVItem> {
+    val allowAdult = isAdult(current)
+    fun allowed(c: IPTVItem) = c.id == current.id || allowAdult || !isAdult(c)
+    val sameFolder = if (current.category.isNotBlank()) {
+        allChannels.filter { it.category.equals(current.category, ignoreCase = true) && allowed(it) }
+    } else {
+        emptyList()
+    }
+    val ring = if (sameFolder.any { it.id != current.id }) sameFolder else allChannels.filter { allowed(it) }
+    return if (ring.any { it.id == current.id }) ring else listOf(current) + ring
+}

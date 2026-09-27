@@ -71,15 +71,6 @@ class IPTVApplication : Application(), ImageLoaderFactory {
         // 3. Perform proactive cache cleanup & storage maintenance on app startup
         applicationScope.launch {
             StorageOptimizer.performStartupMaintenance(this@IPTVApplication)
-            // Süresi (30 gün) dolmuş TMDB bilgi önbelleğini sil; aksi hâlde veritabanı sürekli büyür.
-            // Sadece önbellek silinir, listeler/favoriler/izleme geçmişi etkilenmez.
-            try {
-                com.example.data.db.AppDatabase.getDatabase(this@IPTVApplication).iptvDao().deleteExpiredTmdbCache(
-                    System.currentTimeMillis() - com.example.data.repository.TMDBRepository.CACHE_TTL_MS
-                )
-            } catch (e: Exception) {
-                android.util.Log.w("IPTVApplication", "Expired TMDB cache cleanup failed", e)
-            }
         }
     }
 

@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
@@ -59,7 +58,6 @@ fun FeaturedMovieCard(
     featuredMovie: FeaturedMovie?,
     onPlayClick: (IPTVItem) -> Unit,
     onInfoClick: (IPTVItem) -> Unit = {},
-    onRefreshRandom: () -> Unit = {},
     favorites: List<IPTVItem> = emptyList(),
     onToggleFavorite: (IPTVItem) -> Unit = {},
     modifier: Modifier = Modifier
@@ -93,7 +91,6 @@ fun FeaturedMovieCard(
         isFavorite = isInFavorites,
         onPlayClick = { onPlayClick(item) },
         onInfoClick = { onInfoClick(item) },
-        onRefreshClick = onRefreshRandom,
         onFavoriteClick = { onToggleFavorite(item) },
         modifier = modifier
     )
@@ -112,7 +109,6 @@ fun FeaturedHeroCarousel(
     slides: List<FeaturedMovie>,
     onPlayClick: (IPTVItem) -> Unit,
     onInfoClick: (IPTVItem) -> Unit = {},
-    onRefreshRandom: () -> Unit = {},
     favorites: List<IPTVItem> = emptyList(),
     onToggleFavorite: (IPTVItem) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -124,7 +120,6 @@ fun FeaturedHeroCarousel(
             featuredMovie = slides[0],
             onPlayClick = onPlayClick,
             onInfoClick = onInfoClick,
-            onRefreshRandom = onRefreshRandom,
             favorites = favorites,
             onToggleFavorite = onToggleFavorite,
             modifier = modifier
@@ -157,7 +152,6 @@ fun FeaturedHeroCarousel(
             featuredMovie = slides[page % slides.size],
             onPlayClick = onPlayClick,
             onInfoClick = onInfoClick,
-            onRefreshRandom = onRefreshRandom,
             favorites = favorites,
             onToggleFavorite = onToggleFavorite,
             modifier = Modifier.fillMaxWidth()
@@ -182,7 +176,6 @@ fun HeroBannerCard(
     isFavorite: Boolean,
     onPlayClick: () -> Unit,
     onInfoClick: () -> Unit,
-    onRefreshClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -231,26 +224,14 @@ fun HeroBannerCard(
                 )
         )
 
-        // --- Sağ Üst: Yenile + Favori (arka planla bütünleşik, çerçevesiz) ---
+        // --- Sağ Üst: Favori (arka planla bütünleşik, çerçevesiz). İçerikler kendiliğinden değiştiği için
+        // eski "yenile" düğmesi kaldırıldı. ---
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 16.dp, end = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            IconButton(
-                onClick = onRefreshClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.Black.copy(alpha = 0.35f), CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = stringResource(R.string.featured_refresh_desc),
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
             IconButton(
                 onClick = onFavoriteClick,
                 modifier = Modifier
