@@ -63,6 +63,16 @@ fun IntroSplashScreen(
 
     val context = LocalContext.current
     val isInspectionMode = LocalInspectionMode.current
+
+    // Ölçek: tasarım 400dp kısa kenara göre yapılmış. Küçük telefon (320dp), yatay telefon ve
+    // TV (960x540dp) için logo/çizgi boyutları orantılı küçülür/büyür; görünüm aynı kalır.
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val shortSideDp = minOf(configuration.screenWidthDp, configuration.screenHeightDp).coerceAtLeast(1)
+    val uiScale = (shortSideDp / 400f).coerceIn(0.7f, 1.35f)
+    // "CineStream" başlığı tek satırdır; dar ekranda ve büyük yazı boyutunda taşmasın.
+    val titleMaxWidthDp = (configuration.screenWidthDp - 48).coerceAtLeast(120)
+    val titleSp = minOf(32f * uiScale, titleMaxWidthDp / (appName.length.coerceAtLeast(1) * 0.72f * density.fontScale))
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
     // Audio Playback & Safe Lifecycle Management
@@ -331,12 +341,12 @@ fun IntroSplashScreen(
                 // Background Soft Neon Glow behind logo
                 Box(
                     modifier = Modifier
-                        .size(140.dp)
+                        .size(140.dp * uiScale)
                         .scale(pulseBrightness)
                         .background(
                             brush = Brush.radialGradient(
                                 colors = listOf(purpleNeon.copy(alpha = 0.35f), Color.Transparent),
-                                radius = 160f
+                                radius = 160f * uiScale
                             )
                         )
                 )
@@ -345,8 +355,8 @@ fun IntroSplashScreen(
                     painter = painterResource(id = R.drawable.img_app_logo_1782414357652),
                     contentDescription = "CineStream Logo",
                     modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(24.dp))
+                        .size(100.dp * uiScale)
+                        .clip(RoundedCornerShape(24.dp * uiScale))
                         .scale(pulseBrightness),
                     contentScale = ContentScale.Crop
                 )
@@ -380,7 +390,7 @@ fun IntroSplashScreen(
                     Text(
                         text = char.toString(),
                         color = Color.White,
-                        fontSize = 32.sp,
+                        fontSize = titleSp.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.5.sp,
                         modifier = Modifier
@@ -398,6 +408,8 @@ fun IntroSplashScreen(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Light,
                 letterSpacing = 1.2.sp,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.alpha(taglineAlpha)
             )
 
@@ -405,7 +417,7 @@ fun IntroSplashScreen(
             Spacer(modifier = Modifier.height(12.dp))
             Box(
                 modifier = Modifier
-                    .width(140.dp * underlineWidthFraction)
+                    .width(140.dp * uiScale * underlineWidthFraction)
                     .height(2.5.dp)
                     .background(
                         brush = Brush.horizontalGradient(

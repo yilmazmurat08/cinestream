@@ -977,9 +977,10 @@ class IPTVViewModel(
         // Collect & initialize user profile from persistent DataStore
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             try {
-                val savedEmail = userPreferencesRepository.userEmailFlow.firstOrNull()
-                val savedName = userPreferencesRepository.userNameFlow.firstOrNull()
-                val savedAvatar = userPreferencesRepository.profileAvatarFlow.firstOrNull() ?: "avatar_1"
+                // Disk okuması takılırsa açılıştaki yükleme göstergesi sonsuza kadar dönmesin.
+                val savedEmail = kotlinx.coroutines.withTimeoutOrNull(8_000) { userPreferencesRepository.userEmailFlow.firstOrNull() }
+                val savedName = kotlinx.coroutines.withTimeoutOrNull(2_000) { userPreferencesRepository.userNameFlow.firstOrNull() }
+                val savedAvatar = kotlinx.coroutines.withTimeoutOrNull(2_000) { userPreferencesRepository.profileAvatarFlow.firstOrNull() } ?: "avatar_1"
                 
                 if (!savedEmail.isNullOrBlank()) {
                     _userEmail.value = savedEmail
