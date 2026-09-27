@@ -270,7 +270,6 @@
     <string name="detail_collapse">Collapse</string>
     <string name="detail_expand">Expand</string>
     <string name="detail_ai_recommendations">AI Recommendations</string>
-    <string name="featured_refresh_desc">Show another pick</string>
     <string name="featured_badge">Featured</string>
     <string name="person_result_count">%1$d results</string>
     <string name="person_status_library">Searching your library…</string>

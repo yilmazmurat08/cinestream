@@ -464,9 +464,6 @@ fun HomeScreen(
                                             val targetItem = if (matched.streamUrl.isNotEmpty()) matched else item
                                             viewModel.selectItem(targetItem)
                                         },
-                                        onRefreshRandom = {
-                                            viewModel.refreshFeaturedMovie()
-                                        },
                                         favorites = favorites,
                                         onToggleFavorite = { item -> viewModel.toggleFavorite(item) },
                                         modifier = Modifier.fillMaxWidth().wrapContentHeight()

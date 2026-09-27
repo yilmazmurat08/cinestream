@@ -1214,11 +1214,6 @@ class IPTVViewModel(
         }
     }
 
-    fun refreshFeaturedMovie() {
-        loadFeaturedMovie(movies.value, forceUpdate = true)
-        loadFeaturedCarousel(movies.value)
-    }
-
     /** Kullanıcı uygulamaya geri döndüğünde (arka plandan) Öne Çıkan içerikleri yenilenir. */
     fun onAppReturnedToForeground() {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
