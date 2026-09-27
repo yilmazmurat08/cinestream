@@ -275,6 +275,11 @@ fun LegacyExoPlayerScreen(
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var releasedOnStop by remember(player) { mutableStateOf(false) }
+    // PiP durumu (aşağıda rememberPictureInPicture ile güncellenir). `activity` dil ayarlı bağlamdan
+    // bulunamadığı için PiP kontrolü Compose görünümünün bağlı olduğu gerçek Activity ile yapılır.
+    val composeView = androidx.compose.ui.platform.LocalView.current
+    val pipActivity = remember(composeView) { composeView.context.findActivity() }
+    val latestPipState = remember { mutableStateOf(com.example.player.PictureInPictureState(isInPip = false, willEnterOnLeave = false)) }
     DisposableEffect(lifecycleOwner, player) {
         com.example.player.PlaybackForegroundService.start(
             context,
@@ -283,7 +288,9 @@ fun LegacyExoPlayerScreen(
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
                 androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
-                    val inPip = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity?.isInPictureInPictureMode == true
+                    // PiP'e geçilecekse duraklatma; PiP'e geçilemezse ON_STOP'ta zaten durdurulur.
+                    val pip = latestPipState.value
+                    val inPip = pip.isInPip || pip.willEnterOnLeave || pipActivity?.isInPictureInPictureMode == true
                     if (!inPip) {
                         try {
                             player.pause()
@@ -293,7 +300,7 @@ fun LegacyExoPlayerScreen(
                     }
                 }
                 androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
-                    val inPip = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity?.isInPictureInPictureMode == true
+                    val inPip = latestPipState.value.isInPip || pipActivity?.isInPictureInPictureMode == true
                     if (!inPip) {
                         try {
                             player.pause()
@@ -456,7 +463,7 @@ fun LegacyExoPlayerScreen(
     var localRetryCount by remember(player) { mutableIntStateOf(0) }
 
     // Resim içinde resim: video oynarken ana ekran tuşuna basılınca küçük pencerede devam eder.
-    val isInPip = com.example.player.rememberPictureInPicture(
+    val pipState = com.example.player.rememberPictureInPicture(
         player = player,
         canEnter = isPlaying && !streamFailed,
         onDismissedInBackground = {
@@ -471,6 +478,8 @@ fun LegacyExoPlayerScreen(
             com.example.player.PlaybackForegroundService.stop(context)
         }
     )
+    SideEffect { latestPipState.value = pipState }
+    val isInPip = pipState.isInPip
     LaunchedEffect(isInPip) {
         if (isInPip) {
             controlsVisible = false
