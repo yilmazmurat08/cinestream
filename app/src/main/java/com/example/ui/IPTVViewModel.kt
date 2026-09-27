@@ -482,6 +482,13 @@ class IPTVViewModel(
     init {
         // Eski sürümlerin 12 saatlik "öne çıkan film" kaydını sil (artık her girişte yeniden seçiliyor).
         com.example.data.repository.FeaturedMovieRepository.clearLegacyCache(application)
+        // Süresi (30 gün) dolmuş TMDB bilgi önbelleğini sil; aksi hâlde veritabanı sürekli büyür.
+        // Sadece önbellek silinir, listeler/favoriler/izleme geçmişi etkilenmez.
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            repository.deleteExpiredTmdbCache(
+                System.currentTimeMillis() - com.example.data.repository.TMDBRepository.CACHE_TTL_MS
+            )
+        }
         viewModelScope.launch(coroutineExceptionHandler) {
             combine(playlists, settingsRepository.manualEpgUrlFlow) { list, manualUrl ->
                 Pair(manualUrl.trim(), list.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl)

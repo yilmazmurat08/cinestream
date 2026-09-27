@@ -574,6 +574,15 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
         }
     }
 
+    /** Süresi dolmuş TMDB bilgi önbelleğini siler (kullanıcı verisine dokunmaz). */
+    suspend fun deleteExpiredTmdbCache(cutoffTime: Long) {
+        try {
+            iptvDao.deleteExpiredTmdbCache(cutoffTime)
+        } catch (e: Exception) {
+            Log.w("IPTVRepository", "Expired TMDB cache cleanup failed", e)
+        }
+    }
+
     suspend fun saveTmdbCache(entity: com.example.data.model.tmdb.TmdbCacheEntity) {
         try {
             iptvDao.insertTmdbCache(entity)
