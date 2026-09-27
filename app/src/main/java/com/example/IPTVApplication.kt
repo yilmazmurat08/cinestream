@@ -24,6 +24,28 @@ class IPTVApplication : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
 
+        // Sadece debug: ana iş parçacığındaki disk/ağ işlerini ve sızıntıları Logcat'e yazar (StrictMode etiketi).
+        if (BuildConfig.DEBUG) {
+            android.os.StrictMode.setThreadPolicy(
+                android.os.StrictMode.ThreadPolicy.Builder()
+                    .detectDiskReads()
+                    .detectDiskWrites()
+                    .detectNetwork()
+                    .detectCustomSlowCalls()
+                    .penaltyLog()
+                    .build()
+            )
+            android.os.StrictMode.setVmPolicy(
+                android.os.StrictMode.VmPolicy.Builder()
+                    .detectLeakedClosableObjects()
+                    .detectLeakedSqlLiteObjects()
+                    .detectActivityLeaks()
+                    .detectLeakedRegistrationObjects()
+                    .penaltyLog()
+                    .build()
+            )
+        }
+
         // 1. Initialize crash recovery & safe crash telemetry logging first
         CrashRecoveryManager.onAppStart(this, applicationScope)
 

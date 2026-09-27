@@ -96,8 +96,9 @@ abstract class AppDatabase : RoomDatabase() {
                     })
                     .build()
 
-                // Test-open database helper to verify integrity immediately
-                try {
+                // Test-open database helper to verify integrity immediately. Ana iş parçacığında
+                // (ViewModel fabrikası) disk açılışı yapılmaz; Room ilk sorguda arka planda açar.
+                if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) try {
                     db.openHelper.readableDatabase
                 } catch (oe: Exception) {
                     if (isCorruptionException(oe)) {
