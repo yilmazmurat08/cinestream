@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+   Android 12 (API 31) ve üstü için yedekleme / cihaz aktarımı kuralları.
+   Hassas ayarlar (Gemini anahtarı, ebeveyn PIN'i vb.) DataStore dosyalarında
+   (files/datastore/) ve SharedPreferences'ta tutulur; bunlar yedeklenmez.
+   Not: "datastore" geçerli bir domain değildir; DataStore dosyaları "file" domain'indedir.
+   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="crash_logs/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="crash_logs/" />
+    </device-transfer>
+</data-extraction-rules>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+   Android 11 (API 30) ve altı için otomatik yedekleme kuralları.
+   Hassas ayarlar (Gemini anahtarı, ebeveyn PIN'i vb.) DataStore dosyalarında
+   (files/datastore/) ve SharedPreferences'ta tutulur; bunlar yedeklenmez.
+   Not: "datastore" geçerli bir domain değildir; DataStore dosyaları "file" domain'indedir.
+   See https://developer.android.com/guide/topics/data/autobackup
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="." />
+    <exclude domain="file" path="datastore/" />
+    <exclude domain="file" path="crash_logs/" />
+</full-backup-content>
