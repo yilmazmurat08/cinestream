@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +34,8 @@ fun TmdbDiscoveryInfoDialog(
         ) {
             Column(
                 modifier = Modifier
+                    // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
                     .padding(24.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally

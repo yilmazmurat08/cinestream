@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.verticalScroll
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -792,6 +793,8 @@ private fun EPGProgramDetailDialog(
         ) {
             Column(
                 modifier = Modifier
+                    // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {

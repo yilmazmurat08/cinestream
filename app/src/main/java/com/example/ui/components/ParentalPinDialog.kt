@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -79,6 +80,8 @@ fun ParentalPinDialog(
         ) {
             Column(
                 modifier = Modifier
+                    // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
                     .fillMaxWidth()
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally

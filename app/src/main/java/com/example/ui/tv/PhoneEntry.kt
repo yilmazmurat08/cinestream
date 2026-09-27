@@ -1,5 +1,6 @@
 package com.example.ui.tv
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -492,6 +493,8 @@ fun PhoneEntryDialog(
         ) {
             Column(
                 modifier = Modifier
+                    // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
                     .fillMaxWidth()
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally

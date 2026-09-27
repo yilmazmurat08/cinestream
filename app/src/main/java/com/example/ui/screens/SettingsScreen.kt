@@ -1534,7 +1534,10 @@ fun AddPlaylistDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Android TV: liste bilgilerini telefondan QR ile gönder
@@ -1771,7 +1774,10 @@ fun EditPlaylistDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(
@@ -2448,7 +2454,10 @@ fun EditProfileDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(

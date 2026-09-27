@@ -1216,6 +1216,8 @@ fun AIRecapDialog(
     ) {
         Column(
             modifier = Modifier
+                // İçerik küçük/yatay ekranda veya büyük yazı boyutunda sığmazsa kaydırılabilsin.
+                .verticalScroll(androidx.compose.foundation.rememberScrollState())
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
