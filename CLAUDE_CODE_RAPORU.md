@@ -181,6 +181,19 @@ e0a7c25 Add Robolectric Compose tests for TV remote focus and activity recreatio
 11d7d0d Show the existing error banner when pull-to-refresh fails with no cached list
 ```
 
+Sonraki PR'lar: VLC'nin kaldırılması, test videosu yerine hata penceresi, mikrofon izninin kaldırılması (bkz. Bölüm 5) ve beşinci PR:
+
+```
+3b8f18f Never delete a corrupted database: back it up first; disk I/O errors are not corruption
+b2df7db Network security: HTTPS-only and system CAs for the app's own API hosts
+d2adaac Localize error messages, notifications and common dialogs (TR + EN)
+dc03dd5 Localize home screen and folder screen texts (TR + EN)
+c9ed2aa Localize watchlist, series detail, add-playlist and login texts (TR + EN)
+7e5ff49 Localize EPG guide and multi-screen texts (TR + EN)
+0d73bfc Localize settings screen texts (TR + EN)
+0371ff4 Restore the open screen after process death
+```
+
 Her commit mesajında gerekçe ayrıntılı yazılı.
 
 ---
@@ -191,8 +204,8 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 
 | | Başlangıç | Son |
 |---|---|---|
-| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **93 (93 geçti, 0 başarısız)** |
-| lintDebug | 26 hata / 268 uyarı | 0 hata / 120 uyarı |
+| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **99 (99 geçti, 0 başarısız)** |
+| lintDebug | 26 hata / 268 uyarı | 0 hata / 159 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
 | APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
 
@@ -211,6 +224,8 @@ Eklenen testler:
 | `TvRemoteFocusTest` | 4 | Yön tuşlarıyla kartlar arası odak; panelde odak hapsi; Geri paneli kapatıyor; odak karta dönüyor; telefonda etkisiz |
 | `MainActivityRecreateTest` | 5 | Telefon dikey, 320 dp + 2.0 yazı boyutu, yatay→dikey, tablet, TV: `recreate()` sonrası çökme yok, splash tekrar oynamıyor |
 | `DiagnosticLogTest` | 4 | Anahtar/jeton/şifre maskeleme |
+| `DatabaseCorruptionBackupTest` | 3 | Bozuk veritabanı silinmeden yedekleniyor (elle kurtarma ve SQLite açılışı); sağlam veritabanında yedek alınmıyor |
+| `ActiveScreenSaverTest` | 3 | Açık ekran ve oynatıcıdaki içerik süreç ölümünden sonra geri yükleniyor; bilinmeyen değerde ana sayfaya dönülüyor |
 
 Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilerek geçti.
 
@@ -221,24 +236,24 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 1. **Tüm sertifikalara güvenen IPTV istemcisi** (`NetworkModule.provideUnsafeOkHttpClient`, her şeye güvenen `X509TrustManager` + her zaman `true` dönen `hostnameVerifier`, `configureUnsafeSslForConnection`). Google Play bunu işaretleyebilir. Ayrıca `network_security_config.xml` kullanıcı sertifikalarına da güveniyor.
    *Öneri:* Önce sistemin güven deposunu deneyen, başarısız olursa yalnızca kullanıcının o liste için onayladığı sunucunun sertifika parmak izini (ilk kullanımda sor, sonra sabitle) kabul eden bir `X509TrustManager`; `hostnameVerifier` varsayılan kalsın. Bu istemci TMDB/Gemini'de zaten kullanılmıyor.
 2. **applicationId** `com.aistudio.cinestreamiptv.gkrwpy`: Play'de ilk yayından sonra değiştirilemez. Yayından önce kalıcı bir ad seçmenizi öneririm.
-3. **Cleartext (HTTP) trafiği açık** (`usesCleartextTraffic="true"`, `cleartextTrafficPermitted="true"`): IPTV/Xtream sunucularının çoğu ve yayın adresleri `http://` kullanır; liste adreslerini kullanıcı girdiği için alan adları önceden bilinemez, bu yüzden gerekli.
+3. **Cleartext (HTTP) trafiği açık** — **Kısmen yapıldı (beşinci PR):** uygulamanın kendi servislerinde (TMDB, Gemini, Google API, RevenueCat) artık HTTP kapalı ve yalnızca sistem sertifikalarına güveniliyor; cihaza yüklenmiş bir aracı sertifikasıyla anahtar/jeton okunamaz. IPTV için genel kural değişmedi:  (`usesCleartextTraffic="true"`, `cleartextTrafficPermitted="true"`): IPTV/Xtream sunucularının çoğu ve yayın adresleri `http://` kullanır; liste adreslerini kullanıcı girdiği için alan adları önceden bilinemez, bu yüzden gerekli.
    *Öneri:* `network_security_config.xml`'e `api.themoviedb.org`, `generativelanguage.googleapis.com`, `api.revenuecat.com` için `cleartextTrafficPermitted="false"` alan adı kuralları eklenebilir.
 4. ~~**VLC oynatıcı hiç açılmıyor**~~ — **Yapıldı (onayınızla, ikinci PR):** `libvlc-all` bağımlılığı, `VideoPlayerScreen.kt`, `PlayerViewModel.kt` ve VLC ProGuard kuralları kaldırıldı; `PlayerScreen` doğrudan (zaten her zaman açılan) ExoPlayer oynatıcısını gösteriyor. Debug APK 230 → 31 MB, imzasız release APK 206 → 6,9 MB. APK'da kalan native kütüphaneler (AndroidX) 16 KB hizalı.
 5. ~~**Yayın açılamazsa ilgisiz bir test videosu oynatılıyor**~~ — **Yapıldı (onayınızla, üçüncü PR):** Tüm denemeler bitince artık okyanus/test videosu açılmıyor; oynatma durduruluyor ve "Kaldığın yerden devam" penceresiyle aynı görünümde **"Yayın açılamadı"** penceresi çıkıyor (açıklama + "Geri" / "Tekrar Deneyin"). "Tekrar Deneyin" deneme sayacını sıfırlayıp yayını baştan dener. TV'de pencere açılınca odak "Tekrar Deneyin" düğmesinde; kumanda tuşları pencereye gidiyor. Yeni metinler TR+EN eklendi, eski "Yedek akış başlatıldı" metni kaldırıldı; hata loguna yazılan adres maskeleniyor. Not: ExoPlayer'ın oynatma iş parçacığı Robolectric'te ilerlemediği için bu akış otomatik testle doğrulanamadı; elle kontrol listesine eklendi.
 6. **Firebase AI ve App Check bağımlılıkları kullanılmıyor.** Gemini, REST API ile ve anahtar adres içinde (`?key=`) gönderilerek çağrılıyor.
    *Öneri:* Kullanılmayan bağımlılıkları kaldırmak ya da anahtarı `x-goog-api-key` başlığıyla göndermek. Gemini davranışına dokunmamam istendiği için değiştirmedim.
 7. ~~**`RECORD_AUDIO` izni ve ses tanıma `queries` tanımlı ama kodda sesli arama yok**~~ — **Yapıldı (onayınızla, dördüncü PR):** `RECORD_AUDIO` izni, sadece bu izin yüzünden eklenen `android.hardware.microphone` özellik satırı ve ses tanıma `queries` bloğu manifest'ten kaldırıldı. Birleştirilmiş son manifest'te de izin yok (hiçbir kütüphane geri eklemiyor). Uygulama artık mikrofon izni istemiyor; Play'de hassas izin gerekçesi gerekmez.
-8. **`supportsPictureInPicture="true"` ama PiP kodu yok** (oynatıcı sadece PiP'te olup olmadığını kontrol ediyor). PiP eklemek yeni özellik olur; yapılmayacaksa bayrağı kaldırmanızı öneririm.
-9. **Bozuk veritabanı kurtarma veriyi siliyor:** `AppDatabase` `SQLiteDiskIOException`'ı da (ör. disk doluyken) "bozulma" sayıp veritabanını silebiliyor; `CrashRecoveryManager` üç açılış çökmesinden sonra da siliyor.
+8. **`supportsPictureInPicture="true"` ama PiP'e geçiren kod yok** (oynatıcı sadece PiP'te olup olmadığını kontrol ediyor ve PiP'teyken oynatmayı sürdürüyor). Bayrağı kaldırmak mevcut bir davranışı, PiP düğmesi eklemek ise yeni özellik eklemek olur; ikisi de kural dışı olduğu için dokunulmadı. Öneri: "Ana ekran tuşuna basınca küçük pencerede oynatmaya devam et" isteniyorsa `setAutoEnterEnabled` ile eklenebilir.
+9. ~~**Bozuk veritabanı kurtarma veriyi siliyor**~~ — **Yapıldı (beşinci PR):** Disk G/Ç hataları (ör. disk dolu) artık bozulma sayılmıyor. Gerçek bozulmada veritabanı silinmek yerine `cinestream_database.corrupt-<tarih>` adıyla (yan dosyalarıyla) yedekleniyor; SQLite'ın kendi "bozuk dosyayı sil" adımından önce de kopya alınıyor. Eski durum: `AppDatabase` `SQLiteDiskIOException`'ı da (ör. disk doluyken) "bozulma" sayıp veritabanını silebiliyor; `CrashRecoveryManager` üç açılış çökmesinden sonra da siliyor.
    *Öneri:* Silmek yerine dosyayı `.corrupt-<tarih>` diye yedeğe almak ve yalnızca gerçek `SQLiteDatabaseCorruptException`'da yapmak.
 10. **Depo herkese açık (public) ve gömülü TMDB kimlik bilgileri:** `TmdbAuth.kt` ve `TMDBRepository.kt` içinde XOR+Base64 ile gizlenmiş TMDB okuma jetonu ve v3 anahtarı var (kolayca çözülebilir; rapordaki düz metin anahtarla aynı). Bu mantığa dokunmamam istendi.
     *Öneri:* Push'tan önce depoyu private yapmak ya da anahtarı TMDB'de yenilemek.
-11. **Kodda sabit Türkçe metinler:** hata bandı mesajları (`ErrorHandlingManager`), "listenizde bulunamadı" uyarısı, VLC ekranındaki "Tekrar Deneyin / Yedek Oynatıcı / CANLI YAYIN", splash sloganı vb. İngilizce kullanıcıya Türkçe görünüyor.
+11. ~~**Kodda sabit Türkçe metinler**~~ — **Yapıldı (beşinci PR):** Hata bandı, bildirimler, ana sayfa, klasörler, izleme listesi, dizi detayı, EPG rehberi, çoklu ekran, liste ekleme, giriş, ayarlar, oynatıcı ve ortak pencerelerdeki ~330 metin TR+EN kaynaklara taşındı. Mantığın bağlı olduğu Türkçe anahtarlar ("Tümü", EPG saat dilimleri, tampon/altyazı rengi değerleri, tür adları, "Yönetmen") değiştirilmedi; ekranda sadece seçili dildeki karşılığı gösteriliyor. PRO/abonelik ekranı kural gereği çevrilmedi. Eski durum: hata bandı mesajları (`ErrorHandlingManager`), "listenizde bulunamadı" uyarısı, VLC ekranındaki "Tekrar Deneyin / Yedek Oynatıcı / CANLI YAYIN", splash sloganı vb. İngilizce kullanıcıya Türkçe görünüyor.
     *Öneri:* `strings.xml`'e TR+EN olarak taşımak (metin değişikliği olduğu için onayınız gerekiyor).
 12. **Room veritabanı buluta yedekleniyor:** listeler (Xtream adreslerinde kullanıcı adı/şifre) yedeğe giriyor. Hariç tutulursa kullanıcı yeni cihazda listelerini kaybeder.
 13. **`rememberAppAdaptiveLayout()` her yerde kullanılmıyor** (örn. `HomeScreen` satırlarında sabit 24 dp, yön için `LocalConfiguration`). Tamamını dönüştürmek geniş kapsamlı ve riskli; adım adım yapılmasını öneririm.
 14. **Compose BOM 2024.09.00 (Compose 1.7)**: 1.8+ sürümü OK tuşuyla uzun basışı ve odak geri yüklemeyi yerleşik destekliyor. İleride güncelleme önerilir (TvSupport'taki geçici çözümler sadeleşir).
-15. **Süreç ölümünde açık ekran kaybolur:** `MainActivity.currentScreen` `remember` ile tutuluyor; sistem uygulamayı öldürüp geri getirince ana sayfaya dönülür (çökme yok). Oynatıcı durumunu saklamak için `IPTVItem` kaydedilebilir yapılabilir.
+15. ~~**Süreç ölümünde açık ekran kaybolur**~~ — **Yapıldı (beşinci PR):** açık ekran (oynatıcıdaki içerik dahil) `rememberSaveable` ile saklanıyor; Android uygulamayı arka planda kapatıp geri açtığında kullanıcı kaldığı ekrana dönüyor. Eski durum: `MainActivity.currentScreen` `remember` ile tutuluyor; sistem uygulamayı öldürüp geri getirince ana sayfaya dönülür (çökme yok). Oynatıcı durumunu saklamak için `IPTVItem` kaydedilebilir yapılabilir.
 
 ---
 
@@ -266,7 +281,8 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 5b. Çalışmayan (kapalı) bir kanal/film açın: test videosu yerine "Yayın açılamadı" penceresi çıkmalı; "Tekrar Deneyin" ve "Geri" çalışmalı. Dili İngilizce yapınca pencere İngilizce olmalı.
 6. Bir film açın, ana ekran tuşuna basın, 1 dk sonra geri dönün: oynatıcı aynı yerde, duraklatılmış olmalı; bildirim arka plandayken kaybolmalı.
 7. Uygulamayı "son uygulamalar"dan kapatın: "Şu an oynatılıyor" bildirimi kalmamalı.
-8. Dili İngilizceye çevirin: Ayarlar'daki Tema bölümü İngilizce olmalı.
+8. Dili İngilizceye çevirin: Ayarlar, ana sayfa bölüm başlıkları, klasör kartları, EPG rehberi, çoklu ekran ve hata bandı İngilizce olmalı; EPG'de "Morning (06-12)" gibi filtreler yine doğru kanalları süzmeli.
+9. Bir film açıkken telefonun Geliştirici seçenekleri → "Etkinlikleri tutma" açıkken ana ekrana çıkıp geri dönün: oynatıcı ekranı (aynı içerik) açık olmalı.
 
 ### Android TV / Google TV (kumanda)
 1. Açılışta OK'ye basın: açılış atlanmalı.
