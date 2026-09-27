@@ -70,7 +70,14 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+      // Stres testleri (com.example.stress) yalnızca istenince çalışır:
+      // ./gradlew testDebugUnitTest -Pstress=true --tests 'com.example.stress.*'
+      all { it.systemProperty("cinestream.stress", project.findProperty("stress")?.toString() ?: "false") }
+    }
+  }
   // MigrationTestHelper şema JSON'larını test assets'inden okur.
   sourceSets {
     // Robolectric unit testleri uygulamanın (debug) assets'ini okur; release APK etkilenmez.
