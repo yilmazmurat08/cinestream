@@ -205,7 +205,7 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 | | Başlangıç | Son |
 |---|---|---|
 | Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **111 (111 geçti, 0 başarısız)** |
-| lintDebug | 26 hata / 268 uyarı | 0 hata / 157 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
+| lintDebug | 26 hata / 268 uyarı | 0 hata / 159 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
 | APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
 
