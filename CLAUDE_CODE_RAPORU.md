@@ -236,7 +236,9 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 
 1. **Tüm sertifikalara güvenen IPTV istemcisi** (`NetworkModule.provideUnsafeOkHttpClient`, her şeye güvenen `X509TrustManager` + her zaman `true` dönen `hostnameVerifier`, `configureUnsafeSslForConnection`). Google Play bunu işaretleyebilir. Ayrıca `network_security_config.xml` kullanıcı sertifikalarına da güveniyor.
    *Öneri:* Önce sistemin güven deposunu deneyen, başarısız olursa yalnızca kullanıcının o liste için onayladığı sunucunun sertifika parmak izini (ilk kullanımda sor, sonra sabitle) kabul eden bir `X509TrustManager`; `hostnameVerifier` varsayılan kalsın. Bu istemci TMDB/Gemini'de zaten kullanılmıyor.
-2. **applicationId** `com.aistudio.cinestreamiptv.gkrwpy`: Play'de ilk yayından sonra değiştirilemez. Yayından önce kalıcı bir ad seçmenizi öneririm.
+2. ~~**applicationId** `com.aistudio.cinestreamiptv.gkrwpy`~~ — **Yapıldı (onayınızla, yedinci PR):** paket adı `com.cinestream.iptv` oldu (Play'de ilk yayından sonra değiştirilemez). Kod paketi (`com.example`) değişmedi. Not: eski paket adıyla kurulmuş test uygulaması ayrı bir uygulama sayılır; yeni sürüm yanına kurulur ve eski listeler ona taşınmaz.
+
+   **Test sürümünde 60 dakika sınırı kaldırıldı (onayınızla, yedinci PR):** `FREE_WATCH_LIMIT` ayarı debug ve yeni `qa` (test) sürümünde kapalı, mağaza (release) sürümünde açık; PRO/ödeme ekranı değişmedi. Test APK'sı: `./gradlew assembleQa` → `app/build/outputs/apk/qa/app-qa.apk` (release gibi küçültülmüş, debug anahtarıyla imzalı).
 3. **Cleartext (HTTP) trafiği açık** — **Kısmen yapıldı (beşinci PR):** uygulamanın kendi servislerinde (TMDB, Gemini, Google API, RevenueCat) artık HTTP kapalı ve yalnızca sistem sertifikalarına güveniliyor; cihaza yüklenmiş bir aracı sertifikasıyla anahtar/jeton okunamaz. IPTV için genel kural değişmedi:  (`usesCleartextTraffic="true"`, `cleartextTrafficPermitted="true"`): IPTV/Xtream sunucularının çoğu ve yayın adresleri `http://` kullanır; liste adreslerini kullanıcı girdiği için alan adları önceden bilinemez, bu yüzden gerekli.
    *Öneri:* `network_security_config.xml`'e `api.themoviedb.org`, `generativelanguage.googleapis.com`, `api.revenuecat.com` için `cleartextTrafficPermitted="false"` alan adı kuralları eklenebilir.
 4. ~~**VLC oynatıcı hiç açılmıyor**~~ — **Yapıldı (onayınızla, ikinci PR):** `libvlc-all` bağımlılığı, `VideoPlayerScreen.kt`, `PlayerViewModel.kt` ve VLC ProGuard kuralları kaldırıldı; `PlayerScreen` doğrudan (zaten her zaman açılan) ExoPlayer oynatıcısını gösteriyor. Debug APK 230 → 31 MB, imzasız release APK 206 → 6,9 MB. APK'da kalan native kütüphaneler (AndroidX) 16 KB hizalı.
@@ -266,7 +268,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 - Kendi bilgisayarınızda şunları çalıştırabilirsiniz:
   ```
   ./gradlew connectedDebugAndroidTest
-  adb shell monkey -p com.aistudio.cinestreamiptv.gkrwpy --throttle 100 -v 20000
+  adb shell monkey -p com.cinestream.iptv --throttle 100 -v 20000
   ```
 
 ---

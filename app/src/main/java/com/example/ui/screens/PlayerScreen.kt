@@ -232,7 +232,7 @@ fun LegacyExoPlayerScreen(
 
     // Check watch limit effect
     LaunchedEffect(totalWatchSeconds, isProUser) {
-        if (!isProUser && totalWatchSeconds >= 3600L) {
+        if (com.example.BuildConfig.FREE_WATCH_LIMIT && !isProUser && totalWatchSeconds >= 3600L) {
             player.stop()
             iptvViewModel?.openPaywall("60 Dakikalık Ücretsiz İzleme Süreniz Doldu")
         }

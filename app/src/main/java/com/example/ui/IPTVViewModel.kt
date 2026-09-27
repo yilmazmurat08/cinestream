@@ -176,6 +176,7 @@ class IPTVViewModel(
             lastRecordedWatchSeconds = updated
 
             if (
+                com.example.BuildConfig.FREE_WATCH_LIMIT &&
                 updated >= 3600L &&
                 !_showPaywallDialog.value &&
                 !isProUser.value

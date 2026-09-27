@@ -14,13 +14,16 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.cinestreamiptv.gkrwpy"
+    applicationId = "com.cinestream.iptv"
     minSdk = 26
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // 60 dakikalık ücretsiz izleme sınırı: mağaza (release) sürümünde açık, test sürümlerinde kapalı.
+    buildConfigField("boolean", "FREE_WATCH_LIMIT", "true")
   }
 
   signingConfigs {
@@ -48,6 +51,15 @@ android {
     }
     debug {
       // Uses default Android SDK debug keystore automatically
+      buildConfigField("boolean", "FREE_WATCH_LIMIT", "false")
+    }
+    // Test sürümü: release ile aynı (küçültülmüş, hızlı) ama debug anahtarıyla imzalı ve izleme sınırı yok.
+    // Derleme: ./gradlew assembleQa  → app/build/outputs/apk/qa/app-qa.apk
+    create("qa") {
+      initWith(getByName("release"))
+      signingConfig = signingConfigs.getByName("debug")
+      matchingFallbacks += listOf("release")
+      buildConfigField("boolean", "FREE_WATCH_LIMIT", "false")
     }
   }
   compileOptions {
