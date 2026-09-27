@@ -18,7 +18,11 @@ import kotlinx.coroutines.launch
 class IPTVApplication : Application(), ImageLoaderFactory {
 
     companion object {
-        val applicationScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+        // Arka plan işlerindeki beklenmeyen bir hata uygulamayı çökertmesin; kaydedilip yutulur.
+        private val applicationExceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+            android.util.Log.e("IPTVApplication", "Unhandled error in applicationScope", throwable)
+        }
+        val applicationScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob() + applicationExceptionHandler)
     }
 
     override fun onCreate() {

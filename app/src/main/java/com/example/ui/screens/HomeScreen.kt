@@ -2597,7 +2597,7 @@ fun TrailerBoxSection(
                     TrailerBoxCard(
                         title = item.cleanedName,
                         youtubeThumbnailUrl = "https://img.youtube.com/vi/$ytId/hqdefault.jpg",
-                        onClick = { onTrailerClick(item.trailerUrl!!) }
+                        onClick = { onTrailerClick(item.trailerUrl.orEmpty()) }
                     )
                 }
             }

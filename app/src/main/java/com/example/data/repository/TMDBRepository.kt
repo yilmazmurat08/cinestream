@@ -80,7 +80,11 @@ class TMDBRepository(
         }
     }
 
-    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val repositoryScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO + kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+            Log.w(TAG, "Background TMDB task failed: ${throwable.message}")
+        }
+    )
     private val inFlightRequests = ConcurrentHashMap<String, Deferred<TmdbContentResult?>>()
 
     private fun getApiKey(providedKey: String = ""): String {
