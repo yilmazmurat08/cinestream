@@ -392,12 +392,6 @@ class IPTVViewModel(
         }
     }
 
-    fun setTmdbApiKey(key: String) {
-        viewModelScope.launch(coroutineExceptionHandler) {
-            settingsRepository.setTmdbApiKey(key)
-        }
-    }
-
     fun clearAppCache(onComplete: () -> Unit = {}) {
         viewModelScope.launch(coroutineExceptionHandler) {
             _isLoading.value = true
@@ -2002,24 +1996,6 @@ class IPTVViewModel(
         emit(repository.getCachedPersonDetails(name))
     }.flowOn(kotlinx.coroutines.Dispatchers.IO)
 
-    /**
-     * Triggers the local first / Gemini fallback Flow for retrieving person details.
-     */
-    fun getOtherWorksByPersonName(personName: String, excludeItemId: Int): Flow<List<IPTVItem>> = flow {
-        try {
-            // ÖNEMLİ: "series" state'i Xtream mimarisinde her zaman boş kalıyor (diziler artık
-            // ayrı bir TvShow kataloğunda tutuluyor). Kütüphanedeki gerçek dizi listesi için
-            // xtreamSeriesCatalog kullanılıyor.
-            val libraryItems = withContext(Dispatchers.Default) {
-                movies.value + xtreamSeriesCatalog.value.map { it.toBrowsableItem() }
-            }
-            emit(tmdbRepository.findOtherWorksViaTmdb(personName, excludeItemId, tmdbApiKey.value, libraryItems))
-        } catch (e: Exception) {
-            Log.w("IPTVViewModel", "getOtherWorksByPersonName error: ${e.message}")
-            emit(emptyList())
-        }
-    }.flowOn(kotlinx.coroutines.Dispatchers.IO)
-
     // ------------------------------------------------------------------
     // Oyuncu penceresindeki arama (PersonDetailDialog kullanır)
     // ------------------------------------------------------------------
@@ -2176,14 +2152,6 @@ class IPTVViewModel(
     fun setNowPlayingRegion(code: String?) {
         com.example.data.repository.NowPlayingRepository.setRegionOverride(getApplication(), code)
         loadNowPlaying(force = true)
-    }
-
-    suspend fun fetchPersonImageDirect(name: String): String? {
-        return try {
-            com.example.data.api.MetadataEnricher.fetchPersonImageUrlDirect(getApplication(), name, tmdbApiKey.value)
-        } catch (e: Exception) {
-            null
-        }
     }
 
     fun getPersonDetailsFlow(name: String, role: String): Flow<PersonDetails?> = flow {

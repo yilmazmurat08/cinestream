@@ -2474,46 +2474,4 @@ object MetadataEnricher {
         }
     }
 
-    suspend fun fetchPersonImageUrlDirect(context: android.content.Context, name: String, tmdbApiKey: String): String? = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) {
-            try {
-                val logDir = java.io.File(context.filesDir, "crash_logs")
-                if (!logDir.exists()) logDir.mkdirs()
-                val ts = java.text.SimpleDateFormat("yyyyMMdd_HHmmss_SSS", java.util.Locale.US).format(java.util.Date())
-                java.io.File(logDir, "person_image_direct_diag_$ts.txt").writeText(msg)
-            } catch (e: Exception) { }
-        }
-        val embeddedKey = com.example.data.repository.TMDBRepository.resolveEmbeddedTmdbKey()
-        val apiKey = tmdbApiKey.ifBlank { embeddedKey }
-        val keyInfo = "Kişi: $name\n" +
-            "Parametre (viewModel.tmdbApiKey) boş mu: ${tmdbApiKey.isBlank()}\n" +
-            "Parametre değeri: '$tmdbApiKey'\n" +
-            "Gömülü anahtar (resolveEmbeddedTmdbKey): '$embeddedKey'\n" +
-            "SONUÇTA KULLANILAN anahtar: '$apiKey'"
-        try {
-            if (apiKey.isBlank() || apiKey == "placeholder") {
-                writeDiag("DİREKT ÇEKME — ANAHTAR BOŞ\n$keyInfo")
-                return@withContext null
-            }
-            val searchResponse = NetworkModule.tmdbService.searchPerson(query = name, apiKey = apiKey)
-            val bestMatch = searchResponse.results
-                .filter { !it.name.isNullOrBlank() }
-                .maxByOrNull { it.popularity ?: 0.0 }
-            val imageUrl = com.example.data.repository.TMDBRepository.buildImageUrl(
-                bestMatch?.profilePath,
-                com.example.data.repository.TMDBRepository.SIZE_PROFILE
-            )
-            writeDiag(
-                "DİREKT ÇEKME BAŞARILI\n$keyInfo\n" +
-                "TMDB sonuç sayısı: ${searchResponse.results.size}\n" +
-                "Eşleşen isim: ${bestMatch?.name}\n" +
-                "profilePath: ${bestMatch?.profilePath}\n" +
-                "imageUrl: $imageUrl"
-            )
-            imageUrl
-        } catch (e: Exception) {
-            writeDiag("DİREKT ÇEKME HATASI: ${e.javaClass.simpleName}: ${e.message}\n$keyInfo")
-            null
-        }
-    }
 }

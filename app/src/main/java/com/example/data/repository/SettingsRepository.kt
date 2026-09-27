@@ -266,12 +266,6 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun setTmdbApiKey(key: String) {
-        context.dataStore.edit { preferences ->
-            preferences[TMDB_API_KEY] = key
-        }
-    }
-
     suspend fun setManualEpgUrl(url: String) {
         context.dataStore.edit { preferences ->
             preferences[MANUAL_EPG_URL] = url.trim()
