@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -95,6 +97,72 @@ fun FeaturedMovieCard(
         onFavoriteClick = { onToggleFavorite(item) },
         modifier = modifier
     )
+}
+
+/**
+ * Öne Çıkan alanı: aynı [FeaturedMovieCard] görünümü ve boyutuyla birden çok filmi gösterir.
+ * - Her [autoAdvanceMillis] (5 sn) sonra kendiliğinden bir sonraki filme geçer.
+ * - Parmakla sola/sağa kaydırılarak değiştirilebilir; kaydırınca 5 sn'lik süre baştan başlar.
+ * - Sonsuz döner (son filmden sonra ilk film gelir).
+ * - Kumanda/klavye odağı alanın içindeyken (TV) otomatik geçiş durur ki odaklı düğme kaybolmasın.
+ * Yetişkin içerik filtresi slaytları hazırlayan ViewModel'de (heroSlides) uygulanır.
+ */
+@Composable
+fun FeaturedHeroCarousel(
+    slides: List<FeaturedMovie>,
+    onPlayClick: (IPTVItem) -> Unit,
+    onInfoClick: (IPTVItem) -> Unit = {},
+    onRefreshRandom: () -> Unit = {},
+    favorites: List<IPTVItem> = emptyList(),
+    onToggleFavorite: (IPTVItem) -> Unit = {},
+    modifier: Modifier = Modifier,
+    autoAdvanceMillis: Long = 5_000L
+) {
+    if (slides.isEmpty()) return
+    if (slides.size == 1) {
+        FeaturedMovieCard(
+            featuredMovie = slides[0],
+            onPlayClick = onPlayClick,
+            onInfoClick = onInfoClick,
+            onRefreshRandom = onRefreshRandom,
+            favorites = favorites,
+            onToggleFavorite = onToggleFavorite,
+            modifier = modifier
+        )
+        return
+    }
+
+    // Sonsuz döngü için çok büyük sayfa sayısı; ortadan, ilk filme denk gelen sayfadan başlanır.
+    val pageCount = Int.MAX_VALUE
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(
+        initialPage = (pageCount / 2).let { it - it % slides.size }
+    ) { pageCount }
+    val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+    var hasFocusInside by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pagerState.settledPage, isDragged, hasFocusInside, slides.size) {
+        if (isDragged || hasFocusInside) return@LaunchedEffect
+        kotlinx.coroutines.delay(autoAdvanceMillis)
+        pagerState.animateScrollToPage(pagerState.currentPage + 1, animationSpec = tween(600))
+    }
+
+    androidx.compose.foundation.pager.HorizontalPager(
+        state = pagerState,
+        beyondViewportPageCount = 1,
+        modifier = modifier
+            .onFocusChanged { hasFocusInside = it.hasFocus }
+            .testTag("hero_carousel")
+    ) { page ->
+        FeaturedMovieCard(
+            featuredMovie = slides[page % slides.size],
+            onPlayClick = onPlayClick,
+            onInfoClick = onInfoClick,
+            onRefreshRandom = onRefreshRandom,
+            favorites = favorites,
+            onToggleFavorite = onToggleFavorite,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
 /**
