@@ -204,7 +204,7 @@ Komut: `./gradlew assembleDebug testDebugUnitTest lintDebug assembleRelease`
 
 | | Başlangıç | Son |
 |---|---|---|
-| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **116 (116 geçti, 0 başarısız)** |
+| Unit + Robolectric testleri | 37 (36 geçti, 1 başarısız) | **117 (117 geçti, 0 başarısız) + 7 stres testi** |
 | lintDebug | 26 hata / 268 uyarı | 0 hata / 159 uyarı (artış, yeni çeviri metinlerindeki "…" ve çoğul kalıbı gibi yazım önerilerinden; hata yok) |
 | assembleRelease | geçti (ama modeller siliniyordu) | geçti, R8 uyarısı yok |
 | APK boyutu | debug 219 MB | VLC kaldırıldıktan sonra debug 31 MB, imzasız release 6,9 MB (bkz. Bölüm 5, madde 4) |
@@ -225,6 +225,7 @@ Eklenen testler:
 | `MainActivityRecreateTest` | 5 | Telefon dikey, 320 dp + 2.0 yazı boyutu, yatay→dikey, tablet, TV: `recreate()` sonrası çökme yok, splash tekrar oynamıyor |
 | `DiagnosticLogTest` | 4 | Anahtar/jeton/şifre maskeleme |
 | `DatabaseCorruptionBackupTest` | 3 | Bozuk veritabanı silinmeden yedekleniyor (elle kurtarma ve SQLite açılışı); sağlam veritabanında yedek alınmıyor |
+| `CursorWindowReproTest` | 1 | Kullanıcının çökmesi: 3 MB'lık satırla ham okuma düşüyor, uygulama katmanı kurtarıyor |
 | `ChannelRingTest` | 3 | Kanal listesi: izlenen klasör, yetişkin kanal karışmaz, boş klasörde tüm uygun kanallar |
 | `OversizedRowTrimTest` | 1 | 3 MB'lık base64 logo ve 50.000 karakterlik açıklama kırpılıyor, normal satır değişmiyor |
 | `TmdbCacheTrimTest` | 1 | Oyuncu/yönetmen önbelleği 200 kayda indiriliyor |
@@ -235,6 +236,24 @@ Eklenen testler:
 | `ActiveScreenSaverTest` | 3 | Açık ekran ve oynatıcıdaki içerik süreç ölümünden sonra geri yükleniyor; bilinmeyen değerde ana sayfaya dönülüyor |
 
 Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilerek geçti.
+
+
+### Stres testleri
+
+Komut: `./gradlew testDebugUnitTest -Pstress=true --tests 'com.example.stress.*'` (normal test turunda atlanır). Robolectric ile, gerçek SQLite ve Compose üzerinde çalışır; bu ortamda emülatör (KVM) olmadığı için cihaz üzerinde monkey testi yapılamadı (aşağıdaki komutla telefonda çalıştırılabilir).
+
+| Senaryo | Sonuç |
+|---|---|
+| 200.000 öğeli M3U (canlı/film/dizi, yetişkin ve bozuk satırlar karışık) içe aktarma | 10,2 sn, geçti |
+| 200.000 öğeden türe göre okuma (119.800 canlı / 40.000 film / 40.000 dizi) | 2,4 / 0,5 / 0,5 sn, geçti |
+| Okuma sürerken listeyi 5 kez yenileme (20.000 öğe) — favori korunuyor mu | 4,6 sn, favori korundu, geçti |
+| Okuma sürerken 300 favori değişikliği | 0,5 sn, geçti |
+| 60.000 kanalda yetişkin filtresi | 0,4 sn (1.202 yetişkin kanal yakalandı), geçti |
+| 60.000 kanalda 5.000 kanal değiştirme — klasör dışına ve yetişkin kanala hiç geçmiyor | 8,2 sn, geçti |
+| Öne Çıkan alanında 400 kaydırma + otomatik geçiş + kaydırma sırasında listenin 0–8 arasında değişmesi | 6,9 sn, çökme yok, geçti |
+| Kullanıcının çökmesinin yeniden üretimi: 3 MB'lık tek satır (ham okuma `Row too big to fit into CursorWindow` ile düşüyor) | Uygulama katmanı kırpıp listeyi veriyor, geçti (bu test normal turda da çalışıyor) |
+
+Telefonda monkey testi (USB hata ayıklama açık, bilgisayarda adb kurulu): `adb shell monkey -p com.cinestream.iptv --throttle 100 --pct-syskeys 0 -v 20000` — bitince "Monkey finished" yazmalı; "CRASH" görünürse günlük gönderilmeli.
 
 ---
 
@@ -281,7 +300,7 @@ Mevcut testlerin hiçbiri gevşetilmedi; başarısız olan test kod düzeltilere
 - Kendi bilgisayarınızda şunları çalıştırabilirsiniz:
   ```
   ./gradlew connectedDebugAndroidTest
-  adb shell monkey -p com.cinestream.iptv --throttle 100 -v 20000
+  adb shell monkey -p com.cinestream.iptv --throttle 100 --pct-syskeys 0 -v 20000
   ```
 
 ---
