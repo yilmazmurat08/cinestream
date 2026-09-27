@@ -117,9 +117,13 @@ class PhoneEntryServer(
     private var acceptJob: Job? = null
     private var address: String? = null
 
-    /** Sunucuyu başlatır. Ağ yoksa ya da port açılamazsa false döner. */
-    fun start(scope: CoroutineScope): Boolean {
-        val ip = localIpv4Address() ?: return false
+    /**
+     * Sunucuyu başlatır. Ağ yoksa ya da port açılamazsa false döner.
+     * [hostAddress] QR koddaki adrestir; varsayılan olarak TV'nin yerel ağ adresi kullanılır
+     * (testler yerel soket için 127.0.0.1 verir).
+     */
+    fun start(scope: CoroutineScope, hostAddress: String? = localIpv4Address()): Boolean {
+        val ip = hostAddress ?: return false
         val socket = try {
             ServerSocket(PREFERRED_PORT)
         } catch (e: Exception) {
