@@ -251,12 +251,47 @@ interface IPTVDao {
     """)
     suspend fun copyStagingToActive(playlistId: Int)
 
+    // --- Aşırı büyük alan koruması ---
+    // Bazı listeler logoyu adres yerine resmin kendisi (base64) olarak ya da çok uzun metinlerle verir.
+    // Tek bir satır 2 MB'lık okuma penceresini (CursorWindow) aşarsa listeyi okumak "Couldn't read row"
+    // hatasıyla çöker. Bu alanlar makul uzunlukta kırpılır (hepsi listeden yeniden gelen bilgiler).
+    @Query("UPDATE iptv_items SET logoUrl = NULL WHERE length(logoUrl) > 4096")
+    suspend fun dropOversizedLogos()
+
+    @Query("UPDATE iptv_items SET trailerUrl = NULL WHERE length(trailerUrl) > 4096")
+    suspend fun dropOversizedTrailers()
+
+    @Query("""
+        UPDATE iptv_items SET
+            name = substr(name, 1, 500),
+            cleanedName = substr(cleanedName, 1, 500),
+            category = substr(category, 1, 300),
+            summary = substr(summary, 1, 8000),
+            `cast` = substr(`cast`, 1, 4000),
+            director = substr(director, 1, 500),
+            releaseDate = substr(releaseDate, 1, 50),
+            genre = substr(genre, 1, 500),
+            tvgId = substr(tvgId, 1, 300)
+        WHERE length(name) > 500 OR length(cleanedName) > 500 OR length(category) > 300
+            OR length(summary) > 8000 OR length(`cast`) > 4000 OR length(director) > 500
+            OR length(releaseDate) > 50 OR length(genre) > 500 OR length(tvgId) > 300
+    """)
+    suspend fun truncateOversizedTextFields()
+
+    @Transaction
+    suspend fun trimOversizedItemFields() {
+        dropOversizedLogos()
+        dropOversizedTrailers()
+        truncateOversizedTextFields()
+    }
+
     @Transaction
     suspend fun promoteStagingToActive(playlistId: Int): Int {
         preserveFavoritesFromActive(playlistId)
         syncContinueWatchingWithStaging(playlistId)
         deleteItemsByPlaylist(playlistId)
         copyStagingToActive(playlistId)
+        trimOversizedItemFields()
         val count = getStagingItemCount(playlistId)
         clearStagingItems(playlistId)
         return count

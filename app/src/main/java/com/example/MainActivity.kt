@@ -327,8 +327,12 @@ class MainActivity : ComponentActivity() {
                                                     fallback = emptyList<IPTVItem>()
                                                 ) {
                                                         when (activeItem.type) {
-                                                            "LIVE" -> liveChannels.filter { it.id != activeItem.id }
-                                                            "MOVIE" -> movies.filter { it.id != activeItem.id }
+                                                            // İzlenen kanalın klasöründeki kanallar; yetişkin kanallar karışmaz.
+                                                            "LIVE" -> viewModel.channelRingFor(activeItem, liveChannels).filter { it.id != activeItem.id }
+                                                            "MOVIE" -> {
+                                                                val allowAdult = viewModel.isAdultContent(activeItem)
+                                                                movies.filter { it.id != activeItem.id && (allowAdult || !viewModel.isAdultContent(it)) }
+                                                            }
                                                             "SERIES" -> {
                                                                 val liveEpisodeItems = liveFetchedShow?.seasons
                                                                     ?.sortedBy { it.seasonNumber }

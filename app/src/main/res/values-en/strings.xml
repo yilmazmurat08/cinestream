@@ -545,4 +545,6 @@
     <string name="settings_color_blue">Blue</string>
     <string name="player_fullscreen_desc">Full screen</string>
     <string name="player_exit_fullscreen_desc">Exit full screen</string>
+    <string name="player_previous_channel_desc">Previous channel</string>
+    <string name="player_next_channel_desc">Next channel</string>
 </resources>

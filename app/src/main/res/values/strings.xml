@@ -544,4 +544,6 @@
     <string name="settings_color_blue">Mavi</string>
     <string name="player_fullscreen_desc">Tam ekran</string>
     <string name="player_exit_fullscreen_desc">Küçült</string>
+    <string name="player_previous_channel_desc">Önceki kanal</string>
+    <string name="player_next_channel_desc">Sonraki kanal</string>
 </resources>

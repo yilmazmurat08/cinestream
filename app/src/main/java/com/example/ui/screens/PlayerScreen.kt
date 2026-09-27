@@ -752,7 +752,9 @@ fun LegacyExoPlayerScreen(
     }
     // CH+/CH-: oynatıcının kanal listesindeki (canlı kanallar) sonraki/önceki kanal.
     fun switchChannel(step: Int) {
-        val channels = iptvViewModel?.liveChannels?.value?.takeIf { it.isNotEmpty() } ?: return
+        // İzlenen klasördeki kanallar arasında dolaşır (yetişkin kanallar karışmaz).
+        val all = iptvViewModel?.liveChannels?.value?.takeIf { it.isNotEmpty() } ?: return
+        val channels = iptvViewModel.channelRingFor(item, all)
         val index = channels.indexOfFirst { it.id == item.id }
         val target = if (index == -1) {
             channels.first()
@@ -1272,10 +1274,16 @@ fun LegacyExoPlayerScreen(
                                 }
                             }
 
+                            // Canlı yayında: önceki kanal; film/dizide: 10 sn geri.
+                            val isLiveItem = item.type == "LIVE"
                             IconButton(
                                 onClick = {
-                                    val current = player.currentPosition
-                                    player.seekTo(max(0, current - 10000))
+                                    if (isLiveItem) {
+                                        switchChannel(-1)
+                                    } else {
+                                        val current = player.currentPosition
+                                        player.seekTo(max(0, current - 10000))
+                                    }
                                     resetControlsTimer()
                                 },
                                 modifier = Modifier
@@ -1285,8 +1293,12 @@ fun LegacyExoPlayerScreen(
                                     .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Replay10,
-                                    contentDescription = stringResource(R.string.player_rewind_10_desc),
+                                    imageVector = if (isLiveItem) Icons.Default.SkipPrevious else Icons.Default.Replay10,
+                                    contentDescription = if (isLiveItem) {
+                                        stringResource(R.string.player_previous_channel_desc)
+                                    } else {
+                                        stringResource(R.string.player_rewind_10_desc)
+                                    },
                                     tint = Color.White,
                                     modifier = Modifier.size((layout.playerControlSize.value * 0.48f).dp)
                                 )
@@ -1322,10 +1334,15 @@ fun LegacyExoPlayerScreen(
                                 )
                             }
 
+                            // Canlı yayında: sonraki kanal; film/dizide: 10 sn ileri.
                             IconButton(
                                 onClick = {
-                                    val current = player.currentPosition
-                                    player.seekTo(min(player.duration, current + 10000))
+                                    if (isLiveItem) {
+                                        switchChannel(1)
+                                    } else {
+                                        val current = player.currentPosition
+                                        player.seekTo(min(player.duration, current + 10000))
+                                    }
                                     resetControlsTimer()
                                 },
                                 modifier = Modifier
@@ -1335,8 +1352,12 @@ fun LegacyExoPlayerScreen(
                                     .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Forward10,
-                                    contentDescription = stringResource(R.string.player_forward_10_desc),
+                                    imageVector = if (isLiveItem) Icons.Default.SkipNext else Icons.Default.Forward10,
+                                    contentDescription = if (isLiveItem) {
+                                        stringResource(R.string.player_next_channel_desc)
+                                    } else {
+                                        stringResource(R.string.player_forward_10_desc)
+                                    },
                                     tint = Color.White,
                                     modifier = Modifier.size((layout.playerControlSize.value * 0.48f).dp)
                                 )

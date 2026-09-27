@@ -10,7 +10,9 @@ import com.example.data.model.SearchHistory
 import com.example.data.model.AiRecommendationHistory
 import com.example.data.model.generateDeterministicId
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
@@ -82,7 +84,35 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
     val favoriteItemsFlow: Flow<List<IPTVItem>> = iptvDao.getFavoriteItemsFlow()
     val continueWatchingFlow: Flow<List<ContinueWatching>> = iptvDao.getContinueWatchingFlow()
 
+    /**
+     * Türe göre tüm öğeler. Okuma hatası (ör. aşırı büyük bir satır, "Couldn't read row") uygulamayı
+     * kapatmasın: önce alanlar kırpılıp birkaç kez yeniden denenir; yine olmazsa hata kaydedilir ve
+     * ekrandaki mevcut liste korunur.
+     */
     fun getItemsByType(type: String): Flow<List<IPTVItem>> = iptvDao.getItemsByTypeFlow(type)
+        .retryWhen { cause, attempt ->
+            if (attempt < 3 && (cause is IllegalStateException || cause is android.database.sqlite.SQLiteException)) {
+                Log.w("IPTVRepository", "Reading $type items failed (attempt ${attempt + 1}), trimming oversized rows", cause)
+                try { iptvDao.trimOversizedItemFields() } catch (e: Exception) { Log.w("IPTVRepository", "Trim failed", e) }
+                kotlinx.coroutines.delay(500L * (attempt + 1))
+                true
+            } else {
+                false
+            }
+        }
+        .catch { e ->
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e("IPTVRepository", "Reading $type items failed", e)
+        }
+
+    /** Aşırı büyük alanları kırpar (açılışta ve doğrudan eklemelerden sonra). */
+    suspend fun trimOversizedItemFields() {
+        try {
+            iptvDao.trimOversizedItemFields()
+        } catch (e: Exception) {
+            Log.w("IPTVRepository", "Trimming oversized item fields failed", e)
+        }
+    }
 
     fun getDistinctCategoriesFlow(): Flow<List<String>> = iptvDao.getDistinctCategoriesFlow()
 
@@ -310,6 +340,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
             if (liveItems.isNotEmpty()) {
                 iptvDao.deleteItemsByPlaylistAndType(playlistId, "LIVE")
                 iptvDao.insertItems(liveItems)
+                trimOversizedItemFields()
                 totalCount += liveItems.size
                 typeCounts["LIVE"] = liveItems.size
                 onProgress(typeCounts.toMap())
@@ -324,6 +355,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
                 val moviesWithPlaylist = movieItems.map { it.copy(playlistId = playlistId) }
                 iptvDao.deleteItemsByPlaylistAndType(playlistId, "MOVIE")
                 iptvDao.insertItems(moviesWithPlaylist)
+                trimOversizedItemFields()
                 totalCount += moviesWithPlaylist.size
                 typeCounts["MOVIE"] = moviesWithPlaylist.size
                 onProgress(typeCounts.toMap())
@@ -351,6 +383,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
     suspend fun replaceAllMovies(items: List<IPTVItem>) {
         iptvDao.deleteAllMovies()
         iptvDao.insertItems(items)
+        trimOversizedItemFields()
     }
     fun getItemById(id: Int): Flow<IPTVItem?> = iptvDao.getItemByIdFlow(id)
     suspend fun getItemByIdDirect(id: Int): IPTVItem? = iptvDao.getItemById(id)

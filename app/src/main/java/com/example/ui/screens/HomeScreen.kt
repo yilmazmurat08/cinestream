@@ -198,18 +198,25 @@ fun HomeScreen(
         categories
     }
 
+    // Ana sayfa vitrin listelerine yetişkin içerik hiçbir şekilde girmez (ilk 10 uygun öğe bulunana kadar süzülür).
     val top10Movies = remember(movies) {
-        movies.sortedByDescending { it.rating }.take(10)
+        movies.sortedByDescending { it.rating }.asSequence()
+            .filterNot { viewModel.isAdultContent(it) }
+            .take(10).toList()
     }
 
     val xtreamSeriesCatalogForTop10 by viewModel.xtreamSeriesCatalog.collectAsState()
     val top10Series = remember(xtreamSeriesCatalogForTop10) {
-        xtreamSeriesCatalogForTop10.sortedByDescending { it.rating }.take(10)
+        xtreamSeriesCatalogForTop10.sortedByDescending { it.rating }.asSequence()
             .map { it.toBrowsableItem() }
+            .filterNot { viewModel.isAdultContent(it) }
+            .take(10).toList()
     }
 
     val top10Live = remember(liveChannels) {
-        liveChannels.take(10)
+        liveChannels.asSequence()
+            .filterNot { viewModel.isAdultContent(it) }
+            .take(10).toList()
     }
 
     val currentTheme = LocalAppTheme.current
