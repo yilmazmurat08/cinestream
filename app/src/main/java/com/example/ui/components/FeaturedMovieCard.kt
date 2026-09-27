@@ -112,6 +112,7 @@ fun FeaturedHeroCarousel(
     favorites: List<IPTVItem> = emptyList(),
     onToggleFavorite: (IPTVItem) -> Unit = {},
     modifier: Modifier = Modifier,
+    paused: Boolean = false,
     autoAdvanceMillis: Long = 5_000L
 ) {
     if (slides.isEmpty()) return
@@ -135,8 +136,8 @@ fun FeaturedHeroCarousel(
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
     var hasFocusInside by remember { mutableStateOf(false) }
 
-    LaunchedEffect(pagerState.settledPage, isDragged, hasFocusInside, slides.size) {
-        if (isDragged || hasFocusInside) return@LaunchedEffect
+    LaunchedEffect(pagerState.settledPage, isDragged, hasFocusInside, paused, slides.size) {
+        if (isDragged || hasFocusInside || paused) return@LaunchedEffect
         kotlinx.coroutines.delay(autoAdvanceMillis)
         pagerState.animateScrollToPage(pagerState.currentPage + 1, animationSpec = tween(600))
     }

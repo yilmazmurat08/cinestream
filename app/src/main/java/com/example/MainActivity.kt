@@ -107,6 +107,8 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         if (!isChangingConfigurations && !isInPictureInPictureMode) wentToBackground = true
+        // Gezinirken biriken detay bilgilerini (özet, oyuncular) kullanıcı ekranda değilken tek seferde yaz.
+        if (!isChangingConfigurations) viewModel.flushPendingMetadata()
     }
 
     override fun onStart() {

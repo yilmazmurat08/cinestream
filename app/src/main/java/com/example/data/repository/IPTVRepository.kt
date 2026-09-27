@@ -580,6 +580,10 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
         iptvDao.updateItemMetadata(itemId, summary, cast, director, rating, logoUrl, trailerUrl, releaseDate, genre)
     }
 
+    suspend fun updateItemsMetadata(updates: List<com.example.data.db.ItemMetadataUpdate>) {
+        if (updates.isNotEmpty()) iptvDao.updateItemsMetadata(updates)
+    }
+
     suspend fun updateSummary(itemId: Int, summary: String) {
         iptvDao.updateSummary(itemId, summary)
     }
@@ -595,7 +599,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
     }
 
     suspend fun savePersonDetails(person: PersonDetailsEntity) {
-        iptvDao.insertPersonDetailsWithLimit(person, 200)
+        iptvDao.insertPersonDetailsWithLimit(person, 3000)
     }
 
     suspend fun getCachedTmdb(sourceKey: String): com.example.data.model.tmdb.TmdbCacheEntity? {
@@ -612,7 +616,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
      * süresi dolmuş film bilgilerini siler, oyuncu/yönetmen önbelleğini [personCacheLimit] kayda indirir
      * (bazı kayıt yolları sınırı atlıyordu).
      */
-    suspend fun trimTmdbCaches(cutoffTime: Long, personCacheLimit: Int = 200) {
+    suspend fun trimTmdbCaches(cutoffTime: Long, personCacheLimit: Int = 3000) {
         try {
             iptvDao.deleteExpiredTmdbCache(cutoffTime)
             iptvDao.trimPersonCache(personCacheLimit)
