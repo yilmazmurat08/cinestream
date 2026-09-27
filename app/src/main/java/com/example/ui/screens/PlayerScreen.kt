@@ -1,4 +1,5 @@
-@file:kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.media3.common.util.UnstableApi::class)
+@file:kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 package com.example.ui.screens
 
 import com.example.ui.theme.rememberAppAdaptiveLayout

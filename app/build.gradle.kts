@@ -69,6 +69,13 @@ android {
     abortOnError = false
     checkReleaseBuilds = false
   }
+  // Uygulama içinden TR/EN dil değiştirilebildiği için tüm dil kaynakları her kurulumda bulunmalı
+  // (Play, AAB dil bölmesiyle yalnızca cihaz dilini indirirdi; lint AppBundleLocaleChanges).
+  bundle {
+    language {
+      enableSplit = false
+    }
+  }
 }
 
 // Automatically generate .env file from environment variables if present without committing secrets

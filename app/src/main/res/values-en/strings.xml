@@ -202,6 +202,12 @@
     <string name="player_volume_desc">Volume</string>
     <string name="player_unlock_screen_desc">Unlock</string>
     <string name="player_unlock_screen_text">Unlock Screen</string>
+    <!-- Tema ayarları (Türkçe karşılıkları values/strings.xml içinde) -->
+    <string name="app_theme">App Theme</string>
+    <string name="app_theme_desc">Sync automatically with your device settings (System) or choose a theme.</string>
+    <string name="theme_system">Automatic (System)</string>
+    <string name="theme_dark">Dark Mode (Purple/Black)</string>
+    <string name="theme_light">Light Mode</string>
     <string name="player_go_back_desc">Go Back</string>
     <string name="player_back_desc">Back</string>
     <string name="player_previous_episode_desc">Previous Episode</string>
