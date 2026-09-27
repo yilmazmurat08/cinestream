@@ -7,6 +7,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.tv.TvDevice
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -54,8 +55,20 @@ class TvColdStartTest {
         }
     }
 
-    // Kullanıcının cihazı: Xiaomi Mi TV Stick, Android 10 (API 29).
-    @Test @Config(sdk = [29]) fun android10_xiaomiMiTvStick_coldStart() = coldStart()
+    // Kullanıcının cihazı: Xiaomi Mi TV Stick, Android 10 (API 29), düşük bellekli cihaz. Bu profil
+    // "no such table: room_table_modification_log" çökmesini veriyordu.
+    @Test @Config(sdk = [29]) fun android10_xiaomiMiTvStick_lowRam_coldStart() {
+        shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()
+            .getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager).setIsLowRamDevice(true)
+        coldStart()
+        // Açılıştan sonra veritabanı gözlemleri de çalışmalı (çökme burada oluyordu).
+        kotlinx.coroutines.runBlocking {
+            kotlinx.coroutines.withTimeout(20_000) {
+                com.example.data.db.AppDatabase.getDatabase(ApplicationProvider.getApplicationContext())
+                    .iptvDao().getItemsByTypeFlow("LIVE").first()
+            }
+        }
+    }
     @Test @Config(sdk = [31]) fun android12_coldStart() = coldStart()
     @Test @Config(sdk = [34]) fun android14_coldStart() = coldStart()
 }

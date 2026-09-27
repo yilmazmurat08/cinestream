@@ -69,6 +69,15 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        /** Yalnızca testler: açık veritabanını kapatıp tekil örneği sıfırlar. */
+        @androidx.annotation.VisibleForTesting
+        fun closeForTest() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context.applicationContext).also { INSTANCE = it }
@@ -85,16 +94,11 @@ abstract class AppDatabase : RoomDatabase() {
                     .applyMigrationPolicy()
                     // SQLite bozulma algılarsa dosyalar silinmeden önce yedeklenir.
                     .openHelperFactory(BackupOnCorruptionOpenHelperFactory())
-                    .addCallback(object : RoomDatabase.Callback() {
-                        override fun onOpen(db: SupportSQLiteDatabase) {
-                            super.onOpen(db)
-                            try {
-                                db.enableWriteAheadLogging()
-                            } catch (e: Exception) {
-                                Log.w(TAG, "WAL mode enable failed, continuing standard mode", e)
-                            }
-                        }
-                    })
+                    // Kayıt (journal) modunu Room seçer: normal cihazlarda WAL, düşük bellekli cihazlarda (ör. Xiaomi
+                    // Mi TV Stick) TRUNCATE. Eskiden burada açılışta WAL zorla açılıyordu; düşük bellekli cihazlarda
+                    // bu bağlantıyı yeniden kurup Room'un geçici takip tablosunu siliyor ve uygulama açılışta
+                    // "no such table: room_table_modification_log" ile çöküyordu.
+                    .setJournalMode(RoomDatabase.JournalMode.AUTOMATIC)
                     .build()
 
                 // Test-open database helper to verify integrity immediately. Ana iş parçacığında
