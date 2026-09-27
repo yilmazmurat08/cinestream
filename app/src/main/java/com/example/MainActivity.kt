@@ -243,9 +243,18 @@ class MainActivity : ComponentActivity() {
                                                 val continueWatchingList by viewModel.continueWatching.collectAsState()
                                                 val activeItem = screen.item
 
-                                                // Perform computation in derivedStateOf to avoid UI stutter
-                                                val siblingList by remember(activeItem, liveChannels, movies, series, liveFetchedShow) {
-                                                    derivedStateOf {
+                                                // Büyük listelerde (40.000+ kanal/bölüm) ana iş parçacığını kilitlememek için arka planda hesaplanır.
+                                                val siblingWorkSize = when (activeItem.type) {
+                                                    "LIVE" -> liveChannels.size
+                                                    "MOVIE" -> movies.size
+                                                    "SERIES" -> series.size
+                                                    else -> 0
+                                                }
+                                                val siblingList = com.example.ui.components.rememberComputedOffMain(
+                                                    activeItem, liveChannels, movies, series, liveFetchedShow,
+                                                    workSize = siblingWorkSize,
+                                                    fallback = emptyList<IPTVItem>()
+                                                ) {
                                                         when (activeItem.type) {
                                                             "LIVE" -> liveChannels.filter { it.id != activeItem.id }
                                                             "MOVIE" -> movies.filter { it.id != activeItem.id }
@@ -257,7 +266,7 @@ class MainActivity : ComponentActivity() {
                                                                 val matchesActiveShow = liveEpisodeItems?.any { it.id == activeItem.id } == true
 
                                                                 if (matchesActiveShow) {
-                                                                    liveEpisodeItems!!
+                                                                    liveEpisodeItems.orEmpty()
                                                                 } else {
                                                                     val parsedInfo = com.example.data.model.SeriesParser.parseEpisodeInfo(activeItem.cleanedName)
                                                                         ?: com.example.data.model.SeriesParser.parseEpisodeInfo(activeItem.name)
@@ -278,7 +287,6 @@ class MainActivity : ComponentActivity() {
                                                             }
                                                             else -> emptyList()
                                                         }
-                                                    }
                                                 }
 
                                                 val initialProgress = remember(activeItem, continueWatchingList) {

@@ -767,13 +767,21 @@ fun ChannelSelectorDialog(
     var selectedCategoryTab by remember { mutableStateOf("Tümü") }
 
     // Dynamic categories extracted from our combined list
-    val categories = remember(allChannels) {
+    val categories = com.example.ui.components.rememberComputedOffMain(
+        allChannels,
+        workSize = allChannels.size,
+        fallback = listOf("Tümü")
+    ) {
         val raw = allChannels.map { it.category }.distinct().filter { it.isNotBlank() }
         listOf("Tümü") + raw.sorted()
     }
 
     // Perform interactive filtering
-    val filteredChannels = remember(allChannels, searchQuery, selectedCategoryTab) {
+    val filteredChannels = com.example.ui.components.rememberComputedOffMain(
+        allChannels, searchQuery, selectedCategoryTab,
+        workSize = allChannels.size,
+        fallback = emptyList()
+    ) {
         allChannels.filter { channel ->
             val matchesQuery = channel.name.contains(searchQuery, ignoreCase = true) ||
                     channel.category.contains(searchQuery, ignoreCase = true)

@@ -263,6 +263,9 @@ fun LegacyExoPlayerScreen(
         }
     }
 
+    // Oynatıcı dinleyicisi bir kez kurulur; kardeş liste sonradan (arka planda) dolsa bile güncel değeri görsün.
+    val latestNextItem by rememberUpdatedState(nextItem)
+
     // Auto-hide controls timer Job
     var autoHideJob by remember { mutableStateOf<Job?>(null) }
 
@@ -469,8 +472,9 @@ fun LegacyExoPlayerScreen(
                         hasRecordedSession = true
                         iptvViewModel?.recordCompletedPlaybackSession()
                     }
-                    if (item.type == "SERIES" && nextItem != null) {
-                        onPlayItem(nextItem)
+                    val next = latestNextItem
+                    if (item.type == "SERIES" && next != null) {
+                        onPlayItem(next)
                     }
                 }
                 resetControlsTimer()

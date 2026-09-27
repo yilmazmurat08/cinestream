@@ -993,7 +993,11 @@ fun FolderDetailLayout(
         }
     } else if (group.type == "SERIES") {
         val seriesCovers by viewModel.seriesCoversMap.collectAsState()
-        val tvShows = remember(group.items, searchQuery, seriesCovers) {
+        val tvShows = com.example.ui.components.rememberComputedOffMain(
+            group.items, searchQuery, seriesCovers,
+            workSize = group.items.size,
+            fallback = emptyList()
+        ) {
             val filteredItems = if (searchQuery.isBlank()) {
                 group.items
             } else {
