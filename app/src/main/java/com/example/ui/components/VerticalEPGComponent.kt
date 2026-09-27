@@ -1,4 +1,6 @@
 package com.example.ui.components
+import androidx.compose.ui.res.stringResource
+import com.example.R
 
 import androidx.compose.foundation.verticalScroll
 import android.widget.Toast
@@ -184,7 +186,7 @@ fun VerticalEPGComponent(
                 onPlayChannel(channel)
             },
             onSetReminder = {
-                Toast.makeText(context, "${program.title} için hatırlatıcı kuruldu!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.epg_reminder_set, program.title), Toast.LENGTH_SHORT).show()
                 selectedProgramForModal = null
             }
         )
@@ -227,7 +229,7 @@ fun VerticalEPGComponent(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "CANLI YAYIN & TV EPG REHBERİ",
+                            text = stringResource(R.string.epg_title),
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -273,7 +275,7 @@ fun VerticalEPGComponent(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             placeholder = {
-                Text("Kanal veya program adı yazın...", color = WhiteText.copy(alpha = 0.4f), fontSize = 13.sp)
+                Text(stringResource(R.string.epg_search_hint), color = WhiteText.copy(alpha = 0.4f), fontSize = 13.sp)
             },
             leadingIcon = {
                 Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = CineOrange)
@@ -355,7 +357,7 @@ fun VerticalEPGComponent(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = cat,
+                            text = epgDisplayLabel(cat),
                             color = contentColor,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -400,7 +402,7 @@ fun VerticalEPGComponent(
                             Spacer(modifier = Modifier.width(6.dp))
                         }
                         Text(
-                            text = slot,
+                            text = epgDisplayLabel(slot),
                             color = textColor,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -432,7 +434,7 @@ fun VerticalEPGComponent(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Aradığınız kriterlere uygun EPG program akışı bulunamadı.",
+                        text = stringResource(R.string.epg_no_results),
                         color = MutedPurpleText,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -551,7 +553,7 @@ private fun ChannelEPGVerticalItem(
                             shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
-                                text = channel.category.ifBlank { "Canlı TV" },
+                                text = channel.category.ifBlank { stringResource(R.string.epg_live_tv) },
                                 color = CineOrange,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
@@ -577,7 +579,7 @@ private fun ChannelEPGVerticalItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Kanalı İzle",
+                        contentDescription = stringResource(R.string.epg_watch_channel_desc),
                         tint = Color.Black,
                         modifier = Modifier.size(20.dp)
                     )
@@ -589,7 +591,7 @@ private fun ChannelEPGVerticalItem(
             // Vertical Timeline of Scheduled Shows for this channel
             if (displayPrograms.isEmpty()) {
                 Text(
-                    text = "Bu zaman diliminde yayın kaydı görünmüyor.",
+                    text = stringResource(R.string.epg_no_programs_in_slot),
                     color = MutedPurpleText,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
@@ -701,7 +703,7 @@ private fun EPGProgramRowCard(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Canlı İlerleme",
+                            text = stringResource(R.string.epg_live_progress),
                             color = LiveGold,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
@@ -881,7 +883,7 @@ private fun EPGProgramDetailDialog(
 
                 // Description
                 Text(
-                    text = program.description.ifBlank { "Bu program için ayrıntılı açıklama bulunmuyor." },
+                    text = program.description.ifBlank { stringResource(R.string.epg_no_description) },
                     color = WhiteText.copy(alpha = 0.85f),
                     fontSize = 13.sp,
                     lineHeight = 18.sp
@@ -902,7 +904,7 @@ private fun EPGProgramDetailDialog(
                     ) {
                         Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Kanalı İzle", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(stringResource(R.string.epg_watch_channel), color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
 
                     OutlinedButton(
@@ -914,7 +916,7 @@ private fun EPGProgramDetailDialog(
                     ) {
                         Icon(imageVector = Icons.Default.NotificationsActive, contentDescription = null, tint = LiveGold, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Hatırlat", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.epg_remind), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -928,4 +930,26 @@ private fun extractHour(timeStr: String): Int {
     } catch (e: Exception) {
         12
     }
+}
+
+/** Filtre anahtarları Türkçe kalır (mantık bunlara bağlı); ekranda seçili dildeki karşılığı gösterilir. */
+@Composable
+private fun epgDisplayLabel(key: String): String = when (key) {
+    "Tümü" -> stringResource(R.string.common_all)
+    "Spor" -> stringResource(R.string.epg_genre_sports)
+    "Belgesel" -> stringResource(R.string.epg_genre_documentary)
+    "Eğlence" -> stringResource(R.string.epg_genre_entertainment)
+    "Sinema" -> stringResource(R.string.epg_genre_cinema)
+    "Dizi" -> stringResource(R.string.epg_genre_series)
+    "Haber" -> stringResource(R.string.epg_genre_news)
+    "Çocuk" -> stringResource(R.string.epg_genre_kids)
+    "Müzik" -> stringResource(R.string.epg_genre_music)
+    "Ulusal" -> stringResource(R.string.epg_genre_national)
+    "Şimdi Canlı" -> stringResource(R.string.epg_slot_live_now)
+    "Sabah (06-12)" -> stringResource(R.string.epg_slot_morning)
+    "Öğle (12-18)" -> stringResource(R.string.epg_slot_afternoon)
+    "Akşam (18-00)" -> stringResource(R.string.epg_slot_evening)
+    "Gece (00-06)" -> stringResource(R.string.epg_slot_night)
+    "Tüm Gün" -> stringResource(R.string.epg_slot_all_day)
+    else -> key
 }
