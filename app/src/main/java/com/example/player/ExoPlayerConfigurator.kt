@@ -26,12 +26,13 @@ import java.util.concurrent.TimeUnit
 object ExoPlayerConfigurator {
 
     /**
-     * Creates an OkHttpClient that bypasses SSL certificate errors (TrustAllCerts)
-     * and handles redirects and custom timeouts for high-reliability IPTV streams.
+     * IPTV yayınları için OkHttp istemcisi: sertifikalar doğrulanır; sertifikası bozuk https sunucularda
+     * aynı adres http ile denenir (bkz. NetworkModule.provideIptvOkHttpClient). Yönlendirmeleri ve
+     * özel zaman aşımlarını da yönetir.
      */
-    private fun createUnsafeOkHttpClient(): OkHttpClient {
+    private fun createIptvOkHttpClient(): OkHttpClient {
         return try {
-            com.example.data.api.NetworkModule.provideUnsafeOkHttpClient().newBuilder()
+            com.example.data.api.NetworkModule.provideIptvOkHttpClient().newBuilder()
                 .addInterceptor { chain ->
                     var request = chain.request()
                     val requestBuilder = request.newBuilder()
@@ -170,8 +171,8 @@ object ExoPlayerConfigurator {
             .setBackBuffer(30_000, true) // Retain 30s back buffer to prevent re-buffering micro-stutters
             .build()
 
-        // 3. Unsafe SSL OkHttp Data Source (Handles self-signed certificates, redirects, custom VLC headers & 30s timeouts)
-        val okHttpClient = createUnsafeOkHttpClient()
+        // 3. IPTV OkHttp Data Source (sertifika doğrulamalı + http yedeği, yönlendirmeler, VLC başlıkları, zaman aşımları)
+        val okHttpClient = createIptvOkHttpClient()
         val defaultRequestProperties = mapOf(
             "Accept" to "*/*",
             "Accept-Encoding" to "identity"

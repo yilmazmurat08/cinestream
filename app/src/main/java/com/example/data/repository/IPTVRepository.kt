@@ -194,7 +194,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
 
         syncMutex.withLock {
             val urlClean = playlist.url.trim()
-            val client = com.example.data.api.NetworkModule.unsafeIptvOkHttpClient
+            val client = com.example.data.api.NetworkModule.iptvOkHttpClient
             var lastResponseCode = 0
             var lastErrorMessage: String? = null
             var parsedCount = 0
