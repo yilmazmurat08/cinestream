@@ -103,7 +103,6 @@ roborazzi-junit-rule = { group = "io.github.takahirom.roborazzi", name = "robora
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
 firebase-appcheck-recaptcha = { group = "com.google.firebase", name = "firebase-appcheck-recaptcha" }
-revenuecat-purchases = { group = "com.revenuecat.purchases", name = "purchases", version = "8.12.2" }
 android-youtube-player-core = { group = "com.pierfrancescosoffritti.androidyoutubeplayer", name = "core", version.ref = "androidYoutubePlayer" }
 
 [plugins]

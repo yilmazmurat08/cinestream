@@ -5,7 +5,7 @@
   girdiği için alan adları önceden bilinemez. Bu yüzden genel kural HTTP'ye ve kullanıcının cihaza
   yüklediği sertifikalara izin verir (IPTV davranışı değişmez).
 
-  Uygulamanın kendi API servisleri (TMDB, Gemini, Google, RevenueCat) her zaman HTTPS kullanır: bu alan
+  Uygulamanın kendi API servisleri (TMDB, Gemini, Google) her zaman HTTPS kullanır: bu alan
   adlarında yanlışlıkla HTTP kullanılmasın diye HTTP kapalıdır. Sertifika güveni genel kuralla aynıdır
   (sistem + kullanıcı): reklam engelleyici / VPN uygulamaları kendi sertifikalarını kullanıcı sertifikası
   olarak yükler; bunlara güvenilmezse bu kullanıcılarda TMDB afişleri, oyuncu fotoğrafları ve yapay zekâ
@@ -27,7 +27,6 @@
         <domain includeSubdomains="false">api.themoviedb.org</domain>
         <domain includeSubdomains="false">generativelanguage.googleapis.com</domain>
         <domain includeSubdomains="false">www.googleapis.com</domain>
-        <domain includeSubdomains="true">revenuecat.com</domain>
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />

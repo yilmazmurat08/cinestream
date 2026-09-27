@@ -34,7 +34,7 @@
 ## 3. Network & SSL Güvenliği Denetimi
 
 1. **İkili OkHttpClient Mimarisi (`NetworkModule.kt`)**:
-   - **Güvenli Client (`provideOkHttpClient` / `Retrofit`)**: TMDB, Gemini ve RevenueCat gibi resmi API çağrılarında sistem varsayılan güvenli X.509 SSL/TLS sertifika doğrulamasını kullanır.
+   - **Güvenli Client (`provideOkHttpClient` / `Retrofit`)**: TMDB ve Gemini gibi resmi API çağrılarında sistem varsayılan güvenli X.509 SSL/TLS sertifika doğrulamasını kullanır.
    - **IPTV / M3U Stream Client (`provideUnsafeOkHttpClient` / `ExoPlayerConfigurator`)**: Kullanıcıların eklediği özel veya süresi dolmuş/kendinden imzalı sertifikaya sahip IPTV yayın linklerini oynatmak amacıyla güvenli bir şekilde ayrıştırılmıştır. Resmi API'lere asla bulaştırılmaz.
 2. **Cleartext Trafik & Manifest**:
    - `network_security_config.xml` ve manifest üzerinden IPTV HTTP akışları desteklenirken, harici API çağrıları HTTPS üzerinden korunmaktadır.

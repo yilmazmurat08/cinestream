@@ -156,7 +156,6 @@ dependencies {
   implementation(libs.converter.moshi)
   implementation(libs.firebase.ai)
   implementation(libs.firebase.appcheck.recaptcha)
-  implementation(libs.revenuecat.purchases)
   implementation(libs.play.review)
   implementation(libs.play.review.ktx)
   implementation(libs.kotlinx.coroutines.android)
