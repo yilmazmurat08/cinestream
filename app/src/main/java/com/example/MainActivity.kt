@@ -106,6 +106,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        if (redirectedToCrashReport) return
         if (!isChangingConfigurations && !isInPictureInPictureMode) wentToBackground = true
         // Gezinirken biriken detay bilgilerini (özet, oyuncular) kullanıcı ekranda değilken tek seferde yaz.
         if (!isChangingConfigurations) viewModel.flushPendingMetadata()
@@ -113,16 +114,26 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        if (redirectedToCrashReport) return
         if (wentToBackground) {
             wentToBackground = false
             viewModel.onAppReturnedToForeground()
         }
     }
 
+    // Önceki çalıştırma çöktüyse önce hata raporu gösterilir; bu durumda bu ekran hiçbir şey yüklemez.
+    private var redirectedToCrashReport = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val lang = com.example.util.LocaleHelper.getSavedLanguage(this)
         com.example.util.LocaleHelper.updateResources(this, lang)
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null && com.example.util.CrashRecoveryManager.pendingCrashReport(this) != null) {
+            redirectedToCrashReport = true
+            startActivity(android.content.Intent(this, CrashReportActivity::class.java))
+            finish()
+            return
+        }
         enableEdgeToEdge()
 
         // Check and request notification permissions on Android 13+

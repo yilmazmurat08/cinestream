@@ -547,4 +547,9 @@
     <string name="player_exit_fullscreen_desc">Exit full screen</string>
     <string name="player_previous_channel_desc">Previous channel</string>
     <string name="player_next_channel_desc">Next channel</string>
+    <string name="crash_report_title">The app closed unexpectedly</string>
+    <string name="crash_report_body">Take a photo of the error log below and send it to the developer; it pinpoints the problem so it can be fixed.</string>
+    <string name="crash_report_empty">The error log could not be read.</string>
+    <string name="crash_report_open">Open app</string>
+    <string name="crash_report_close">Close</string>
 </resources>
