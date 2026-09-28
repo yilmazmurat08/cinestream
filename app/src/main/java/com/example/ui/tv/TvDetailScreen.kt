@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -247,7 +248,7 @@ fun TvDetailScreen(
             Spacer(Modifier.height(22.dp))
 
             // Düğmeler: İzle (ilk odak), Fragman, Favori, AI
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(end = 48.dp, top = 6.dp, bottom = 6.dp)) {
+            LazyRow(modifier = Modifier.offset(x = (-12).dp), horizontalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 6.dp, bottom = 6.dp)) {
                 item {
                     val resume = lastWatched
                     val label = when {
@@ -316,7 +317,7 @@ fun TvDetailScreen(
             // Dizi: sezonlar ve bölümler
             if (isSeries && seasons.isNotEmpty()) {
                 TvRowTitle(stringResource(R.string.tv_seasons))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(end = 48.dp, top = 4.dp, bottom = 4.dp)) {
+                LazyRow(modifier = Modifier.offset(x = (-12).dp), horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 4.dp, bottom = 4.dp)) {
                     itemsIndexed(seasons) { index, season ->
                         TvGlassButton(
                             onClick = { selectedSeason = index },
@@ -333,7 +334,7 @@ fun TvDetailScreen(
                 }
                 val episodes = seasons.getOrNull(selectedSeason)?.episodes?.sortedBy { it.episodeNumber }.orEmpty()
                 TvRowTitle(stringResource(R.string.tv_episodes))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(end = 48.dp, top = 6.dp, bottom = 6.dp)) {
+                LazyRow(modifier = Modifier.offset(x = (-12).dp), horizontalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 6.dp, bottom = 6.dp)) {
                     items(episodes, key = { it.item.id }) { episode ->
                         val cw = continueWatching.firstOrNull { it.itemId == episode.item.id }
                         TvEpisodeCard(episode, progress = cw?.let { if (it.totalSeconds > 0) it.progressSeconds.toFloat() / it.totalSeconds else null }) {
@@ -346,8 +347,7 @@ fun TvDetailScreen(
             // Oyuncular ve yönetmen
             if (people.isNotEmpty()) {
                 TvRowTitle(stringResource(R.string.tv_cast_and_director))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp), contentPadding = PaddingValues(end = 48.dp, top = 8.dp, bottom = 8.dp),
-                    modifier = Modifier.testTag("tv_people_row")) {
+                LazyRow(modifier = Modifier.offset(x = (-12).dp).testTag("tv_people_row"), horizontalArrangement = Arrangement.spacedBy(18.dp), contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 8.dp, bottom = 8.dp)) {
                     items(people, key = { it.key }) { person ->
                         TvPersonCircle(viewModel, person, personRequester(person.key)) { openPerson = person }
                     }
@@ -357,7 +357,7 @@ fun TvDetailScreen(
             // Benzer yapımlar
             if (similar.isNotEmpty()) {
                 TvRowTitle(stringResource(R.string.tv_similar))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(end = 48.dp, top = 6.dp, bottom = 6.dp)) {
+                LazyRow(modifier = Modifier.offset(x = (-12).dp), horizontalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 6.dp, bottom = 6.dp)) {
                     items(similar, key = { it.id }) { other ->
                         TvPosterCard(
                             title = other.cleanedName.ifBlank { other.name },
@@ -489,12 +489,10 @@ private fun TvPersonCircle(viewModel: IPTVViewModel, person: TvPerson, focusRequ
             focusRequester = focusRequester,
             modifier = Modifier.size(92.dp).testTag("tv_person_${person.name}")
         ) {
-            var failed by remember(photo) { mutableStateOf(photo.isNullOrBlank()) }
-            if (failed) {
-                TvInitials(person.name, Modifier.fillMaxSize())
-            } else {
-                AsyncImage(model = photo, contentDescription = person.name, contentScale = ContentScale.Crop,
-                    onError = { failed = true }, modifier = Modifier.fillMaxSize())
+            // Baş harfler her zaman altta: fotoğraf yüklenirken ya da yüklenemezse daire boş kalmaz.
+            TvInitials(person.name, Modifier.fillMaxSize())
+            if (!photo.isNullOrBlank()) {
+                AsyncImage(model = photo, contentDescription = person.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
         }
         Spacer(Modifier.height(8.dp))

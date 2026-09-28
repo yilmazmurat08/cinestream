@@ -100,20 +100,16 @@ class TvCatalogRepository(private val dao: IPTVDao) {
     }
 
     /** M3U dizi kategorisi: yalnızca bu kategorinin bölümleri okunur ve telefondaki gibi dizilere gruplanır. */
-    suspend fun seriesInCategory(category: String, covers: Map<String, String>): List<TvPoster> = withContext(Dispatchers.IO) {
-        val episodes = dao.itemsInCategory("SERIES", category)
-        withContext(Dispatchers.Default) { showsOf(episodes, covers) }
+    suspend fun seriesInCategory(category: String, covers: Map<String, String>): List<TvPoster> = withContext(Dispatchers.Default) {
+        showsOf(dao.itemsInCategory("SERIES", category), covers) // Room sorguyu kendi iş parçacığında çalıştırır
     }
 
     /** Detay ekranı için bir bölümün dizisi (yalnızca o dizinin bölümleri sorgulanır). */
-    suspend fun showForEpisode(item: IPTVItem, covers: Map<String, String>): TvShow? = withContext(Dispatchers.IO) {
+    suspend fun showForEpisode(item: IPTVItem, covers: Map<String, String>): TvShow? = withContext(Dispatchers.Default) {
         val title = (SeriesParser.parseEpisodeInfo(item.cleanedName) ?: SeriesParser.parseEpisodeInfo(item.name))?.showTitle
             ?.takeIf { it.isNotBlank() } ?: return@withContext null
-        val episodes = dao.getEpisodesForShowTitle("%${title.trim()}%", 3000)
-        withContext(Dispatchers.Default) {
-            SeriesParser.groupItemsIntoShows(episodes, covers).firstOrNull { it.title.equals(title, ignoreCase = true) }
-                ?: SeriesParser.groupItemsIntoShows(episodes, covers).firstOrNull()
-        }
+        val shows = SeriesParser.groupItemsIntoShows(dao.getEpisodesForShowTitle("%${title.trim()}%", 3000), covers)
+        shows.firstOrNull { it.title.equals(title, ignoreCase = true) } ?: shows.firstOrNull()
     }
 
     /** İlk canlı kanal (kategori adına göre sıralı; yetişkin kanallar atlanır). */

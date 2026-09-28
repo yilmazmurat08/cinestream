@@ -95,7 +95,10 @@ fun TvBrowseScreen(
     val categoryFocus = remember(type) { mutableMapOf<String, FocusRequester>() }
     val posterFocus = remember(type) { mutableMapOf<String, FocusRequester>() }
     val gridState = rememberLazyGridState()
-    val listState = rememberLazyListState()
+    // Liste, kategoriler yüklendiğinde seçili kategoriden başlar (uzun listede satır ekran dışında kalıp odak
+    // kaybolmasın). Ayrı bir kaydırma adımı yoktur.
+    var initialListIndex by remember(type) { mutableStateOf(0) }
+    val listState = remember(type, categories != null) { androidx.compose.foundation.lazy.LazyListState(initialListIndex) }
 
     var lastPosterKey by remember(type) { mutableStateOf<String?>(null) }
     fun categoryRequester(key: String) = categoryFocus.getOrPut(key) { FocusRequester() }
@@ -113,6 +116,8 @@ fun TvBrowseScreen(
 
     LaunchedEffect(type) {
         val list = viewModel.tvCategories(type)
+        val preselected = list.indexOfFirst { it.key == selectedKey }.let { if (it < 0) 0 else it }
+        initialListIndex = (preselected + 1 - 3).coerceAtLeast(0) // +1: başlık satırı
         categories = list
         val initial = list.firstOrNull { it.key == selectedKey }
             ?: list.firstOrNull { it.special == null && !it.isAdult }
@@ -190,6 +195,11 @@ fun TvBrowseScreen(
         }
     }
 
+    // Kategori satırında Sağ: son odaklanan poster, yoksa ilk poster (en yakın satır değil). Hedef burada
+    // (kompozisyonda) hesaplanır; liste içeriği ve odak özellikleri içinde değişken liste okunmaz.
+    val rightTargetKey = lastPosterKey?.takeIf { k -> posters.any { it.key == k } } ?: posters.firstOrNull()?.key
+    val rightTarget = remember(rightTargetKey) { rightTargetKey?.let { posterRequester(it) } }
+
     Row(
         modifier = modifier
             .fillMaxSize()
@@ -232,10 +242,7 @@ fun TvBrowseScreen(
                             .fillMaxWidth()
                             .height(46.dp)
                             // Sağ: ızgarada son odaklanan postere, yoksa ilk postere (en yakın satıra değil).
-                            .focusProperties {
-                                val target = (lastPosterKey?.takeIf { k -> posters.any { it.key == k } } ?: posters.firstOrNull()?.key)
-                                if (target != null && selected) right = posterRequester(target)
-                            }
+                            .focusProperties { if (rightTarget != null && selected) right = rightTarget }
                             .testTag("tv_category_${category.key}")
                     ) { focused ->
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp)) {

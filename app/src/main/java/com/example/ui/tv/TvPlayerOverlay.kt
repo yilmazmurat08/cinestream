@@ -316,6 +316,7 @@ fun TvPlayerOverlay(
                         hasPrevious = isLive || onPreviousEpisode != null,
                         hasNext = isLive || onNextEpisode != null,
                         onOpenPanel = { ui.panelOpen = true },
+                        compact = ui.panelOpen,
                         onOpenTracks = onOpenTracks,
                         onCycleAspect = onCycleAspect,
                         onToggleSaved = { viewModel.toggleFavorite(favorites.firstOrNull { it.id == item.id } ?: item) },
@@ -557,7 +558,9 @@ private fun TvControlBar(
     onOpenTracks: () -> Unit,
     onCycleAspect: () -> Unit,
     onToggleSaved: () -> Unit,
-    onUserActivity: () -> Unit
+    onUserActivity: () -> Unit,
+    /** Kanal paneli açıkken çubuk dar: yalnızca ana düğmeler (diğerleri panel kapanınca görünür). */
+    compact: Boolean = false
 ) {
     val episode = remember(item.id) {
         if (item.type == "SERIES") com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName.ifBlank { item.name }) else null
@@ -609,12 +612,14 @@ private fun TvControlBar(
             TvBarButton(if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, stringResource(if (isPlaying) R.string.player_pause else R.string.player_play_desc), "tv_bar_play", focusRequester = playPauseFocus, big = true, onClick = onPlayPause, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.FastForward, stringResource(R.string.player_seek_forward_10), "tv_bar_ff", enabled = !isLive, onClick = { onSeek(10_000) }, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.SkipNext, stringResource(if (isLive) R.string.player_next_channel_desc else R.string.player_next_episode_desc), "tv_bar_next", enabled = hasNext, onClick = onNext, onUserActivity = onUserActivity)
+            if (!compact) {
             Spacer(Modifier.weight(1f))
             if (!isLive) TvBarButton(Icons.Filled.Replay, stringResource(R.string.player_start_over), "tv_bar_start_over", onClick = onStartOver, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.FormatListBulleted, stringResource(if (isLive) R.string.player_channel_list else R.string.player_lists), "tv_bar_list", onClick = onOpenPanel, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.Subtitles, stringResource(R.string.player_audio_subtitle_desc), "tv_bar_tracks", onClick = onOpenTracks, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.AspectRatio, stringResource(R.string.player_aspect_ratio_desc), "tv_bar_aspect", onClick = onCycleAspect, onUserActivity = onUserActivity)
             if (isLive) TvBarButton(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, stringResource(if (isSaved) R.string.tv_remove_favorite else R.string.tv_add_favorite), "tv_bar_save", onClick = onToggleSaved, onUserActivity = onUserActivity)
+            }
         }
     }
 }

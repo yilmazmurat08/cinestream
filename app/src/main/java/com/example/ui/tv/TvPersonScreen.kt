@@ -89,12 +89,9 @@ fun TvPersonScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(128.dp).clip(CircleShape)) {
-                        var failed by remember(photo) { mutableStateOf(photo.isNullOrBlank()) }
-                        if (failed) {
-                            TvInitials(person.name, Modifier.fillMaxSize())
-                        } else {
-                            AsyncImage(model = photo, contentDescription = person.name, contentScale = ContentScale.Crop,
-                                onError = { failed = true }, modifier = Modifier.fillMaxSize())
+                        TvInitials(person.name, Modifier.fillMaxSize())
+                        if (!photo.isNullOrBlank()) {
+                            AsyncImage(model = photo, contentDescription = person.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                         }
                     }
                     Spacer(Modifier.width(28.dp))
