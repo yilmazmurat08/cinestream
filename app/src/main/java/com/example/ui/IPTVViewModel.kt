@@ -254,6 +254,28 @@ class IPTVViewModel(
         emit(com.example.data.model.tmdb.PersonWorksUiState(query = personName, phase = com.example.data.model.tmdb.PersonWorksPhase.DONE, tmdbProblem = e.message))
     }.flowOn(Dispatchers.IO)
 
+    // --- TV modu: Canlı TV ---
+
+    /** Canlı TV'ye girişte açılacak kanal: son izlenen canlı kanal, yoksa ilk (yetişkin olmayan) kanal. */
+    suspend fun tvStartChannel(): IPTVItem? = withContext(Dispatchers.IO) {
+        val last = AppDatabase.getDatabase(getApplication()).iptvDao().getAllContinueWatchingOnce()
+            .filter { it.itemType == "LIVE" }
+            .maxByOrNull { it.lastPlayedAt }
+            ?.let { repository.getItemByIdDirect(it.itemId) }
+        last ?: tvCatalog.firstLiveChannel { isAdultContent(it) }
+    }
+
+    /** Kanalın EPG'deki şu anki ve sonraki programı (EPG yoksa ikisi de null). */
+    fun tvEpgNowNext(channel: IPTVItem): Pair<com.example.data.model.EPGProgram?, com.example.data.model.EPGProgram?> {
+        val key = channel.tvgId?.lowercase(java.util.Locale.ROOT)?.trim().orEmpty()
+        if (key.isEmpty()) return null to null
+        val programs = _realEpgPrograms.value[key] ?: return null to null
+        val now = System.currentTimeMillis()
+        val index = programs.indexOfFirst { now >= it.startEpochMillis && now < it.endEpochMillis }
+        if (index < 0) return null to programs.firstOrNull { it.startEpochMillis > now }
+        return programs[index] to programs.getOrNull(index + 1)
+    }
+
     /** Tek bir öğenin hero içeriği: kanal logosu + EPG, dizi bölümünde dizi adı, filmde kendi bilgisi. */
     private suspend fun shelfFor(item: IPTVItem): com.example.data.repository.ShelfContent = when (item.type) {
         "LIVE" -> com.example.data.repository.ShelfContent(

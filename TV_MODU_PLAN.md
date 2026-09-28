@@ -75,8 +75,9 @@ iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). D
 | En yüksek puanlılar (Efsaneler) | Filmler / Diziler kategori listesinde özel bölüm | ✅ Aşama 4 |
 | Tür rafları (Korku, Komedi, Dram…) | Filmler kategori listesinde özel bölümler | ❓ (sağlayıcı kategorileri zaten listede) |
 | Favori rafı / İzleme Listem | Kaydedilenler: sekmeler + 6 sütun ızgara; OK aç, basılı tut kaldır | ✅ Aşama 4 |
-| Top 10 kanallar, Şimdi yayında | Canlı TV kategori listesinin en üstünde | ⏳ Aşama 5 |
+| Top 10 kanallar, Şimdi yayında | Canlı TV kanal panelinde EPG "şimdi" satırı; kategori listesi | ❓ (ayrı bölüm gerekirse) |
 | Radyo yayınları | Canlı TV kategori listesinde "Radyo" bölümü | ❓ |
+| Canlı kanalı kaydetme | Kontrol çubuğunda "Kaydet" | ✅ Aşama 5 |
 | Fragman kutusu | Detay ekranında "Fragman" düğmesi + Filmler'de özel bölüm | ❓ |
 | Günün seçimi (film düellosu) | Filmler kategori listesinde özel bölüm (iki film yan yana) | ❓ |
 | AI Sinema Bülteni | Filmler kategori listesinde özel bölüm | ❓ |
@@ -105,13 +106,13 @@ iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). D
 ### Canlı TV ve oynatıcı
 | Telefon | TV karşılığı | Durum |
 |---|---|---|
-| Kanal listesi (aynı klasör), önceki/sonraki kanal | Sol cam kanal paneli, Yukarı/Aşağı, CH+/CH−, numara tuşları | ⏳ Aşama 5 |
-| EPG (şimdi/sonra, tam EPG) | Kanal bilgisi kartı + ilerleme çubuğu; tam EPG panelde | ⏳ Aşama 5 |
-| Oynat/duraklat, ±10 sn, baştan başlat, sonraki/önceki bölüm | Alt kontrol çubuğu; Sol/Sağ ±10 sn | ⏳ Aşama 5 |
-| Ses ve altyazı seçimi, görüntü oranı | Kontrol çubuğunda | ⏳ Aşama 5 |
-| Ses seviyesi | Ses çubuğu (STREAM_MUSIC; sabit seslilerde gizli) | ⏳ Aşama 5 |
-| Kaldığın yerden devam sorusu, yayın hatası ekranı | Aynısı, kumandayla | ⏳ Aşama 5 |
-| Tam ekran / küçült, PiP | TV zaten tam ekran; PiP destekleyen TV'de aynı | ⏳ Aşama 5 |
+| Kanal listesi (aynı klasör), önceki/sonraki kanal | Sol cam kanal paneli (Sol: kategoriler), Yukarı/Aşağı, CH+/CH−, numara tuşları | ✅ Aşama 5 |
+| EPG (şimdi/sonra) | Kanal bilgisi kartı + ilerleme çubuğu; panelde şimdiki program | ✅ Aşama 5 (tam EPG ızgarası ❓) |
+| Oynat/duraklat, ±10 sn, baştan başlat, sonraki/önceki bölüm | Alt cam kontrol çubuğu; Sol/Sağ ±10 sn; medya tuşları | ✅ Aşama 5 |
+| Ses ve altyazı seçimi, görüntü oranı | Kontrol çubuğunda | ✅ Aşama 5 |
+| Ses seviyesi | Ses çubuğu (STREAM_MUSIC; sabit seslilerde gizli) | ✅ Aşama 5 |
+| Kaldığın yerden devam sorusu (AI özetle), yayın hatası ekranı | Aynısı (canlıda sorulmaz) | ✅ Aşama 5 |
+| Tam ekran / küçült, PiP | TV zaten tam ekran; PiP destekleyen TV'de aynı | ✅ Aşama 5 |
 | Parlaklık kaydırma, ekran kilidi | Dokunmatik özelliği; TV'de karşılığı yok | ❓ |
 
 ### Ayarlar

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import com.example.R
 import com.example.data.model.ContinueWatching
 import com.example.data.model.IPTVItem
@@ -63,6 +64,7 @@ fun TvApp(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var destination by state::destination
     var homeFocus by state::homeFocus
     var lastBackMs by remember { mutableLongStateOf(0L) }
@@ -93,7 +95,17 @@ fun TvApp(
                 viewModel = viewModel,
                 initialFocus = homeFocus,
                 onFocusChanged = { if (it in TvSection.cards || it == TvSection.CONTINUE || it == TvSection.ASSISTANT) homeFocus = it },
-                onOpenSection = { destination = it },
+                onOpenSection = { section ->
+                    if (section == TvSection.LIVE) {
+                        // Canlı TV: son izlenen (yoksa ilk) kanal tam ekran, kanal paneli ve kontroller açık.
+                        scope.launch {
+                            val channel = viewModel.tvStartChannel()
+                            if (channel != null) onPlayItem(channel) else destination = TvSection.LIVE
+                        }
+                    } else {
+                        destination = section
+                    }
+                },
                 onOpenAssistant = onOpenAssistant,
                 onOpenSearch = { searchOpen = true },
                 onPlayContinue = onPlayContinue

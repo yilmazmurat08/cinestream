@@ -184,6 +184,16 @@ class MainActivity : ComponentActivity() {
                         var showIntroSplash by rememberSaveable { mutableStateOf(true) }
                         var currentScreen by rememberSaveable(stateSaver = ActiveScreen.Saver) { mutableStateOf<ActiveScreen>(ActiveScreen.Dashboard) }
                         val tvAppState = com.example.ui.tv.rememberTvAppState()
+                        val tvPlayerUi = remember { com.example.ui.tv.TvPlayerUiState() }
+                        val isTvMode = viewMode == com.example.data.repository.ViewMode.TV
+                        // Oynatıcıdan çıkınca TV kanal paneli bir sonraki girişte kapalı başlar.
+                        LaunchedEffect(currentScreen is ActiveScreen.Player) {
+                            if (currentScreen !is ActiveScreen.Player) {
+                                tvPlayerUi.panelOpen = false
+                                tvPlayerUi.categoriesOpen = false
+                                tvPlayerUi.panelCategory = null
+                            }
+                        }
                         var lastNavigationTimeMs by remember { mutableLongStateOf(0L) }
                         var activeError by remember { mutableStateOf<AppError?>(null) }
 
@@ -299,9 +309,14 @@ class MainActivity : ComponentActivity() {
                                     AnimatedContent(
                                         targetState = currentScreen,
                                         transitionSpec = {
-                                            fadeIn(animationSpec = tween(durationMillis = 400)).togetherWith(
-                                                fadeOut(animationSpec = tween(durationMillis = 400))
-                                            )
+                                            if (isTvMode && initialState is ActiveScreen.Player && targetState is ActiveScreen.Player) {
+                                                // TV'de kanal geçişi anında: iki oynatıcı (iki kod çözücü) aynı anda açık kalmaz.
+                                                EnterTransition.None.togetherWith(ExitTransition.None)
+                                            } else {
+                                                fadeIn(animationSpec = tween(durationMillis = 400)).togetherWith(
+                                                    fadeOut(animationSpec = tween(durationMillis = 400))
+                                                )
+                                            }
                                         },
                                         label = "screen_transition"
                                     ) { screen ->
@@ -310,8 +325,14 @@ class MainActivity : ComponentActivity() {
                                                 com.example.ui.tv.TvApp(
                                                     viewModel = viewModel,
                                                     state = tvAppState,
-                                                    onPlayItem = { item -> navigateTo(ActiveScreen.Player(item)) },
-                                                    onPlayContinue = { cw -> navigateTo(ActiveScreen.Player(continueWatchingItem(cw))) },
+                                                    onPlayItem = { item ->
+                                                        if (item.type == "LIVE") tvPlayerUi.launch = com.example.ui.tv.TvPlayerUiState.LAUNCH_ENTER
+                                                        navigateTo(ActiveScreen.Player(item))
+                                                    },
+                                                    onPlayContinue = { cw ->
+                                                        if (cw.itemType == "LIVE") tvPlayerUi.launch = com.example.ui.tv.TvPlayerUiState.LAUNCH_ENTER
+                                                        navigateTo(ActiveScreen.Player(continueWatchingItem(cw)))
+                                                    },
                                                     onOpenAssistant = { navigateTo(ActiveScreen.MovieFinderChat) }
                                                 )
                                             } else {
@@ -397,7 +418,9 @@ class MainActivity : ComponentActivity() {
                                                 }
 
                                                 val initialProgress = remember(activeItem, continueWatchingList) {
-                                                    continueWatchingList.find { it.itemId == activeItem.id }?.progressSeconds ?: 0L
+                                                    // TV modunda canlı yayında "kaldığın yerden devam" sorulmaz.
+                                                    if (isTvMode && activeItem.type == "LIVE") 0L
+                                                    else continueWatchingList.find { it.itemId == activeItem.id }?.progressSeconds ?: 0L
                                                 }
 
                                                 PlayerScreen(
@@ -409,7 +432,9 @@ class MainActivity : ComponentActivity() {
                                                         viewModel.saveProgress(item, progress, total)
                                                     },
                                                     initialProgressSeconds = initialProgress,
-                                                    iptvViewModel = viewModel
+                                                    iptvViewModel = viewModel,
+                                                    tvMode = isTvMode,
+                                                    tvUiState = tvPlayerUi
                                                 )
                                             }
 

@@ -612,4 +612,7 @@
     <string name="tv_born">Born: %1$s</string>
     <string name="tv_saved_hint">Hold OK to remove</string>
     <string name="tv_removed_from_saved">Removed from Saved</string>
+    <string name="tv_panel_left_hint">Left: categories</string>
+    <string name="tv_channel_info">Channel Info</string>
+    <string name="tv_up_next">Next %1$s  %2$s</string>
 </resources>

@@ -116,6 +116,11 @@ class TvCatalogRepository(private val dao: IPTVDao) {
         }
     }
 
+    /** İlk canlı kanal (kategori adına göre sıralı; yetişkin kanallar atlanır). */
+    suspend fun firstLiveChannel(isAdult: (IPTVItem) -> Boolean): IPTVItem? = withContext(Dispatchers.IO) {
+        dao.firstLiveChannels(200).firstOrNull { !isAdult(it) }
+    }
+
     suspend fun firstItemWithStream(): IPTVItem? = withContext(Dispatchers.IO) {
         dao.firstItemWithStream("MOVIE") ?: dao.firstItemWithStream("LIVE")
     }

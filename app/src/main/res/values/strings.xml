@@ -611,4 +611,7 @@
     <string name="tv_born">Doğum: %1$s</string>
     <string name="tv_saved_hint">Kaldırmak için OK\'e basılı tutun</string>
     <string name="tv_removed_from_saved">Kaydedilenlerden kaldırıldı</string>
+    <string name="tv_panel_left_hint">Sol: kategoriler</string>
+    <string name="tv_channel_info">Kanal Bilgisi</string>
+    <string name="tv_up_next">Sonra %1$s  %2$s</string>
 </resources>

@@ -423,6 +423,9 @@ interface IPTVDao {
     @Query("SELECT * FROM iptv_items WHERE type = :type AND rating >= :minRating ORDER BY rating DESC LIMIT :limit")
     suspend fun ratedAtLeast(type: String, minRating: Double, limit: Int): List<IPTVItem>
 
+    @Query("SELECT * FROM iptv_items WHERE type = 'LIVE' AND streamUrl != '' ORDER BY category, rowid LIMIT :limit")
+    suspend fun firstLiveChannels(limit: Int): List<IPTVItem>
+
     @Query("SELECT * FROM iptv_items WHERE type = :type AND streamUrl != '' LIMIT 1")
     suspend fun firstItemWithStream(type: String): IPTVItem?
 
