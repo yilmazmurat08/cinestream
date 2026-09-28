@@ -71,7 +71,9 @@ class TvBrowseDetailTest {
     fun categoryToGrid_andLeftFromFirstColumnReturnsToCategory_okOpensDetail() {
         val db = AppDatabase.getDatabase(app)
         runBlocking {
-            db.iptvDao().insertItems((1..8).map { movie(9000 + it, "Tv Test Film $it", "TvTest Kategori") })
+            db.iptvDao().insertItems((1..8).map { movie(9000 + it, "Tv Test Film $it", "TvTest Kategori") } +
+                // Seçili kategori listenin ekran dışında kalan kısmında olsun (liste oraya kaydırılıp odak verilmeli)
+                (1..30).map { movie(9500 + it, "Aa Film $it", "Aa Film Kat %02d".format(it)) })
         }
         val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
         val state = TvAppState("MOVIE", "MOVIE", "TvTest Kategori", null, null)

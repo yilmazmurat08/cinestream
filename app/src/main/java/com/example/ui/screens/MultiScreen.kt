@@ -67,10 +67,11 @@ fun MultiScreen(
     val activeSelectorSlot by multiScreenViewModel.activeSelectorSlot.collectAsState()
 
     val multiScreenContext = LocalContext.current
+    val playbackOwner = remember { Any() }
     DisposableEffect(Unit) {
-        com.example.player.PlaybackForegroundService.start(multiScreenContext, com.example.util.LocaleHelper.getString(multiScreenContext, R.string.multi_notification))
+        com.example.player.PlaybackForegroundService.start(multiScreenContext, com.example.util.LocaleHelper.getString(multiScreenContext, R.string.multi_notification), owner = playbackOwner)
         onDispose {
-            com.example.player.PlaybackForegroundService.stop(multiScreenContext)
+            com.example.player.PlaybackForegroundService.stop(multiScreenContext, owner = playbackOwner)
         }
     }
 

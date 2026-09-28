@@ -298,7 +298,8 @@ fun LegacyExoPlayerScreen(
     DisposableEffect(lifecycleOwner, player) {
         com.example.player.PlaybackForegroundService.start(
             context,
-            item.cleanedName.ifEmpty { item.name }
+            item.cleanedName.ifEmpty { item.name },
+            owner = player
         )
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
@@ -326,7 +327,7 @@ fun LegacyExoPlayerScreen(
                         } catch (e: Exception) {
                             // Ignore
                         }
-                        com.example.player.PlaybackForegroundService.stop(context)
+                        com.example.player.PlaybackForegroundService.stop(context, owner = player)
                     }
                 }
                 androidx.lifecycle.Lifecycle.Event.ON_START -> {
@@ -339,7 +340,8 @@ fun LegacyExoPlayerScreen(
                         }
                         com.example.player.PlaybackForegroundService.start(
                             context,
-                            item.cleanedName.ifEmpty { item.name }
+                            item.cleanedName.ifEmpty { item.name },
+                            owner = player
                         )
                     }
                 }
@@ -362,7 +364,7 @@ fun LegacyExoPlayerScreen(
             } catch (e: Exception) {
                 // Ignore
             }
-            com.example.player.PlaybackForegroundService.stop(context)
+            com.example.player.PlaybackForegroundService.stop(context, owner = player)
         }
     }
 
@@ -510,7 +512,7 @@ fun LegacyExoPlayerScreen(
             } catch (e: Exception) {
                 // Ignore
             }
-            com.example.player.PlaybackForegroundService.stop(context)
+            com.example.player.PlaybackForegroundService.stop(context, owner = player)
         }
     )
     SideEffect { latestPipState.value = pipState }
