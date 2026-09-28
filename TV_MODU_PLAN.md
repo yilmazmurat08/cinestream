@@ -68,12 +68,13 @@ iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). D
 | Alt çubuk: Ana sayfa, Filmler, Diziler, Canlı TV, Listem, Profil | 5 cam kart (Canlı TV, Filmler, Diziler, Kaydedilenler, Profil/Ayarlar) | ✅ Aşama 2 |
 | Öne çıkan carousel | Hero (Top Shelf), odaklanan karta göre | ✅ Aşama 2 |
 | İzlemeye devam et, Sıradaki bölüm | Alttaki "İzlemeye Devam Et" çubuğu | ✅ Aşama 2 |
-| Arama + arama geçmişi + AI arama | Üst bardaki arama (aynı arama penceresi) | ✅ Aşama 2 (geçmiş rafı ⏳ Aşama 4'te pencereye) |
+| Arama + AI arama | Üst bardaki arama (aynı arama penceresi) | ✅ Aşama 2 |
+| Arama geçmişi rafı | Arama penceresinde | ⏳ Aşama 6 |
 | ✨ AI asistan kartı | Üst bardaki ✨ ve "Asistana sor" | ✅ Aşama 2–3 |
-| Top 10 filmler / diziler | Filmler / Diziler kategori listesinin en üstünde "Top 10" | ⏳ Aşama 4 |
-| En yüksek puanlılar (Efsaneler) | Filmler kategori listesinde özel bölüm | ⏳ Aşama 4 |
-| Tür rafları (Korku, Komedi, Dram…) | Filmler kategori listesinde özel bölümler | ⏳ Aşama 4 |
-| Favori rafı | Kaydedilenler kartı | ✅ (ekran ⏳ Aşama 4'te TV'ye uyarlanacak) |
+| Top 10 filmler / diziler | Filmler / Diziler kategori listesinin en üstünde "Top 10" | ✅ Aşama 4 |
+| En yüksek puanlılar (Efsaneler) | Filmler / Diziler kategori listesinde özel bölüm | ✅ Aşama 4 |
+| Tür rafları (Korku, Komedi, Dram…) | Filmler kategori listesinde özel bölümler | ❓ (sağlayıcı kategorileri zaten listede) |
+| Favori rafı / İzleme Listem | Kaydedilenler: sekmeler + 6 sütun ızgara; OK aç, basılı tut kaldır | ✅ Aşama 4 |
 | Top 10 kanallar, Şimdi yayında | Canlı TV kategori listesinin en üstünde | ⏳ Aşama 5 |
 | Radyo yayınları | Canlı TV kategori listesinde "Radyo" bölümü | ❓ |
 | Fragman kutusu | Detay ekranında "Fragman" düğmesi + Filmler'de özel bölüm | ❓ |
@@ -94,12 +95,12 @@ iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). D
 ### Filmler / Diziler / Detay / Kişi
 | Telefon | TV karşılığı | Durum |
 |---|---|---|
-| Klasör ızgarası, klasör içinde arama | Solda kategori listesi + 6 sütun poster ızgarası; arama üst bardan | ⏳ Aşama 4 |
-| Kilitli (yetişkin) klasörler, ebeveyn PIN'i | Aynı PIN penceresi, kumandayla rakam girişi | ⏳ Aşama 4 |
-| Favoriye ekle/çıkar | Detay ekranındaki düğme (ızgarada kalp odak durağı yok) | ⏳ Aşama 4 |
-| Film detayı: izle, fragman, konu, puan, tarih, AI özet (spoilersız), AI öneriler | TV detay ekranı; ilk odak "İzle" | ⏳ Aşama 4 |
-| Dizi detayı: sezonlar, bölümler, izlendi işareti, önceki bölümlerin AI özeti | Sezon/bölüm listeleri kumandayla | ⏳ Aşama 4 |
-| Oyuncular ve yönetmen, kişi detayı, filmografi + kütüphane eşleşmesi | Yuvarlak fotoğraf satırı; kişi sayfası 6 sütun, kütüphanedekiler başta | ⏳ Aşama 4 |
+| Klasör ızgarası, klasör içinde arama | Solda kategori listesi + 6 sütun poster ızgarası (veritabanından sayfa sayfa); arama üst bardan | ✅ Aşama 4 |
+| Kilitli (yetişkin) klasörler, ebeveyn PIN'i | Kilit simgeli kategori; aynı PIN penceresi | ✅ Aşama 4 |
+| Favoriye ekle/çıkar | Detay ekranındaki düğme (ızgarada kalp odak durağı yok) | ✅ Aşama 4 |
+| Film detayı: izle, fragman, konu, puan, tarih, AI özet (spoilersız), benzer yapımlar | TV detay ekranı; ilk odak "İzle" | ✅ Aşama 4 |
+| Dizi detayı: sezonlar, bölümler, izlendi işareti, önceki bölümlerin AI özeti | Sezon/bölüm satırları kumandayla; "Devam et" | ✅ Aşama 4 |
+| Oyuncular ve yönetmen, kişi detayı, filmografi + kütüphane eşleşmesi | Yuvarlak fotoğraf satırı (yönetmen başta); kişi sayfası 6 sütun, kütüphanedekiler başta; eşleştirme veritabanında sorguyla | ✅ Aşama 4 |
 
 ### Canlı TV ve oynatıcı
 | Telefon | TV karşılığı | Durum |

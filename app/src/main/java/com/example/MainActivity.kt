@@ -197,6 +197,22 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        // Detaydan oynatma (telefon ve TV aynı): kütüphanedeki kaydı bulur, yoksa uyarır.
+                        val playFromDetail: (IPTVItem) -> Unit = { item ->
+                            viewModel.selectItem(null)
+                            val matched = viewModel.findMatchedItem(item)
+                            val finalItem = matched ?: item
+                            if (finalItem.streamUrl.isNotEmpty()) {
+                                navigateTo(ActiveScreen.Player(finalItem))
+                            } else {
+                                android.widget.Toast.makeText(
+                                    this@MainActivity,
+                                    com.example.util.LocaleHelper.getString(this@MainActivity, R.string.toast_not_in_library, finalItem.cleanedName),
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+
                         LaunchedEffect(Unit) {
                             ErrorHandlingManager.errorEvents.collect { error ->
                                 activeError = error
@@ -442,24 +458,18 @@ class MainActivity : ComponentActivity() {
                                         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
                                     ) {
                                         key(selectedItem?.id ?: -1) {
-                                            DetailScreen(
+                                            val detailItem = selectedItem
+                                            if (viewMode == com.example.data.repository.ViewMode.TV && detailItem != null) {
+                                                com.example.ui.tv.TvDetailScreen(
+                                                    viewModel = viewModel,
+                                                    item = detailItem,
+                                                    onPlay = { item -> playFromDetail(item) }
+                                                )
+                                            } else DetailScreen(
                                                 item = selectedItem,
                                                 seriesList = seriesList,
                                                 onDismiss = { viewModel.selectItem(null) },
-                                                onPlay = { item ->
-                                                    viewModel.selectItem(null)
-                                                    val matched = viewModel.findMatchedItem(item)
-                                                    val finalItem = matched ?: item
-                                                    if (finalItem.streamUrl.isNotEmpty()) {
-                                                        navigateTo(ActiveScreen.Player(finalItem))
-                                                    } else {
-                                                        android.widget.Toast.makeText(
-                                                            this@MainActivity,
-                                                            com.example.util.LocaleHelper.getString(this@MainActivity, R.string.toast_not_in_library, finalItem.cleanedName),
-                                                            android.widget.Toast.LENGTH_LONG
-                                                        ).show()
-                                                    }
-                                                },
+                                                onPlay = { item -> playFromDetail(item) },
                                                 onToggleFavorite = { item ->
                                                     viewModel.toggleFavorite(item)
                                                 },

@@ -591,4 +591,24 @@
     <string name="tv_confirm_press_again">Emin misin? Onay için tekrar bas</string>
     <string name="tv_ai_ask_again">Tekrar sor</string>
     <string name="tv_delete">Sil</string>
+    <string name="tv_top10">Top 10</string>
+    <string name="tv_top_rated">En Yüksek Puanlılar</string>
+    <string name="tv_play">İzle</string>
+    <string name="tv_resume_episode">Devam et: S%1$d B%2$d</string>
+    <string name="tv_add_favorite">Kaydet</string>
+    <string name="tv_remove_favorite">Kaydedildi</string>
+    <string name="tv_ai_spoiler_free">Spoilersız AI özeti</string>
+    <string name="tv_season_count">%1$d sezon</string>
+    <string name="tv_seasons">Sezonlar</string>
+    <string name="tv_season_n">Sezon %1$d</string>
+    <string name="tv_episodes">Bölümler</string>
+    <string name="tv_episode_n">%1$d. Bölüm</string>
+    <string name="tv_cast_and_director">Oyuncular ve yönetmen</string>
+    <string name="tv_director">Yönetmen</string>
+    <string name="tv_similar">Benzer yapımlar</string>
+    <string name="tv_person_works">Yapımları</string>
+    <string name="tv_person_no_works">Bu kişinin yapımı bulunamadı.</string>
+    <string name="tv_born">Doğum: %1$s</string>
+    <string name="tv_saved_hint">Kaldırmak için OK\'e basılı tutun</string>
+    <string name="tv_removed_from_saved">Kaydedilenlerden kaldırıldı</string>
 </resources>

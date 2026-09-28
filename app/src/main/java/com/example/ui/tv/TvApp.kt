@@ -24,33 +24,35 @@ import com.example.data.model.IPTVItem
 import com.example.ui.IPTVViewModel
 import com.example.ui.screens.FolderGridScreen
 import com.example.ui.screens.SettingsScreen
-import com.example.ui.screens.WatchlistScreen
 
 /**
- * TV modunun kök ekranı. Telefon arayüzünden ayrıdır; aynı ViewModel, veri ve oynatıcıyı kullanır.
- * Ana sayfadan açılan bölümlerden Geri ile ana sayfaya, açılan kartın üzerine dönülür. Ana sayfada Geri'ye
- * iki kez basınca (2 sn içinde) uygulamadan çıkılır.
- * Bölüm ekranları sonraki aşamalarda TV'ye özel ekranlarla değiştirilecek; şimdilik mevcut ekranlar kullanılır.
+ * TV gezinme durumu: açık bölüm, ana sayfada son odaklanan öğe, Filmler/Diziler'de seçili kategori ve son
+ * odaklanan poster. Oynatıcı/asistan açılınca TvApp ekrandan çıktığı için bu durum bir üst seviyede
+ * ([rememberTvAppState]) tutulur; dönüşte aynı yer ve odak geri gelir.
  */
-/**
- * TV gezinme durumu: açık bölüm ve ana sayfada son odaklanan öğe. Oynatıcı/asistan açılınca TvApp ekrandan
- * çıktığı için bu durum bir üst seviyede ([rememberTvAppState]) tutulur; dönüşte aynı yer ve odak geri gelir.
- */
-class TvAppState(destination: String, homeFocus: String) {
+class TvAppState(destination: String, homeFocus: String, movieCategory: String?, seriesCategory: String?, browseFocus: String?) {
     var destination by mutableStateOf(destination)
     var homeFocus by mutableStateOf(homeFocus)
+    var movieCategory by mutableStateOf(movieCategory)
+    var seriesCategory by mutableStateOf(seriesCategory)
+    var browseFocus by mutableStateOf(browseFocus)
 
     companion object {
-        val Saver = androidx.compose.runtime.saveable.listSaver<TvAppState, String>(
-            save = { listOf(it.destination, it.homeFocus) },
-            restore = { TvAppState(it[0], it[1]) }
+        val Saver = androidx.compose.runtime.saveable.listSaver<TvAppState, String?>(
+            save = { listOf(it.destination, it.homeFocus, it.movieCategory, it.seriesCategory, it.browseFocus) },
+            restore = { TvAppState(it[0] ?: TV_HOME, it[1] ?: TvSection.LIVE, it[2], it[3], it[4]) }
         )
     }
 }
 
 @Composable
-fun rememberTvAppState(): TvAppState = rememberSaveable(saver = TvAppState.Saver) { TvAppState(TV_HOME, TvSection.LIVE) }
+fun rememberTvAppState(): TvAppState = rememberSaveable(saver = TvAppState.Saver) { TvAppState(TV_HOME, TvSection.LIVE, null, null, null) }
 
+/**
+ * TV modunun kök ekranı. Telefon arayüzünden ayrıdır; aynı ViewModel, veri ve oynatıcıyı kullanır.
+ * Ana sayfadan açılan bölümlerden Geri ile ana sayfaya, açılan kartın üzerine dönülür. Ana sayfada Geri'ye
+ * iki kez basınca (2 sn içinde) uygulamadan çıkılır.
+ */
 @Composable
 fun TvApp(
     viewModel: IPTVViewModel,
@@ -106,33 +108,9 @@ fun TvApp(
                     onPlayItem = onPlayItem
                 )
             }
-            TvSection.MOVIE -> {
-                val groups by viewModel.movieGroups.collectAsState()
-                FolderGridScreen(
-                    groups = groups,
-                    title = "Sinema Klasörleri",
-                    displayTitle = stringResource(R.string.home_folder_movies),
-                    viewModel = viewModel,
-                    onPlayItem = onPlayItem
-                )
-            }
-            TvSection.SERIES -> {
-                val groups by viewModel.seriesGroups.collectAsState()
-                FolderGridScreen(
-                    groups = groups,
-                    title = "Dizi Klasörleri",
-                    displayTitle = stringResource(R.string.home_folder_series),
-                    viewModel = viewModel,
-                    onPlayItem = onPlayItem
-                )
-            }
-            TvSection.SAVED -> WatchlistScreen(
-                viewModel = viewModel,
-                onSelectItem = { item ->
-                    if (item.type == "LIVE") onPlayItem(item) else viewModel.selectItem(item)
-                },
-                onExploreClick = { destination = TvSection.MOVIE }
-            )
+            TvSection.MOVIE -> TvBrowseScreen(viewModel = viewModel, type = "MOVIE", state = state)
+            TvSection.SERIES -> TvBrowseScreen(viewModel = viewModel, type = "SERIES", state = state)
+            TvSection.SAVED -> TvSavedScreen(viewModel = viewModel, onPlayItem = onPlayItem)
             else -> SettingsScreen(viewModel = viewModel)
         }
 

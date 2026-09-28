@@ -404,4 +404,50 @@ interface IPTVDao {
 
     @Query("DELETE FROM ai_recommendation_history")
     suspend fun clearAllAiRecommendationHistory()
+
+    // --- TV modu: sayfa sayfa gezinme (tüm kütüphane belleğe alınmaz) ---
+
+    @Query("SELECT category AS name, COUNT(*) AS count FROM iptv_items WHERE type = :type GROUP BY category")
+    suspend fun categoryCounts(type: String): List<CategoryCount>
+
+    @Query("SELECT * FROM iptv_items WHERE type = :type AND category = :category ORDER BY cleanedName COLLATE NOCASE, id LIMIT :limit OFFSET :offset")
+    suspend fun itemsInCategoryPage(type: String, category: String, limit: Int, offset: Int): List<IPTVItem>
+
+    /** Bir kategorideki tüm öğeler (yalnızca dizi bölümlerini diziye gruplamak için; tek kategoriyle sınırlı). */
+    @Query("SELECT * FROM iptv_items WHERE type = :type AND category = :category")
+    suspend fun itemsInCategory(type: String, category: String): List<IPTVItem>
+
+    @Query("SELECT * FROM iptv_items WHERE type = :type ORDER BY rating DESC LIMIT :limit")
+    suspend fun topRatedByType(type: String, limit: Int): List<IPTVItem>
+
+    @Query("SELECT * FROM iptv_items WHERE type = :type AND rating >= :minRating ORDER BY rating DESC LIMIT :limit")
+    suspend fun ratedAtLeast(type: String, minRating: Double, limit: Int): List<IPTVItem>
+
+    @Query("SELECT * FROM iptv_items WHERE type = :type AND streamUrl != '' LIMIT 1")
+    suspend fun firstItemWithStream(type: String): IPTVItem?
+
+    @Query("SELECT COUNT(*) FROM xtream_series_catalog")
+    suspend fun seriesCatalogCount(): Int
+
+    @Query("SELECT categoryId AS name, COUNT(*) AS count FROM xtream_series_catalog GROUP BY categoryId")
+    suspend fun seriesCatalogCategoryCounts(): List<CategoryCount>
+
+    @Query("SELECT * FROM xtream_series_catalog WHERE categoryId = :categoryId ORDER BY name COLLATE NOCASE, seriesId LIMIT :limit OFFSET :offset")
+    suspend fun seriesCatalogPage(categoryId: String, limit: Int, offset: Int): List<XtreamSeriesCatalogEntity>
+
+    @Query("SELECT * FROM xtream_series_catalog ORDER BY rating DESC LIMIT :limit")
+    suspend fun topRatedSeriesCatalog(limit: Int): List<XtreamSeriesCatalogEntity>
+
+    @Query("SELECT * FROM xtream_series_catalog WHERE rating >= :minRating ORDER BY rating DESC LIMIT :limit")
+    suspend fun seriesCatalogRatedAtLeast(minRating: Double, limit: Int): List<XtreamSeriesCatalogEntity>
+
+    /** Kişi filmografisi eşleştirmesi için aday süzme (başlık/oyuncu LIKE koşulları sorguyla kurulur). */
+    @RawQuery
+    suspend fun rawItems(query: androidx.sqlite.db.SupportSQLiteQuery): List<IPTVItem>
+
+    @RawQuery
+    suspend fun rawSeriesCatalog(query: androidx.sqlite.db.SupportSQLiteQuery): List<XtreamSeriesCatalogEntity>
 }
+
+/** Kategori adı ve içindeki öğe sayısı (TV kategori listesi). */
+data class CategoryCount(val name: String, val count: Int)

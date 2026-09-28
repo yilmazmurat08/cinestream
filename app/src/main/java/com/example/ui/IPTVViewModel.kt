@@ -184,6 +184,76 @@ class IPTVViewModel(
             }
         }
 
+    // --- TV modu: Filmler/Diziler (veritabanından sayfa sayfa; telefonla aynı kurallar) ---
+    private val tvCatalog by lazy { com.example.data.repository.TvCatalogRepository(AppDatabase.getDatabase(getApplication()).iptvDao()) }
+
+    suspend fun tvCategories(type: String): List<com.example.data.repository.TvCategory> =
+        tvCatalog.categories(type) { if (type == "SERIES") seriesCategoryRank(it) else movieCategoryRank(it) }
+
+    suspend fun tvSpecial(type: String, section: com.example.data.repository.TvSpecialSection): List<com.example.data.repository.TvPoster> =
+        tvCatalog.special(type, section)
+
+    /** Kategorinin [offset]'ten başlayan sayfası. Dizilerde M3U bölümleri tek seferde gruplanır (sayfa yok). */
+    suspend fun tvCategoryPage(type: String, categoryKey: String, offset: Int, limit: Int, covers: Map<String, String>): List<com.example.data.repository.TvPoster> =
+        when {
+            type == "MOVIE" -> tvCatalog.moviePage(categoryKey, offset, limit)
+            tvCatalog.hasSeriesCatalog() -> tvCatalog.catalogPage(categoryKey, offset, limit)
+            offset == 0 -> tvCatalog.seriesInCategory(categoryKey, covers)
+            else -> emptyList()
+        }
+
+    /** Dizi bölümünün dizisi (Xtream'den canlı çekilmişse o, yoksa yalnızca bu dizinin bölümleri sorgulanır). */
+    suspend fun tvShowForItem(item: IPTVItem, covers: Map<String, String>): com.example.data.model.TvShow? {
+        _liveFetchedShow.value?.let { show ->
+            if (show.seasons.any { s -> s.episodes.any { it.item.id == item.id } }) return show
+        }
+        return tvCatalog.showForEpisode(item, covers)
+    }
+
+    /** TMDB detayı (önbellekli; telefondaki ile aynı çağrı): arka plan, oyuncu karakterleri, yönetmen. */
+    suspend fun tvTmdbDetails(title: String, type: String): com.example.data.repository.TMDBMediaDetails? =
+        try {
+            tmdbRepository.fetchDetailsByTitle(title, type = type, tmdbApiKey = tmdbApiKey.value)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("IPTVViewModel", "TV TMDB details failed: ${e.message}")
+            null
+        }
+
+    /**
+     * Kişi sayfası: telefondaki "searchPersonWorks" ile aynı adımlar ve aynı eşleştirme kuralları; kütüphane
+     * adayları tüm liste yerine veritabanında sorguyla süzülür.
+     */
+    fun tvPersonWorks(personName: String, role: String, excludeItemId: Int): Flow<com.example.data.model.tmdb.PersonWorksUiState> = flow {
+        val query = com.example.data.repository.PersonWorksMatcher.primaryName(personName)
+        val current = selectedItem.value
+        var state = com.example.data.model.tmdb.PersonWorksUiState(query = query, phase = com.example.data.model.tmdb.PersonWorksPhase.SEARCHING_LIBRARY)
+        emit(state)
+        val castOnly = tvCatalog.personWorks(null, query, excludeItemId, current)
+        state = state.copy(phase = com.example.data.model.tmdb.PersonWorksPhase.FETCHING_TMDB, inLibrary = castOnly.inLibrary)
+        emit(state)
+        state = when (val outcome = personCreditsRepository.lookupPersonCredits(query, role, tmdbApiKey.value)) {
+            is com.example.data.model.tmdb.PersonCreditsOutcome.Found -> {
+                emit(state.copy(phase = com.example.data.model.tmdb.PersonWorksPhase.MATCHING, tmdbCreditCount = outcome.lookup.credits.size, profileUrl = outcome.lookup.profileUrl))
+                val result = tvCatalog.personWorks(outcome.lookup, query, excludeItemId, current)
+                state.copy(
+                    phase = com.example.data.model.tmdb.PersonWorksPhase.DONE,
+                    tmdbCreditCount = outcome.lookup.credits.size,
+                    profileUrl = outcome.lookup.profileUrl,
+                    inLibrary = result.inLibrary,
+                    notInLibrary = result.notInLibrary
+                )
+            }
+            is com.example.data.model.tmdb.PersonCreditsOutcome.NotFound -> state.copy(phase = com.example.data.model.tmdb.PersonWorksPhase.DONE)
+            is com.example.data.model.tmdb.PersonCreditsOutcome.Failed -> state.copy(phase = com.example.data.model.tmdb.PersonWorksPhase.DONE, tmdbProblem = outcome.reason)
+        }
+        emit(state)
+    }.catch { e ->
+        Log.w("IPTVViewModel", "tvPersonWorks error: ${e.message}")
+        emit(com.example.data.model.tmdb.PersonWorksUiState(query = personName, phase = com.example.data.model.tmdb.PersonWorksPhase.DONE, tmdbProblem = e.message))
+    }.flowOn(Dispatchers.IO)
+
     /** Tek bir öğenin hero içeriği: kanal logosu + EPG, dizi bölümünde dizi adı, filmde kendi bilgisi. */
     private suspend fun shelfFor(item: IPTVItem): com.example.data.repository.ShelfContent = when (item.type) {
         "LIVE" -> com.example.data.repository.ShelfContent(
@@ -901,7 +971,7 @@ class IPTVViewModel(
     }
     private val SERIES_WEEKDAY_ORDER = listOf("pazartesi", "salı", "çarşamba", "perşembe", "cuma", "cumartesi", "pazar")
     private val DIGITAL_PLATFORM_KEYWORDS = listOf("netflix", "disney", "exxen", "blutv", "blu tv", "gain", "hbo", "apple", "amazon", "prime", "bein connect")
-    private fun seriesCategoryRank(name: String): Pair<Int, String> {
+    internal fun seriesCategoryRank(name: String): Pair<Int, String> {
         val lower = name.lowercase(java.util.Locale.ROOT)
         val weekdayIdx = SERIES_WEEKDAY_ORDER.indexOfFirst { lower.contains(it) }
         return when {
@@ -910,7 +980,7 @@ class IPTVViewModel(
             else -> 1 to lower
         }
     }
-    private fun movieCategoryRank(name: String): Pair<Int, String> {
+    internal fun movieCategoryRank(name: String): Pair<Int, String> {
         val lower = name.lowercase(java.util.Locale.ROOT)
         return when {
             lower.contains("yeni") -> 0 to lower
@@ -2102,9 +2172,8 @@ class IPTVViewModel(
             try {
                 _isLoadingLiveShow.value = true
                 _liveFetchedShow.value = null
-                val movieItems = repository.getItemsByTypeDirect("MOVIE")
-                val credSource = movieItems.firstOrNull { it.streamUrl.isNotBlank() }
-                    ?: repository.getItemsByTypeDirect("LIVE").firstOrNull { it.streamUrl.isNotBlank() }
+                // Kimlik bilgisi için akışı olan tek bir kayıt yeter (tüm film listesi belleğe alınmaz).
+                val credSource = tvCatalog.firstItemWithStream()
                 if (credSource == null) {
                     Log.w("IPTVViewModel", "openCatalogShow: kimlik bilgisi kaynağı bulunamadı")
                     return@launch

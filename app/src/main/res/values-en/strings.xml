@@ -592,4 +592,24 @@
     <string name="tv_confirm_press_again">Sure? Press again to confirm</string>
     <string name="tv_ai_ask_again">Ask again</string>
     <string name="tv_delete">Delete</string>
+    <string name="tv_top10">Top 10</string>
+    <string name="tv_top_rated">Top Rated</string>
+    <string name="tv_play">Watch</string>
+    <string name="tv_resume_episode">Resume: S%1$d E%2$d</string>
+    <string name="tv_add_favorite">Save</string>
+    <string name="tv_remove_favorite">Saved</string>
+    <string name="tv_ai_spoiler_free">Spoiler-free AI summary</string>
+    <string name="tv_season_count">%1$d seasons</string>
+    <string name="tv_seasons">Seasons</string>
+    <string name="tv_season_n">Season %1$d</string>
+    <string name="tv_episodes">Episodes</string>
+    <string name="tv_episode_n">Episode %1$d</string>
+    <string name="tv_cast_and_director">Cast and director</string>
+    <string name="tv_director">Director</string>
+    <string name="tv_similar">Similar titles</string>
+    <string name="tv_person_works">Filmography</string>
+    <string name="tv_person_no_works">No titles found for this person.</string>
+    <string name="tv_born">Born: %1$s</string>
+    <string name="tv_saved_hint">Hold OK to remove</string>
+    <string name="tv_removed_from_saved">Removed from Saved</string>
 </resources>
