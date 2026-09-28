@@ -77,6 +77,7 @@ fun SettingsScreen(
     val appTheme by viewModel.appTheme.collectAsState()
     val isProUser by viewModel.isProUser.collectAsState()
     val currentLanguage by viewModel.appLanguage.collectAsState()
+    val viewMode by viewModel.viewMode.collectAsState()
     val currentOrientation by viewModel.screenOrientation.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
     val hwAccEnabled by viewModel.hardwareAcceleration.collectAsState()
@@ -242,6 +243,14 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        // GÖRÜNÜM MODU (Telefon / TV)
+                        ViewModeSettingsCard(
+                            currentMode = viewMode,
+                            onModeSelect = { viewModel.setViewMode(it) }
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         // UYGULAMA TEMASI CARD
                         ThemeSettingsCard(
                             currentTheme = appTheme,
@@ -390,6 +399,11 @@ fun SettingsScreen(
                                 context.findActivity()?.recreate()
                             }
                         }
+                    )
+
+                    ViewModeSettingsCard(
+                        currentMode = viewMode,
+                        onModeSelect = { viewModel.setViewMode(it) }
                     )
 
                     ThemeSettingsCard(
@@ -1956,6 +1970,76 @@ fun LanguageSettingsCard(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("language_option_en")
+                )
+            }
+        }
+    }
+}
+
+/** Görünüm modu: telefon arayüzü veya kumandaya uygun TV arayüzü (dil kartıyla aynı stil). */
+@Composable
+fun ViewModeSettingsCard(
+    currentMode: String,
+    onModeSelect: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("view_mode_settings_card"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tv,
+                    contentDescription = null,
+                    tint = CineOrange,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(id = R.string.settings_view_mode),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Text(
+                text = stringResource(id = R.string.settings_view_mode_desc),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                LanguageOptionItem(
+                    label = stringResource(id = R.string.mode_phone),
+                    flagEmoji = "📱",
+                    isSelected = currentMode != com.example.data.repository.ViewMode.TV,
+                    onClick = { onModeSelect(com.example.data.repository.ViewMode.PHONE) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("view_mode_option_phone")
+                )
+
+                LanguageOptionItem(
+                    label = stringResource(id = R.string.mode_tv),
+                    flagEmoji = "📺",
+                    isSelected = currentMode == com.example.data.repository.ViewMode.TV,
+                    onClick = { onModeSelect(com.example.data.repository.ViewMode.TV) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("view_mode_option_tv")
                 )
             }
         }

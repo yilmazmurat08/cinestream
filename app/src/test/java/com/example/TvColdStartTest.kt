@@ -50,6 +50,9 @@ class TvColdStartTest {
             compose.waitForIdle()
             compose.mainClock.advanceTimeBy(6_000)
             compose.waitForIdle()
+            // İlk açılışta mod seçimi sorulur (aynı test sürecinde daha önce seçildiyse sorulmaz); TV seçilir.
+            compose.chooseViewModeIfAsked(tag = "mode_card_tv", clock = compose.mainClock)
+            compose.waitForIdle()
             assertEquals(Lifecycle.State.RESUMED, scenario.state)
             compose.onNode(hasTestTag("login_screen")).assertExists()
         }

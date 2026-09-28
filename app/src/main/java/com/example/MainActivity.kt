@@ -179,9 +179,21 @@ class MainActivity : ComponentActivity() {
                         val userEmail by viewModel.userEmail.collectAsState()
                         val selectedItem by viewModel.selectedItem.collectAsState()
                         val isSetupComplete by viewModel.isSetupComplete.collectAsState()
+                        val viewMode by viewModel.viewMode.collectAsState()
                         val seriesList by viewModel.allSeries.collectAsState()
                         var showIntroSplash by rememberSaveable { mutableStateOf(true) }
                         var currentScreen by rememberSaveable(stateSaver = ActiveScreen.Saver) { mutableStateOf<ActiveScreen>(ActiveScreen.Dashboard) }
+                        val tvAppState = com.example.ui.tv.rememberTvAppState()
+                        val tvPlayerUi = remember { com.example.ui.tv.TvPlayerUiState() }
+                        val isTvMode = viewMode == com.example.data.repository.ViewMode.TV
+                        // Oynatıcıdan çıkınca TV kanal paneli bir sonraki girişte kapalı başlar.
+                        LaunchedEffect(currentScreen is ActiveScreen.Player) {
+                            if (currentScreen !is ActiveScreen.Player) {
+                                tvPlayerUi.panelOpen = false
+                                tvPlayerUi.categoriesOpen = false
+                                tvPlayerUi.panelCategory = null
+                            }
+                        }
                         var lastNavigationTimeMs by remember { mutableLongStateOf(0L) }
                         var activeError by remember { mutableStateOf<AppError?>(null) }
 
@@ -192,6 +204,22 @@ class MainActivity : ComponentActivity() {
                                     lastNavigationTimeMs = currentTime
                                     currentScreen = targetScreen
                                 }
+                            }
+                        }
+
+                        // Detaydan oynatma (telefon ve TV aynı): kütüphanedeki kaydı bulur, yoksa uyarır.
+                        val playFromDetail: (IPTVItem) -> Unit = { item ->
+                            viewModel.selectItem(null)
+                            val matched = viewModel.findMatchedItem(item)
+                            val finalItem = matched ?: item
+                            if (finalItem.streamUrl.isNotEmpty()) {
+                                navigateTo(ActiveScreen.Player(finalItem))
+                            } else {
+                                android.widget.Toast.makeText(
+                                    this@MainActivity,
+                                    com.example.util.LocaleHelper.getString(this@MainActivity, R.string.toast_not_in_library, finalItem.cleanedName),
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
 
@@ -249,7 +277,7 @@ class MainActivity : ComponentActivity() {
                                             showIntroSplash = false
                                         }
                                     )
-                                } else if (!isStateReady) {
+                                } else if (!isStateReady || viewMode == com.example.data.repository.ViewMode.LOADING) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
@@ -262,6 +290,9 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier.size(36.dp)
                                         )
                                     }
+                                } else if (viewMode == com.example.data.repository.ViewMode.UNSET) {
+                                    // İlk açılış: görünüm modu (Telefon / TV) seçimi; sonraki açılışlarda sorulmaz.
+                                    com.example.ui.tv.ModeSelectionScreen(onSelect = { mode -> viewModel.setViewMode(mode) })
                                 } else if (userEmail == null || !isSetupComplete) {
                                     val savedApiKey by viewModel.geminiApiKey.collectAsState()
                                     LoginScreen(
@@ -278,14 +309,33 @@ class MainActivity : ComponentActivity() {
                                     AnimatedContent(
                                         targetState = currentScreen,
                                         transitionSpec = {
-                                            fadeIn(animationSpec = tween(durationMillis = 400)).togetherWith(
-                                                fadeOut(animationSpec = tween(durationMillis = 400))
-                                            )
+                                            if (isTvMode && initialState is ActiveScreen.Player && targetState is ActiveScreen.Player) {
+                                                // TV'de kanal geçişi anında: iki oynatıcı (iki kod çözücü) aynı anda açık kalmaz.
+                                                EnterTransition.None.togetherWith(ExitTransition.None)
+                                            } else {
+                                                fadeIn(animationSpec = tween(durationMillis = 400)).togetherWith(
+                                                    fadeOut(animationSpec = tween(durationMillis = 400))
+                                                )
+                                            }
                                         },
                                         label = "screen_transition"
                                     ) { screen ->
                                         when (screen) {
-                                            is ActiveScreen.Dashboard -> {
+                                            is ActiveScreen.Dashboard -> if (viewMode == com.example.data.repository.ViewMode.TV) {
+                                                com.example.ui.tv.TvApp(
+                                                    viewModel = viewModel,
+                                                    state = tvAppState,
+                                                    onPlayItem = { item ->
+                                                        if (item.type == "LIVE") tvPlayerUi.launch = com.example.ui.tv.TvPlayerUiState.LAUNCH_ENTER
+                                                        navigateTo(ActiveScreen.Player(item))
+                                                    },
+                                                    onPlayContinue = { cw ->
+                                                        if (cw.itemType == "LIVE") tvPlayerUi.launch = com.example.ui.tv.TvPlayerUiState.LAUNCH_ENTER
+                                                        navigateTo(ActiveScreen.Player(continueWatchingItem(cw)))
+                                                    },
+                                                    onOpenAssistant = { navigateTo(ActiveScreen.MovieFinderChat) }
+                                                )
+                                            } else {
                                                 HomeScreen(
                                                     // Yatay kullanımda yandaki gezinme çubuğu ve kamera çentiği içeriği örtmesin.
                                                     modifier = Modifier.windowInsetsPadding(
@@ -301,17 +351,7 @@ class MainActivity : ComponentActivity() {
                                                         navigateTo(ActiveScreen.Player(item))
                                                     },
                                                     onPlayContinueWatching = { cw ->
-                                                        val item = IPTVItem(
-                                                            id = cw.itemId,
-                                                            playlistId = 1,
-                                                            name = cw.itemName,
-                                                            cleanedName = cw.itemName,
-                                                            logoUrl = cw.itemLogo,
-                                                            streamUrl = cw.streamUrl,
-                                                            category = cw.category,
-                                                            type = cw.itemType
-                                                        )
-                                                        navigateTo(ActiveScreen.Player(item))
+                                                        navigateTo(ActiveScreen.Player(continueWatchingItem(cw)))
                                                     },
                                                     onNavigateToMultiScreen = {
                                                         navigateTo(ActiveScreen.MultiScreen)
@@ -378,7 +418,9 @@ class MainActivity : ComponentActivity() {
                                                 }
 
                                                 val initialProgress = remember(activeItem, continueWatchingList) {
-                                                    continueWatchingList.find { it.itemId == activeItem.id }?.progressSeconds ?: 0L
+                                                    // TV modunda canlı yayında "kaldığın yerden devam" sorulmaz.
+                                                    if (isTvMode && activeItem.type == "LIVE") 0L
+                                                    else continueWatchingList.find { it.itemId == activeItem.id }?.progressSeconds ?: 0L
                                                 }
 
                                                 PlayerScreen(
@@ -390,7 +432,9 @@ class MainActivity : ComponentActivity() {
                                                         viewModel.saveProgress(item, progress, total)
                                                     },
                                                     initialProgressSeconds = initialProgress,
-                                                    iptvViewModel = viewModel
+                                                    iptvViewModel = viewModel,
+                                                    tvMode = isTvMode,
+                                                    tvUiState = tvPlayerUi
                                                 )
                                             }
 
@@ -404,7 +448,19 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
 
-                                            is ActiveScreen.MovieFinderChat -> {
+                                            is ActiveScreen.MovieFinderChat -> if (viewMode == com.example.data.repository.ViewMode.TV) {
+                                                com.example.ui.tv.TvAssistantScreen(
+                                                    viewModel = viewModel,
+                                                    onOpenItem = { item ->
+                                                        viewModel.selectItem(item)
+                                                        navigateTo(ActiveScreen.Dashboard)
+                                                    },
+                                                    onOpenSettings = {
+                                                        tvAppState.destination = com.example.ui.tv.TvSection.SETTINGS
+                                                        navigateTo(ActiveScreen.Dashboard)
+                                                    }
+                                                )
+                                            } else {
                                                 com.example.ui.screens.MovieFinderChatScreen(
                                                     viewModel = viewModel,
                                                     onBack = { navigateTo(ActiveScreen.Dashboard) },
@@ -427,24 +483,18 @@ class MainActivity : ComponentActivity() {
                                         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
                                     ) {
                                         key(selectedItem?.id ?: -1) {
-                                            DetailScreen(
+                                            val detailItem = selectedItem
+                                            if (viewMode == com.example.data.repository.ViewMode.TV && detailItem != null) {
+                                                com.example.ui.tv.TvDetailScreen(
+                                                    viewModel = viewModel,
+                                                    item = detailItem,
+                                                    onPlay = { item -> playFromDetail(item) }
+                                                )
+                                            } else DetailScreen(
                                                 item = selectedItem,
                                                 seriesList = seriesList,
                                                 onDismiss = { viewModel.selectItem(null) },
-                                                onPlay = { item ->
-                                                    viewModel.selectItem(null)
-                                                    val matched = viewModel.findMatchedItem(item)
-                                                    val finalItem = matched ?: item
-                                                    if (finalItem.streamUrl.isNotEmpty()) {
-                                                        navigateTo(ActiveScreen.Player(finalItem))
-                                                    } else {
-                                                        android.widget.Toast.makeText(
-                                                            this@MainActivity,
-                                                            com.example.util.LocaleHelper.getString(this@MainActivity, R.string.toast_not_in_library, finalItem.cleanedName),
-                                                            android.widget.Toast.LENGTH_LONG
-                                                        ).show()
-                                                    }
-                                                },
+                                                onPlay = { item -> playFromDetail(item) },
                                                 onToggleFavorite = { item ->
                                                     viewModel.toggleFavorite(item)
                                                 },
@@ -493,3 +543,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+/** İzlemeye Devam Et kaydından oynatıcıya verilecek öğe (telefon ve TV ana sayfası aynı şekilde kullanır). */
+internal fun continueWatchingItem(cw: com.example.data.model.ContinueWatching): IPTVItem = IPTVItem(
+    id = cw.itemId,
+    playlistId = 1,
+    name = cw.itemName,
+    cleanedName = cw.itemName,
+    logoUrl = cw.itemLogo,
+    streamUrl = cw.streamUrl,
+    category = cw.category,
+    type = cw.itemType
+)

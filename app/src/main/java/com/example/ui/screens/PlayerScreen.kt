@@ -80,6 +80,9 @@ import androidx.media3.ui.PlayerView
 import android.util.TypedValue
 import coil.compose.AsyncImage
 import com.example.data.model.IPTVItem
+import com.example.ui.tv.tvModePlayerKeys
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
 import com.example.player.ExoPlayerConfigurator
 import com.example.ui.IPTVViewModel
 import com.example.ui.theme.*
@@ -107,7 +110,9 @@ fun PlayerScreen(
     onProgressUpdate: (IPTVItem, progress: Long, total: Long) -> Unit,
     modifier: Modifier = Modifier,
     initialProgressSeconds: Long = 0L,
-    iptvViewModel: IPTVViewModel? = null
+    iptvViewModel: IPTVViewModel? = null,
+    tvMode: Boolean = false,
+    tvUiState: com.example.ui.tv.TvPlayerUiState? = null
 ) {
     // Oynatıcı ExoPlayer'dır (önceki VLC yolu hiç açılmıyordu ve kaldırıldı).
     LegacyExoPlayerScreen(
@@ -118,7 +123,9 @@ fun PlayerScreen(
         onProgressUpdate = onProgressUpdate,
         modifier = modifier,
         initialProgressSeconds = initialProgressSeconds,
-        iptvViewModel = iptvViewModel
+        iptvViewModel = iptvViewModel,
+        tvMode = tvMode,
+        tvUiState = tvUiState
     )
 }
 
@@ -132,10 +139,14 @@ fun LegacyExoPlayerScreen(
     onProgressUpdate: (IPTVItem, progress: Long, total: Long) -> Unit,
     modifier: Modifier = Modifier,
     initialProgressSeconds: Long = 0L,
-    iptvViewModel: IPTVViewModel? = null
+    iptvViewModel: IPTVViewModel? = null,
+    /** TV modu: telefon kontrolleri yerine TV arayüzü (kanal paneli, cam kontrol çubuğu). Oynatma mantığı aynıdır. */
+    tvMode: Boolean = false,
+    tvUiState: com.example.ui.tv.TvPlayerUiState? = null
 ) {
     val context = LocalContext.current
     val layout = rememberAppAdaptiveLayout()
+    val tvUi = tvUiState ?: remember { com.example.ui.tv.TvPlayerUiState() }
     val scope = rememberCoroutineScope()
     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     // MainActivity, dil desteği için Compose'a Activity olmayan bir bağlam (LocalContext) verir; o yüzden
@@ -262,9 +273,10 @@ fun LegacyExoPlayerScreen(
 
     fun resetControlsTimer() {
         autoHideJob?.cancel()
-        if (controlsVisible && !showTray && !isScreenLocked) {
+        if (controlsVisible && !showTray && !isScreenLocked && !(tvMode && tvUi.panelOpen)) {
             autoHideJob = scope.launch {
-                delay(3000) // Hide controls after 3 seconds of inactivity
+                // Telefonda 3 sn, TV modunda 5 sn işlem yapılmazsa kontroller gizlenir.
+                delay(if (tvMode) 5000 else 3000)
                 controlsVisible = false
             }
         }
@@ -286,7 +298,8 @@ fun LegacyExoPlayerScreen(
     DisposableEffect(lifecycleOwner, player) {
         com.example.player.PlaybackForegroundService.start(
             context,
-            item.cleanedName.ifEmpty { item.name }
+            item.cleanedName.ifEmpty { item.name },
+            owner = player
         )
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
@@ -314,7 +327,7 @@ fun LegacyExoPlayerScreen(
                         } catch (e: Exception) {
                             // Ignore
                         }
-                        com.example.player.PlaybackForegroundService.stop(context)
+                        com.example.player.PlaybackForegroundService.stop(context, owner = player)
                     }
                 }
                 androidx.lifecycle.Lifecycle.Event.ON_START -> {
@@ -327,7 +340,8 @@ fun LegacyExoPlayerScreen(
                         }
                         com.example.player.PlaybackForegroundService.start(
                             context,
-                            item.cleanedName.ifEmpty { item.name }
+                            item.cleanedName.ifEmpty { item.name },
+                            owner = player
                         )
                     }
                 }
@@ -350,7 +364,7 @@ fun LegacyExoPlayerScreen(
             } catch (e: Exception) {
                 // Ignore
             }
-            com.example.player.PlaybackForegroundService.stop(context)
+            com.example.player.PlaybackForegroundService.stop(context, owner = player)
         }
     }
 
@@ -498,7 +512,7 @@ fun LegacyExoPlayerScreen(
             } catch (e: Exception) {
                 // Ignore
             }
-            com.example.player.PlaybackForegroundService.stop(context)
+            com.example.player.PlaybackForegroundService.stop(context, owner = player)
         }
     )
     SideEffect { latestPipState.value = pipState }
@@ -711,7 +725,7 @@ fun LegacyExoPlayerScreen(
     // gizler, ikinci basışta oynatıcıdan çıkar.
     val tvKeyFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(controlsVisible) {
-        if (!controlsVisible) {
+        if (!controlsVisible && !(tvMode && tvUi.panelOpen)) {
             delay(150)
             try {
                 tvKeyFocusRequester.requestFocus()
@@ -721,6 +735,8 @@ fun LegacyExoPlayerScreen(
     }
     LaunchedEffect(Unit) {
         delay(300)
+        // TV modunda kontroller/panel açıksa odak onlarda kalır (oynatıcıya alınmaz).
+        if (tvMode && (controlsVisible || tvUi.panelOpen)) return@LaunchedEffect
         try {
             tvKeyFocusRequester.requestFocus()
         } catch (_: Exception) {
@@ -775,13 +791,135 @@ fun LegacyExoPlayerScreen(
         }
     }
 
+    // ---------------- TV modu (telefonda bu blok hiçbir şey yapmaz) ----------------
+    val tvLiveChannels by (iptvViewModel?.liveChannels?.collectAsState() ?: remember { mutableStateOf(emptyList<IPTVItem>()) })
+    // Kanal halkası: izlenen kanalın klasörü (telefondaki CH+/CH− ile aynı kural); numaralar buna göre.
+    val tvRing = com.example.ui.components.rememberComputedOffMain(
+        item.id, tvLiveChannels, tvMode,
+        workSize = if (tvMode) tvLiveChannels.size else 0,
+        fallback = listOf(item)
+    ) {
+        if (tvMode && item.type == "LIVE" && iptvViewModel != null && tvLiveChannels.isNotEmpty()) {
+            iptvViewModel.channelRingFor(item, tvLiveChannels)
+        } else {
+            listOf(item)
+        }
+    }
+    var tvInfoTick by remember { mutableIntStateOf(0) }
+    var tvInfoBand by remember { mutableStateOf(false) }
+    var tvDigits by remember { mutableStateOf("") }
+    var tvVolume by remember { mutableStateOf<Float?>(null) }
+    var tvVolumeTick by remember { mutableIntStateOf(0) }
+    val tvVolumeFixed = remember { runCatching { audioManager.isVolumeFixed }.getOrDefault(true) }
+    val tvPlayPauseFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val previousItem = remember(currentIndex, siblingItems) { if (currentIndex > 0) siblingItems[currentIndex - 1] else null }
+
+    fun tvPlay(target: IPTVItem, launch: String?) {
+        tvUi.launch = launch
+        onPlayItem(target)
+    }
+    fun tvStep(step: Int) {
+        if (tvRing.size < 2) return
+        val index = tvRing.indexOfFirst { it.id == item.id }
+        val target = if (index == -1) tvRing.first() else tvRing[(index + step).mod(tvRing.size)]
+        if (target.id != item.id) {
+            tvPlay(target, if (controlsVisible) com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS else com.example.ui.tv.TvPlayerUiState.LAUNCH_ZAP)
+        }
+    }
+    LaunchedEffect(Unit) {
+        if (!tvMode) return@LaunchedEffect
+        when (tvUi.launch) {
+            com.example.ui.tv.TvPlayerUiState.LAUNCH_ENTER -> {
+                controlsVisible = true
+                if (item.type == "LIVE") tvUi.panelOpen = true
+            }
+            com.example.ui.tv.TvPlayerUiState.LAUNCH_ZAP -> {
+                controlsVisible = false
+                tvInfoTick++
+            }
+            com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS -> controlsVisible = true
+            else -> if (!tvUi.panelOpen) tvUi.panelCategory = null
+        }
+        tvUi.launch = null
+    }
+    LaunchedEffect(tvInfoTick) {
+        if (tvInfoTick == 0) return@LaunchedEffect
+        tvInfoBand = true
+        delay(3000)
+        tvInfoBand = false
+    }
+    LaunchedEffect(tvDigits) {
+        if (tvDigits.isEmpty()) return@LaunchedEffect
+        delay(1500)
+        val number = tvDigits.toIntOrNull()
+        tvDigits = ""
+        val target = number?.let { tvRing.getOrNull(it - 1) }
+        if (target != null && target.id != item.id) tvPlay(target, com.example.ui.tv.TvPlayerUiState.LAUNCH_ZAP)
+    }
+    LaunchedEffect(tvVolumeTick) {
+        if (tvVolumeTick == 0) return@LaunchedEffect
+        delay(1500)
+        tvVolume = null
+    }
+    // Odak: kontroller açık (panel kapalı) → oynat/duraklat; hepsi gizli → oynatıcı (tuşlar).
+    LaunchedEffect(controlsVisible, tvUi.panelOpen) {
+        if (!tvMode) return@LaunchedEffect
+        if (controlsVisible && !tvUi.panelOpen) {
+            com.example.ui.tv.requestFocusWhenReady(tvPlayPauseFocus)
+        } else if (!controlsVisible && !tvUi.panelOpen) {
+            delay(120)
+            try {
+                tvKeyFocusRequester.requestFocus()
+            } catch (_: Exception) {
+            }
+        }
+        resetControlsTimer()
+    }
+    val tvModeKeys = if (!tvMode) Modifier else Modifier.tvModePlayerKeys(
+                    isLive = item.type == "LIVE",
+                    overlayHidden = { !controlsVisible && !tvUi.panelOpen && !streamFailed && !showTrackSelectorSheet && !showResumeDialog },
+                    volumeFixed = tvVolumeFixed,
+                    onShowControls = {
+                        controlsVisible = true
+                        resetControlsTimer()
+                    },
+                    onPlayPause = {
+                        if (player.isPlaying) player.pause() else player.play()
+                        resetControlsTimer()
+                    },
+                    onSeek = { deltaMs ->
+                        tvSeekBy(deltaMs)
+                        if (!controlsVisible) tvInfoTick++
+                    },
+                    onChannelStep = { step -> tvStep(step) },
+                    onOpenPanel = {
+                        tvUi.panelOpen = true
+                        controlsVisible = true
+                    },
+                    onDigit = { d -> if (tvDigits.length < 4) tvDigits += d.toString() },
+                    onVolume = { direction ->
+                        audioManager.adjustStreamVolume(
+                            AudioManager.STREAM_MUSIC,
+                            if (direction > 0) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+                            0
+                        )
+                        val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
+                        tvVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / max
+                        tvVolumeTick++
+                    },
+                    onNext = { if (item.type == "LIVE") tvStep(1) else nextItem?.let { tvPlay(it, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
+                    onPrevious = { if (item.type == "LIVE") tvStep(-1) else previousItem?.let { tvPlay(it, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
+                    onUserActivity = { if (controlsVisible) resetControlsTimer() }
+    )
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(DeepPurpleBg)
-            .then(com.example.ui.tv.tvChannelKeys(enabled = item.type == "LIVE") { step -> switchChannel(step) })
+            .then(if (tvMode) tvModeKeys else Modifier)
+            .then(if (tvMode) Modifier else com.example.ui.tv.tvChannelKeys(enabled = item.type == "LIVE") { step -> switchChannel(step) })
             .then(
-                com.example.ui.tv.tvPlayerKeys(
+                if (tvMode) Modifier.focusRequester(tvKeyFocusRequester).focusable() else com.example.ui.tv.tvPlayerKeys(
                     focusRequester = tvKeyFocusRequester,
                     // Kilitliyken de tuşlar burada yakalanır: kilit açma düğmesi gösterilir, sarma yapılmaz.
                     // Kilit açma düğmesi görünürken tuşlar ona gider (OK = kilidi aç).
@@ -986,6 +1124,7 @@ fun LegacyExoPlayerScreen(
 
         // PiP penceresinde yalnızca video görünür; kontroller, paneller ve pencereler gizlenir.
         if (!isInPip) {
+            if (!tvMode) {
             // 2. Gesture HUD Indicator overlays (Left Edge: Brightness, Right Edge: Volume)
             AnimatedVisibility(
                 visible = showBrightnessHUD,
@@ -1862,6 +2001,60 @@ fun LegacyExoPlayerScreen(
                         }
                     }
                 }
+            }
+
+            } else {
+                // TV modu: kanal paneli, cam kontrol çubuğu, kanal bilgi kartı, ses çubuğu
+                com.example.ui.tv.TvPlayerOverlay(
+                    viewModel = iptvViewModel ?: return@BoxWithConstraints,
+                    item = item,
+                    ui = tvUi,
+                    ring = tvRing,
+                    allLive = tvLiveChannels,
+                    vodList = siblingItems,
+                    controlsVisible = controlsVisible,
+                    isPlaying = isPlaying,
+                    positionSec = currentPos,
+                    durationSec = if (player.isCurrentMediaItemSeekable) totalDuration else 0L,
+                    infoBandVisible = tvInfoBand,
+                    volumeLevel = tvVolume,
+                    digits = tvDigits,
+                    aspectBadge = showAspectRatioBadge,
+                    playPauseFocus = tvPlayPauseFocus,
+                    onPlayPause = {
+                        if (player.isPlaying) player.pause() else player.play()
+                        resetControlsTimer()
+                    },
+                    onSeek = { deltaMs ->
+                        tvSeekBy(deltaMs)
+                        resetControlsTimer()
+                    },
+                    onStartOver = {
+                        player.seekTo(0L)
+                        player.play()
+                        resetControlsTimer()
+                    },
+                    onPlayFromPanel = { target -> tvPlay(target, null) },
+                    onStep = { step -> tvStep(step) },
+                    onNextEpisode = nextItem?.let { next -> { tvPlay(next, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
+                    onPreviousEpisode = previousItem?.let { prev -> { tvPlay(prev, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
+                    onOpenTracks = {
+                        showTrackSelectorSheet = true
+                        autoHideJob?.cancel()
+                    },
+                    onCycleAspect = {
+                        val values = AspectRatioMode.values()
+                        currentAspectRatioMode = values[(currentAspectRatioMode.ordinal + 1) % values.size]
+                        val aspectBadge = context.getString(R.string.player_aspect_badge, context.getString(currentAspectRatioMode.labelRes))
+                        showAspectRatioBadge = aspectBadge
+                        scope.launch {
+                            delay(1500)
+                            if (showAspectRatioBadge == aspectBadge) showAspectRatioBadge = null
+                        }
+                        resetControlsTimer()
+                    },
+                    onUserActivity = { if (controlsVisible) resetControlsTimer() }
+                )
             }
 
             // 7.5. Kaldığın Yerden Devam Et Dialog Overlay

@@ -40,6 +40,8 @@ class TvStartupTest {
         rule.activityRule.scenario.recreate()
         rule.mainClock.advanceTimeBy(6_000)
         rule.waitForIdle()
+        rule.chooseViewModeIfAsked(tag = "mode_card_tv", clock = rule.mainClock)
+        rule.waitForIdle()
         assertEquals(Lifecycle.State.RESUMED, rule.activityRule.scenario.state)
         rule.onNode(hasTestTag("login_screen")).assertExists()
         // Ana ekran tuşu ve geri dönüş.

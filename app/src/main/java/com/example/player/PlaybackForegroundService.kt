@@ -19,23 +19,63 @@ class PlaybackForegroundService : Service() {
         const val CHANNEL_ID = "cinestream_playback"
         const val NOTIFICATION_ID = 7301
         const val EXTRA_TITLE = "extra_title"
+        private const val STOP_DELAY_MS = 1_500L
 
-        fun start(context: Context, title: String) {
-            val intent = Intent(context, PlaybackForegroundService::class.java).apply {
+        /**
+         * Servisi kullanan oynatıcılar. Kanal/bölüm hızlıca değişince yeni oynatıcı başlatır, eski oynatıcı hemen
+         * ardından durdurur; servis hazır olmadan durdurulursa Android uygulamayı kapatır
+         * (ForegroundServiceDidNotStartInTimeException). Bu yüzden servis ancak hiçbir kullanıcı kalmayınca ve
+         * kısa bir beklemeden sonra durdurulur.
+         */
+        private val owners = HashSet<Int>()
+        private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        private var pendingStop: Runnable? = null
+
+        fun start(context: Context, title: String, owner: Any = DEFAULT_OWNER) {
+            val app = context.applicationContext
+            synchronized(owners) {
+                owners.add(System.identityHashCode(owner))
+                pendingStop?.let { mainHandler.removeCallbacks(it) }
+                pendingStop = null
+            }
+            val intent = Intent(app, PlaybackForegroundService::class.java).apply {
                 putExtra(EXTRA_TITLE, title)
             }
             try {
-                context.startForegroundService(intent)
+                app.startForegroundService(intent)
             } catch (e: Exception) {
+                // Arka planda başlatma izni yoksa (Android 12+) oynatma bildirimsiz devam eder.
             }
         }
 
-        fun stop(context: Context) {
-            try {
-                context.stopService(Intent(context, PlaybackForegroundService::class.java))
-            } catch (e: Exception) {
+        fun stop(context: Context, owner: Any = DEFAULT_OWNER) {
+            val app = context.applicationContext
+            synchronized(owners) {
+                owners.remove(System.identityHashCode(owner))
+                if (owners.isNotEmpty()) return
+                pendingStop?.let { mainHandler.removeCallbacks(it) }
+                val runnable = Runnable {
+                    val stillUnused = synchronized(owners) { owners.isEmpty() }
+                    if (stillUnused) {
+                        try {
+                            app.stopService(Intent(app, PlaybackForegroundService::class.java))
+                        } catch (e: Exception) {
+                        }
+                    }
+                }
+                pendingStop = runnable
+                mainHandler.postDelayed(runnable, STOP_DELAY_MS)
             }
         }
+
+        private val DEFAULT_OWNER = Any()
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        // startForegroundService sonrası ilk iş: ön plana geç. Servis onStartCommand'dan önce durdurulsa bile
+        // Android'in "zamanında ön plana geçmedi" hatası oluşmaz.
+        startForeground(NOTIFICATION_ID, buildNotification("CineStream"))
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
