@@ -615,4 +615,10 @@
     <string name="tv_panel_left_hint">Left: categories</string>
     <string name="tv_channel_info">Channel Info</string>
     <string name="tv_up_next">Next %1$s  %2$s</string>
+    <string name="tv_on">On</string>
+    <string name="tv_off">Off</string>
+    <string name="tv_manual">Manual</string>
+    <string name="tv_automatic">Automatic</string>
+    <string name="tv_saved_value">Saved</string>
+    <string name="tv_profile">Profile</string>
 </resources>

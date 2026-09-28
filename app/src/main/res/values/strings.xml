@@ -614,4 +614,10 @@
     <string name="tv_panel_left_hint">Sol: kategoriler</string>
     <string name="tv_channel_info">Kanal Bilgisi</string>
     <string name="tv_up_next">Sonra %1$s  %2$s</string>
+    <string name="tv_on">Açık</string>
+    <string name="tv_off">Kapalı</string>
+    <string name="tv_manual">Manuel</string>
+    <string name="tv_automatic">Otomatik</string>
+    <string name="tv_saved_value">Kayıtlı</string>
+    <string name="tv_profile">Profil</string>
 </resources>

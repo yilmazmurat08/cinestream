@@ -24,7 +24,6 @@ import com.example.data.model.ContinueWatching
 import com.example.data.model.IPTVItem
 import com.example.ui.IPTVViewModel
 import com.example.ui.screens.FolderGridScreen
-import com.example.ui.screens.SettingsScreen
 
 /**
  * TV gezinme durumu: açık bölüm, ana sayfada son odaklanan öğe, Filmler/Diziler'de seçili kategori ve son
@@ -123,7 +122,7 @@ fun TvApp(
             TvSection.MOVIE -> TvBrowseScreen(viewModel = viewModel, type = "MOVIE", state = state)
             TvSection.SERIES -> TvBrowseScreen(viewModel = viewModel, type = "SERIES", state = state)
             TvSection.SAVED -> TvSavedScreen(viewModel = viewModel, onPlayItem = onPlayItem)
-            else -> SettingsScreen(viewModel = viewModel)
+            else -> TvSettingsScreen(viewModel = viewModel)
         }
 
         if (searchOpen) {

@@ -69,7 +69,7 @@ iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). D
 | Öne çıkan carousel | Hero (Top Shelf), odaklanan karta göre | ✅ Aşama 2 |
 | İzlemeye devam et, Sıradaki bölüm | Alttaki "İzlemeye Devam Et" çubuğu | ✅ Aşama 2 |
 | Arama + AI arama | Üst bardaki arama (aynı arama penceresi) | ✅ Aşama 2 |
-| Arama geçmişi rafı | Arama penceresinde | ⏳ Aşama 6 |
+| Arama geçmişi rafı | Telefonda ana sayfada; TV arama penceresinde yok | ❓ |
 | ✨ AI asistan kartı | Üst bardaki ✨ ve "Asistana sor" | ✅ Aşama 2–3 |
 | Top 10 filmler / diziler | Filmler / Diziler kategori listesinin en üstünde "Top 10" | ✅ Aşama 4 |
 | En yüksek puanlılar (Efsaneler) | Filmler / Diziler kategori listesinde özel bölüm | ✅ Aşama 4 |
@@ -118,8 +118,8 @@ iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). D
 ### Ayarlar
 | Telefon | TV karşılığı | Durum |
 |---|---|---|
-| Listeler, EPG, dil, görünüm modu, tema, oynatıcı, veri/bellek, altyazı, güvenlik (PIN), Gemini anahtarı | Dikey liste (ikon, başlık, sağda değer); aynı ayarlar | ⏳ Aşama 6 |
-| Ekran yönü | TV'de anlamsız (hep yatay) | ❓ |
+| Profil, PRO, listeler, EPG, dil, görünüm modu, tema, oynatıcı, veri/bellek (önbellek, çökme günlükleri, hakkında), altyazı, güvenlik (PIN), Gemini anahtarı | Dikey liste (ikon, başlık, sağda değer) + sağda telefondaki kartın aynısı | ✅ Aşama 6 |
+| Ekran yönü | Listede var (telefondaki kart); TV'de anlamsız (hep yatay) | ❓ gizlensin mi |
 | PRO | Üst bardaki PRO (Google Play ödemesi "Paywall kur" denince) | ✅ düğme |
 
 ### ❓ Onay gerekenler (sana sorulacak)
