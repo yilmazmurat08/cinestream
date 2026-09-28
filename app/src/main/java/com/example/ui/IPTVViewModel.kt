@@ -1003,7 +1003,9 @@ class IPTVViewModel(
     data class ChatMessage(
         val role: String,
         val text: String,
-        val matchedItem: IPTVItem? = null
+        val matchedItem: IPTVItem? = null,
+        /** Asistanın tahmin ettiği yapım adı (kütüphanede bulunamasa da; TV "kütüphanende yok" der). */
+        val detectedTitle: String = ""
     )
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -1043,7 +1045,8 @@ class IPTVViewModel(
                 _chatMessages.value = _chatMessages.value + ChatMessage(
                     role = "ai",
                     text = aiResult.reply,
-                    matchedItem = matchedItem
+                    matchedItem = matchedItem,
+                    detectedTitle = aiResult.detectedTitle
                 )
 
                 try {

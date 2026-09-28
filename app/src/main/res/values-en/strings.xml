@@ -574,4 +574,22 @@
     <string name="tv_now_playing">Now: %1$s</string>
     <string name="tv_exit_hint">Press Back again to exit</string>
     <string name="tv_season_episode">Season %1$d · Episode %2$d</string>
+    <string name="tv_ai_presets">Quick questions</string>
+    <string name="tv_ai_q1">What should I watch tonight?</string>
+    <string name="tv_ai_q2">Recommend a good comedy movie</string>
+    <string name="tv_ai_q3">Suggest a series to watch with family</string>
+    <string name="tv_ai_q4">Recommend a movie for sci-fi fans</string>
+    <string name="tv_ai_voice">Ask by voice</string>
+    <string name="tv_ai_no_key">The assistant needs a Gemini API key. You can send it from your phone or enter it in Settings.</string>
+    <string name="tv_ai_key_phone">Enter key from phone</string>
+    <string name="tv_ai_key_settings">Go to Settings</string>
+    <string name="tv_ai_scene_find">Let me describe a scene, find the movie</string>
+    <string name="tv_ai_scene_prompt">Describe the scenes you remember</string>
+    <string name="tv_ai_voice_prompt">Ask the assistant</string>
+    <string name="tv_in_library">In your library</string>
+    <string name="tv_open_details">Open details</string>
+    <string name="tv_not_in_library">“%1$s” is not in your library.</string>
+    <string name="tv_confirm_press_again">Sure? Press again to confirm</string>
+    <string name="tv_ai_ask_again">Ask again</string>
+    <string name="tv_delete">Delete</string>
 </resources>

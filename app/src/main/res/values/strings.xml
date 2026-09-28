@@ -573,4 +573,22 @@
     <string name="tv_now_playing">Şimdi: %1$s</string>
     <string name="tv_exit_hint">Çıkmak için tekrar Geri\'ye basın</string>
     <string name="tv_season_episode">Sezon %1$d · Bölüm %2$d</string>
+    <string name="tv_ai_presets">Hazır sorular</string>
+    <string name="tv_ai_q1">Bu akşam ne izlesem?</string>
+    <string name="tv_ai_q2">Bana güzel bir komedi filmi öner</string>
+    <string name="tv_ai_q3">Ailece izlenecek bir dizi öner</string>
+    <string name="tv_ai_q4">Bilim kurgu sevenlere bir film öner</string>
+    <string name="tv_ai_voice">Sesle sor</string>
+    <string name="tv_ai_no_key">Asistanı kullanmak için bir Gemini API anahtarı gerekiyor. Anahtarı telefonundan gönderebilir ya da Ayarlar\'dan girebilirsin.</string>
+    <string name="tv_ai_key_phone">Anahtarı telefonla gir</string>
+    <string name="tv_ai_key_settings">Ayarlar\'a git</string>
+    <string name="tv_ai_scene_find">Sahnesini anlatayım, filmi bul</string>
+    <string name="tv_ai_scene_prompt">Filmden hatırladığın sahneleri anlat</string>
+    <string name="tv_ai_voice_prompt">Asistana sor</string>
+    <string name="tv_in_library">Kütüphanende var</string>
+    <string name="tv_open_details">Detayı aç</string>
+    <string name="tv_not_in_library">“%1$s” kütüphanende yok.</string>
+    <string name="tv_confirm_press_again">Emin misin? Onay için tekrar bas</string>
+    <string name="tv_ai_ask_again">Tekrar sor</string>
+    <string name="tv_delete">Sil</string>
 </resources>

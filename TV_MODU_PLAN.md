@@ -48,3 +48,80 @@ yazılı tarife göre yapıldı. Görseller eklenince birebir karşılaştırıl
 4. Filmler/Diziler (kategori listesi + 6 sütun poster ızgarası, sayfalı yükleme) ve detay.
 5. Canlı TV ve oynatıcı (kanal paneli, kontrol çubuğu, kanal bilgisi, tuş eşlemeleri, ses).
 6. Ayarlar (alt alta liste).
+
+## Özellik eşitliği: telefondaki her özelliğin TV karşılığı
+
+Kural: telefondaki hiçbir özellik TV'de eksik kalmaz; yalnızca arayüz kumandaya uyarlanır. Veri, ViewModel ve
+iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). Durum: ✅ yapıldı · ⏳ planlandı (aşama) · ❓ onay gerekiyor.
+
+### Açılış ve hesap
+| Telefon | TV karşılığı | Durum |
+|---|---|---|
+| Açılış animasyonu | Aynısı | ✅ |
+| Görünüm modu seçimi | Aynı ekran, TV kartı hazır odaklı | ✅ Aşama 1 |
+| Giriş / kurulum, liste ekleme (M3U, Xtream) | Aynı ekran + telefonla QR giriş (mevcut) | ✅ (mevcut) |
+| Hata / çökme raporu ekranı | Aynısı | ✅ (mevcut) |
+
+### Ana sayfa (telefon: alt çubuk + raflar)
+| Telefon | TV karşılığı | Durum |
+|---|---|---|
+| Alt çubuk: Ana sayfa, Filmler, Diziler, Canlı TV, Listem, Profil | 5 cam kart (Canlı TV, Filmler, Diziler, Kaydedilenler, Profil/Ayarlar) | ✅ Aşama 2 |
+| Öne çıkan carousel | Hero (Top Shelf), odaklanan karta göre | ✅ Aşama 2 |
+| İzlemeye devam et, Sıradaki bölüm | Alttaki "İzlemeye Devam Et" çubuğu | ✅ Aşama 2 |
+| Arama + arama geçmişi + AI arama | Üst bardaki arama (aynı arama penceresi) | ✅ Aşama 2 (geçmiş rafı ⏳ Aşama 4'te pencereye) |
+| ✨ AI asistan kartı | Üst bardaki ✨ ve "Asistana sor" | ✅ Aşama 2–3 |
+| Top 10 filmler / diziler | Filmler / Diziler kategori listesinin en üstünde "Top 10" | ⏳ Aşama 4 |
+| En yüksek puanlılar (Efsaneler) | Filmler kategori listesinde özel bölüm | ⏳ Aşama 4 |
+| Tür rafları (Korku, Komedi, Dram…) | Filmler kategori listesinde özel bölümler | ⏳ Aşama 4 |
+| Favori rafı | Kaydedilenler kartı | ✅ (ekran ⏳ Aşama 4'te TV'ye uyarlanacak) |
+| Top 10 kanallar, Şimdi yayında | Canlı TV kategori listesinin en üstünde | ⏳ Aşama 5 |
+| Radyo yayınları | Canlı TV kategori listesinde "Radyo" bölümü | ❓ |
+| Fragman kutusu | Detay ekranında "Fragman" düğmesi + Filmler'de özel bölüm | ❓ |
+| Günün seçimi (film düellosu) | Filmler kategori listesinde özel bölüm (iki film yan yana) | ❓ |
+| AI Sinema Bülteni | Filmler kategori listesinde özel bölüm | ❓ |
+| Çoklu ekran (MultiScreen) | Canlı TV kontrol çubuğunda "Çoklu ekran" düğmesi | ❓ |
+
+### Asistan
+| Telefon | TV karşılığı | Durum |
+|---|---|---|
+| Sohbet (aynı Gemini) | Büyük yazılı cam ekran, kaydırılabilir mesajlar | ✅ Aşama 3 |
+| Sahneden film bulma + kütüphane eşleştirme | Aynı mantık; ana yol sesli giriş ("Sahnesini anlatayım, filmi bul"); kart + otomatik odak; yoksa "kütüphanende yok" | ✅ Aşama 3 |
+| Yazarak sorma | Ekran klavyesi + sesle sor düğmesi (ses tanıma yoksa gizli) | ✅ Aşama 3 |
+| Geçmiş sekmesi (aç, tekrar sor, sil, tümünü temizle) | Sol paneldeki "Geçmiş" | ✅ Aşama 3 |
+| Sohbeti temizle | Sol panelde | ✅ Aşama 3 |
+| Anahtar yoksa | Telefonla QR giriş veya Ayarlar | ✅ Aşama 3 |
+
+### Filmler / Diziler / Detay / Kişi
+| Telefon | TV karşılığı | Durum |
+|---|---|---|
+| Klasör ızgarası, klasör içinde arama | Solda kategori listesi + 6 sütun poster ızgarası; arama üst bardan | ⏳ Aşama 4 |
+| Kilitli (yetişkin) klasörler, ebeveyn PIN'i | Aynı PIN penceresi, kumandayla rakam girişi | ⏳ Aşama 4 |
+| Favoriye ekle/çıkar | Detay ekranındaki düğme (ızgarada kalp odak durağı yok) | ⏳ Aşama 4 |
+| Film detayı: izle, fragman, konu, puan, tarih, AI özet (spoilersız), AI öneriler | TV detay ekranı; ilk odak "İzle" | ⏳ Aşama 4 |
+| Dizi detayı: sezonlar, bölümler, izlendi işareti, önceki bölümlerin AI özeti | Sezon/bölüm listeleri kumandayla | ⏳ Aşama 4 |
+| Oyuncular ve yönetmen, kişi detayı, filmografi + kütüphane eşleşmesi | Yuvarlak fotoğraf satırı; kişi sayfası 6 sütun, kütüphanedekiler başta | ⏳ Aşama 4 |
+
+### Canlı TV ve oynatıcı
+| Telefon | TV karşılığı | Durum |
+|---|---|---|
+| Kanal listesi (aynı klasör), önceki/sonraki kanal | Sol cam kanal paneli, Yukarı/Aşağı, CH+/CH−, numara tuşları | ⏳ Aşama 5 |
+| EPG (şimdi/sonra, tam EPG) | Kanal bilgisi kartı + ilerleme çubuğu; tam EPG panelde | ⏳ Aşama 5 |
+| Oynat/duraklat, ±10 sn, baştan başlat, sonraki/önceki bölüm | Alt kontrol çubuğu; Sol/Sağ ±10 sn | ⏳ Aşama 5 |
+| Ses ve altyazı seçimi, görüntü oranı | Kontrol çubuğunda | ⏳ Aşama 5 |
+| Ses seviyesi | Ses çubuğu (STREAM_MUSIC; sabit seslilerde gizli) | ⏳ Aşama 5 |
+| Kaldığın yerden devam sorusu, yayın hatası ekranı | Aynısı, kumandayla | ⏳ Aşama 5 |
+| Tam ekran / küçült, PiP | TV zaten tam ekran; PiP destekleyen TV'de aynı | ⏳ Aşama 5 |
+| Parlaklık kaydırma, ekran kilidi | Dokunmatik özelliği; TV'de karşılığı yok | ❓ |
+
+### Ayarlar
+| Telefon | TV karşılığı | Durum |
+|---|---|---|
+| Listeler, EPG, dil, görünüm modu, tema, oynatıcı, veri/bellek, altyazı, güvenlik (PIN), Gemini anahtarı | Dikey liste (ikon, başlık, sağda değer); aynı ayarlar | ⏳ Aşama 6 |
+| Ekran yönü | TV'de anlamsız (hep yatay) | ❓ |
+| PRO | Üst bardaki PRO (Google Play ödemesi "Paywall kur" denince) | ✅ düğme |
+
+### ❓ Onay gerekenler (sana sorulacak)
+1. Radyo, Fragman kutusu, Günün seçimi, AI Sinema Bülteni: önerilen yerler yukarıda (kategori listelerinde özel bölüm).
+2. Çoklu ekran: Canlı TV kontrol çubuğunda düğme olarak.
+3. Parlaklık kaydırma ve ekran kilidi: TV'de gizlensin mi (dokunmatik özelliği)?
+4. Ekran yönü ayarı: TV'de gizlensin mi?

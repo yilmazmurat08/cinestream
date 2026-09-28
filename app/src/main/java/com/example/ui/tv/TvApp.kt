@@ -32,17 +32,37 @@ import com.example.ui.screens.WatchlistScreen
  * iki kez basınca (2 sn içinde) uygulamadan çıkılır.
  * Bölüm ekranları sonraki aşamalarda TV'ye özel ekranlarla değiştirilecek; şimdilik mevcut ekranlar kullanılır.
  */
+/**
+ * TV gezinme durumu: açık bölüm ve ana sayfada son odaklanan öğe. Oynatıcı/asistan açılınca TvApp ekrandan
+ * çıktığı için bu durum bir üst seviyede ([rememberTvAppState]) tutulur; dönüşte aynı yer ve odak geri gelir.
+ */
+class TvAppState(destination: String, homeFocus: String) {
+    var destination by mutableStateOf(destination)
+    var homeFocus by mutableStateOf(homeFocus)
+
+    companion object {
+        val Saver = androidx.compose.runtime.saveable.listSaver<TvAppState, String>(
+            save = { listOf(it.destination, it.homeFocus) },
+            restore = { TvAppState(it[0], it[1]) }
+        )
+    }
+}
+
+@Composable
+fun rememberTvAppState(): TvAppState = rememberSaveable(saver = TvAppState.Saver) { TvAppState(TV_HOME, TvSection.LIVE) }
+
 @Composable
 fun TvApp(
     viewModel: IPTVViewModel,
+    state: TvAppState,
     onPlayItem: (IPTVItem) -> Unit,
     onPlayContinue: (ContinueWatching) -> Unit,
     onOpenAssistant: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var destination by rememberSaveable { mutableStateOf(TV_HOME) }
-    var homeFocus by rememberSaveable { mutableStateOf(TvSection.LIVE) }
+    var destination by state::destination
+    var homeFocus by state::homeFocus
     var lastBackMs by remember { mutableLongStateOf(0L) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     val exitHint = stringResource(R.string.tv_exit_hint)
@@ -144,4 +164,4 @@ fun TvApp(
     }
 }
 
-private const val TV_HOME = "HOME"
+internal const val TV_HOME = "HOME"

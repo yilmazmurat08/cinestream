@@ -183,6 +183,7 @@ class MainActivity : ComponentActivity() {
                         val seriesList by viewModel.allSeries.collectAsState()
                         var showIntroSplash by rememberSaveable { mutableStateOf(true) }
                         var currentScreen by rememberSaveable(stateSaver = ActiveScreen.Saver) { mutableStateOf<ActiveScreen>(ActiveScreen.Dashboard) }
+                        val tvAppState = com.example.ui.tv.rememberTvAppState()
                         var lastNavigationTimeMs by remember { mutableLongStateOf(0L) }
                         var activeError by remember { mutableStateOf<AppError?>(null) }
 
@@ -292,6 +293,7 @@ class MainActivity : ComponentActivity() {
                                             is ActiveScreen.Dashboard -> if (viewMode == com.example.data.repository.ViewMode.TV) {
                                                 com.example.ui.tv.TvApp(
                                                     viewModel = viewModel,
+                                                    state = tvAppState,
                                                     onPlayItem = { item -> navigateTo(ActiveScreen.Player(item)) },
                                                     onPlayContinue = { cw -> navigateTo(ActiveScreen.Player(continueWatchingItem(cw))) },
                                                     onOpenAssistant = { navigateTo(ActiveScreen.MovieFinderChat) }
@@ -405,7 +407,19 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
 
-                                            is ActiveScreen.MovieFinderChat -> {
+                                            is ActiveScreen.MovieFinderChat -> if (viewMode == com.example.data.repository.ViewMode.TV) {
+                                                com.example.ui.tv.TvAssistantScreen(
+                                                    viewModel = viewModel,
+                                                    onOpenItem = { item ->
+                                                        viewModel.selectItem(item)
+                                                        navigateTo(ActiveScreen.Dashboard)
+                                                    },
+                                                    onOpenSettings = {
+                                                        tvAppState.destination = com.example.ui.tv.TvSection.SETTINGS
+                                                        navigateTo(ActiveScreen.Dashboard)
+                                                    }
+                                                )
+                                            } else {
                                                 com.example.ui.screens.MovieFinderChatScreen(
                                                     viewModel = viewModel,
                                                     onBack = { navigateTo(ActiveScreen.Dashboard) },
