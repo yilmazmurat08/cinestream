@@ -211,8 +211,10 @@ class MainActivity : ComponentActivity() {
                         // Detaydan oynatma (telefon ve TV aynı): kütüphanedeki kaydı bulur, yoksa uyarır.
                         val playFromDetail: (IPTVItem) -> Unit = { item ->
                             viewModel.selectItem(null)
-                            val matched = viewModel.findMatchedItem(item)
-                            val finalItem = matched ?: item
+                            // Kendi yayın adresi olan öğe (ör. Xtream dizi bölümü) doğrudan oynatılır. Önceden adla
+                            // eşleştirme yapılıyordu; bölüm adı yalnızca dizi adı olduğundan ("4400") hep ilk bölüm
+                            // (S1 B1) açılıyordu. Adres yoksa (katalog/öneri öğesi) kütüphanede aranır.
+                            val finalItem = if (item.streamUrl.isNotBlank()) item else viewModel.findMatchedItem(item)
                             if (finalItem.streamUrl.isNotEmpty()) {
                                 navigateTo(ActiveScreen.Player(finalItem))
                             } else {

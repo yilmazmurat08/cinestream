@@ -243,4 +243,13 @@ class TvShowcaseTest {
     }
 
     @Test fun s11_settings() = shot("11-ayarlar", 2_000) { TvSettingsScreen(viewModel = vm) }
+    // Uygulama açık temadayken de TV ayar kartları koyu zeminde okunur olmalı.
+    @Test fun s11b_settingsLightTheme() {
+        vm.setAppTheme(com.example.ui.theme.AppTheme.SYSTEM_LIGHT)
+        shot("11b-ayarlar-acik-tema", 2_000) {
+            com.example.ui.theme.MyApplicationTheme(appTheme = com.example.ui.theme.AppTheme.SYSTEM_LIGHT, dynamicColor = false) {
+                TvSettingsScreen(viewModel = vm)
+            }
+        }
+    }
 }

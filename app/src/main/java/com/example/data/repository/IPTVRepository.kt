@@ -514,9 +514,16 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
     }
 
     suspend fun saveContinueWatching(item: IPTVItem, progressSeconds: Long, totalSeconds: Long) {
+        // Xtream bölümlerinde ad yalnızca dizi adıdır ("4400"); sezon/bölüm ayrı alanlarda. İzlemeye devam
+        // listesinde doğru bölümün görünmesi için bu durumda ada "S01E03" eklenir.
+        val season = item.season
+        val episode = item.episode
+        val needsEpisodeTag = item.type == "SERIES" && season != null && episode != null && episode > 0 &&
+            com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName).let { it == null || it.season != season || it.episode != episode }
+        val savedName = if (needsEpisodeTag) "%s S%02dE%02d".format(item.cleanedName.ifBlank { item.name }, season, episode) else item.cleanedName
         val continueWatching = ContinueWatching(
             itemId = item.id,
-            itemName = item.cleanedName,
+            itemName = savedName,
             itemType = item.type,
             itemLogo = item.logoUrl,
             streamUrl = item.streamUrl,

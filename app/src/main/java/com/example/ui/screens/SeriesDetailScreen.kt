@@ -131,6 +131,8 @@ fun SeriesDetailScreen(
 
     // Dynamic trailer URL resolution using simulated ViewModel fetcher
     var dynamicTrailerUrl by remember(item) { mutableStateOf(item.trailerUrl) }
+    // Netflix tarzı: fragman YouTube'a gitmeden üstteki kapak görselinin yerinde oynar.
+    var playingTrailerId by remember(item) { mutableStateOf<String?>(null) }
 
     if (dynamicTrailerUrl.isNullOrEmpty() && viewModel != null) {
         LaunchedEffect(item) {
@@ -443,6 +445,19 @@ fun SeriesDetailScreen(
                         .then(if (blurRadius > 0.5.dp) Modifier.blur(blurRadius) else Modifier)
                         .background(Color(0xFF1E112A))
                 ) {
+                    val trailerId = playingTrailerId
+                    if (trailerId != null) {
+                        com.example.ui.components.InAppTrailerPlayer(
+                            videoId = trailerId,
+                            showControls = false,
+                            onEnded = { playingTrailerId = null },
+                            onError = {
+                                playingTrailerId = null
+                                android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.align(Alignment.Center).fillMaxWidth().aspectRatio(16f / 9f)
+                        )
+                    } else {
                     SafeAsyncImage(
                         model = dynamicBackdropUrl ?: dynamicPosterUrl ?: tvShow.logoUrl,
                         contentDescription = "Series Cover Image",
@@ -465,7 +480,10 @@ fun SeriesDetailScreen(
                                 )
                             )
                     )
+                    }
                 }
+                // Fragman başlayınca kapak alanı görünsün diye en üste kaydırılır.
+                LaunchedEffect(playingTrailerId) { if (playingTrailerId != null) scrollState.animateScrollTo(0) }
 
                 // 2. SCROLLABLE BODY OVERLAY
                 Column(
@@ -671,9 +689,11 @@ fun SeriesDetailScreen(
 
                                 Button(
                                     onClick = {
-                                        val cleanTrailerUrl = com.example.ui.components.formatYouTubeWatchUrl(item.trailerUrl ?: dynamicTrailerUrl)
-                                        if (!cleanTrailerUrl.isNullOrEmpty()) {
-                                            com.example.ui.components.openYoutubeTrailerExternally(context, cleanTrailerUrl)
+                                        val videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl)
+                                        if (playingTrailerId != null) {
+                                            playingTrailerId = null
+                                        } else if (!videoId.isNullOrEmpty()) {
+                                            playingTrailerId = videoId
                                         } else {
                                             android.widget.Toast.makeText(
                                                 context,
@@ -702,14 +722,14 @@ fun SeriesDetailScreen(
                                         horizontalArrangement = Arrangement.Center
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Movie,
+                                            imageVector = if (playingTrailerId != null) Icons.Default.Close else Icons.Default.Movie,
                                             contentDescription = stringResource(R.string.detail_watch_trailer_desc),
                                             tint = if (currentTheme.isDark) Color.White else Color.Black,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = stringResource(R.string.trailer),
+                                            text = stringResource(if (playingTrailerId != null) R.string.trailer_close else R.string.trailer),
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 13.sp,
                                             maxLines = 1,

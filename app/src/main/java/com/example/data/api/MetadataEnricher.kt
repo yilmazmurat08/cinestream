@@ -1188,7 +1188,12 @@ object MetadataEnricher {
      */
     suspend fun callGeminiApi(
         context: android.content.Context,
-        prompt: String
+        prompt: String,
+        /**
+         * Hızlı yanıt (sohbet): modelin uzun "düşünme" adımı kapatılır ve yanıt JSON istenir. Bu ayarı kabul
+         * etmeyen bir model olursa aynı istek ayarsız (eski hâliyle) tekrar denenir.
+         */
+        fast: Boolean = false
     ): String? = withContext(Dispatchers.IO) {
         val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key"))
         val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
@@ -1209,12 +1214,27 @@ object MetadataEnricher {
             })
         }
 
-        val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
+        val plainBody = requestJson.toString().toRequestBody("application/json".toMediaType())
+        val fastBody = if (fast) {
+            JSONObject(requestJson.toString()).apply {
+                put("generationConfig", JSONObject().apply {
+                    put("thinkingConfig", JSONObject().apply { put("thinkingBudget", 0) })
+                    put("responseMimeType", "application/json")
+                })
+            }.toString().toRequestBody("application/json".toMediaType())
+        } else {
+            null
+        }
         val models = listOf("gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-latest")
+        // Hızlı modda önce düşünmesiz istek; olmazsa normal istek.
+        val attempts = buildList {
+            if (fastBody != null) add("gemini-2.5-flash" to fastBody)
+            models.forEach { add(it to plainBody) }
+        }
         var responseBody: String? = null
         var lastError: String? = null
 
-        for (model in models) {
+        for ((model, requestBody) in attempts) {
             val request = Request.Builder()
                 .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
                 .post(requestBody)

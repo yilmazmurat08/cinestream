@@ -210,6 +210,26 @@ class IPTVViewModel(
         return tvCatalog.showForEpisode(item, covers)
     }
 
+    /**
+     * TV detay "benzer yapımlar": dizide aynı klasördeki diğer diziler; filmde telefondaki benzer içerik
+     * sorgusundan yalnızca filmler (dizi bölümleri karışmaz).
+     */
+    suspend fun tvSimilar(item: IPTVItem, show: com.example.data.model.TvShow?, covers: Map<String, String>): List<com.example.data.repository.TvPoster> =
+        try {
+            if (item.type == "SERIES") {
+                tvCatalog.otherShowsInFolder(show, item, covers)
+            } else {
+                getSimilarItemsFlow(item).first()
+                    .filter { it.type == "MOVIE" && it.id != item.id }
+                    .map { com.example.data.repository.TvPoster("MOVIE_${it.id}", it.cleanedName.ifBlank { it.name }, it.logoUrl, it.rating, it) }
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("IPTVViewModel", "tvSimilar failed: ${e.message}")
+            emptyList()
+        }
+
     /** TMDB detayı (önbellekli; telefondaki ile aynı çağrı): arka plan, oyuncu karakterleri, yönetmen. */
     suspend fun tvTmdbDetails(title: String, type: String): com.example.data.repository.TMDBMediaDetails? =
         try {
@@ -1097,7 +1117,9 @@ class IPTVViewModel(
         val text: String,
         val matchedItem: IPTVItem? = null,
         /** Asistanın tahmin ettiği yapım adı (kütüphanede bulunamasa da; TV "kütüphanende yok" der). */
-        val detectedTitle: String = ""
+        val detectedTitle: String = "",
+        /** Kütüphanede bulunan olası yapımlar (TV'de yan yana kart); ilki [matchedItem]. */
+        val matchedItems: List<IPTVItem> = emptyList()
     )
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -1124,21 +1146,27 @@ class IPTVViewModel(
                     com.example.data.api.GeminiAiService.ChatAiResult("Üzgünüm, şu anda yanıt veremiyorum. Lütfen tekrar deneyin.", "")
                 }
 
-                var matchedItem: IPTVItem? = null
-                if (aiResult.detectedTitle.isNotBlank()) {
-                    try {
-                        val results = repository.searchCollectionItems(aiResult.detectedTitle, limit = 3)
-                        matchedItem = results.firstOrNull { it.type == "MOVIE" || it.type == "SERIES" }
-                    } catch (e: Throwable) {
-                        Log.w("IPTVViewModel", "chat library search failed safely: ${e.message}")
+                // Kütüphane eşleştirmesi: asistanın olası yapımları (Türkçe + orijinal ad) Türkçe harf, etiket ve
+                // yıl farklarına dayanıklı biçimde aranır; bulunamazsa eski basit arama denenir.
+                var matchedItems: List<IPTVItem> = emptyList()
+                try {
+                    matchedItems = tvCatalog.findTitles(aiResult.candidates)
+                    if (matchedItems.isEmpty() && aiResult.detectedTitle.isNotBlank()) {
+                        matchedItems = repository.searchCollectionItems(aiResult.detectedTitle, limit = 3)
+                            .filter { it.type == "MOVIE" || it.type == "SERIES" }
+                            .take(1)
                     }
+                } catch (e: Throwable) {
+                    Log.w("IPTVViewModel", "chat library search failed safely: ${e.message}")
                 }
+                val matchedItem: IPTVItem? = matchedItems.firstOrNull()
 
                 _chatMessages.value = _chatMessages.value + ChatMessage(
                     role = "ai",
                     text = aiResult.reply,
                     matchedItem = matchedItem,
-                    detectedTitle = aiResult.detectedTitle
+                    detectedTitle = aiResult.detectedTitle,
+                    matchedItems = matchedItems
                 )
 
                 try {

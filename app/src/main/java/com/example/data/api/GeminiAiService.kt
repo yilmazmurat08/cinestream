@@ -131,8 +131,12 @@ object GeminiAiService {
 
     data class ChatAiResult(
         val reply: String,
-        val detectedTitle: String = ""
+        val detectedTitle: String = "",
+        /** Tarife uyan olası yapımlar (Türkçe ve orijinal adlarıyla); kütüphane eşleştirmesi bunlarla yapılır. */
+        val candidates: List<TitleCandidate> = emptyList()
     )
+
+    data class TitleCandidate(val title: String, val originalTitle: String, val year: Int?, val isSeries: Boolean)
 
     /**
      * Film/dizi hakkında serbest sohbet + tarif edilen sahnelerden yapım tahmini.
@@ -161,24 +165,47 @@ object GeminiAiService {
             - Sadece film ve dizilerle ilgili konuş; alakasız bir konu sorulursa kibarca film/diziye yönlendir.
             - Tarif edilen sahnelerden belirli bir yapımı makul bir güvenle tahmin edebiliyorsan adını net söyle.
             - Emin değilsen, en olası tahminini paylaş ve netleştirici bir soru sorabilirsin.
+            - Yanıtın kısa olsun (en fazla 3-4 cümle).
             - Kullanıcının yazdığı dilde (Türkçe veya İngilizce, hangisiyse) yanıt ver.
+            - "candidates" listesine, yanıtında adı geçen veya tarife uyan en olası 1-3 yapımı, emin olmasan da,
+              en olasıdan başlayarak yaz: Türkçe adı (Türkiye'de bilinen adı), orijinal adı, yılı ve film mi dizi mi.
+              Kullanıcı bir yapım tarif etmiyorsa ya da öneri istemiyorsa liste boş olsun.
             - Yanıtını SADECE aşağıdaki JSON formatında ver, başka hiçbir açıklama/markdown ekleme:
-            {"reply": "doğal sohbet yanıtın", "detectedTitle": "eminsen tahmin ettiğin filmin/dizinin tam adı, değilsen boş string"}
+            {"reply": "doğal sohbet yanıtın", "detectedTitle": "en olası yapımın adı, yoksa boş string", "candidates": [{"title": "Türkçe adı", "originalTitle": "orijinal adı", "year": 2007, "type": "movie veya series"}]}
         """.trimIndent()
 
         try {
-            val rawResult = MetadataEnricher.callGeminiApi(context, prompt)
+            val rawResult = MetadataEnricher.callGeminiApi(context, prompt, fast = true)
             if (!rawResult.isNullOrBlank()) {
-                val jsonStr = MetadataEnricher.extractJson(rawResult)
-                val json = JSONObject(jsonStr)
-                val reply = json.optString("reply", "").ifBlank { "Üzgünüm, tam olarak anlayamadım. Biraz daha detay verebilir misiniz?" }
-                val detectedTitle = json.optString("detectedTitle", "")
-                return@withContext ChatAiResult(reply = reply, detectedTitle = detectedTitle)
+                return@withContext parseChatResult(MetadataEnricher.extractJson(rawResult))
             }
         } catch (e: Throwable) {
             Log.w("GeminiAiService", "chatAboutMoviesAndSeries error: ${e.message}")
         }
         return@withContext ChatAiResult(reply = "Üzgünüm, şu anda yanıt veremiyorum. Lütfen tekrar deneyin.", detectedTitle = "")
     }
-}
 
+    /** Sohbet yanıtını çözer; "candidates" yoksa (eski biçim) detectedTitle aday olarak kullanılır. */
+    internal fun parseChatResult(jsonStr: String): ChatAiResult {
+        val json = JSONObject(jsonStr)
+        val reply = json.optString("reply", "").ifBlank { "Üzgünüm, tam olarak anlayamadım. Biraz daha detay verebilir misiniz?" }
+        val detectedTitle = json.optString("detectedTitle", "").trim()
+        val candidates = ArrayList<TitleCandidate>()
+        val array = json.optJSONArray("candidates")
+        if (array != null) {
+            for (i in 0 until minOf(array.length(), 3)) {
+                val c = array.optJSONObject(i) ?: continue
+                val title = c.optString("title", "").trim()
+                val original = c.optString("originalTitle", "").trim()
+                if (title.isEmpty() && original.isEmpty()) continue
+                val year = c.optInt("year", 0).takeIf { it in 1900..2100 }
+                val isSeries = c.optString("type", "").lowercase().let { it.contains("seri") || it.contains("dizi") || it == "tv" }
+                candidates.add(TitleCandidate(title.ifEmpty { original }, original.ifEmpty { title }, year, isSeries))
+            }
+        }
+        if (candidates.isEmpty() && detectedTitle.isNotEmpty()) {
+            candidates.add(TitleCandidate(detectedTitle, detectedTitle, null, false))
+        }
+        return ChatAiResult(reply = reply, detectedTitle = detectedTitle.ifEmpty { candidates.firstOrNull()?.title.orEmpty() }, candidates = candidates)
+    }
+}

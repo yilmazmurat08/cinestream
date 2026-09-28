@@ -92,6 +92,16 @@ private enum class TvSetting { PROFILE, PRO, PLAYLISTS, EPG, LANGUAGE, VIEW_MODE
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TvSettingsScreen(viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
+    // TV ekranı her zaman koyu cam tasarımlıdır. Sağ paneldeki telefon kartları Material renklerini kullandığından
+    // açık temada koyu zemin üstünde koyu yazı çıkıyordu; panel her zaman koyu (siyah) renk şemasıyla çizilir.
+    com.example.ui.theme.MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) {
+        TvSettingsContent(viewModel, modifier)
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     // LocalContext dil ayarlı bir bağlamdır; Activity, Compose görünümünün bağlamından bulunur.

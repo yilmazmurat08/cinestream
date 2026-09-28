@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.FastForward
@@ -452,6 +453,7 @@ private fun TvChannelPanel(
 ) {
     val listState = rememberLazyListState()
     val requesters = remember(items) { HashMap<Int, FocusRequester>() }
+    val continueWatching by viewModel.continueWatching.collectAsState()
     fun requester(id: Int) = requesters.getOrPut(id) { FocusRequester() }
     // Panel açılınca (ve kategori değişince) odak izlenen kanalda, yoksa listenin başında.
     LaunchedEffect(items, categoriesOpen) {
@@ -512,13 +514,28 @@ private fun TvChannelPanel(
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
+                            // Dizi bölümlerinde ad yerine "S1 B3 · bölüm adı" (Xtream'de ad yalnızca dizi adıdır)
+                            val episode = remember(channel.id) {
+                                if (!isLive && channel.type == "SERIES") com.example.data.model.SeriesParser.episodeInfoOf(channel) else null
+                            }
+                            val label = when {
+                                isLive -> "${index + 1} - ${channel.cleanedName.ifBlank { channel.name }}"
+                                episode != null -> stringResource(R.string.tv_episode_label, episode.season, episode.episode) +
+                                    episode.episodeName.takeIf { it.isNotBlank() && !it.equals(episode.showTitle, true) }?.let { " · $it" }.orEmpty()
+                                else -> channel.cleanedName.ifBlank { channel.name }
+                            }
                             Text(
-                                if (isLive) "${index + 1} - ${channel.cleanedName.ifBlank { channel.name }}" else channel.cleanedName.ifBlank { channel.name },
+                                label,
                                 color = TvTheme.TextPrimary, fontSize = 16.sp,
                                 fontWeight = if (playing) FontWeight.SemiBold else FontWeight.Normal,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis
                             )
                             if (now != null) Text(now, color = TvTheme.TextMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (!isLive) {
+                                val cw = continueWatching.firstOrNull { it.itemId == channel.id }
+                                val progress = cw?.let { if (it.totalSeconds > 0) it.progressSeconds.toFloat() / it.totalSeconds else null }
+                                TvWatchedLine(progress)
+                            }
                         }
                         if (playing) Icon(Icons.AutoMirrored.Filled.VolumeUp, null, tint = TvTheme.Accent, modifier = Modifier.size(18.dp))
                     }
@@ -563,7 +580,7 @@ private fun TvControlBar(
     compact: Boolean = false
 ) {
     val episode = remember(item.id) {
-        if (item.type == "SERIES") com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName.ifBlank { item.name }) else null
+        if (item.type == "SERIES") com.example.data.model.SeriesParser.episodeInfoOf(item) else null
     }
     Column(
         Modifier
@@ -705,3 +722,22 @@ private fun TvVolumeBar(level: Float, modifier: Modifier) {
         Text("${(level * 100).toInt()}", color = TvTheme.TextPrimary, fontSize = 12.sp)
     }
 }
+
+/** Bölüm/film izlenme durumu: bitmişse "✓ İzlendi", yarımsa ince ilerleme çubuğu, hiç izlenmemişse boş. */
+@Composable
+internal fun TvWatchedLine(progress: Float?) {
+    when {
+        progress == null -> {}
+        progress >= WATCHED_THRESHOLD -> Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.CheckCircle, null, tint = TvTheme.Accent, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(stringResource(R.string.detail_watched).replaceFirstChar { it.titlecase(java.util.Locale.getDefault()) }, color = TvTheme.Accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        }
+        else -> Box(Modifier.padding(top = 4.dp).width(120.dp).height(3.dp).clip(TvTheme.PillShape).background(Color.White.copy(alpha = 0.2f))) {
+            Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).fillMaxHeight().background(TvTheme.Accent))
+        }
+    }
+}
+
+/** Bu orandan sonra bölüm/film "izlendi" sayılır (jenerik kısmı izlenmese de). */
+internal const val WATCHED_THRESHOLD = 0.9f

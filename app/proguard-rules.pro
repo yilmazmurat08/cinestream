@@ -45,3 +45,9 @@
     public static int v(...);
     public static int d(...);
 }
+
+# Uygulama içi fragman oynatıcısı: WebView'a açılan JS köprüsünün metodları küçültmede silinmesin/yeniden adlandırılmasın.
+-keepattributes JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}

@@ -73,6 +73,21 @@ object SeriesParser {
         val category: String
     )
 
+    /**
+     * Bölümün sezon/bölüm bilgisi: kayıtlı alanlar (Xtream bölümlerinde ad yalnızca dizi adıdır, "4400" gibi)
+     * önce, yoksa addan çözülür. Addan çözülemeyen bölümler için uydurma "S1 B1" üretilmez.
+     */
+    fun episodeInfoOf(item: IPTVItem): ParsedEpisodeInfo? {
+        val season = item.season
+        val episode = item.episode
+        if (season != null && episode != null && episode > 0) {
+            val show = item.cleanedName.ifBlank { item.name }.substringBefore(" - ").trim()
+            val episodeName = item.name.substringAfter(" - ", "").trim()
+            return ParsedEpisodeInfo(showTitle = show, season = season, episode = episode, episodeName = episodeName)
+        }
+        return parseEpisodeInfo(item.cleanedName.ifBlank { item.name }) ?: parseEpisodeInfo(item.name)
+    }
+
     fun parseEpisodeInfo(rawName: String): ParsedEpisodeInfo? {
         val cached = parseCache[rawName]
         if (cached != null) return cached

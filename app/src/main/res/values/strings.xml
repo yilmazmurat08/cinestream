@@ -249,8 +249,6 @@
     <string name="notif_playback_title">Şu an oynatılıyor</string>
     <string name="intro_tagline">Sınırsız Eğlence, İzlemenin Daha Akıllı Hali</string>
     <string name="toast_not_in_library">\"%1$s\" listenizde bulunamadı.</string>
-    <string name="trailer_not_found">Fragman bulunamadı</string>
-    <string name="trailer_open_failed">Fragman açılamadı</string>
     <string name="search_history_clear">Temizle</string>
     <string name="search_history_delete_desc">Arama geçmişinden sil</string>
     <string name="action_play">Oynat</string>
@@ -583,8 +581,6 @@
     <string name="tv_ai_key_phone">Anahtarı telefonla gir</string>
     <string name="tv_ai_key_settings">Ayarlar\'a git</string>
     <string name="tv_ai_scene_find">Sahnesini anlatayım, filmi bul</string>
-    <string name="tv_ai_scene_prompt">Filmden hatırladığın sahneleri anlat</string>
-    <string name="tv_ai_voice_prompt">Asistana sor</string>
     <string name="tv_in_library">Kütüphanende var</string>
     <string name="tv_open_details">Detayı aç</string>
     <string name="tv_not_in_library">“%1$s” kütüphanende yok.</string>
@@ -619,4 +615,8 @@
     <string name="tv_automatic">Otomatik</string>
     <string name="tv_saved_value">Kayıtlı</string>
     <string name="tv_profile">Profil</string>
+    <string name="tv_ai_listening">Dinliyorum… Filmden hatırladığın sahneyi anlat</string>
+    <string name="tv_episode_label">S%1$d B%2$d</string>
+    <string name="trailer_close">Fragmanı Kapat</string>
+    <string name="trailer_inapp_failed">Bu fragman uygulama içinde oynatılamadı</string>
 </resources>
