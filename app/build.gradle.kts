@@ -24,6 +24,8 @@ android {
 
     // 60 dakikalık ücretsiz izleme sınırı: mağaza (release) sürümünde açık, test sürümlerinde kapalı.
     buildConfigField("boolean", "FREE_WATCH_LIMIT", "true")
+    // Test (qa) sürümünde bazı ekranlarda küçük teşhis satırları gösterilir (ör. fragman oynatıcı durumu).
+    buildConfigField("boolean", "SHOW_DIAGNOSTICS", "false")
   }
 
   signingConfigs {
@@ -60,6 +62,7 @@ android {
       signingConfig = signingConfigs.getByName("debug")
       matchingFallbacks += listOf("release")
       buildConfigField("boolean", "FREE_WATCH_LIMIT", "false")
+      buildConfigField("boolean", "SHOW_DIAGNOSTICS", "true")
     }
   }
   compileOptions {

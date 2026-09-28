@@ -13,7 +13,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -24,17 +24,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -62,6 +52,7 @@ fun InAppTrailerPlayer(
     var started by remember(videoId) { mutableStateOf(false) }
     var failed by remember(videoId) { mutableStateOf(false) }
     val webHolder = remember { arrayOfNulls<WebView>(1) }
+    var diagnostics by remember(videoId) { mutableStateOf("") }
 
     // Yavaş bağlantıda sonsuza dek siyah kutu kalmasın.
     LaunchedEffect(videoId) {
@@ -98,70 +89,62 @@ fun InAppTrailerPlayer(
         }
     }
 
-    // Video ayrı bir pencerede (Popup) çizilir. Detay ekranları kayma/solma animasyon katmanlarının içinde; WebView
-    // böyle bir katmanın içine çizilince bazı cihazlarda ses gelir ama görüntü siyah kalır. Popup kendi penceresi
-    // olduğundan bu katmanlardan etkilenmez; bu kutunun tam üstüne, aynı boyutta yerleştirilir.
-    val density = LocalDensity.current
-    var size by remember { mutableStateOf(IntSize.Zero) }
-    Box(
-        modifier
-            .background(Color.Black)
-            .onGloballyPositioned { coords ->
-                size = coords.size
-                // Kaydırma ile kutunun beşte birinden fazlası görünmez olursa fragman kapanır (başka içeriğin üstünde kalmasın).
-                val visible = coords.boundsInWindow()
-                val full = coords.size.width.toFloat() * coords.size.height
-                if (full > 0f && started && visible.width * visible.height < full * 0.8f) latestEnded()
-            }
-            .testTag("in_app_trailer")
-    ) {
-        if (size != IntSize.Zero) {
-            Popup(
-                popupPositionProvider = AnchorTopLeft,
-                properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false, clippingEnabled = false)
-            ) {
-                val widthDp = with(density) { size.width.toDp() }
-                val heightDp = with(density) { size.height.toDp() }
-                AndroidView(
-                    modifier = Modifier.size(widthDp, heightDp),
-                    factory = { context ->
-                        createTrailerWebView(
-                            context = context,
-                            videoId = videoId,
-                            showControls = showControls,
-                            onState = { state ->
-                                when (state) {
-                                    YT_PLAYING -> started = true
-                                    YT_ENDED -> latestEnded()
-                                }
-                            },
-                            onError = {
-                                if (!failed) {
-                                    failed = true
-                                    latestError()
-                                }
-                            }
-                        )?.also { webHolder[0] = it } ?: View(context).also {
-                            // Cihazda WebView yoksa (bazı TV'ler) çökmek yerine hata bildirilir.
-                            Handler(Looper.getMainLooper()).post {
-                                if (!failed) {
-                                    failed = true
-                                    latestError()
-                                }
-                            }
+    Box(modifier.background(Color.Black).testTag("in_app_trailer")) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                createTrailerWebView(
+                    context = context,
+                    videoId = videoId,
+                    showControls = showControls,
+                    onState = { state ->
+                        when (state) {
+                            YT_PLAYING -> started = true
+                            YT_ENDED -> latestEnded()
+                        }
+                    },
+                    onError = {
+                        if (!failed) {
+                            failed = true
+                            latestError()
+                        }
+                    },
+                    onDiagnostics = { page ->
+                        val web = webHolder[0]
+                        diagnostics = buildString {
+                            append("WV ").append(webViewVersion()).append(" · HW ").append(web?.isHardwareAccelerated)
+                            append(" · layer ").append(web?.layerType).append(" · view ").append(web?.width).append("x").append(web?.height)
+                            append(" · ").append(page)
                         }
                     }
-                )
+                )?.also { webHolder[0] = it } ?: View(context).also {
+                    // Cihazda WebView yoksa (bazı TV'ler) çökmek yerine hata bildirilir.
+                    Handler(Looper.getMainLooper()).post {
+                        if (!failed) {
+                            failed = true
+                            latestError()
+                        }
+                    }
+                }
             }
+        )
+        // Sadece test (qa) sürümünde: görüntü gelmezse nedenini bulmak için oynatıcı durumu.
+        if (com.example.BuildConfig.SHOW_DIAGNOSTICS && diagnostics.isNotEmpty()) {
+            androidx.compose.material3.Text(
+                diagnostics,
+                color = Color.Yellow,
+                fontSize = androidx.compose.ui.unit.TextUnit(9f, androidx.compose.ui.unit.TextUnitType.Sp),
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.BottomStart)
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .testTag("in_app_trailer_diagnostics")
+            )
         }
     }
 }
 
-/** Popup'ı bağlı olduğu kutunun sol üst köşesine yerleştirir. */
-private object AnchorTopLeft : PopupPositionProvider {
-    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset =
-        anchorBounds.topLeft
-}
+private fun webViewVersion(): String =
+    runCatching { WebView.getCurrentWebViewPackage()?.versionName }.getOrNull() ?: "?"
 
 private const val JS_BRIDGE = "CineTrailer"
 private const val YT_ENDED = 0
@@ -174,11 +157,15 @@ private fun createTrailerWebView(
     videoId: String,
     showControls: Boolean,
     onState: (Int) -> Unit,
-    onError: () -> Unit
+    onError: () -> Unit,
+    onDiagnostics: (String) -> Unit = {}
 ): WebView? = runCatching {
     val main = Handler(Looper.getMainLooper())
     WebView(context).apply {
         setBackgroundColor(android.graphics.Color.BLACK)
+        // Video karelerinin çizilmesi için WebView kendi donanım katmanına çizilir. Bu olmadan bazı cihazlarda (ve
+        // animasyonlu Compose ekranlarının içinde) ses gelir ama görüntü siyah kalır.
+        setLayerType(View.LAYER_TYPE_HARDWARE, null)
         // TV'de kumanda odağı Compose düğmelerinde kalır; WebView odak almaz.
         isFocusable = false
         isFocusableInTouchMode = false
@@ -204,6 +191,11 @@ private fun createTrailerWebView(
             fun error(code: Int) {
                 main.post { onError() }
             }
+
+            @JavascriptInterface
+            fun diag(text: String) {
+                main.post { onDiagnostics(text.take(200)) }
+            }
         }, JS_BRIDGE)
         val origin = "https://${context.packageName}"
         loadDataWithBaseURL(origin, trailerHtml(videoId, showControls, origin), "text/html", "utf-8", null)
@@ -224,6 +216,14 @@ internal fun trailerHtml(videoId: String, showControls: Boolean, origin: String)
 <div id="player"></div>
 <script>
 var player;
+function reportDiag(tag){
+  try {
+    var f = document.querySelector('iframe');
+    var size = f ? (f.offsetWidth + 'x' + f.offsetHeight) : '-';
+    $JS_BRIDGE.diag(tag + ' vis=' + document.visibilityState + ' win=' + innerWidth + 'x' + innerHeight + ' iframe=' + size);
+  } catch(e) {}
+}
+document.addEventListener('visibilitychange', function(){ reportDiag('visibility'); });
 function pauseTrailer(){ try { if (player) player.pauseVideo(); } catch(e) {} }
 function onYouTubeIframeAPIReady(){
   player = new YT.Player('player', {
@@ -231,7 +231,7 @@ function onYouTubeIframeAPIReady(){
     playerVars: { autoplay: 1, controls: $controls, playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, fs: 0, disablekb: 1, origin: '$origin' },
     events: {
       onReady: function(e){ e.target.playVideo(); },
-      onStateChange: function(e){ $JS_BRIDGE.state(e.data); },
+      onStateChange: function(e){ $JS_BRIDGE.state(e.data); reportDiag('state' + e.data); },
       onError: function(e){ $JS_BRIDGE.error(e.data); }
     }
   });
