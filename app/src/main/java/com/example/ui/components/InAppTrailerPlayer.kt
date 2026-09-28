@@ -13,7 +13,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +24,17 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -88,38 +98,69 @@ fun InAppTrailerPlayer(
         }
     }
 
-    Box(modifier.background(Color.Black).testTag("in_app_trailer")) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                createTrailerWebView(
-                    context = context,
-                    videoId = videoId,
-                    showControls = showControls,
-                    onState = { state ->
-                        when (state) {
-                            YT_PLAYING -> started = true
-                            YT_ENDED -> latestEnded()
-                        }
-                    },
-                    onError = {
-                        if (!failed) {
-                            failed = true
-                            latestError()
-                        }
-                    }
-                )?.also { webHolder[0] = it } ?: View(context).also {
-                    // Cihazda WebView yoksa (bazı TV'ler) çökmek yerine hata bildirilir.
-                    Handler(Looper.getMainLooper()).post {
-                        if (!failed) {
-                            failed = true
-                            latestError()
-                        }
-                    }
-                }
+    // Video ayrı bir pencerede (Popup) çizilir. Detay ekranları kayma/solma animasyon katmanlarının içinde; WebView
+    // böyle bir katmanın içine çizilince bazı cihazlarda ses gelir ama görüntü siyah kalır. Popup kendi penceresi
+    // olduğundan bu katmanlardan etkilenmez; bu kutunun tam üstüne, aynı boyutta yerleştirilir.
+    val density = LocalDensity.current
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    Box(
+        modifier
+            .background(Color.Black)
+            .onGloballyPositioned { coords ->
+                size = coords.size
+                // Kaydırma ile kutunun beşte birinden fazlası görünmez olursa fragman kapanır (başka içeriğin üstünde kalmasın).
+                val visible = coords.boundsInWindow()
+                val full = coords.size.width.toFloat() * coords.size.height
+                if (full > 0f && started && visible.width * visible.height < full * 0.8f) latestEnded()
             }
-        )
+            .testTag("in_app_trailer")
+    ) {
+        if (size != IntSize.Zero) {
+            Popup(
+                popupPositionProvider = AnchorTopLeft,
+                properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false, clippingEnabled = false)
+            ) {
+                val widthDp = with(density) { size.width.toDp() }
+                val heightDp = with(density) { size.height.toDp() }
+                AndroidView(
+                    modifier = Modifier.size(widthDp, heightDp),
+                    factory = { context ->
+                        createTrailerWebView(
+                            context = context,
+                            videoId = videoId,
+                            showControls = showControls,
+                            onState = { state ->
+                                when (state) {
+                                    YT_PLAYING -> started = true
+                                    YT_ENDED -> latestEnded()
+                                }
+                            },
+                            onError = {
+                                if (!failed) {
+                                    failed = true
+                                    latestError()
+                                }
+                            }
+                        )?.also { webHolder[0] = it } ?: View(context).also {
+                            // Cihazda WebView yoksa (bazı TV'ler) çökmek yerine hata bildirilir.
+                            Handler(Looper.getMainLooper()).post {
+                                if (!failed) {
+                                    failed = true
+                                    latestError()
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+        }
     }
+}
+
+/** Popup'ı bağlı olduğu kutunun sol üst köşesine yerleştirir. */
+private object AnchorTopLeft : PopupPositionProvider {
+    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset =
+        anchorBounds.topLeft
 }
 
 private const val JS_BRIDGE = "CineTrailer"
@@ -144,9 +185,11 @@ private fun createTrailerWebView(
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
-        settings.loadWithOverviewMode = true
-        settings.useWideViewPort = true
-        webChromeClient = WebChromeClient()
+        webChromeClient = object : WebChromeClient() {
+            // Varsayılan gri "oynat" afişi yerine video yüklenene kadar siyah görünür.
+            override fun getDefaultVideoPoster(): android.graphics.Bitmap? =
+                super.getDefaultVideoPoster() ?: android.graphics.Bitmap.createBitmap(1, 1, android.graphics.Bitmap.Config.RGB_565)
+        }
         webViewClient = object : WebViewClient() {
             // YouTube logosu vb. tıklansa bile sayfadan çıkılmaz (YouTube uygulaması açılmaz).
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean = true

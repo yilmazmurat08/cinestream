@@ -482,8 +482,14 @@ fun SeriesDetailScreen(
                     )
                     }
                 }
-                // Fragman başlayınca kapak alanı görünsün diye en üste kaydırılır.
-                LaunchedEffect(playingTrailerId) { if (playingTrailerId != null) scrollState.animateScrollTo(0) }
+                // Fragman başlayınca kapak alanı görünsün diye en üste kaydırılır; video ayrı pencerede çizildiği için
+                // sayfa yeniden aşağı kaydırılınca fragman kapanır (içeriğin üstünde kalmaz).
+                LaunchedEffect(playingTrailerId) {
+                    if (playingTrailerId != null) {
+                        scrollState.animateScrollTo(0)
+                        snapshotFlow { scrollState.value }.collect { if (it > 48) playingTrailerId = null }
+                    }
+                }
 
                 // 2. SCROLLABLE BODY OVERLAY
                 Column(

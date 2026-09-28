@@ -140,6 +140,14 @@ fun TvDetailScreen(
     var trailerPlaying by remember(item.id) { mutableStateOf(false) }
     var trailerFailed by remember(item.id) { mutableStateOf(false) }
     BackHandler(enabled = trailerPlaying) { trailerPlaying = false }
+    val pageScroll = rememberScrollState()
+    // Video ayrı pencerede çizildiği için aşağıdaki satırlar (sezonlar, oyuncular) kaydırılınca videonun altında
+    // kalmasın: sayfa aşağı kaydırılınca fragman kapanır ve arka plan görseli geri gelir.
+    LaunchedEffect(trailerPlaying) {
+        if (trailerPlaying) {
+            androidx.compose.runtime.snapshotFlow { pageScroll.value }.collect { if (it > 24) trailerPlaying = false }
+        }
+    }
     var extraCast by remember(item.id) { mutableStateOf<List<String>>(emptyList()) }
     var extraDirector by remember(item.id) { mutableStateOf("") }
     var aiText by remember(item.id) { mutableStateOf<String?>(null) }
@@ -253,7 +261,7 @@ fun TvDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(pageScroll)
                 .padding(start = 48.dp, top = 40.dp, bottom = 48.dp)
         ) {
             Column(Modifier.fillMaxWidth(if (trailerId != null) 0.34f else 0.55f)) {
