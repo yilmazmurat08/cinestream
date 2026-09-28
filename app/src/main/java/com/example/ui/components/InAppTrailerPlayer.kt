@@ -135,7 +135,7 @@ fun InAppTrailerPlayer(
                 color = Color.Yellow,
                 fontSize = androidx.compose.ui.unit.TextUnit(9f, androidx.compose.ui.unit.TextUnitType.Sp),
                 modifier = Modifier
-                    .align(androidx.compose.ui.Alignment.BottomStart)
+                    .align(androidx.compose.ui.Alignment.TopEnd)
                     .background(Color.Black.copy(alpha = 0.6f))
                     .testTag("in_app_trailer_diagnostics")
             )
@@ -197,6 +197,10 @@ private fun createTrailerWebView(
                 main.post { onDiagnostics(text.take(200)) }
             }
         }, JS_BRIDGE)
+        // Görünüm boyutu değişince (ilk yerleşim dahil) oynatıcı kutusu yeniden boyutlandırılır.
+        addOnLayoutChangeListener { view, l, t, r, b, ol, ot, or, ob ->
+            if (r - l != or - ol || b - t != ob - ot) (view as WebView).evaluateJavascript("if (window.fitPlayer) fitPlayer();", null)
+        }
         val origin = "https://${context.packageName}"
         loadDataWithBaseURL(origin, trailerHtml(videoId, showControls, origin), "text/html", "utf-8", null)
     }
@@ -211,11 +215,29 @@ internal fun trailerHtml(videoId: String, showControls: Boolean, origin: String)
 <html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<style>html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden}#player{position:absolute;top:0;left:0;width:100%;height:100%}</style>
+<style>html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden}#player,iframe{position:fixed;top:0;left:0;width:100vw;height:100vh;border:0}</style>
 </head><body>
 <div id="player"></div>
 <script>
 var player;
+// Android WebView'da yüzde yükseklik bazen 0 hesaplanıyor (ses var, görüntü yok). Oynatıcı kutusu her zaman
+// görünen alanın piksel boyutuna ayarlanır: açılışta, boyut değişince ve uygulama istediğinde (fitPlayer).
+function fitPlayer(){
+  try {
+    var w = window.innerWidth || document.documentElement.clientWidth;
+    var h = window.innerHeight || document.documentElement.clientHeight;
+    if (!w || !h) return;
+    var f = document.querySelector('iframe') || document.getElementById('player');
+    if (f) {
+      f.style.setProperty('width', w + 'px', 'important');
+      f.style.setProperty('height', h + 'px', 'important');
+    }
+    if (player && player.setSize) player.setSize(w, h);
+  } catch(e) {}
+}
+window.addEventListener('resize', fitPlayer);
+var fitTimer = setInterval(fitPlayer, 500);
+setTimeout(function(){ clearInterval(fitTimer); }, 15000);
 function reportDiag(tag){
   try {
     var f = document.querySelector('iframe');
@@ -230,8 +252,8 @@ function onYouTubeIframeAPIReady(){
     width: '100%', height: '100%', videoId: '$safeId',
     playerVars: { autoplay: 1, controls: $controls, playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, fs: 0, disablekb: 1, origin: '$origin' },
     events: {
-      onReady: function(e){ e.target.playVideo(); },
-      onStateChange: function(e){ $JS_BRIDGE.state(e.data); reportDiag('state' + e.data); },
+      onReady: function(e){ fitPlayer(); e.target.playVideo(); },
+      onStateChange: function(e){ fitPlayer(); $JS_BRIDGE.state(e.data); reportDiag('state' + e.data); },
       onError: function(e){ $JS_BRIDGE.error(e.data); }
     }
   });
