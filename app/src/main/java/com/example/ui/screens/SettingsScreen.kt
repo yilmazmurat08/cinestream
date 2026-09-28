@@ -1555,8 +1555,7 @@ fun AddPlaylistDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Android TV: liste bilgilerini telefondan QR ile gönder
-                val phoneEntryContext = androidx.compose.ui.platform.LocalContext.current
-                if (remember { com.example.ui.tv.TvDevice.isTv(phoneEntryContext) }) {
+                if (com.example.ui.tv.rememberPhoneEntryAvailable()) {
                     var showPhoneEntry by remember { mutableStateOf(false) }
                     com.example.ui.tv.PhoneEntryButton(
                         mode = com.example.ui.tv.PhoneEntryMode.PLAYLIST,
@@ -2841,8 +2840,7 @@ fun GeminiApiKeyCard(
             )
 
             // Android TV: anahtarı telefondan QR ile gönder
-            val phoneEntryContext = androidx.compose.ui.platform.LocalContext.current
-            if (remember { com.example.ui.tv.TvDevice.isTv(phoneEntryContext) }) {
+            if (com.example.ui.tv.rememberPhoneEntryAvailable()) {
                 var showPhoneEntry by remember { mutableStateOf(false) }
                 Spacer(modifier = Modifier.height(10.dp))
                 com.example.ui.tv.PhoneEntryButton(

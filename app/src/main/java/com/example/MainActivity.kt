@@ -186,6 +186,7 @@ class MainActivity : ComponentActivity() {
                         val tvAppState = com.example.ui.tv.rememberTvAppState()
                         val tvPlayerUi = remember { com.example.ui.tv.TvPlayerUiState() }
                         val isTvMode = viewMode == com.example.data.repository.ViewMode.TV
+                        SideEffect { com.example.ui.tv.TvUiMode.active = isTvMode }
                         // Oynatıcıdan çıkınca TV kanal paneli bir sonraki girişte kapalı başlar.
                         LaunchedEffect(currentScreen is ActiveScreen.Player) {
                             if (currentScreen !is ActiveScreen.Player) {

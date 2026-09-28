@@ -76,7 +76,8 @@ fun LoginScreen(
     var showApiHelpSheet by remember { mutableStateOf(false) }
 
     // Android TV: Gemini anahtarı ve liste bilgileri telefondan QR ile gönderilebilir
-    val isTvDevice = remember { com.example.ui.tv.TvDevice.isTv(context) }
+    // Gerçek TV cihazında veya TV modu seçiliyken (telefonda da TV modu seçilebilir)
+    val isTvDevice = com.example.ui.tv.rememberPhoneEntryAvailable()
     var phoneEntryMode by remember { mutableStateOf<com.example.ui.tv.PhoneEntryMode?>(null) }
     phoneEntryMode?.let { mode ->
         com.example.ui.tv.PhoneEntryDialog(

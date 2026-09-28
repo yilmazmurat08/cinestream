@@ -19,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -358,4 +360,20 @@ fun tvRestorableFocus(): Modifier = Modifier.composed {
     Modifier
         .focusRequester(requester)
         .onFocusChanged { if (it.isFocused) TvFocusMemory.remember(requester) }
+}
+
+/**
+ * Seçili görünüm modu TV mi (telefonda da TV modu seçilebilir). MainActivity günceller; ekranlar bunu okuyup
+ * TV'ye özel olanakları (ör. telefonla QR giriş) gerçek TV cihazı olmasa da TV modunda gösterir.
+ */
+object TvUiMode {
+    var active by androidx.compose.runtime.mutableStateOf(false)
+}
+
+/** Telefonla QR ile bilgi girişi gösterilsin mi: gerçek TV cihazında veya TV modu seçiliyken. */
+@Composable
+fun rememberPhoneEntryAvailable(): Boolean {
+    val context = LocalContext.current
+    val isTvDevice = remember(context) { TvDevice.isTv(context) }
+    return isTvDevice || TvUiMode.active
 }
