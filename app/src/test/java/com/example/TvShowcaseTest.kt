@@ -10,6 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.db.AppDatabase
 import com.example.data.model.ContinueWatching
@@ -199,6 +202,15 @@ class TvShowcaseTest {
 
     @Test fun s06_detail() = shot("06-film-detayi", 6_000) {
         TvDetailScreen(viewModel = vm, item = movies[3], onPlay = {})
+    }
+
+    @Test fun s06b_seriesDetail() {
+        val episode = runBlocking { AppDatabase.getDatabase(app).iptvDao().getItemById(8111) }!!
+        compose.setContent { MyApplicationTheme { TvDetailScreen(viewModel = vm, item = episode, onPlay = {}) } }
+        settle(4_000)
+        compose.onNodeWithTag("tv_series_recap").performScrollTo().performClick()
+        settle(3_000)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "06b-dizi-detayi-ai-ozet.png").absolutePath)
     }
 
     @Test fun s07_person() = shot("07-kisi-sayfasi", 6_000) {

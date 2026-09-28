@@ -99,8 +99,9 @@ iş mantığı ortaktır (aynı fonksiyonlar çağrılır, yeniden yazılmaz). D
 | Klasör ızgarası, klasör içinde arama | Solda kategori listesi + 6 sütun poster ızgarası (veritabanından sayfa sayfa); arama üst bardan | ✅ Aşama 4 |
 | Kilitli (yetişkin) klasörler, ebeveyn PIN'i | Kilit simgeli kategori; aynı PIN penceresi | ✅ Aşama 4 |
 | Favoriye ekle/çıkar | Detay ekranındaki düğme (ızgarada kalp odak durağı yok) | ✅ Aşama 4 |
-| Film detayı: izle, fragman, konu, puan, tarih, AI özet (spoilersız), benzer yapımlar | TV detay ekranı; ilk odak "İzle" | ✅ Aşama 4 |
-| Dizi detayı: sezonlar, bölümler, izlendi işareti, önceki bölümlerin AI özeti | Sezon/bölüm satırları kumandayla; "Devam et" | ✅ Aşama 4 |
+| Film detayı: izle, fragman, konu, puan, tarih, benzer yapımlar | TV detay ekranı; ilk odak "İzle" | ✅ Aşama 4 |
+| Dizi detayı: sezonlar, bölümler, izlendi işareti | Sezon/bölüm satırları kumandayla; "Devam et" | ✅ Aşama 4 |
+| AI ile önceki bölümleri özetle (izlenen bölümlerin spoilersız özeti) | Dizi detayında ayrı bölüm; telefondakiyle aynı mantık (son izlenen bölümden sonrakine kadar); izlenmemişse "yolun başındasınız" + İlk Bölümü Başlat | ✅ |
 | Oyuncular ve yönetmen, kişi detayı, filmografi + kütüphane eşleşmesi | Yuvarlak fotoğraf satırı (yönetmen başta); kişi sayfası 6 sütun, kütüphanedekiler başta; eşleştirme veritabanında sorguyla | ✅ Aşama 4 |
 
 ### Canlı TV ve oynatıcı

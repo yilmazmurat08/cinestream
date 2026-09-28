@@ -139,6 +139,7 @@ fun TvDetailScreen(
     var extraDirector by remember(item.id) { mutableStateOf("") }
     var aiText by remember(item.id) { mutableStateOf<String?>(null) }
     var aiLoading by remember(item.id) { mutableStateOf(false) }
+    var recapOpen by remember(item.id) { mutableStateOf(false) }
     var similar by remember(item.id) { mutableStateOf<List<IPTVItem>>(emptyList()) }
     var openPerson by remember(item.id) { mutableStateOf<TvPerson?>(null) }
     var selectedSeason by remember(item.id) { mutableStateOf(0) }
@@ -278,38 +279,73 @@ fun TvDetailScreen(
                         "tv_detail_favorite"
                     ) { viewModel.toggleFavorite(item) }
                 }
-                val recapEpisode = lastWatched?.second?.episodeNumber
-                if (!isSeries || (recapEpisode != null && recapEpisode > 1)) {
-                    item {
-                        TvActionButton(
-                            Icons.Filled.AutoAwesome,
-                            stringResource(if (isSeries) R.string.detail_ai_summarize_previous else R.string.tv_ai_spoiler_free),
-                            "tv_detail_ai"
-                        ) {
-                            if (aiLoading) return@TvActionButton
+            }
+
+            // Dizi: izlenen bölümlerin spoilersız AI özeti (telefondaki "AI ile Önceki Bölümleri Özetle" ile
+            // aynı mantık: son izlenen bölümden sonraki bölüme kadar olan bölümler özetlenir).
+            if (isSeries) {
+                val recapSeason = lastWatched?.first ?: 1
+                val recapEpisode = (lastWatched?.second?.episodeNumber ?: 0) + 1
+                val notWatched = lastWatched == null || (recapSeason <= 1 && recapEpisode <= 1)
+                TvRowTitle(stringResource(R.string.detail_ai_summarize_previous))
+                TvGlassButton(
+                    onClick = {
+                        recapOpen = true
+                        if (!notWatched && aiText == null && !aiLoading) {
                             aiLoading = true
                             scope.launch {
-                                val text = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        if (isSeries) com.example.data.api.GeminiAiService.generatePreviousEpisodesSummary(context, title, recapEpisode ?: 1)
-                                        else com.example.data.api.MetadataEnricher.getSpoilerFreeSummary(context, title)
-                                    }.getOrNull()
-                                }
-                                aiText = text?.takeIf { it.isNotBlank() && it != "AI Özeti şu an oluşturulamadı" }
-                                    ?: context.getString(if (isSeries) R.string.series_recap_unavailable else R.string.detail_ai_summary_failed)
+                                val text = runCatching {
+                                    com.example.data.api.GeminiAiService.generatePreviousEpisodesSummary(context, title, recapEpisode)
+                                }.getOrNull()
+                                aiText = text?.takeIf { it.isNotBlank() } ?: context.getString(R.string.series_recap_unavailable)
                                 aiLoading = false
                             }
                         }
+                    },
+                    shape = TvTheme.RowShape,
+                    focusScale = 1.03f,
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.fillMaxWidth(0.6f).testTag("tv_series_recap")
+                ) { focused ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                        Icon(Icons.Filled.AutoAwesome, null, tint = if (focused) TvTheme.FocusGlow else TvTheme.Accent, modifier = Modifier.size(26.dp))
+                        Spacer(Modifier.width(14.dp))
+                        Text(
+                            if (lastWatched != null) {
+                                stringResource(R.string.series_recap_last_watched, lastWatched.first, lastWatched.second.episodeNumber)
+                            } else {
+                                stringResource(R.string.series_recap_start)
+                            },
+                            color = TvTheme.TextSecondary, fontSize = 15.sp, lineHeight = 21.sp, maxLines = 2, overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
-            }
-            if (aiLoading || aiText != null) {
-                Spacer(Modifier.height(14.dp))
-                Box(Modifier.fillMaxWidth(0.6f)) {
-                    if (aiLoading) {
-                        CircularProgressIndicator(color = TvTheme.Accent, modifier = Modifier.size(26.dp))
-                    } else {
-                        TvReadableText(aiText.orEmpty(), "tv_detail_ai_text")
+                if (recapOpen) {
+                    Spacer(Modifier.height(12.dp))
+                    Column(Modifier.fillMaxWidth(0.6f).testTag("tv_series_recap_panel")) {
+                        Text(
+                            if (notWatched) title else stringResource(R.string.series_recap_before, title, recapSeason.toString(), recapEpisode.toString()),
+                            color = TvTheme.Accent, fontSize = 15.sp, fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        when {
+                            notWatched -> {
+                                TvReadableText(
+                                    stringResource(R.string.detail_start_of_journey_title) + "\n" + stringResource(R.string.detail_start_of_journey_desc),
+                                    "tv_series_recap_start"
+                                )
+                                Spacer(Modifier.height(10.dp))
+                                TvActionButton(Icons.Filled.PlayArrow, stringResource(R.string.detail_start_first_episode), "tv_series_recap_first") {
+                                    onPlay(firstEpisode ?: item)
+                                }
+                            }
+                            aiLoading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(color = TvTheme.Accent, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text(stringResource(R.string.detail_ai_analyzing), color = TvTheme.TextSecondary, fontSize = 15.sp)
+                            }
+                            else -> TvReadableText(aiText ?: stringResource(R.string.series_recap_unavailable), "tv_series_recap_text")
+                        }
                     }
                 }
             }
