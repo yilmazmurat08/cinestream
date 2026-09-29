@@ -67,6 +67,13 @@ class TvFixesTest {
         val parsed = SeriesParser.episodeInfoOf(m3u)!!
         assertEquals(2, parsed.season)
         assertEquals(4, parsed.episode)
+
+        // M3U: alanlar addan doldurulmuş olsa da dizi adı etiketsiz olmalı (yoksa dizide tek bölüm görünür).
+        val m3uWithFields = item(3, "Kuzey Yıldızı S01E02", "SERIES", "Dizi", season = 1, episode = 2)
+        val withFields = SeriesParser.episodeInfoOf(m3uWithFields)!!
+        assertEquals("Kuzey Yıldızı", withFields.showTitle)
+        assertEquals(1, withFields.season)
+        assertEquals(2, withFields.episode)
     }
 
     @Test
@@ -99,6 +106,16 @@ class TvFixesTest {
             val none = repo.findTitles(listOf(GeminiAiService.TitleCandidate("Olmayan Yapım", "Missing Title", null, false)))
             assertTrue(none.none { it.id == 7702 })
         }
+    }
+
+    @Test
+    fun showForEpisode_withSeasonFields_listsAllEpisodes() {
+        val db = AppDatabase.getDatabase(app)
+        val episodes = (1..4).map { item(7850 + it, "Uzak Ada S01E0$it", "SERIES", "Diziler Test", season = 1, episode = it) }
+        runBlocking { db.iptvDao().insertItems(episodes) }
+        val show = runBlocking { TvCatalogRepository(db.iptvDao()).showForEpisode(episodes[1], emptyMap()) }
+        assertEquals("Uzak Ada", show?.title)
+        assertEquals(4, show?.seasons?.sumOf { it.episodes.size })
     }
 
     @Test

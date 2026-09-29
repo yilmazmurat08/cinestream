@@ -125,7 +125,8 @@ class TvShowcaseTest {
                 )
             }
         }
-        val live = listOf("TRT 1", "Show TV", "Kanal D", "ATV", "Star TV", "TV8", "NTV", "CNN Türk", "Habertürk", "TRT Spor", "beIN Sports 1", "A Spor")
+        // Önizleme ve tanıtım görsellerinde gerçek kanal markaları yerine hayali adlar kullanılır.
+        val live = ShowcaseData.channelNames
             .mapIndexed { i, n ->
                 IPTVItem(
                     id = 8200 + i, playlistId = 1, name = n, cleanedName = n, logoUrl = poster(n, 30 + i, 320, 200),
@@ -140,7 +141,7 @@ class TvShowcaseTest {
                     streamUrl = "http://10.255.255.1/s/0_2.mp4", category = "Yerli Diziler", progressSeconds = 900, totalSeconds = 2700)
             )
             db.iptvDao().insertContinueWatching(
-                ContinueWatching(itemId = 8200, itemName = "TRT 1", itemType = "LIVE", itemLogo = null,
+                ContinueWatching(itemId = 8200, itemName = ShowcaseData.channelNames[0], itemType = "LIVE", itemLogo = null,
                     streamUrl = "http://10.255.255.1/l/0.ts", category = "Ulusal", progressSeconds = 100, totalSeconds = 100,
                     lastPlayedAt = System.currentTimeMillis() - 60_000)
             )
