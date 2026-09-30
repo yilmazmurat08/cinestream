@@ -59,6 +59,7 @@ class LegalAndOrientationTest {
                     d.sections.flatMap { listOf(it.heading) + it.paragraphs + it.bullets + it.after }).joinToString("\n")
                 assertFalse("doldurulmamış yer tutucu: $doc", Regex("""\{[A-Z]+\}""").containsMatchIn(all))
                 assertTrue("iletişim e-postası: $doc", all.contains("yilmazmurat08@gmail.com"))
+                assertTrue("geliştirici adı: $doc", all.contains("lusnika"))
             }
         }
         // Play / YouTube API Hizmetleri gereği: şartlarda YouTube Hizmet Şartları, gizlilikte Google Gizlilik Politikası bağlantısı.
