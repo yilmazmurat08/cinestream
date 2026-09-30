@@ -20,7 +20,7 @@
     "**Profile details:** The name, email address and avatar you optionally enter in the App. They are not verified, do not create an account and never leave your device.",
     "**AI API key:** Your own Google Gemini API key, if you add one to use the AI features.",
     "**Watch history and preferences:** The \"Continue watching\" list, watched episodes, favourites, search history, AI chat and recommendation history, the parental lock PIN and app settings (theme, language, view mode, etc.).",
-    "**Usage counters:** The free viewing time counter (on the device only).",
+    "**Usage counter:** The daily free viewing time counter (on the device only; resets every day).",
     "**Error logs:** If the App closes unexpectedly, a short error log that helps fix the problem is kept only on your device; it is never sent anywhere automatically."
    ],
    "after": [
@@ -45,7 +45,7 @@
     "**The Movie Database (TMDB):** Titles and search terms are sent to TMDB to show posters, summaries, cast and ratings for films and series. No identity or playlist details are sent. TMDB privacy policy: https://www.themoviedb.org/privacy-policy",
     "**Google Gemini API:** If you use the AI assistant or summaries, the messages you type, the scenes you describe and related titles are sent to Google with your own API key. This use is subject to Google's terms: https://ai.google.dev/gemini-api/terms",
     "**YouTube (trailers):** Trailers are played inside the App with YouTube's official embedded player (YouTube API Services). When you open a trailer, YouTube and Google may collect data such as your IP address and device information and may use cookie-like technologies. This is subject to the Google Privacy Policy: https://policies.google.com/privacy",
-    "**Google Play services:** The in-app review prompt (Google Play In-App Review) and any purchases are handled by Google Play; we have no access to your payment details.",
+    "**Google Play services:** Purchases are handled by Google Play; to verify PRO status, the App asks Google Play for this app's purchases on the Google account on the device. The in-app review prompt (Google Play In-App Review) is also shown through Google Play. We have no access to your payment details.",
     "**Sign-in from your phone (Android TV, QR code):** When you scan the QR code on your TV, your playlist details are sent from your phone directly to your TV over the same local network (Wi-Fi); they are not sent over the internet or to us. This connection only works while the sign-in screen is open."
    ]
   },
