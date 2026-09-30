@@ -44,6 +44,7 @@ fun InAppTrailerPlayer(
     videoId: String,
     modifier: Modifier = Modifier,
     showControls: Boolean = true,
+    fillArea: Boolean = false,
     onEnded: () -> Unit = {},
     onError: () -> Unit = {}
 ) {
@@ -52,7 +53,6 @@ fun InAppTrailerPlayer(
     var started by remember(videoId) { mutableStateOf(false) }
     var failed by remember(videoId) { mutableStateOf(false) }
     val webHolder = remember { arrayOfNulls<WebView>(1) }
-    var diagnostics by remember(videoId) { mutableStateOf("") }
 
     // Yavaş bağlantıda sonsuza dek siyah kutu kalmasın.
     LaunchedEffect(videoId) {
@@ -97,6 +97,7 @@ fun InAppTrailerPlayer(
                     context = context,
                     videoId = videoId,
                     showControls = showControls,
+                    fillArea = fillArea,
                     onState = { state ->
                         when (state) {
                             YT_PLAYING -> started = true
@@ -107,14 +108,6 @@ fun InAppTrailerPlayer(
                         if (!failed) {
                             failed = true
                             latestError()
-                        }
-                    },
-                    onDiagnostics = { page ->
-                        val web = webHolder[0]
-                        diagnostics = buildString {
-                            append("WV ").append(webViewVersion()).append(" · HW ").append(web?.isHardwareAccelerated)
-                            append(" · layer ").append(web?.layerType).append(" · view ").append(web?.width).append("x").append(web?.height)
-                            append(" · ").append(page)
                         }
                     }
                 )?.also { webHolder[0] = it } ?: View(context).also {
@@ -128,23 +121,8 @@ fun InAppTrailerPlayer(
                 }
             }
         )
-        // Sadece test (qa) sürümünde: görüntü gelmezse nedenini bulmak için oynatıcı durumu.
-        if (com.example.BuildConfig.SHOW_DIAGNOSTICS && diagnostics.isNotEmpty()) {
-            androidx.compose.material3.Text(
-                diagnostics,
-                color = Color.Yellow,
-                fontSize = androidx.compose.ui.unit.TextUnit(9f, androidx.compose.ui.unit.TextUnitType.Sp),
-                modifier = Modifier
-                    .align(androidx.compose.ui.Alignment.TopEnd)
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .testTag("in_app_trailer_diagnostics")
-            )
-        }
     }
 }
-
-private fun webViewVersion(): String =
-    runCatching { WebView.getCurrentWebViewPackage()?.versionName }.getOrNull() ?: "?"
 
 private const val JS_BRIDGE = "CineTrailer"
 private const val YT_ENDED = 0
@@ -156,9 +134,9 @@ private fun createTrailerWebView(
     context: Context,
     videoId: String,
     showControls: Boolean,
+    fillArea: Boolean,
     onState: (Int) -> Unit,
-    onError: () -> Unit,
-    onDiagnostics: (String) -> Unit = {}
+    onError: () -> Unit
 ): WebView? = runCatching {
     val main = Handler(Looper.getMainLooper())
     WebView(context).apply {
@@ -191,25 +169,21 @@ private fun createTrailerWebView(
             fun error(code: Int) {
                 main.post { onError() }
             }
-
-            @JavascriptInterface
-            fun diag(text: String) {
-                main.post { onDiagnostics(text.take(200)) }
-            }
         }, JS_BRIDGE)
         // Görünüm boyutu değişince (ilk yerleşim dahil) oynatıcı kutusu yeniden boyutlandırılır.
         addOnLayoutChangeListener { view, l, t, r, b, ol, ot, or, ob ->
             if (r - l != or - ol || b - t != ob - ot) (view as WebView).evaluateJavascript("if (window.fitPlayer) fitPlayer();", null)
         }
         val origin = "https://${context.packageName}"
-        loadDataWithBaseURL(origin, trailerHtml(videoId, showControls, origin), "text/html", "utf-8", null)
+        loadDataWithBaseURL(origin, trailerHtml(videoId, showControls, origin, fillArea), "text/html", "utf-8", null)
     }
 }.getOrNull()
 
 /** YouTube IFrame API sayfası. Sadece video kimliği içindeki güvenli karakterler kullanılır. */
-internal fun trailerHtml(videoId: String, showControls: Boolean, origin: String): String {
+internal fun trailerHtml(videoId: String, showControls: Boolean, origin: String, fillArea: Boolean = false): String {
     val safeId = videoId.filter { it.isLetterOrDigit() || it == '-' || it == '_' }
     val controls = if (showControls) 1 else 0
+    val cover = if (fillArea) "true" else "false"
     return """
 <!DOCTYPE html>
 <html><head>
@@ -220,6 +194,7 @@ internal fun trailerHtml(videoId: String, showControls: Boolean, origin: String)
 <div id="player"></div>
 <script>
 var player;
+var COVER = $cover;
 // Android WebView'da yüzde yükseklik bazen 0 hesaplanıyor (ses var, görüntü yok). Oynatıcı kutusu her zaman
 // görünen alanın piksel boyutuna ayarlanır: açılışta, boyut değişince ve uygulama istediğinde (fitPlayer).
 function fitPlayer(){
@@ -227,25 +202,24 @@ function fitPlayer(){
     var w = window.innerWidth || document.documentElement.clientWidth;
     var h = window.innerHeight || document.documentElement.clientHeight;
     if (!w || !h) return;
+    // COVER: video (16:9) alanı tamamen kaplar, taşan kenarlar kırpılır (siyah bant kalmaz).
+    var vw = w, vh = h;
+    if (COVER) {
+      if (w / h > 16 / 9) { vh = Math.ceil(w * 9 / 16); } else { vw = Math.ceil(h * 16 / 9); }
+    }
     var f = document.querySelector('iframe') || document.getElementById('player');
     if (f) {
-      f.style.setProperty('width', w + 'px', 'important');
-      f.style.setProperty('height', h + 'px', 'important');
+      f.style.setProperty('width', vw + 'px', 'important');
+      f.style.setProperty('height', vh + 'px', 'important');
+      f.style.setProperty('left', Math.round((w - vw) / 2) + 'px', 'important');
+      f.style.setProperty('top', Math.round((h - vh) / 2) + 'px', 'important');
     }
-    if (player && player.setSize) player.setSize(w, h);
+    if (player && player.setSize) player.setSize(vw, vh);
   } catch(e) {}
 }
 window.addEventListener('resize', fitPlayer);
 var fitTimer = setInterval(fitPlayer, 500);
 setTimeout(function(){ clearInterval(fitTimer); }, 15000);
-function reportDiag(tag){
-  try {
-    var f = document.querySelector('iframe');
-    var size = f ? (f.offsetWidth + 'x' + f.offsetHeight) : '-';
-    $JS_BRIDGE.diag(tag + ' vis=' + document.visibilityState + ' win=' + innerWidth + 'x' + innerHeight + ' iframe=' + size);
-  } catch(e) {}
-}
-document.addEventListener('visibilitychange', function(){ reportDiag('visibility'); });
 function pauseTrailer(){ try { if (player) player.pauseVideo(); } catch(e) {} }
 function onYouTubeIframeAPIReady(){
   player = new YT.Player('player', {
@@ -253,7 +227,7 @@ function onYouTubeIframeAPIReady(){
     playerVars: { autoplay: 1, controls: $controls, playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, fs: 0, disablekb: 1, origin: '$origin' },
     events: {
       onReady: function(e){ fitPlayer(); e.target.playVideo(); },
-      onStateChange: function(e){ fitPlayer(); $JS_BRIDGE.state(e.data); reportDiag('state' + e.data); },
+      onStateChange: function(e){ fitPlayer(); $JS_BRIDGE.state(e.data); },
       onError: function(e){ $JS_BRIDGE.error(e.data); }
     }
   });

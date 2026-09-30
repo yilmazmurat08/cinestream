@@ -314,7 +314,9 @@ fun DetailScreen(
                                 playingTrailerId = null
                                 android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
                             },
-                            modifier = Modifier.align(Alignment.Center).fillMaxWidth().aspectRatio(16f / 9f)
+                            // Fragman kapak alanının tamamını kaplar (Netflix tarzı); taşan kenarlar kırpılır.
+                            fillArea = true,
+                            modifier = Modifier.fillMaxSize()
                         )
                     } else {
                     SafeAsyncImage(

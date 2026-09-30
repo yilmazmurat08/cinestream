@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ApplicationProvider
@@ -230,5 +231,37 @@ class PhonePromoShotsTest {
                 matchedItem = movies[0], detectedTitle = "Gece Yarısı Treni", matchedItems = listOf(movies[0]))
         )
         shot("p04-asistan", 4_000) { MovieFinderChatScreen(viewModel = vm, onBack = {}, onOpenItem = {}) }
+    }
+    @Test fun p06_legalPrivacy() = shot("p06-gizlilik", 3_000) {
+        com.example.ui.legal.LegalScreen(doc = com.example.data.legal.LegalDoc.PRIVACY, language = "tr", onClose = {})
+    }
+
+    @Test fun p07_loginLinks() {
+        compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.LoginScreen(viewModel = vm, onLoginSuccess = { _, _ -> }) } }
+        settle(2_000)
+        compose.onNodeWithTag("legal_link_terms").performScrollTo()
+        settle(1_000)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "p07-giris-baglantilar.png").absolutePath)
+    }
+
+    @Test fun p08_settingsLegal() {
+        compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.SettingsScreen(viewModel = vm) } }
+        settle(2_000)
+        compose.onNodeWithTag("legal_settings_card").performScrollTo()
+        settle(1_000)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "p08-ayarlar-yasal.png").absolutePath)
+    }
+
+    @Test
+    @Config(qualifiers = "tr-w960dp-h540dp-land-television-xhdpi")
+    fun p09_tvLegal() {
+        com.example.ui.tv.TvDevice.overrideForTest = true
+        try {
+            shot("p09-tv-hizmet-sartlari", 3_000) {
+                com.example.ui.legal.LegalScreen(doc = com.example.data.legal.LegalDoc.TERMS, language = "tr", onClose = {})
+            }
+        } finally {
+            com.example.ui.tv.TvDevice.overrideForTest = null
+        }
     }
 }

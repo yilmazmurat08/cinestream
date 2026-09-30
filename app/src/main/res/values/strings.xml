@@ -12,11 +12,6 @@
     <string name="theme_system">Otomatik (Sistem)</string>
     <string name="theme_dark">Koyu Mod (Mor/Siyah)</string>
     <string name="theme_light">Açık Mod</string>
-    <string name="screen_orientation">Ekran Yönlendirmesi</string>
-    <string name="screen_orientation_desc">Uygulamanın ekran yönünü dikey, yatay veya otomatik olarak ayarlayın.</string>
-    <string name="orientation_auto">Otomatik (Sensör)</string>
-    <string name="orientation_portrait">Dikey Mod</string>
-    <string name="orientation_landscape">Yatay Mod</string>
     <string name="trailer">Fragman</string>
     <string name="radio">Radyo</string>
     <string name="watchlist">İzleme Listem</string>
@@ -74,7 +69,7 @@
     <string name="login_preparing_media">Medya listesi hazırlanıyor...</string>
     <string name="login_preparing_library">Kütüphane hazırlanıyor...</string>
     <string name="login_cta_button">Yapay Zekâ Destekli Deneyime Başla</string>
-    <string name="login_terms_notice">Giriş yaparak kullanım koşullarını ve gizlilik politikasını kabul etmiş olursunuz.</string>
+    <string name="login_terms_notice">Giriş yaparak Hizmet Şartları\'nı ve Gizlilik Politikası\'nı kabul etmiş olursunuz.</string>
     <string name="login_help_sheet_title">Gemini API Anahtarı Kılavuzu</string>
     <string name="login_help_sheet_subtitle">3 basit adımda ücretsiz yapay zeka anahtarınızı alın.</string>
     <string name="login_step1_title">Adım 1: Google AI Studio\'ya Gidin</string>
@@ -619,4 +614,9 @@
     <string name="tv_episode_label">S%1$d B%2$d</string>
     <string name="trailer_close">Fragmanı Kapat</string>
     <string name="trailer_inapp_failed">Bu fragman uygulama içinde oynatılamadı</string>
+    <string name="legal_terms">Hizmet Şartları</string>
+    <string name="legal_privacy">Gizlilik Politikası</string>
+    <string name="legal_title">Yasal</string>
+    <string name="legal_desc">Uygulamayı kullanma koşulları ve verilerinizin nasıl işlendiği.</string>
+    <string name="legal_back">Geri</string>
 </resources>

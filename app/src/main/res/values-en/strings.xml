@@ -7,11 +7,6 @@
     <string name="app_language_desc">Change the interface language (Turkish / English).</string>
     <string name="language_tr">Turkish (TR)</string>
     <string name="language_en">English (EN)</string>
-    <string name="screen_orientation">Screen Orientation</string>
-    <string name="screen_orientation_desc">Set the app screen orientation to portrait, landscape, or auto.</string>
-    <string name="orientation_auto">Auto (Sensor)</string>
-    <string name="orientation_portrait">Portrait Mode</string>
-    <string name="orientation_landscape">Landscape Mode</string>
     <string name="trailer">Trailer</string>
     <string name="radio">Radio</string>
     <string name="watchlist">Watchlist</string>
@@ -620,4 +615,9 @@
     <string name="tv_episode_label">S%1$d E%2$d</string>
     <string name="trailer_close">Close Trailer</string>
     <string name="trailer_inapp_failed">This trailer couldn\'t be played in the app</string>
+    <string name="legal_terms">Terms of Service</string>
+    <string name="legal_privacy">Privacy Policy</string>
+    <string name="legal_title">Legal</string>
+    <string name="legal_desc">The conditions for using the app and how your data is handled.</string>
+    <string name="legal_back">Back</string>
 </resources>

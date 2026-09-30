@@ -686,6 +686,12 @@ fun LoginScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+
+                // Hizmet Şartları ve Gizlilik Politikası (telefon ve TV modunda; kumandayla da seçilebilir).
+                com.example.ui.legal.LegalLinks(
+                    onOpen = { doc -> viewModel?.openLegal(doc) },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Spacer(modifier = Modifier.height(28.dp))

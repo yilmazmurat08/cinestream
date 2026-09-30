@@ -148,6 +148,9 @@ class TvFixesTest {
         assertFalse(html.contains("alert(1)"))
         assertTrue(html.contains("controls: 0"))
         assertTrue(html.contains("origin: 'https://com.cinestream.iptv'"))
+        assertTrue(html.contains("var COVER = false;"))
+        // Kapak alanını kaplama modu (Netflix tarzı): video alanı taşarak doldurur.
+        assertTrue(trailerHtml("abc123", showControls = false, origin = "https://x", fillArea = true).contains("var COVER = true;"))
     }
 
     @Test

@@ -149,20 +149,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appTheme by viewModel.appTheme.collectAsState()
-            val screenOrientation by viewModel.screenOrientation.collectAsState()
+            val orientationViewMode by viewModel.viewMode.collectAsState()
             val appLanguage by viewModel.appLanguage.collectAsState()
 
             val localizedContext = remember(appLanguage) {
                 com.example.util.LocaleHelper.updateResources(this@MainActivity, appLanguage)
             }
 
-            LaunchedEffect(screenOrientation) {
-                val targetOrientation = when (screenOrientation) {
-                    "PORTRAIT" -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                    "LANDSCAPE" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    "SENSOR" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                    "AUTO" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                    else -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            // Telefon arayüzü yalnızca dikeydir; TV modu (telefonda denenirken) yataydır. Gerçek TV cihazında yöne
+            // dokunulmaz. İzlerken oynatıcı kendi yönünü (yatay/dikey) ayrıca yönetir ve çıkınca buna geri döner.
+            LaunchedEffect(orientationViewMode) {
+                val targetOrientation = when {
+                    com.example.ui.tv.TvDevice.isTv(this@MainActivity) -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    orientationViewMode == com.example.data.repository.ViewMode.TV -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 }
                 if (requestedOrientation != targetOrientation) {
                     requestedOrientation = targetOrientation
@@ -515,6 +515,12 @@ class MainActivity : ComponentActivity() {
                                         onDismiss = { viewModel.closePaywall() },
                                         onPurchaseSuccess = { viewModel.setProUser(true) }
                                     )
+                                }
+
+                                // Hizmet Şartları / Gizlilik Politikası: giriş ekranı dahil her ekranın üstünde açılır.
+                                val legalDoc by viewModel.legalDoc.collectAsState()
+                                legalDoc?.let { doc ->
+                                    com.example.ui.legal.LegalScreen(doc = doc, language = appLanguage, onClose = { viewModel.closeLegal() })
                                 }
 
                                 ErrorNotificationBanner(

@@ -329,9 +329,6 @@ class IPTVViewModel(
         viewModelScope.launch(coroutineExceptionHandler) { settingsRepository.setViewMode(mode) }
     }
 
-    val screenOrientation: StateFlow<String> = settingsRepository.screenOrientationFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "AUTO")
-
     val syncInterval: StateFlow<String> = settingsRepository.syncIntervalFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "24_HOURS")
 
@@ -366,6 +363,12 @@ class IPTVViewModel(
     }
 
     // Paywall Dialog Visibility & Reason
+    // Açık yasal metin (Hizmet Şartları / Gizlilik Politikası); null ise kapalı.
+    private val _legalDoc = MutableStateFlow<com.example.data.legal.LegalDoc?>(null)
+    val legalDoc: StateFlow<com.example.data.legal.LegalDoc?> = _legalDoc.asStateFlow()
+    fun openLegal(doc: com.example.data.legal.LegalDoc) { _legalDoc.value = doc }
+    fun closeLegal() { _legalDoc.value = null }
+
     private val _showPaywallDialog = MutableStateFlow(false)
     val showPaywallDialog: StateFlow<Boolean> = _showPaywallDialog.asStateFlow()
 
@@ -428,12 +431,6 @@ class IPTVViewModel(
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setAppLanguage(language)
             com.example.util.LocaleHelper.setLocale(getApplication(), language)
-        }
-    }
-
-    fun setScreenOrientation(orientation: String) {
-        viewModelScope.launch(coroutineExceptionHandler) {
-            settingsRepository.setScreenOrientation(orientation)
         }
     }
 
