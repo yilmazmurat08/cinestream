@@ -1,0 +1,100 @@
+{
+ "title": "Privacy Policy",
+ "updated": "Last updated: {UPDATED}",
+ "intro": "This Privacy Policy explains which data is processed, and how, when you use the CineStream app (\"App\", \"CineStream\", \"we\"), developed by {DEVELOPER}, on phones and Android TV.",
+ "highlight": "In short: CineStream has no servers of its own and does not require an account. The playlist details, profile details, API key and watch history you enter are stored only on your device and are never sent to us. Some features send only the information they need, directly from your device, to the service involved (listed below). There are no ads, no tracking and no sale of data.",
+ "sections": [
+  {
+   "h": "1. Who We Are",
+   "p": [
+    "CineStream is a media player app that lets users watch content by adding their own IPTV playlists (an M3U/M3U8 link or Xtream Codes details). It runs on phones and Android TV. The developer of the App and the data controller under this policy is {DEVELOPER}. Contact: {EMAIL}"
+   ]
+  },
+  {
+   "h": "2. Data Stored on Your Device",
+   "p": [
+    "The following information is stored only in the App's private storage on your device and is not sent to us:"
+   ],
+   "list": [
+    "**Playlist details:** M3U/M3U8 link or Xtream Codes server address, username and password; programme guide (EPG) address.",
+    "**Profile details:** The name, email address and avatar you optionally enter in the App. They are not verified, do not create an account and never leave your device.",
+    "**AI API key:** Your own Google Gemini API key, if you add one to use the AI features.",
+    "**Watch history and preferences:** The \"Continue watching\" list, watched episodes, favourites, search history, AI chat and recommendation history, the parental lock PIN and app settings (theme, language, view mode, etc.).",
+    "**Usage counters:** The free viewing time counter (on the device only).",
+    "**Error logs:** If the App closes unexpectedly, a short error log that helps fix the problem is kept only on your device; it is never sent anywhere automatically."
+   ],
+   "after": [
+    "We do not collect location, contacts, photos, advertising IDs or similar personal data."
+   ]
+  },
+  {
+   "h": "3. Permissions We Use",
+   "list": [
+    "**Internet and network state:** To load streams, posters and content information.",
+    "**Microphone (optional):** Used only when you press the voice search button, to turn what you say into text. The App does not store audio recordings. Speech recognition is performed by your device's speech recognition service (usually Google) and is subject to that service's privacy terms. If you do not grant the permission, you can keep typing with the on-screen keyboard.",
+    "**Notifications and foreground service:** To show the playback notification with controls while something is playing (for example in picture-in-picture mode)."
+   ]
+  },
+  {
+   "h": "4. Services Data Is Sent To",
+   "p": [
+    "Information is sent to the services below only when you use the related feature, directly from your device; no server of ours sits in between:"
+   ],
+   "list": [
+    "**Your own IPTV / Xtream provider:** Your playlist details and playback requests go directly to the provider you chose, to fetch its content. We are not responsible for your provider's privacy practices or content.",
+    "**The Movie Database (TMDB):** Titles and search terms are sent to TMDB to show posters, summaries, cast and ratings for films and series. No identity or playlist details are sent. TMDB privacy policy: https://www.themoviedb.org/privacy-policy",
+    "**Google Gemini API:** If you use the AI assistant or summaries, the messages you type, the scenes you describe and related titles are sent to Google with your own API key. This use is subject to Google's terms: https://ai.google.dev/gemini-api/terms",
+    "**YouTube (trailers):** Trailers are played inside the App with YouTube's official embedded player (YouTube API Services). When you open a trailer, YouTube and Google may collect data such as your IP address and device information and may use cookie-like technologies. This is subject to the Google Privacy Policy: https://policies.google.com/privacy",
+    "**Google Play services:** The in-app review prompt (Google Play In-App Review) and any purchases are handled by Google Play; we have no access to your payment details.",
+    "**Sign-in from your phone (Android TV, QR code):** When you scan the QR code on your TV, your playlist details are sent from your phone directly to your TV over the same local network (Wi-Fi); they are not sent over the internet or to us. This connection only works while the sign-in screen is open."
+   ]
+  },
+  {
+   "h": "5. Advertising and Tracking",
+   "p": [
+    "CineStream shows no ads, uses no third-party advertising or analytics tools, does not track users for advertising and does not sell or share any data."
+   ]
+  },
+  {
+   "h": "6. Data Security and Retention",
+   "p": [
+    "All data is stored in Android's private app storage and cannot be read by other apps. Your API key, parental lock PIN and settings are excluded from Android cloud backup. If Android backup is turned on, your playlists and watch history may be included in the Android backup in your Google account; that backup is subject to Google's policies.",
+    "Whether the connection to your provider's server is encrypted (HTTPS) depends on the address your provider gives you. Data stays on your device until you delete it or uninstall the App."
+   ]
+  },
+  {
+   "h": "7. Deleting Your Data",
+   "list": [
+    "You can delete your playlists, API key and AI history from the App's Settings.",
+    "To delete all data, use Android Settings > Apps > CineStream > Storage > \"Clear data\", or uninstall the App; this permanently deletes all CineStream data on the device."
+   ],
+   "after": [
+    "Because we keep no data about you on any server, you do not need to send us a deletion request; you are still welcome to contact us with any questions."
+   ]
+  },
+  {
+   "h": "8. Children's Privacy",
+   "p": [
+    "CineStream is not directed at children under 13 and does not knowingly collect data from children under 13. Depending on the playlists added, adult content categories may appear; they can be hidden with the parental lock (PIN). We recommend that users under 18 use the App under the supervision of a parent or guardian. If you believe a child under 13 has entered information into the App, you can delete the data on the device as described above or contact us."
+   ]
+  },
+  {
+   "h": "9. Your Rights",
+   "p": [
+    "You may exercise rights such as access, correction and deletion under Turkish Personal Data Protection Law No. 6698 (KVKK) and, where applicable, the EU General Data Protection Regulation (GDPR). Because your data is only on your device, you can exercise most of these rights directly in the App. For other requests, write to {EMAIL}."
+   ]
+  },
+  {
+   "h": "10. Changes to This Policy",
+   "p": [
+    "We may update this policy from time to time. The current version is always published in the App and the \"Last updated\" date above changes. We will inform you in the App about significant changes."
+   ]
+  },
+  {
+   "h": "11. Contact Us",
+   "p": [
+    "For privacy questions: {EMAIL}"
+   ]
+  }
+ ]
+}

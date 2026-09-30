@@ -78,7 +78,6 @@ fun SettingsScreen(
     val isProUser by viewModel.isProUser.collectAsState()
     val currentLanguage by viewModel.appLanguage.collectAsState()
     val viewMode by viewModel.viewMode.collectAsState()
-    val currentOrientation by viewModel.screenOrientation.collectAsState()
     val syncInterval by viewModel.syncInterval.collectAsState()
     val hwAccEnabled by viewModel.hardwareAcceleration.collectAsState()
     val selectedBuffer by viewModel.bufferSize.collectAsState()
@@ -259,14 +258,6 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // EKRAN YÖNLENDİRMESİ CARD
-                        ScreenOrientationCard(
-                            currentOrientation = currentOrientation,
-                            onOrientationSelect = { viewModel.setScreenOrientation(it) }
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
                         // 1. OYNATICI AYARLARI CARD
                         PlayerSettingsCard(
                             hwAccEnabled = hwAccEnabled,
@@ -337,6 +328,10 @@ fun SettingsScreen(
                                 }
                             }
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        com.example.ui.legal.LegalSettingsCard(onOpen = { viewModel.openLegal(it) })
                     }
                 }
             } else {
@@ -411,11 +406,6 @@ fun SettingsScreen(
                         onThemeSelect = { viewModel.setAppTheme(it) }
                     )
 
-                    ScreenOrientationCard(
-                        currentOrientation = currentOrientation,
-                        onOrientationSelect = { viewModel.setScreenOrientation(it) }
-                    )
-
                     PlayerSettingsCard(
                         hwAccEnabled = hwAccEnabled,
                         onHwAccChange = { viewModel.setHardwareAcceleration(it) },
@@ -474,6 +464,8 @@ fun SettingsScreen(
                             }
                         }
                     )
+
+                    com.example.ui.legal.LegalSettingsCard(onOpen = { viewModel.openLegal(it) })
                 }
             }
             
@@ -1555,8 +1547,7 @@ fun AddPlaylistDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Android TV: liste bilgilerini telefondan QR ile gönder
-                val phoneEntryContext = androidx.compose.ui.platform.LocalContext.current
-                if (remember { com.example.ui.tv.TvDevice.isTv(phoneEntryContext) }) {
+                if (com.example.ui.tv.rememberPhoneEntryAvailable()) {
                     var showPhoneEntry by remember { mutableStateOf(false) }
                     com.example.ui.tv.PhoneEntryButton(
                         mode = com.example.ui.tv.PhoneEntryMode.PLAYLIST,
@@ -2231,136 +2222,6 @@ private fun ProPointItem(text: String) {
 }
 
 @Composable
-fun ScreenOrientationCard(
-    currentOrientation: String,
-    onOrientationSelect: (String) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("screen_orientation_card"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ScreenRotation,
-                    contentDescription = null,
-                    tint = CineOrange,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(id = R.string.screen_orientation),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            Text(
-                text = stringResource(id = R.string.screen_orientation_desc),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OrientationOptionItem(
-                    label = stringResource(id = R.string.orientation_auto),
-                    iconEmoji = "📱",
-                    isSelected = currentOrientation == "AUTO" || currentOrientation == "UNSPECIFIED",
-                    onClick = { onOrientationSelect("AUTO") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("orientation_option_auto")
-                )
-
-                OrientationOptionItem(
-                    label = stringResource(id = R.string.orientation_portrait),
-                    iconEmoji = "📲",
-                    isSelected = currentOrientation == "PORTRAIT",
-                    onClick = { onOrientationSelect("PORTRAIT") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("orientation_option_portrait")
-                )
-
-                OrientationOptionItem(
-                    label = stringResource(id = R.string.orientation_landscape),
-                    iconEmoji = "📺",
-                    isSelected = currentOrientation == "LANDSCAPE",
-                    onClick = { onOrientationSelect("LANDSCAPE") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("orientation_option_landscape")
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun OrientationOptionItem(
-    label: String,
-    iconEmoji: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) CineOrange.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        border = BorderStroke(
-            width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) CineOrange else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-        ),
-        modifier = modifier
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
-        ) {
-            Text(text = iconEmoji, fontSize = 22.sp)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) CineOrange else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
-            if (isSelected) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = CineOrange,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    }
-}
-
-
-
-/**
- * Account / Profile Header Component
- * Renders user profile picture, display name, email address, and an edit button.
- */
-@Composable
 fun AccountHeaderComponent(
     displayName: String?,
     email: String?,
@@ -2841,8 +2702,7 @@ fun GeminiApiKeyCard(
             )
 
             // Android TV: anahtarı telefondan QR ile gönder
-            val phoneEntryContext = androidx.compose.ui.platform.LocalContext.current
-            if (remember { com.example.ui.tv.TvDevice.isTv(phoneEntryContext) }) {
+            if (com.example.ui.tv.rememberPhoneEntryAvailable()) {
                 var showPhoneEntry by remember { mutableStateOf(false) }
                 Spacer(modifier = Modifier.height(10.dp))
                 com.example.ui.tv.PhoneEntryButton(

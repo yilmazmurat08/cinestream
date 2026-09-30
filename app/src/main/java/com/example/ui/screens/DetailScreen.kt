@@ -124,6 +124,8 @@ fun DetailScreen(
 
     // Dynamic trailer URL resolution using simulated ViewModel fetcher
     var dynamicTrailerUrl by remember(item) { mutableStateOf(item.trailerUrl) }
+    // Netflix tarzı: fragman YouTube'a gitmeden üstteki kapak görselinin yerinde oynar.
+    var playingTrailerId by remember(item) { mutableStateOf<String?>(null) }
 
     if (dynamicTrailerUrl.isNullOrEmpty() && viewModel != null) {
         LaunchedEffect(item) {
@@ -302,6 +304,21 @@ fun DetailScreen(
                         .then(if (blurRadius > 0.5.dp) Modifier.blur(blurRadius) else Modifier)
                         .background(Color(0xFF1E112A))
                 ) {
+                    val trailerId = playingTrailerId
+                    if (trailerId != null) {
+                        com.example.ui.components.InAppTrailerPlayer(
+                            videoId = trailerId,
+                            showControls = false,
+                            onEnded = { playingTrailerId = null },
+                            onError = {
+                                playingTrailerId = null
+                                android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            // Fragman kapak alanının tamamını kaplar (Netflix tarzı); taşan kenarlar kırpılır.
+                            fillArea = true,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
                     SafeAsyncImage(
                         model = dynamicBackdropUrl ?: dynamicPosterUrl ?: item.logoUrl,
                         contentDescription = "Cover Image",
@@ -324,7 +341,10 @@ fun DetailScreen(
                                 )
                             )
                     )
+                    }
                 }
+                // Fragman başlayınca kapak alanı görünsün diye en üste kaydırılır.
+                LaunchedEffect(playingTrailerId) { if (playingTrailerId != null) scrollState.animateScrollTo(0) }
 
                 // 2. SCROLLABLE BODY OVERLAY
                 Column(
@@ -523,9 +543,11 @@ fun DetailScreen(
                             Button(
                                 onClick = {
                                     val rawUrl = item.trailerUrl ?: dynamicTrailerUrl
-                                    val cleanUrl = com.example.ui.components.formatYouTubeWatchUrl(rawUrl)
-                                    if (!cleanUrl.isNullOrEmpty()) {
-                                        com.example.ui.components.openYoutubeTrailerExternally(context, cleanUrl)
+                                    val videoId = com.example.ui.components.extractYouTubeVideoId(rawUrl)
+                                    if (playingTrailerId != null) {
+                                        playingTrailerId = null
+                                    } else if (!videoId.isNullOrEmpty()) {
+                                        playingTrailerId = videoId
                                     } else {
                                         android.widget.Toast.makeText(
                                             context,
@@ -550,14 +572,14 @@ fun DetailScreen(
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Movie,
+                                        imageVector = if (playingTrailerId != null) Icons.Default.Close else Icons.Default.Movie,
                                         contentDescription = stringResource(R.string.trailer),
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = stringResource(R.string.trailer),
+                                        text = stringResource(if (playingTrailerId != null) R.string.trailer_close else R.string.trailer),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp

@@ -1,10 +1,5 @@
 package com.example.ui.tv
 
-import android.app.Activity
-import android.content.Intent
-import android.speech.RecognizerIntent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -114,11 +109,6 @@ fun TvAssistantScreen(
     val inputFocus = remember { FocusRequester() }
     val foundCardFocus = remember { FocusRequester() }
 
-    val speechIntent = remember { Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH) }
-    val canSpeak = remember(context) {
-        runCatching { context.packageManager.queryIntentActivities(speechIntent, 0).isNotEmpty() }.getOrDefault(false)
-    }
-
     fun send(text: String) {
         val clean = text.trim()
         if (clean.isNotEmpty() && !isLoading) {
@@ -128,32 +118,25 @@ fun TvAssistantScreen(
         }
     }
 
-    val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { send(it) }
-        }
-    }
-    val scenePrompt = stringResource(R.string.tv_ai_scene_prompt)
-    val askPrompt = stringResource(R.string.tv_ai_voice_prompt)
+    // Uygulama içi sesli giriş (sistemin ses arama ekranı açılmaz); yoksa ekran klavyesi.
+    val voice = rememberTvVoiceInput(
+        onResult = { send(it) },
+        onUnavailable = { runCatching { inputFocus.requestFocus() } }
+    )
+    val canSpeak = voice.available
 
     /** Sesle sor; cihazda ses tanıma yoksa ekran klavyesiyle yazma alanına geçer. */
-    fun listen(prompt: String) {
-        val launched = canSpeak && runCatching {
-            speechLauncher.launch(
-                Intent(speechIntent)
-                    .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    .putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
-            )
-        }.isSuccess
-        if (!launched) runCatching { inputFocus.requestFocus() }
+    fun listen() {
+        if (voice.listening) voice.stop() else voice.start()
     }
+    androidx.activity.compose.BackHandler(enabled = voice.listening) { voice.stop() }
 
     val lastMessage = messages.lastOrNull()
     LaunchedEffect(messages.size, isLoading) {
         val count = messages.size + if (isLoading) 1 else 0
         if (count > 0 && !showHistory) listState.animateScrollToItem(count - 1)
         // Bulunan yapım kartına odak otomatik gelir (OK ile detay açılır).
-        if (!isLoading && lastMessage?.role == "ai" && lastMessage.matchedItem != null) {
+        if (!isLoading && lastMessage?.role == "ai" && (lastMessage.matchedItems.isNotEmpty() || lastMessage.matchedItem != null)) {
             requestFocusWhenReady(foundCardFocus)
         }
     }
@@ -185,7 +168,7 @@ fun TvAssistantScreen(
             }
             if (hasKey) {
                 TvSideAction(Icons.Filled.Mic, stringResource(R.string.tv_ai_scene_find), "tv_ai_scene", firstFocus, height = 60, highlight = true) {
-                    listen(scenePrompt)
+                    listen()
                 }
                 Text(stringResource(R.string.tv_ai_presets), color = TvTheme.TextMuted, fontSize = 15.sp)
                 listOf(R.string.tv_ai_q1, R.string.tv_ai_q2, R.string.tv_ai_q3, R.string.tv_ai_q4).forEachIndexed { i, res ->
@@ -274,6 +257,8 @@ fun TvAssistantScreen(
                 }
             }
             if (hasKey) {
+                // Dinlerken konuşulan metin anlık görünür (Geri / mikrofon düğmesi durdurur).
+                TvListeningCard(voice, Modifier.padding(top = 12.dp))
                 Spacer(Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     TvTextInput(
@@ -285,7 +270,7 @@ fun TvAssistantScreen(
                         modifier = Modifier.weight(1f)
                     )
                     if (canSpeak) {
-                        TvRoundButton(Icons.Filled.Mic, stringResource(R.string.tv_ai_voice), "tv_ai_voice") { listen(askPrompt) }
+                        TvRoundButton(Icons.Filled.Mic, stringResource(R.string.tv_ai_voice), "tv_ai_voice") { listen() }
                     }
                     TvRoundButton(Icons.AutoMirrored.Filled.Send, stringResource(R.string.chat_send), "tv_ai_send") { send(input) }
                 }
@@ -400,17 +385,23 @@ private fun TvChatBubble(message: IPTVViewModel.ChatMessage, onOpenItem: (IPTVIt
                     bottomStart = if (isUser) 20.dp else 6.dp, bottomEnd = if (isUser) 6.dp else 20.dp
                 )
             )
-            val item = message.matchedItem
-            if (item != null) {
+            val found = message.matchedItems.ifEmpty { listOfNotNull(message.matchedItem) }
+            if (found.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
-                TvLibraryCard(
-                    title = item.cleanedName.ifBlank { item.name },
-                    year = item.releaseDate.trim().take(4).takeIf { it.length == 4 && it.all(Char::isDigit) },
-                    posterUrl = item.logoUrl,
-                    focusRequester = cardFocus,
-                    tag = "tv_ai_item_${item.id}",
-                    onClick = { onOpenItem(item) }
-                )
+                // Birden fazla olası yapım kütüphanede varsa kartlar yan yana; odak ilkinde.
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    found.forEachIndexed { index, item ->
+                        TvLibraryCard(
+                            title = item.cleanedName.ifBlank { item.name },
+                            year = item.releaseDate.trim().take(4).takeIf { it.length == 4 && it.all(Char::isDigit) },
+                            posterUrl = item.logoUrl,
+                            focusRequester = if (index == 0) cardFocus else null,
+                            tag = "tv_ai_item_${item.id}",
+                            onClick = { onOpenItem(item) },
+                            compact = found.size > 1
+                        )
+                    }
+                }
             } else if (!isUser && message.detectedTitle.isNotBlank()) {
                 Spacer(Modifier.height(10.dp))
                 TvNotInLibrary(message.detectedTitle)
@@ -427,7 +418,8 @@ private fun TvLibraryCard(
     posterUrl: String?,
     focusRequester: FocusRequester?,
     tag: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    compact: Boolean = false
 ) {
     TvGlassButton(
         onClick = onClick,
@@ -435,7 +427,7 @@ private fun TvLibraryCard(
         focusRequester = focusRequester,
         focusScale = 1.04f,
         contentAlignment = Alignment.CenterStart,
-        modifier = Modifier.widthIn(min = 340.dp).testTag(tag)
+        modifier = (if (compact) Modifier.width(300.dp) else Modifier.widthIn(min = 340.dp)).testTag(tag)
     ) { f ->
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp)) {
             AsyncImage(

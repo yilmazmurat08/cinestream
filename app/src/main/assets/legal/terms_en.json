@@ -1,0 +1,110 @@
+{
+ "title": "Terms of Service",
+ "updated": "Last updated: {UPDATED}",
+ "intro": "These Terms of Service (\"Terms\") are the agreement you accept by downloading, installing or using the CineStream app (\"App\"), developed by {DEVELOPER}, on a phone or Android TV. If you do not accept these Terms, please do not use the App.",
+ "highlight": "Most important: CineStream is a media player. It does not provide, host or distribute any TV channels, films, series or broadcast content. The App is only a tool for playing the playlists (M3U/Xtream Codes) that you choose and add at your own responsibility.",
+ "sections": [
+  {
+   "h": "1. Nature of the Service",
+   "p": [
+    "CineStream is player software for phones and Android TV that lets users watch content by entering IPTV playlists they obtained themselves (an M3U/M3U8 link or Xtream Codes details). The developer:"
+   ],
+   "list": [
+    "Is not the owner, distributor or provider of any TV channel, film or series content.",
+    "Has no control over the source, content or legality of the playlists users add.",
+    "Has no partnership, affiliation or agreement with any IPTV provider, and does not sell or recommend playlists in the App."
+   ]
+  },
+  {
+   "h": "2. Your Responsibility",
+   "p": [
+    "You alone are responsible for every playlist you add to the App. It is your responsibility to make sure that the source you add:"
+   ],
+   "list": [
+    "Was obtained through a legal subscription or licence, and",
+    "Complies with the copyright and broadcasting laws of your country."
+   ],
+   "after": [
+    "You agree not to use the App to access copyrighted content without permission, or to watch or distribute illegal content."
+   ]
+  },
+  {
+   "h": "3. Subscriptions and Payments (CineStream PRO)",
+   "p": [
+    "The App offers the following optional paid tiers: Monthly ₺80, Yearly ₺800, Lifetime ₺1500."
+   ],
+   "list": [
+    "All payments are processed by Google Play Billing; your card details never reach us.",
+    "Monthly/yearly subscriptions renew automatically unless you cancel. You can cancel from Google Play's subscription management screen.",
+    "Refund requests are subject to Google Play's refund policy and applicable consumer law.",
+    "The free tier offers a shared daily viewing time; this limit is shown in the App and may change without prior notice."
+   ]
+  },
+  {
+   "h": "4. AI Features",
+   "p": [
+    "The AI assistant, finding films from a scene, recommendations and episode recaps use your own Google Gemini API key. This use is subject to Google's terms (https://ai.google.dev/gemini-api/terms) and you are responsible for any API usage costs. AI answers may be wrong or incomplete and are for information only."
+   ]
+  },
+  {
+   "h": "5. Trailers and YouTube",
+   "p": [
+    "Trailers are played inside the App with YouTube's official embedded player (YouTube API Services). By watching trailers you agree to the YouTube Terms of Service (https://www.youtube.com/t/terms). How YouTube processes your data is described in the Google Privacy Policy (https://policies.google.com/privacy). The content and availability of trailers depend on YouTube and the content owners."
+   ]
+  },
+  {
+   "h": "6. Film and Series Information (TMDB)",
+   "p": [
+    "Information such as posters, summaries, cast and ratings is shown using The Movie Database (TMDB) API. This product uses the TMDB API but is not endorsed or certified by TMDB. This information may sometimes be incomplete or wrong. TMDB terms of use: https://www.themoviedb.org/api-terms-of-use"
+   ]
+  },
+  {
+   "h": "7. Age Requirement",
+   "p": [
+    "You must be at least 13 years old to use the App. If you are under 18, you must use the App with the permission and supervision of a parent or guardian. Depending on the playlists you add, adult content categories may appear; you can restrict access to them with the parental lock (PIN). To access adult content you must meet the legal age requirement in your country."
+   ]
+  },
+  {
+   "h": "8. Intellectual Property",
+   "p": [
+    "The CineStream app itself (software, design, brand and interface) is the developer's intellectual property. These Terms do not transfer any intellectual property rights in third-party content accessed through the App. Film, series and channel names and posters belong to their respective owners."
+   ]
+  },
+  {
+   "h": "9. Disclaimer",
+   "p": [
+    "The App is provided \"as is\" and \"as available\". No warranty is given regarding stream interruptions, provider-related access issues, content quality or the availability of third-party services (TMDB, YouTube, Google Gemini); these are under the control of the sources you choose and the services involved."
+   ]
+  },
+  {
+   "h": "10. Limitation of Liability",
+   "p": [
+    "To the maximum extent permitted by applicable law, the developer cannot be held liable for any direct or indirect damage arising from the use, content or legality of third-party stream sources or from the use of the App. This clause does not affect your rights under consumer law that cannot be limited by contract."
+   ]
+  },
+  {
+   "h": "11. Termination",
+   "p": [
+    "You may stop using the App and remove it from your device at any time. If you breach these Terms, your right to use the App ends."
+   ]
+  },
+  {
+   "h": "12. Governing Law",
+   "p": [
+    "These Terms are governed by the laws of the Republic of Türkiye. Without prejudice to your rights under consumer law, the courts and enforcement offices of Türkiye have jurisdiction over disputes arising from these Terms."
+   ]
+  },
+  {
+   "h": "13. Changes",
+   "p": [
+    "We may update these Terms from time to time. The current version is always published in the App and the \"Last updated\" date above changes. Continuing to use the App means you accept the updated Terms."
+   ]
+  },
+  {
+   "h": "14. Contact Us",
+   "p": [
+    "For questions: {EMAIL}"
+   ]
+  }
+ ]
+}

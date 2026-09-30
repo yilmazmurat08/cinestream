@@ -149,20 +149,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appTheme by viewModel.appTheme.collectAsState()
-            val screenOrientation by viewModel.screenOrientation.collectAsState()
+            val orientationViewMode by viewModel.viewMode.collectAsState()
             val appLanguage by viewModel.appLanguage.collectAsState()
 
             val localizedContext = remember(appLanguage) {
                 com.example.util.LocaleHelper.updateResources(this@MainActivity, appLanguage)
             }
 
-            LaunchedEffect(screenOrientation) {
-                val targetOrientation = when (screenOrientation) {
-                    "PORTRAIT" -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                    "LANDSCAPE" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    "SENSOR" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                    "AUTO" -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                    else -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            // Telefon arayüzü yalnızca dikeydir; TV modu (telefonda denenirken) yataydır. Gerçek TV cihazında yöne
+            // dokunulmaz. İzlerken oynatıcı kendi yönünü (yatay/dikey) ayrıca yönetir ve çıkınca buna geri döner.
+            LaunchedEffect(orientationViewMode) {
+                val targetOrientation = when {
+                    com.example.ui.tv.TvDevice.isTv(this@MainActivity) -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    orientationViewMode == com.example.data.repository.ViewMode.TV -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 }
                 if (requestedOrientation != targetOrientation) {
                     requestedOrientation = targetOrientation
@@ -186,6 +186,7 @@ class MainActivity : ComponentActivity() {
                         val tvAppState = com.example.ui.tv.rememberTvAppState()
                         val tvPlayerUi = remember { com.example.ui.tv.TvPlayerUiState() }
                         val isTvMode = viewMode == com.example.data.repository.ViewMode.TV
+                        SideEffect { com.example.ui.tv.TvUiMode.active = isTvMode }
                         // Oynatıcıdan çıkınca TV kanal paneli bir sonraki girişte kapalı başlar.
                         LaunchedEffect(currentScreen is ActiveScreen.Player) {
                             if (currentScreen !is ActiveScreen.Player) {
@@ -210,8 +211,10 @@ class MainActivity : ComponentActivity() {
                         // Detaydan oynatma (telefon ve TV aynı): kütüphanedeki kaydı bulur, yoksa uyarır.
                         val playFromDetail: (IPTVItem) -> Unit = { item ->
                             viewModel.selectItem(null)
-                            val matched = viewModel.findMatchedItem(item)
-                            val finalItem = matched ?: item
+                            // Kendi yayın adresi olan öğe (ör. Xtream dizi bölümü) doğrudan oynatılır. Önceden adla
+                            // eşleştirme yapılıyordu; bölüm adı yalnızca dizi adı olduğundan ("4400") hep ilk bölüm
+                            // (S1 B1) açılıyordu. Adres yoksa (katalog/öneri öğesi) kütüphanede aranır.
+                            val finalItem = if (item.streamUrl.isNotBlank()) item else viewModel.findMatchedItem(item)
                             if (finalItem.streamUrl.isNotEmpty()) {
                                 navigateTo(ActiveScreen.Player(finalItem))
                             } else {
@@ -512,6 +515,12 @@ class MainActivity : ComponentActivity() {
                                         onDismiss = { viewModel.closePaywall() },
                                         onPurchaseSuccess = { viewModel.setProUser(true) }
                                     )
+                                }
+
+                                // Hizmet Şartları / Gizlilik Politikası: giriş ekranı dahil her ekranın üstünde açılır.
+                                val legalDoc by viewModel.legalDoc.collectAsState()
+                                legalDoc?.let { doc ->
+                                    com.example.ui.legal.LegalScreen(doc = doc, language = appLanguage, onClose = { viewModel.closeLegal() })
                                 }
 
                                 ErrorNotificationBanner(

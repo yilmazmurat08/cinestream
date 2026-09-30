@@ -2109,8 +2109,7 @@ fun LegacyExoPlayerScreen(
 
                         val seriesInfo = remember(item) {
                             if (item.type == "SERIES") {
-                                com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName)
-                                    ?: com.example.data.model.SeriesParser.parseEpisodeInfo(item.name)
+                                com.example.data.model.SeriesParser.episodeInfoOf(item)
                             } else {
                                 null
                             }

@@ -973,15 +973,8 @@ fun HomeScreen(
                                 // 3. Fragman Kutusu (Trailer Box)
                                 if ((selectedCategory == null || selectedCategory == "Tümü") && trailerBoxItems.isNotEmpty()) {
                                     item(key = "trailer_box") {
-                                        TrailerBoxSection(
-                                            items = trailerBoxItems,
-                                            onTrailerClick = { trailerUrl ->
-                                                val cleanUrl = com.example.ui.components.formatYouTubeWatchUrl(trailerUrl)
-                                                if (!cleanUrl.isNullOrEmpty()) {
-                                                    com.example.ui.components.openYoutubeTrailerExternally(context, cleanUrl)
-                                                }
-                                            }
-                                        )
+                                        // Fragmanlar YouTube'a gitmeden kutunun içinde oynar.
+                                        TrailerBoxSection(items = trailerBoxItems)
                                     }
                                 }
 
@@ -2592,9 +2585,11 @@ fun NextEpisodeCard(
 
 @Composable
 fun TrailerBoxSection(
-    items: List<IPTVItem>,
-    onTrailerClick: (String) -> Unit
+    items: List<IPTVItem>
 ) {
+    val context = LocalContext.current
+    // Seçilen fragman, kutunun üstünde tam genişlikte (Netflix tarzı) uygulama içinde oynar.
+    var playing by remember { mutableStateOf<Pair<String, String>?>(null) }
     Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Row(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp),
@@ -2617,6 +2612,33 @@ fun TrailerBoxSection(
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        playing?.let { (videoId, title) ->
+            com.example.ui.components.InAppTrailerPlayer(
+                videoId = videoId,
+                showControls = true,
+                onEnded = { playing = null },
+                onError = {
+                    playing = null
+                    android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).testTag("home_trailer_player")
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = { playing = null }, modifier = Modifier.testTag("home_trailer_close")) {
+                    Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.trailer_close), color = Color.White, fontSize = 13.sp)
+                }
+            }
+        }
+
         LazyRow(
             contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -2627,7 +2649,7 @@ fun TrailerBoxSection(
                     TrailerBoxCard(
                         title = item.cleanedName,
                         youtubeThumbnailUrl = "https://img.youtube.com/vi/$ytId/hqdefault.jpg",
-                        onClick = { onTrailerClick(item.trailerUrl.orEmpty()) }
+                        onClick = { playing = ytId to item.cleanedName }
                     )
                 }
             }

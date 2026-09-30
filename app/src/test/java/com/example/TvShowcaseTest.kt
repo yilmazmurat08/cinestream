@@ -10,6 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.db.AppDatabase
 import com.example.data.model.ContinueWatching
@@ -122,7 +125,8 @@ class TvShowcaseTest {
                 )
             }
         }
-        val live = listOf("TRT 1", "Show TV", "Kanal D", "ATV", "Star TV", "TV8", "NTV", "CNN Türk", "Habertürk", "TRT Spor", "beIN Sports 1", "A Spor")
+        // Önizleme ve tanıtım görsellerinde gerçek kanal markaları yerine hayali adlar kullanılır.
+        val live = ShowcaseData.channelNames
             .mapIndexed { i, n ->
                 IPTVItem(
                     id = 8200 + i, playlistId = 1, name = n, cleanedName = n, logoUrl = poster(n, 30 + i, 320, 200),
@@ -137,7 +141,7 @@ class TvShowcaseTest {
                     streamUrl = "http://10.255.255.1/s/0_2.mp4", category = "Yerli Diziler", progressSeconds = 900, totalSeconds = 2700)
             )
             db.iptvDao().insertContinueWatching(
-                ContinueWatching(itemId = 8200, itemName = "TRT 1", itemType = "LIVE", itemLogo = null,
+                ContinueWatching(itemId = 8200, itemName = ShowcaseData.channelNames[0], itemType = "LIVE", itemLogo = null,
                     streamUrl = "http://10.255.255.1/l/0.ts", category = "Ulusal", progressSeconds = 100, totalSeconds = 100,
                     lastPlayedAt = System.currentTimeMillis() - 60_000)
             )
@@ -201,6 +205,15 @@ class TvShowcaseTest {
         TvDetailScreen(viewModel = vm, item = movies[3], onPlay = {})
     }
 
+    @Test fun s06b_seriesDetail() {
+        val episode = runBlocking { AppDatabase.getDatabase(app).iptvDao().getItemById(8111) }!!
+        compose.setContent { MyApplicationTheme { TvDetailScreen(viewModel = vm, item = episode, onPlay = {}) } }
+        settle(4_000)
+        compose.onNodeWithTag("tv_series_recap").performScrollTo().performClick()
+        settle(3_000)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "06b-dizi-detayi-ai-ozet.png").absolutePath)
+    }
+
     @Test fun s07_person() = shot("07-kisi-sayfasi", 6_000) {
         TvPersonScreen(vm, TvPerson("Ada Yıldız", TvPerson.ROLE_ACTOR, "Elif", null), excludeItemId = movies[3].id, onOpenItem = {})
     }
@@ -231,4 +244,13 @@ class TvShowcaseTest {
     }
 
     @Test fun s11_settings() = shot("11-ayarlar", 2_000) { TvSettingsScreen(viewModel = vm) }
+    // Uygulama açık temadayken de TV ayar kartları koyu zeminde okunur olmalı.
+    @Test fun s11b_settingsLightTheme() {
+        vm.setAppTheme(com.example.ui.theme.AppTheme.SYSTEM_LIGHT)
+        shot("11b-ayarlar-acik-tema", 2_000) {
+            com.example.ui.theme.MyApplicationTheme(appTheme = com.example.ui.theme.AppTheme.SYSTEM_LIGHT, dynamicColor = false) {
+                TvSettingsScreen(viewModel = vm)
+            }
+        }
+    }
 }

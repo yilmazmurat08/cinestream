@@ -104,9 +104,30 @@ class TvCatalogRepository(private val dao: IPTVDao) {
         showsOf(dao.itemsInCategory("SERIES", category), covers) // Room sorguyu kendi iş parçacığında çalıştırır
     }
 
+    /**
+     * Dizi detayında "benzer yapımlar": izlenen dizinin klasöründeki diğer diziler (bölümler değil). Xtream
+     * kataloğunda dizinin kategorisi, M3U'da bölümlerin kategorisi kullanılır.
+     */
+    suspend fun otherShowsInFolder(show: TvShow?, episode: IPTVItem, covers: Map<String, String>, limit: Int = 30): List<TvPoster> =
+        withContext(Dispatchers.Default) {
+            val title = show?.title ?: SeriesParser.episodeInfoOf(episode)?.showTitle ?: episode.cleanedName
+            val catalogShow = dao.findCatalogShow(show?.id ?: -1, title)
+            val list = if (catalogShow != null) {
+                dao.seriesCatalogPage(catalogShow.categoryId, limit + 1, 0)
+                    .filter { it.seriesId != catalogShow.seriesId && !adult(it) }
+                    .map { catalogPoster(it) }
+            } else if (episode.category.isNotBlank()) {
+                showsOf(dao.itemsInCategory("SERIES", episode.category), covers)
+                    .filterNot { it.title.equals(title, ignoreCase = true) || adult(it.item) }
+            } else {
+                emptyList()
+            }
+            list.take(limit)
+        }
+
     /** Detay ekranı için bir bölümün dizisi (yalnızca o dizinin bölümleri sorgulanır). */
     suspend fun showForEpisode(item: IPTVItem, covers: Map<String, String>): TvShow? = withContext(Dispatchers.Default) {
-        val title = (SeriesParser.parseEpisodeInfo(item.cleanedName) ?: SeriesParser.parseEpisodeInfo(item.name))?.showTitle
+        val title = SeriesParser.episodeInfoOf(item)?.showTitle
             ?.takeIf { it.isNotBlank() } ?: return@withContext null
         val shows = SeriesParser.groupItemsIntoShows(dao.getEpisodesForShowTitle("%${title.trim()}%", 3000), covers)
         shows.firstOrNull { it.title.equals(title, ignoreCase = true) } ?: shows.firstOrNull()
@@ -173,6 +194,27 @@ class TvCatalogRepository(private val dao: IPTVDao) {
         for (pattern in loose) query(listOf(pattern), movieLimit = 300, seriesLimit = 1500, catalogLimit = 100)
         out.values.toList()
     }
+
+    /**
+     * Asistanın tahmin ettiği yapımları kütüphanede bulur (Türkçe ve orijinal adla, Türkçe harf / etiket / yıl
+     * farklarına dayanıklı; kişi filmografisindeki eşleştirmenin aynısı). Aday sırası korunur, yetişkin içerik yok.
+     */
+    suspend fun findTitles(candidates: List<com.example.data.api.GeminiAiService.TitleCandidate>, limit: Int = 4): List<IPTVItem> =
+        withContext(Dispatchers.Default) {
+            if (candidates.isEmpty()) return@withContext emptyList()
+            val credits = candidates.mapIndexed { index, c ->
+                com.example.data.model.tmdb.PersonCredit(
+                    tmdbId = index + 1, mediaType = if (c.isSeries) "tv" else "movie", title = c.title,
+                    originalTitle = c.originalTitle, year = c.year, posterUrl = null, popularity = (100 - index).toDouble()
+                )
+            }
+            val lookup = PersonCreditsLookup(personId = 0, name = "", profileUrl = null, credits = credits)
+            val pool = creditsPool(lookup)
+            PersonWorksMatcher.match(lookup, pool, excludeItemId = -1).inLibrary
+                .map { it.item }
+                .filterNot { adult(it) }
+                .take(limit)
+        }
 
     /** Aynı eşleştirme: TMDB eşleşmeleri + sağlayıcı oyuncu eşleşmeleri; kütüphanede olmayanlar ayrı. */
     suspend fun personWorks(lookup: PersonCreditsLookup?, personName: String, excludeItemId: Int, current: IPTVItem?): PersonWorksResult =

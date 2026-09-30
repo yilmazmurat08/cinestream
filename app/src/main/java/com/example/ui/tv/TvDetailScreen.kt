@@ -33,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Movie
@@ -135,11 +136,16 @@ fun TvDetailScreen(
     var show by remember(item.id) { mutableStateOf<TvShow?>(null) }
     var tmdb by remember(item.id) { mutableStateOf<TMDBMediaDetails?>(null) }
     var trailerUrl by remember(item.id) { mutableStateOf(com.example.ui.components.formatYouTubeWatchUrl(item.trailerUrl)) }
+    // Netflix tarzı: fragman YouTube'a gitmeden arka plan görselinin yerinde oynar.
+    var trailerPlaying by remember(item.id) { mutableStateOf(false) }
+    var trailerFailed by remember(item.id) { mutableStateOf(false) }
+    BackHandler(enabled = trailerPlaying) { trailerPlaying = false }
     var extraCast by remember(item.id) { mutableStateOf<List<String>>(emptyList()) }
     var extraDirector by remember(item.id) { mutableStateOf("") }
     var aiText by remember(item.id) { mutableStateOf<String?>(null) }
     var aiLoading by remember(item.id) { mutableStateOf(false) }
-    var similar by remember(item.id) { mutableStateOf<List<IPTVItem>>(emptyList()) }
+    var recapOpen by remember(item.id) { mutableStateOf(false) }
+    var similar by remember(item.id) { mutableStateOf<List<com.example.data.repository.TvPoster>>(emptyList()) }
     var openPerson by remember(item.id) { mutableStateOf<TvPerson?>(null) }
     var selectedSeason by remember(item.id) { mutableStateOf(0) }
 
@@ -150,7 +156,10 @@ fun TvDetailScreen(
     val title = show?.title ?: item.cleanedName.ifBlank { item.name }
 
     LaunchedEffect(item.id) {
-        if (isSeries) show = viewModel.tvShowForItem(item, covers)
+        if (isSeries) {
+            show = viewModel.tvShowForItem(item, covers)
+            similar = viewModel.tvSimilar(item, show, covers)
+        }
     }
     LaunchedEffect(title) {
         tmdb = viewModel.tvTmdbDetails(title, if (isSeries) "SERIES" else "MOVIE")
@@ -162,7 +171,8 @@ fun TvDetailScreen(
         }
     }
     LaunchedEffect(item.id) {
-        runCatching { viewModel.getSimilarItemsFlow(item).collect { similar = it } }
+        // Dizilerde benzerler, dizi bilgisi yüklenince (yukarıda) aynı klasördeki dizilerden hesaplanır.
+        if (!isSeries) similar = viewModel.tvSimilar(item, null, covers)
     }
     LaunchedEffect(item.id) { requestFocusWhenReady(playFocus) }
 
@@ -207,8 +217,20 @@ fun TvDetailScreen(
             .focusGroup()
             .testTag("tv_detail_screen")
     ) {
-        // Arka plan: yatay görsel sağda; yoksa poster kendi oranında sağda.
-        if (backdrop != null) {
+        // Arka plan: yatay görsel sağda; yoksa poster kendi oranında sağda. Fragman açıkken aynı yerde video oynar.
+        val trailerId = if (trailerPlaying) com.example.ui.components.extractYouTubeVideoId(trailerUrl) else null
+        if (trailerId != null) {
+            com.example.ui.components.InAppTrailerPlayer(
+                videoId = trailerId,
+                showControls = false,
+                onEnded = { trailerPlaying = false },
+                onError = {
+                    trailerPlaying = false
+                    trailerFailed = true
+                },
+                modifier = Modifier.align(Alignment.TopEnd).fillMaxWidth(0.64f).aspectRatio(16f / 9f).testTag("tv_detail_trailer_player")
+            )
+        } else if (backdrop != null) {
             AsyncImage(
                 model = backdrop, contentDescription = null, contentScale = ContentScale.Crop, alignment = Alignment.CenterEnd,
                 modifier = Modifier.align(Alignment.TopEnd).fillMaxWidth(0.7f).fillMaxHeight(0.72f)
@@ -219,8 +241,14 @@ fun TvDetailScreen(
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 40.dp, end = 64.dp).fillMaxHeight(0.6f).aspectRatio(2f / 3f).clip(RoundedCornerShape(16.dp))
             )
         }
-        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to TvTheme.Background, 0.45f to TvTheme.Background.copy(alpha = 0.9f), 1f to Color.Transparent)))
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 0.75f to TvTheme.Background)))
+        if (trailerId != null) {
+            // Video net görünsün: sadece sol kenarı ve alt kenarı yazıya doğru yumuşakça kararır.
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to TvTheme.Background, 0.36f to TvTheme.Background, 0.46f to Color.Transparent)))
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.56f to Color.Transparent, 0.7f to TvTheme.Background)))
+        } else {
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to TvTheme.Background, 0.45f to TvTheme.Background.copy(alpha = 0.9f), 1f to Color.Transparent)))
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 0.75f to TvTheme.Background)))
+        }
 
         Column(
             modifier = Modifier
@@ -228,7 +256,7 @@ fun TvDetailScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(start = 48.dp, top = 40.dp, bottom = 48.dp)
         ) {
-            Column(Modifier.fillMaxWidth(0.55f)) {
+            Column(Modifier.fillMaxWidth(if (trailerId != null) 0.34f else 0.55f)) {
                 Text(title, color = TvTheme.TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 38.sp)
                 val meta = listOfNotNull(
                     rating?.let { "★ " + String.format(java.util.Locale.getDefault(), "%.1f", it) },
@@ -266,8 +294,13 @@ fun TvDetailScreen(
                 }
                 trailerUrl?.let { url ->
                     item {
-                        TvActionButton(Icons.Filled.Movie, stringResource(R.string.trailer), "tv_detail_trailer") {
-                            com.example.ui.components.openYoutubeTrailerExternally(context, url)
+                        TvActionButton(
+                            if (trailerPlaying) Icons.Filled.Close else Icons.Filled.Movie,
+                            stringResource(if (trailerPlaying) R.string.trailer_close else R.string.trailer),
+                            "tv_detail_trailer"
+                        ) {
+                            trailerFailed = false
+                            trailerPlaying = !trailerPlaying && com.example.ui.components.extractYouTubeVideoId(url) != null
                         }
                     }
                 }
@@ -278,38 +311,80 @@ fun TvDetailScreen(
                         "tv_detail_favorite"
                     ) { viewModel.toggleFavorite(item) }
                 }
-                val recapEpisode = lastWatched?.second?.episodeNumber
-                if (!isSeries || (recapEpisode != null && recapEpisode > 1)) {
-                    item {
-                        TvActionButton(
-                            Icons.Filled.AutoAwesome,
-                            stringResource(if (isSeries) R.string.detail_ai_summarize_previous else R.string.tv_ai_spoiler_free),
-                            "tv_detail_ai"
-                        ) {
-                            if (aiLoading) return@TvActionButton
+            }
+
+            if (trailerFailed) {
+                Text(
+                    stringResource(R.string.trailer_inapp_failed), color = TvTheme.TextSecondary, fontSize = 15.sp,
+                    modifier = Modifier.padding(top = 4.dp).testTag("tv_detail_trailer_failed")
+                )
+            }
+
+            // Dizi: izlenen bölümlerin spoilersız AI özeti (telefondaki "AI ile Önceki Bölümleri Özetle" ile
+            // aynı mantık: son izlenen bölümden sonraki bölüme kadar olan bölümler özetlenir).
+            if (isSeries) {
+                val recapSeason = lastWatched?.first ?: 1
+                val recapEpisode = (lastWatched?.second?.episodeNumber ?: 0) + 1
+                val notWatched = lastWatched == null || (recapSeason <= 1 && recapEpisode <= 1)
+                TvRowTitle(stringResource(R.string.detail_ai_summarize_previous))
+                TvGlassButton(
+                    onClick = {
+                        recapOpen = true
+                        if (!notWatched && aiText == null && !aiLoading) {
                             aiLoading = true
                             scope.launch {
-                                val text = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        if (isSeries) com.example.data.api.GeminiAiService.generatePreviousEpisodesSummary(context, title, recapEpisode ?: 1)
-                                        else com.example.data.api.MetadataEnricher.getSpoilerFreeSummary(context, title)
-                                    }.getOrNull()
-                                }
-                                aiText = text?.takeIf { it.isNotBlank() && it != "AI Özeti şu an oluşturulamadı" }
-                                    ?: context.getString(if (isSeries) R.string.series_recap_unavailable else R.string.detail_ai_summary_failed)
+                                val text = runCatching {
+                                    com.example.data.api.GeminiAiService.generatePreviousEpisodesSummary(context, title, recapEpisode)
+                                }.getOrNull()
+                                aiText = text?.takeIf { it.isNotBlank() } ?: context.getString(R.string.series_recap_unavailable)
                                 aiLoading = false
                             }
                         }
+                    },
+                    shape = TvTheme.RowShape,
+                    focusScale = 1.03f,
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.fillMaxWidth(0.6f).testTag("tv_series_recap")
+                ) { focused ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                        Icon(Icons.Filled.AutoAwesome, null, tint = if (focused) TvTheme.FocusGlow else TvTheme.Accent, modifier = Modifier.size(26.dp))
+                        Spacer(Modifier.width(14.dp))
+                        Text(
+                            if (lastWatched != null) {
+                                stringResource(R.string.series_recap_last_watched, lastWatched.first, lastWatched.second.episodeNumber)
+                            } else {
+                                stringResource(R.string.series_recap_start)
+                            },
+                            color = TvTheme.TextSecondary, fontSize = 15.sp, lineHeight = 21.sp, maxLines = 2, overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
-            }
-            if (aiLoading || aiText != null) {
-                Spacer(Modifier.height(14.dp))
-                Box(Modifier.fillMaxWidth(0.6f)) {
-                    if (aiLoading) {
-                        CircularProgressIndicator(color = TvTheme.Accent, modifier = Modifier.size(26.dp))
-                    } else {
-                        TvReadableText(aiText.orEmpty(), "tv_detail_ai_text")
+                if (recapOpen) {
+                    Spacer(Modifier.height(12.dp))
+                    Column(Modifier.fillMaxWidth(0.6f).testTag("tv_series_recap_panel")) {
+                        Text(
+                            if (notWatched) title else stringResource(R.string.series_recap_before, title, recapSeason.toString(), recapEpisode.toString()),
+                            color = TvTheme.Accent, fontSize = 15.sp, fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        when {
+                            notWatched -> {
+                                TvReadableText(
+                                    stringResource(R.string.detail_start_of_journey_title) + "\n" + stringResource(R.string.detail_start_of_journey_desc),
+                                    "tv_series_recap_start"
+                                )
+                                Spacer(Modifier.height(10.dp))
+                                TvActionButton(Icons.Filled.PlayArrow, stringResource(R.string.detail_start_first_episode), "tv_series_recap_first") {
+                                    onPlay(firstEpisode ?: item)
+                                }
+                            }
+                            aiLoading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(color = TvTheme.Accent, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text(stringResource(R.string.detail_ai_analyzing), color = TvTheme.TextSecondary, fontSize = 15.sp)
+                            }
+                            else -> TvReadableText(aiText ?: stringResource(R.string.series_recap_unavailable), "tv_series_recap_text")
+                        }
                     }
                 }
             }
@@ -358,12 +433,15 @@ fun TvDetailScreen(
             if (similar.isNotEmpty()) {
                 TvRowTitle(stringResource(R.string.tv_similar))
                 LazyRow(modifier = Modifier.offset(x = (-12).dp), horizontalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 6.dp, bottom = 6.dp)) {
-                    items(similar, key = { it.id }) { other ->
+                    items(similar, key = { it.key }) { other ->
                         TvPosterCard(
-                            title = other.cleanedName.ifBlank { other.name },
-                            posterUrl = other.logoUrl,
-                            onClick = { viewModel.selectItem(other) },
-                            modifier = Modifier.width(130.dp)
+                            title = other.title,
+                            posterUrl = other.posterUrl,
+                            onClick = {
+                                val catalogShow = other.catalogShow
+                                if (catalogShow != null) viewModel.openCatalogShow(catalogShow) else viewModel.selectItem(other.item)
+                            },
+                            modifier = Modifier.width(130.dp).testTag("tv_similar_${other.key}")
                         )
                     }
                 }
@@ -459,9 +537,18 @@ private fun TvEpisodeCard(episode: Episode, progress: Float?, onClick: () -> Uni
             }
             Icon(Icons.Filled.PlayArrow, null, tint = if (focused) TvTheme.FocusGlow else Color.White, modifier = Modifier.size(36.dp))
             if (progress != null) {
-                if (progress >= 0.95f) {
-                    Icon(Icons.Filled.CheckCircle, stringResource(R.string.detail_watched), tint = TvTheme.Accent,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(22.dp))
+                if (progress >= WATCHED_THRESHOLD) {
+                    // İzlenmiş bölüm: köşede onay ve "İzlendi" etiketi
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).clip(TvTheme.PillShape)
+                            .background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 8.dp, vertical = 3.dp)
+                            .testTag("tv_episode_watched_${episode.item.id}")
+                    ) {
+                        Icon(Icons.Filled.CheckCircle, null, tint = TvTheme.Accent, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.detail_watched).replaceFirstChar { it.titlecase(java.util.Locale.getDefault()) }, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
                 Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(4.dp).background(Color.White.copy(alpha = 0.2f))) {
                     Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).fillMaxHeight().background(TvTheme.Accent))

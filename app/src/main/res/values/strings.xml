@@ -12,11 +12,6 @@
     <string name="theme_system">Otomatik (Sistem)</string>
     <string name="theme_dark">Koyu Mod (Mor/Siyah)</string>
     <string name="theme_light">Açık Mod</string>
-    <string name="screen_orientation">Ekran Yönlendirmesi</string>
-    <string name="screen_orientation_desc">Uygulamanın ekran yönünü dikey, yatay veya otomatik olarak ayarlayın.</string>
-    <string name="orientation_auto">Otomatik (Sensör)</string>
-    <string name="orientation_portrait">Dikey Mod</string>
-    <string name="orientation_landscape">Yatay Mod</string>
     <string name="trailer">Fragman</string>
     <string name="radio">Radyo</string>
     <string name="watchlist">İzleme Listem</string>
@@ -74,7 +69,7 @@
     <string name="login_preparing_media">Medya listesi hazırlanıyor...</string>
     <string name="login_preparing_library">Kütüphane hazırlanıyor...</string>
     <string name="login_cta_button">Yapay Zekâ Destekli Deneyime Başla</string>
-    <string name="login_terms_notice">Giriş yaparak kullanım koşullarını ve gizlilik politikasını kabul etmiş olursunuz.</string>
+    <string name="login_terms_notice">Giriş yaparak Hizmet Şartları\'nı ve Gizlilik Politikası\'nı kabul etmiş olursunuz.</string>
     <string name="login_help_sheet_title">Gemini API Anahtarı Kılavuzu</string>
     <string name="login_help_sheet_subtitle">3 basit adımda ücretsiz yapay zeka anahtarınızı alın.</string>
     <string name="login_step1_title">Adım 1: Google AI Studio\'ya Gidin</string>
@@ -249,8 +244,6 @@
     <string name="notif_playback_title">Şu an oynatılıyor</string>
     <string name="intro_tagline">Sınırsız Eğlence, İzlemenin Daha Akıllı Hali</string>
     <string name="toast_not_in_library">\"%1$s\" listenizde bulunamadı.</string>
-    <string name="trailer_not_found">Fragman bulunamadı</string>
-    <string name="trailer_open_failed">Fragman açılamadı</string>
     <string name="search_history_clear">Temizle</string>
     <string name="search_history_delete_desc">Arama geçmişinden sil</string>
     <string name="action_play">Oynat</string>
@@ -583,8 +576,6 @@
     <string name="tv_ai_key_phone">Anahtarı telefonla gir</string>
     <string name="tv_ai_key_settings">Ayarlar\'a git</string>
     <string name="tv_ai_scene_find">Sahnesini anlatayım, filmi bul</string>
-    <string name="tv_ai_scene_prompt">Filmden hatırladığın sahneleri anlat</string>
-    <string name="tv_ai_voice_prompt">Asistana sor</string>
     <string name="tv_in_library">Kütüphanende var</string>
     <string name="tv_open_details">Detayı aç</string>
     <string name="tv_not_in_library">“%1$s” kütüphanende yok.</string>
@@ -597,7 +588,6 @@
     <string name="tv_resume_episode">Devam et: S%1$d B%2$d</string>
     <string name="tv_add_favorite">Kaydet</string>
     <string name="tv_remove_favorite">Kaydedildi</string>
-    <string name="tv_ai_spoiler_free">Spoilersız AI özeti</string>
     <string name="tv_season_count">%1$d sezon</string>
     <string name="tv_seasons">Sezonlar</string>
     <string name="tv_season_n">Sezon %1$d</string>
@@ -620,4 +610,13 @@
     <string name="tv_automatic">Otomatik</string>
     <string name="tv_saved_value">Kayıtlı</string>
     <string name="tv_profile">Profil</string>
+    <string name="tv_ai_listening">Dinliyorum… Filmden hatırladığın sahneyi anlat</string>
+    <string name="tv_episode_label">S%1$d B%2$d</string>
+    <string name="trailer_close">Fragmanı Kapat</string>
+    <string name="trailer_inapp_failed">Bu fragman uygulama içinde oynatılamadı</string>
+    <string name="legal_terms">Hizmet Şartları</string>
+    <string name="legal_privacy">Gizlilik Politikası</string>
+    <string name="legal_title">Yasal</string>
+    <string name="legal_desc">Uygulamayı kullanma koşulları ve verilerinizin nasıl işlendiği.</string>
+    <string name="legal_back">Geri</string>
 </resources>

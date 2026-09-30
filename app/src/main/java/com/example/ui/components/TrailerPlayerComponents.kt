@@ -1,16 +1,12 @@
 package com.example.ui.components
 import com.example.R
 
-import android.content.Context
 import com.example.ui.theme.DeepPurpleBg
 import com.example.ui.theme.MidPurpleBg
 import com.example.ui.theme.NeonPink
 import com.example.ui.theme.PinkToPurpleGradient
 import java.util.Locale
 
-import android.content.Intent
-import android.net.Uri
-import android.util.Log
 
 /**
  * Parses YouTube Video ID from full URLs, embed links, iframe tags, or raw video IDs.
@@ -55,42 +51,4 @@ fun extractYouTubeVideoId(url: String?): String? {
 fun formatYouTubeWatchUrl(input: String?): String? {
     val videoId = extractYouTubeVideoId(input) ?: return null
     return "https://www.youtube.com/watch?v=$videoId"
-}
-
-/**
- * Fragmana her tıklandığında DOĞRUDAN YouTube uygulamasına veya tarayıcıya yönlendirir.
- * Uygulama içi WebView/Player yerine harici Intent kullanarak %100 sorunsuz oynatma sağlar.
- */
-fun openYoutubeTrailerExternally(context: Context, rawTrailerUrl: String?) {
-    val cleanUrl = formatYouTubeWatchUrl(rawTrailerUrl) ?: rawTrailerUrl
-    if (cleanUrl.isNullOrBlank()) {
-        android.widget.Toast.makeText(context, context.getString(R.string.trailer_not_found), android.widget.Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    try {
-        val videoId = extractYouTubeVideoId(cleanUrl)
-        val intent = if (!videoId.isNullOrBlank()) {
-            // Önce doğrudan YouTube uygulamasını açmayı dene (vnd.youtube:videoId)
-            Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$videoId")).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-        } else {
-            Intent(Intent.ACTION_VIEW, Uri.parse(cleanUrl)).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-        }
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        // YouTube uygulaması yüklü değilse veya açılamazsa standart web tarayıcısı üzerinden aç
-        try {
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(cleanUrl)).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(browserIntent)
-        } catch (e2: Exception) {
-            Log.e("TrailerPlayer", "Fragman açılamadı: ${e2.message}")
-            android.widget.Toast.makeText(context, context.getString(R.string.trailer_open_failed), android.widget.Toast.LENGTH_SHORT).show()
-        }
-    }
 }

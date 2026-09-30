@@ -46,6 +46,8 @@ data class Platform(
 object SeriesParser {
     // Cache map for parsed results to optimize performance and completely avoid main thread regex ANR
     private val parseCache = java.util.concurrent.ConcurrentHashMap<String, ParsedEpisodeInfo>()
+    /** Adda açık sezon/bölüm etiketi: "S01E02", "S1 E2", "1x02". */
+    private val SEASON_EPISODE_TAG = Regex("""(?i)\bS\d{1,2}\s*E\d{1,3}\b|\b\d{1,2}x\d{1,3}\b""")
 
     // Regex patterns for seasons and episodes
     private val patterns = listOf(
@@ -72,6 +74,30 @@ object SeriesParser {
         val platformName: String,
         val category: String
     )
+
+    /**
+     * Bölümün sezon/bölüm bilgisi: kayıtlı alanlar (Xtream bölümlerinde ad yalnızca dizi adıdır, "4400" gibi)
+     * önce, yoksa addan çözülür. Addan çözülemeyen bölümler için uydurma "S1 B1" üretilmez.
+     */
+    fun episodeInfoOf(item: IPTVItem): ParsedEpisodeInfo? {
+        val season = item.season
+        val episode = item.episode
+        if (season != null && episode != null && episode > 0) {
+            // M3U bölümlerinde alanlar addan ("Dizi S01E02") doldurulur; dizi adı yine ayrıştırıcıdan alınır,
+            // yoksa "Dizi S01E02" dizi adı sanılır ve dizide tek bölüm görünür.
+            val raw = item.cleanedName.ifBlank { item.name }
+            if (SEASON_EPISODE_TAG.containsMatchIn(raw) || SEASON_EPISODE_TAG.containsMatchIn(item.name)) {
+                val parsed = parseEpisodeInfo(raw) ?: parseEpisodeInfo(item.name)
+                if (parsed != null && parsed.showTitle.isNotBlank()) {
+                    return parsed.copy(season = season, episode = episode)
+                }
+            }
+            val show = raw.substringBefore(" - ").trim()
+            val episodeName = item.name.substringAfter(" - ", "").trim()
+            return ParsedEpisodeInfo(showTitle = show, season = season, episode = episode, episodeName = episodeName)
+        }
+        return parseEpisodeInfo(item.cleanedName.ifBlank { item.name }) ?: parseEpisodeInfo(item.name)
+    }
 
     fun parseEpisodeInfo(rawName: String): ParsedEpisodeInfo? {
         val cached = parseCache[rawName]

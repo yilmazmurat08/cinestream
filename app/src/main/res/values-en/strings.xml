@@ -7,11 +7,6 @@
     <string name="app_language_desc">Change the interface language (Turkish / English).</string>
     <string name="language_tr">Turkish (TR)</string>
     <string name="language_en">English (EN)</string>
-    <string name="screen_orientation">Screen Orientation</string>
-    <string name="screen_orientation_desc">Set the app screen orientation to portrait, landscape, or auto.</string>
-    <string name="orientation_auto">Auto (Sensor)</string>
-    <string name="orientation_portrait">Portrait Mode</string>
-    <string name="orientation_landscape">Landscape Mode</string>
     <string name="trailer">Trailer</string>
     <string name="radio">Radio</string>
     <string name="watchlist">Watchlist</string>
@@ -250,8 +245,6 @@
     <string name="notif_playback_title">Now playing</string>
     <string name="intro_tagline">Unlimited Entertainment, a Smarter Way to Watch</string>
     <string name="toast_not_in_library">\"%1$s\" was not found in your playlist.</string>
-    <string name="trailer_not_found">Trailer not found</string>
-    <string name="trailer_open_failed">Could not open the trailer</string>
     <string name="search_history_clear">Clear</string>
     <string name="search_history_delete_desc">Remove from search history</string>
     <string name="action_play">Play</string>
@@ -584,8 +577,6 @@
     <string name="tv_ai_key_phone">Enter key from phone</string>
     <string name="tv_ai_key_settings">Go to Settings</string>
     <string name="tv_ai_scene_find">Let me describe a scene, find the movie</string>
-    <string name="tv_ai_scene_prompt">Describe the scenes you remember</string>
-    <string name="tv_ai_voice_prompt">Ask the assistant</string>
     <string name="tv_in_library">In your library</string>
     <string name="tv_open_details">Open details</string>
     <string name="tv_not_in_library">“%1$s” is not in your library.</string>
@@ -598,7 +589,6 @@
     <string name="tv_resume_episode">Resume: S%1$d E%2$d</string>
     <string name="tv_add_favorite">Save</string>
     <string name="tv_remove_favorite">Saved</string>
-    <string name="tv_ai_spoiler_free">Spoiler-free AI summary</string>
     <string name="tv_season_count">%1$d seasons</string>
     <string name="tv_seasons">Seasons</string>
     <string name="tv_season_n">Season %1$d</string>
@@ -621,4 +611,13 @@
     <string name="tv_automatic">Automatic</string>
     <string name="tv_saved_value">Saved</string>
     <string name="tv_profile">Profile</string>
+    <string name="tv_ai_listening">Listening… Describe the scene you remember</string>
+    <string name="tv_episode_label">S%1$d E%2$d</string>
+    <string name="trailer_close">Close Trailer</string>
+    <string name="trailer_inapp_failed">This trailer couldn\'t be played in the app</string>
+    <string name="legal_terms">Terms of Service</string>
+    <string name="legal_privacy">Privacy Policy</string>
+    <string name="legal_title">Legal</string>
+    <string name="legal_desc">The conditions for using the app and how your data is handled.</string>
+    <string name="legal_back">Back</string>
 </resources>

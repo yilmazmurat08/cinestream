@@ -32,7 +32,6 @@ class SettingsRepository(private val context: Context) {
         val FIRST_LAUNCH_TIME = longPreferencesKey("first_launch_time")
         val COMPLETED_PLAYBACK_SESSIONS = intPreferencesKey("completed_playback_sessions")
         val HAS_TRIGGERED_IN_APP_REVIEW = booleanPreferencesKey("has_triggered_in_app_review")
-        val SCREEN_ORIENTATION = stringPreferencesKey("screen_orientation")
         val SYNC_INTERVAL = stringPreferencesKey("sync_interval")
         val USER_NAME = stringPreferencesKey("user_name")
         val PROFILE_AVATAR = stringPreferencesKey("profile_avatar")
@@ -129,13 +128,6 @@ class SettingsRepository(private val context: Context) {
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[APP_LANGUAGE] ?: com.example.util.LocaleHelper.getSavedLanguage(context)
-        }
-
-    val screenOrientationFlow: Flow<String> = context.dataStore.data
-        .catch { exception ->
-            if (exception is IOException) emit(emptyPreferences()) else throw exception
-        }.map { preferences ->
-            preferences[SCREEN_ORIENTATION] ?: "AUTO"
         }
 
     val hardwareAccelerationFlow: Flow<Boolean> = context.dataStore.data
@@ -303,12 +295,6 @@ class SettingsRepository(private val context: Context) {
     suspend fun setAppLanguage(language: String) {
         context.dataStore.edit { preferences ->
             preferences[APP_LANGUAGE] = language
-        }
-    }
-
-    suspend fun setScreenOrientation(orientation: String) {
-        context.dataStore.edit { preferences ->
-            preferences[SCREEN_ORIENTATION] = orientation
         }
     }
 

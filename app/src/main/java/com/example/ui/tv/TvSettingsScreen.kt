@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Language
@@ -30,7 +31,6 @@ import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.ScreenRotation
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.ViewList
@@ -73,7 +73,6 @@ import com.example.ui.screens.IPTVPlaylistsCard
 import com.example.ui.screens.LanguageSettingsCard
 import com.example.ui.screens.ManualEpgCard
 import com.example.ui.screens.PlayerSettingsCard
-import com.example.ui.screens.ScreenOrientationCard
 import com.example.ui.screens.SecurityCard
 import com.example.ui.screens.SubtitlesCard
 import com.example.ui.screens.ThemeSettingsCard
@@ -82,7 +81,7 @@ import com.example.ui.theme.AppTheme
 import com.example.util.LocaleHelper
 import kotlinx.coroutines.delay
 
-private enum class TvSetting { PROFILE, PRO, PLAYLISTS, EPG, LANGUAGE, VIEW_MODE, THEME, ORIENTATION, PLAYER, DATA, SUBTITLES, SECURITY, GEMINI }
+private enum class TvSetting { PROFILE, PRO, PLAYLISTS, EPG, LANGUAGE, VIEW_MODE, THEME, PLAYER, DATA, SUBTITLES, SECURITY, GEMINI, LEGAL }
 
 /**
  * TV Ayarlar: solda dikey liste (ikon, başlık, sağda mevcut değer), sağda seçili ayarın cam paneli. Paneldeki
@@ -92,6 +91,16 @@ private enum class TvSetting { PROFILE, PRO, PLAYLISTS, EPG, LANGUAGE, VIEW_MODE
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TvSettingsScreen(viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
+    // TV ekranı her zaman koyu cam tasarımlıdır. Sağ paneldeki telefon kartları Material renklerini kullandığından
+    // açık temada koyu zemin üstünde koyu yazı çıkıyordu; panel her zaman koyu (siyah) renk şemasıyla çizilir.
+    com.example.ui.theme.MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) {
+        TvSettingsContent(viewModel, modifier)
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     // LocalContext dil ayarlı bir bağlamdır; Activity, Compose görünümünün bağlamından bulunur.
@@ -101,7 +110,6 @@ fun TvSettingsScreen(viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
     val isProUser by viewModel.isProUser.collectAsState()
     val currentLanguage by viewModel.appLanguage.collectAsState()
     val viewMode by viewModel.viewMode.collectAsState()
-    val currentOrientation by viewModel.screenOrientation.collectAsState()
     val hwAccEnabled by viewModel.hardwareAcceleration.collectAsState()
     val selectedBuffer by viewModel.bufferSize.collectAsState()
     val reduceCellularQuality by viewModel.reduceCellularQuality.collectAsState()
@@ -159,18 +167,12 @@ fun TvSettingsScreen(viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
                 AppTheme.SYSTEM_LIGHT -> R.string.theme_light
             }
         )
-        TvSetting.ORIENTATION -> context.getString(
-            when (currentOrientation) {
-                "PORTRAIT" -> R.string.orientation_portrait
-                "LANDSCAPE" -> R.string.orientation_landscape
-                else -> R.string.orientation_auto
-            }
-        )
         TvSetting.PLAYER -> selectedBuffer
         TvSetting.DATA -> if (autoRefreshList) on else off
         TvSetting.SUBTITLES -> "$subtitleSize · $subtitleColor"
         TvSetting.SECURITY -> if (parentalLockEnabled) on else off
         TvSetting.GEMINI -> if (geminiApiKey.isNotBlank()) context.getString(R.string.tv_saved_value) else null
+        TvSetting.LEGAL -> null
     }
 
     Row(
@@ -286,7 +288,6 @@ fun TvSettingsScreen(viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
                     )
                     TvSetting.VIEW_MODE -> ViewModeSettingsCard(currentMode = viewMode, onModeSelect = { viewModel.setViewMode(it) })
                     TvSetting.THEME -> ThemeSettingsCard(currentTheme = appTheme, onThemeSelect = { viewModel.setAppTheme(it) })
-                    TvSetting.ORIENTATION -> ScreenOrientationCard(currentOrientation = currentOrientation, onOrientationSelect = { viewModel.setScreenOrientation(it) })
                     TvSetting.PLAYER -> PlayerSettingsCard(
                         hwAccEnabled = hwAccEnabled,
                         onHwAccChange = { viewModel.setHardwareAcceleration(it) },
@@ -339,6 +340,7 @@ fun TvSettingsScreen(viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
                             }
                         }
                     )
+                    TvSetting.LEGAL -> com.example.ui.legal.LegalSettingsCard(onOpen = { viewModel.openLegal(it) })
                 }
             }
         }
@@ -365,12 +367,12 @@ private fun settingLabel(setting: TvSetting): Pair<ImageVector, String> = when (
     TvSetting.LANGUAGE -> Icons.Outlined.Language to stringResource(R.string.app_language)
     TvSetting.VIEW_MODE -> Icons.Outlined.Tv to stringResource(R.string.settings_view_mode)
     TvSetting.THEME -> Icons.Outlined.DarkMode to stringResource(R.string.app_theme)
-    TvSetting.ORIENTATION -> Icons.Outlined.ScreenRotation to stringResource(R.string.screen_orientation)
     TvSetting.PLAYER -> Icons.Outlined.PlayCircle to stringResource(R.string.settings_player)
     TvSetting.DATA -> Icons.Outlined.Storage to stringResource(R.string.settings_data_storage)
     TvSetting.SUBTITLES -> Icons.Outlined.ClosedCaption to stringResource(R.string.settings_subtitles)
     TvSetting.SECURITY -> Icons.Outlined.Lock to stringResource(R.string.settings_security)
     TvSetting.GEMINI -> Icons.Outlined.AutoAwesome to stringResource(R.string.gemini_ai_settings)
+    TvSetting.LEGAL -> Icons.Outlined.Gavel to stringResource(R.string.legal_title)
 }
 
 private fun android.content.Context.findActivityOrNull(): android.app.Activity? {

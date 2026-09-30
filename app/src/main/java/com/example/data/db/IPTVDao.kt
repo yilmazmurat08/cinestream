@@ -438,6 +438,9 @@ interface IPTVDao {
     @Query("SELECT * FROM xtream_series_catalog WHERE categoryId = :categoryId ORDER BY name COLLATE NOCASE, seriesId LIMIT :limit OFFSET :offset")
     suspend fun seriesCatalogPage(categoryId: String, limit: Int, offset: Int): List<XtreamSeriesCatalogEntity>
 
+    @Query("SELECT * FROM xtream_series_catalog WHERE seriesId = :seriesId OR name = :name LIMIT 1")
+    suspend fun findCatalogShow(seriesId: Int, name: String): XtreamSeriesCatalogEntity?
+
     @Query("SELECT * FROM xtream_series_catalog ORDER BY rating DESC LIMIT :limit")
     suspend fun topRatedSeriesCatalog(limit: Int): List<XtreamSeriesCatalogEntity>
 

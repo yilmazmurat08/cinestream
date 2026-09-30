@@ -1,0 +1,110 @@
+{
+ "title": "Hizmet Şartları",
+ "updated": "Son güncelleme: {UPDATED}",
+ "intro": "Bu Hizmet Şartları (\"Şartlar\"), {DEVELOPER} tarafından geliştirilen CineStream uygulamasını (\"Uygulama\") telefonda veya Android TV'de indirerek, kurarak ya da kullanarak kabul ettiğiniz sözleşmedir. Bu şartları kabul etmiyorsanız lütfen Uygulamayı kullanmayın.",
+ "highlight": "En önemli madde: CineStream bir medya oynatıcıdır. Hiçbir televizyon kanalı, film, dizi veya yayın içeriği sağlamaz, barındırmaz ya da dağıtmaz. Uygulama yalnızca sizin seçtiğiniz ve kendi sorumluluğunuzda eklediğiniz yayın listelerini (M3U/Xtream Codes) oynatmaya yarayan bir araçtır.",
+ "sections": [
+  {
+   "h": "1. Hizmetin Niteliği",
+   "p": [
+    "CineStream, kullanıcıların kendi edindikleri IPTV yayın listelerini (M3U/M3U8 bağlantısı veya Xtream Codes bilgileri) girerek içerik izleyebildiği, telefonda ve Android TV'de çalışan bir oynatıcı yazılımıdır. Geliştirici:"
+   ],
+   "list": [
+    "Hiçbir televizyon kanalı, film veya dizi içeriğinin sahibi, dağıtıcısı veya sağlayıcısı değildir.",
+    "Kullanıcıların eklediği yayın listelerinin kaynağı, içeriği veya yasallığı üzerinde hiçbir kontrole sahip değildir.",
+    "Hiçbir IPTV sağlayıcısıyla iş ortaklığı, bağlantısı veya anlaşması yoktur ve Uygulama içinde yayın listesi satmaz ya da önermez."
+   ]
+  },
+  {
+   "h": "2. Kullanıcının Sorumluluğu",
+   "p": [
+    "Uygulamaya eklediğiniz her yayın listesinden yalnızca siz sorumlusunuz. Eklediğiniz kaynağın:"
+   ],
+   "list": [
+    "Yasal bir abonelik veya lisans yoluyla edinildiğini,",
+    "Bulunduğunuz ülkenin telif hakkı ve yayıncılık mevzuatına uygun olduğunu"
+   ],
+   "after": [
+    "doğrulamak sizin sorumluluğunuzdadır. Uygulamayı telif hakkıyla korunan içeriğe izinsiz erişmek, yasa dışı içerik izlemek veya dağıtmak için kullanmamayı kabul edersiniz."
+   ]
+  },
+  {
+   "h": "3. Abonelik ve Ödemeler (CineStream PRO)",
+   "p": [
+    "Uygulama, aşağıdaki isteğe bağlı ücretli katmanları sunar: Aylık ₺80, Yıllık ₺800, Ömür Boyu ₺1500."
+   ],
+   "list": [
+    "Tüm ödemeler Google Play Faturalandırma sistemi üzerinden işlenir; kart bilgileriniz bize ulaşmaz.",
+    "Aylık/yıllık abonelikler, iptal etmediğiniz sürece otomatik olarak yenilenir. İptal, Google Play'in abonelik yönetim ekranından yapılabilir.",
+    "İade talepleri, Google Play'in kendi iade politikasına ve yürürlükteki tüketici mevzuatına tabidir.",
+    "Ücretsiz katman, günlük paylaşımlı bir kullanım süresi sunar; bu limit uygulama içinde belirtilir ve önceden haber verilmeksizin değiştirilebilir."
+   ]
+  },
+  {
+   "h": "4. Yapay Zekâ Özellikleri",
+   "p": [
+    "Yapay zekâ asistanı, sahneden film bulma, öneriler ve bölüm özetleri, kendi eklediğiniz Google Gemini API anahtarınızı kullanır. Bu kullanım Google'ın koşullarına tabidir (https://ai.google.dev/gemini-api/terms) ve API kullanım maliyetinden (varsa) siz sorumlusunuz. Yapay zekâ yanıtları hatalı veya eksik olabilir; yalnızca bilgi amaçlıdır."
+   ]
+  },
+  {
+   "h": "5. Fragmanlar ve YouTube",
+   "p": [
+    "Fragmanlar, Uygulama içinde YouTube'un resmi gömülü oynatıcısıyla (YouTube API Hizmetleri) oynatılır. Fragman izleyerek YouTube Hizmet Şartları'nı (https://www.youtube.com/t/terms) kabul etmiş olursunuz. YouTube'un verilerinizi nasıl işlediği Google Gizlilik Politikası'nda (https://policies.google.com/privacy) açıklanır. Fragmanların içeriği ve erişilebilirliği YouTube'a ve içerik sahiplerine bağlıdır."
+   ]
+  },
+  {
+   "h": "6. Film ve Dizi Bilgileri (TMDB)",
+   "p": [
+    "Afiş, özet, oyuncu ve puan gibi bilgiler The Movie Database (TMDB) API'si kullanılarak gösterilir. Bu ürün TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır. Bu bilgiler bazen eksik ya da hatalı olabilir. TMDB kullanım koşulları: https://www.themoviedb.org/api-terms-of-use"
+   ]
+  },
+  {
+   "h": "7. Yaş Sınırı",
+   "p": [
+    "Uygulamayı kullanmak için en az 13 yaşında olmalısınız. 18 yaşından küçükseniz Uygulamayı ebeveyninizin veya vasinizin izni ve gözetimiyle kullanmalısınız. Eklediğiniz yayın listelerine bağlı olarak yetişkinlere yönelik içerik kategorileri görünebilir; bu kategorilere erişimi ebeveyn kilidi (PIN) ile sınırlandırabilirsiniz. Yetişkinlere yönelik içeriğe erişmek için bulunduğunuz ülkedeki yasal yaş sınırını karşılamanız gerekir."
+   ]
+  },
+  {
+   "h": "8. Fikri Mülkiyet",
+   "p": [
+    "CineStream uygulamasının kendisi (yazılım, tasarım, marka ve arayüz) geliştiricinin fikri mülkiyetidir. Bu Şartlar, Uygulama üzerinden erişilen üçüncü taraf içeriklerle ilgili hiçbir fikri mülkiyet hakkı devretmez. Film, dizi, kanal adları ve afişler ilgili hak sahiplerine aittir."
+   ]
+  },
+  {
+   "h": "9. Sorumluluk Reddi",
+   "p": [
+    "Uygulama \"olduğu gibi\" ve \"mevcut olduğu şekilde\" sunulur. Yayın kesintileri, sağlayıcı kaynaklı erişim sorunları, içerik kalitesi veya üçüncü taraf hizmetlerinin (TMDB, YouTube, Google Gemini) kullanılabilirliği konusunda hiçbir garanti verilmez; bu unsurlar sizin seçtiğiniz kaynakların ve ilgili hizmetlerin kontrolündedir."
+   ]
+  },
+  {
+   "h": "10. Sorumluluğun Sınırlandırılması",
+   "p": [
+    "Yürürlükteki mevzuatın izin verdiği en geniş ölçüde geliştirici; üçüncü taraf yayın kaynaklarının kullanımından, içeriğinden veya yasallığından ve Uygulamanın kullanımından doğabilecek hiçbir doğrudan veya dolaylı zarardan sorumlu tutulamaz. Bu madde, tüketici mevzuatından doğan ve sözleşmeyle sınırlandırılamayan haklarınızı etkilemez."
+   ]
+  },
+  {
+   "h": "11. Fesih",
+   "p": [
+    "Uygulamayı dilediğiniz zaman kullanmayı bırakabilir ve cihazınızdan kaldırabilirsiniz. Bu Şartları ihlal etmeniz durumunda Uygulamayı kullanma hakkınız sona erer."
+   ]
+  },
+  {
+   "h": "12. Geçerli Hukuk",
+   "p": [
+    "Bu Şartlar Türkiye Cumhuriyeti kanunlarına tabidir. Bu Şartlardan doğabilecek uyuşmazlıklarda, tüketici mevzuatından doğan haklarınız saklı kalmak kaydıyla Türkiye mahkemeleri ve icra daireleri yetkilidir."
+   ]
+  },
+  {
+   "h": "13. Değişiklikler",
+   "p": [
+    "Bu Şartları zaman zaman güncelleyebiliriz. Güncel sürüm her zaman Uygulama içinde yayınlanır ve üstteki \"Son güncelleme\" tarihi değişir. Uygulamayı kullanmaya devam etmeniz, güncellenmiş Şartları kabul ettiğiniz anlamına gelir."
+   ]
+  },
+  {
+   "h": "14. Bize Ulaşın",
+   "p": [
+    "Sorularınız için: {EMAIL}"
+   ]
+  }
+ ]
+}
