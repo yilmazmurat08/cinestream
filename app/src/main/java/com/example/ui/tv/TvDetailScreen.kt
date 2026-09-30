@@ -228,9 +228,7 @@ fun TvDetailScreen(
                     trailerPlaying = false
                     trailerFailed = true
                 },
-                // Arka plan görseliyle aynı alanı kaplar; taşan kenarlar kırpılır.
-                fillArea = true,
-                modifier = Modifier.align(Alignment.TopEnd).fillMaxWidth(0.7f).fillMaxHeight(0.72f).testTag("tv_detail_trailer_player")
+                modifier = Modifier.align(Alignment.TopEnd).fillMaxWidth(0.64f).aspectRatio(16f / 9f).testTag("tv_detail_trailer_player")
             )
         } else if (backdrop != null) {
             AsyncImage(
