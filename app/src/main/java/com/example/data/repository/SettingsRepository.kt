@@ -29,6 +29,8 @@ class SettingsRepository(private val context: Context) {
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val IS_PRO_USER = booleanPreferencesKey("is_pro_user")
         val TOTAL_WATCH_SECONDS = longPreferencesKey("total_watch_seconds")
+        // Ücretsiz izleme süresi günlüktür: sayaç hangi güne ait olduğunu da tutar (yyyy-MM-dd, cihaz saat dilimi).
+        val WATCH_DAY = stringPreferencesKey("watch_day")
         val FIRST_LAUNCH_TIME = longPreferencesKey("first_launch_time")
         val COMPLETED_PLAYBACK_SESSIONS = intPreferencesKey("completed_playback_sessions")
         val HAS_TRIGGERED_IN_APP_REVIEW = booleanPreferencesKey("has_triggered_in_app_review")
@@ -102,11 +104,12 @@ class SettingsRepository(private val context: Context) {
             preferences[IS_PRO_USER] ?: false
         }
 
-    val totalWatchSecondsFlow: Flow<Long> = context.dataStore.data
+    /** İzleme sayacı ve ait olduğu gün. Gün bugün değilse bugünkü izleme 0 sayılır. */
+    val watchUsageFlow: Flow<WatchUsage> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
-            preferences[TOTAL_WATCH_SECONDS] ?: 0L
+            WatchUsage(day = preferences[WATCH_DAY], seconds = preferences[TOTAL_WATCH_SECONDS] ?: 0L)
         }
 
     val firstLaunchTimeFlow: Flow<Long> = context.dataStore.data
@@ -326,10 +329,13 @@ class SettingsRepository(private val context: Context) {
     suspend fun addWatchSeconds(secondsToAdd: Long): Long {
         if (secondsToAdd <= 0L) return 0L
         var updatedSeconds = 0L
+        val today = WatchUsage.today()
         context.dataStore.edit { preferences ->
-            val current = preferences[TOTAL_WATCH_SECONDS] ?: 0L
+            // Yeni günde sayaç sıfırdan başlar.
+            val current = if (preferences[WATCH_DAY] == today) preferences[TOTAL_WATCH_SECONDS] ?: 0L else 0L
             updatedSeconds = current + secondsToAdd
             preferences[TOTAL_WATCH_SECONDS] = updatedSeconds
+            preferences[WATCH_DAY] = today
         }
         return updatedSeconds
     }
@@ -383,4 +389,15 @@ object ViewMode {
     const val UNSET = "UNSET"
     /** Ayar henüz okunmadı (açılışta seçim ekranının bir an görünmesini önler). */
     const val LOADING = "LOADING"
+}
+
+/** Ücretsiz izleme sayacı: [seconds], [day] gününe aittir. */
+data class WatchUsage(val day: String?, val seconds: Long) {
+    /** Bugün izlenen süre (sayaç eski bir güne aitse 0). */
+    fun secondsOn(dayKey: String): Long = if (day == dayKey) seconds else 0L
+
+    companion object {
+        fun today(now: Long = System.currentTimeMillis()): String =
+            java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
+    }
 }

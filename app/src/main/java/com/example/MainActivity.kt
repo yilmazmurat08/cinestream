@@ -118,6 +118,8 @@ class MainActivity : ComponentActivity() {
         if (wentToBackground) {
             wentToBackground = false
             viewModel.onAppReturnedToForeground()
+            // Abonelik Play'den iptal edilmiş / yenilenmiş olabilir; PRO durumu yeniden okunur.
+            com.example.util.SubscriptionManager.refresh()
         }
     }
 
@@ -510,10 +512,12 @@ class MainActivity : ComponentActivity() {
                                 val paywallReasonMessage by viewModel.paywallReasonMessage.collectAsState()
 
                                 if (showPaywallDialog) {
+                                    val isProUser by viewModel.isProUser.collectAsState()
                                     com.example.ui.components.ProPaywallDialog(
                                         reasonMessage = paywallReasonMessage,
+                                        isPro = isProUser,
                                         onDismiss = { viewModel.closePaywall() },
-                                        onPurchaseSuccess = { viewModel.setProUser(true) }
+                                        onOpenLegal = { viewModel.openLegal(it) }
                                     )
                                 }
 

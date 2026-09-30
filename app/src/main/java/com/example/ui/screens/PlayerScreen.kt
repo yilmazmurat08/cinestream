@@ -247,9 +247,10 @@ fun LegacyExoPlayerScreen(
 
     // Check watch limit effect
     LaunchedEffect(totalWatchSeconds, isProUser) {
-        if (com.example.BuildConfig.FREE_WATCH_LIMIT && !isProUser && totalWatchSeconds >= 3600L) {
+        // Günlük ücretsiz süre doldu mu? (gün değişimi anlık kontrol edilir; gece yarısından sonra yeniden izlenebilir)
+        if (iptvViewModel?.isFreeWatchLimitReached() == true) {
             player.stop()
-            iptvViewModel?.openPaywall("60 Dakikalık Ücretsiz İzleme Süreniz Doldu")
+            iptvViewModel.openPaywall(context.getString(R.string.paywall_reason_daily_limit))
         }
     }
 

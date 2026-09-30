@@ -41,6 +41,11 @@ class IPTVViewModel(
     private val repository: IPTVRepository
 ) : AndroidViewModel(application) {
 
+    companion object {
+        /** Ücretsiz kullanıcının günlük izleme hakkı (saniye). */
+        const val FREE_DAILY_WATCH_SECONDS = 3600L
+    }
+
     // Coroutine Exception Handler for robust crash resistance
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         Log.e("MainViewModel", "Hata yakalandı, uygulama çökmesi engellendi", throwable)
@@ -336,8 +341,25 @@ class IPTVViewModel(
     val isProUser: StateFlow<Boolean> = settingsRepository.isProUserFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val totalWatchSeconds: StateFlow<Long> = settingsRepository.totalWatchSecondsFlow
+    private val watchUsage: StateFlow<com.example.data.repository.WatchUsage> = settingsRepository.watchUsageFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.example.data.repository.WatchUsage(null, 0L))
+
+    /** Bugün izlenen ücretsiz süre (saniye). Gün değişince (uygulama açıkken de) kendiliğinden 0'a döner. */
+    val totalWatchSeconds: StateFlow<Long> = kotlinx.coroutines.flow.combine(
+        watchUsage,
+        kotlinx.coroutines.flow.flow {
+            while (true) {
+                emit(com.example.data.repository.WatchUsage.today())
+                kotlinx.coroutines.delay(60_000)
+            }
+        }.distinctUntilChanged()
+    ) { usage, today -> usage.secondsOn(today) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+
+    /** Ücretsiz kullanıcının bugünkü izleme hakkı doldu mu (anlık, gün değişimini hemen dikkate alır)? */
+    fun isFreeWatchLimitReached(): Boolean =
+        com.example.BuildConfig.FREE_WATCH_LIMIT && !isProUser.value &&
+            watchUsage.value.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
 
     val firstLaunchTime: StateFlow<Long> = settingsRepository.firstLaunchTimeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
@@ -416,11 +438,11 @@ class IPTVViewModel(
 
             if (
                 com.example.BuildConfig.FREE_WATCH_LIMIT &&
-                updated >= 3600L &&
+                updated >= FREE_DAILY_WATCH_SECONDS &&
                 !_showPaywallDialog.value &&
                 !isProUser.value
             ) {
-                _paywallReasonMessage.value = "60 Dakikalık Ücretsiz İzleme Süreniz Doldu"
+                _paywallReasonMessage.value = getApplication<Application>().getString(com.example.R.string.paywall_reason_daily_limit)
                 _showPaywallDialog.value = true
             }
         }
@@ -701,6 +723,10 @@ class IPTVViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     init {
+        // PRO durumu Google Play'deki geçerli satın alımlardan okunur (abonelik iptal/süre dolumu dahil).
+        com.example.util.SubscriptionManager.init(application) { isPro ->
+            if (isPro != isProUser.value) setProUser(isPro)
+        }
         // Eski sürümlerin 12 saatlik "öne çıkan film" kaydını sil (artık her girişte yeniden seçiliyor).
         com.example.data.repository.FeaturedMovieRepository.clearLegacyCache(application)
         // TMDB önbellekleri birikmesin: süresi (30 gün) dolan film bilgileri silinir, oyuncu/yönetmen

@@ -31,13 +31,14 @@
   {
    "h": "3. Abonelik ve Ödemeler (CineStream PRO)",
    "p": [
-    "Uygulama, aşağıdaki isteğe bağlı ücretli katmanları sunar: Aylık ₺80, Yıllık ₺800, Ömür Boyu ₺1500."
+    "Uygulamanın ücretsiz sürümünde her gün 60 dakika izleme hakkı vardır; bu süre her gün yenilenir. İsteğe bağlı CineStream PRO bu günlük sınırı kaldırır. PRO paketleri: Aylık abonelik ₺80, Yıllık abonelik ₺800 ve tek seferlik Ömür Boyu paket ₺1500 (Türkiye fiyatları). Güncel fiyat, satın almadan önce Google Play ekranında gösterilir ve ülkeye göre değişebilir."
    ],
    "list": [
     "Tüm ödemeler Google Play Faturalandırma sistemi üzerinden işlenir; kart bilgileriniz bize ulaşmaz.",
-    "Aylık/yıllık abonelikler, iptal etmediğiniz sürece otomatik olarak yenilenir. İptal, Google Play'in abonelik yönetim ekranından yapılabilir.",
-    "İade talepleri, Google Play'in kendi iade politikasına ve yürürlükteki tüketici mevzuatına tabidir.",
-    "Ücretsiz katman, günlük paylaşımlı bir kullanım süresi sunar; bu limit uygulama içinde belirtilir ve önceden haber verilmeksizin değiştirilebilir."
+    "Aylık ve yıllık abonelikler, iptal etmediğiniz sürece her dönem sonunda otomatik olarak yenilenir. İptal, Google Play > Ödemeler ve abonelikler bölümünden yapılabilir; iptal ettiğinizde PRO, ödenmiş dönemin sonuna kadar devam eder.",
+    "Ömür Boyu paket tek seferlik bir ödemedir ve yenilenmez.",
+    "PRO, satın alımın yapıldığı Google hesabına bağlıdır. Aynı Google hesabının kullanıldığı diğer cihazlarda \"Satın alımları geri yükle\" ile etkinleştirilebilir.",
+    "İade talepleri, Google Play'in kendi iade politikasına ve yürürlükteki tüketici mevzuatına tabidir."
    ]
   },
   {

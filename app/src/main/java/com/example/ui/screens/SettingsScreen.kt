@@ -2137,7 +2137,7 @@ fun CineStreamProUpgradeCard(
                             color = Color.White
                         )
                         Text(
-                            text = if (isProUser) "Sınırsız PRO Erişim Aktif" else "Abonelik ve Ayrıcalıklar",
+                            text = stringResource(if (isProUser) R.string.pro_card_title_active else R.string.pro_card_title_free),
                             fontSize = 12.sp,
                             color = Color.White.copy(alpha = 0.7f)
                         )
@@ -2150,7 +2150,7 @@ fun CineStreamProUpgradeCard(
                     border = BorderStroke(1.dp, if (isProUser) Color(0xFF00E676) else CineOrange)
                 ) {
                     Text(
-                        text = if (isProUser) "PRO AKTİF ✅" else "ÜCRETSİZ SÜRÜM",
+                        text = stringResource(if (isProUser) R.string.pro_badge_active else R.string.pro_badge_free),
                         color = if (isProUser) Color(0xFF00E676) else CineOrange,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -2162,9 +2162,9 @@ fun CineStreamProUpgradeCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ProPointItem("Sınırsız Canlı TV, Film ve Dizi İzleme")
-                ProPointItem("AI Destekli Bölüm Özetleri & Trend Vitrini")
-                ProPointItem("Sınırsız Radyo & Reklamsız Deneyim")
+                ProPointItem(stringResource(R.string.pro_point_unlimited))
+                ProPointItem(stringResource(R.string.pro_point_devices))
+                ProPointItem(stringResource(R.string.pro_point_account))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -2185,7 +2185,7 @@ fun CineStreamProUpgradeCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (isProUser) "Abonelik Detayları & Paketler" else "CineStream PRO'ya Yükselt",
+                        text = stringResource(if (isProUser) R.string.pro_card_button_active else R.string.pro_card_button_free),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

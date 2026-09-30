@@ -7,6 +7,8 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -16,6 +18,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ApplicationProvider
 import coil.imageLoader
+import com.example.R
 import com.example.data.db.AppDatabase
 import com.example.data.model.ContinueWatching
 import com.example.data.model.IPTVItem
@@ -264,4 +267,39 @@ class PhonePromoShotsTest {
             com.example.ui.tv.TvDevice.overrideForTest = null
         }
     }
+    private val paywallOffers = mapOf(
+        com.example.util.SubscriptionManager.PRODUCT_MONTHLY to com.example.util.ProOffer(com.example.util.SubscriptionManager.PRODUCT_MONTHLY, "₺80,00", 80_000_000, true),
+        com.example.util.SubscriptionManager.PRODUCT_YEARLY to com.example.util.ProOffer(com.example.util.SubscriptionManager.PRODUCT_YEARLY, "₺800,00", 800_000_000, true),
+        com.example.util.SubscriptionManager.PRODUCT_LIFETIME to com.example.util.ProOffer(com.example.util.SubscriptionManager.PRODUCT_LIFETIME, "₺1.500,00", 1_500_000_000, false)
+    )
+
+    @Test fun p10_paywall() = shot("p10-paywall", 1_500) {
+        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSizeForShot(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            com.example.ui.components.PaywallContent(
+                reasonMessage = app.getString(R.string.paywall_reason_daily_limit), isPro = false, offers = paywallOffers, busy = false,
+                onDismiss = {}, onBuy = {}, onRestore = {}, onManage = {}, onOpenLegal = {}
+            )
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "tr-w960dp-h540dp-land-television-xhdpi")
+    fun p11_tvPaywall() {
+        com.example.ui.tv.TvDevice.overrideForTest = true
+        try {
+            shot("p11-tv-paywall", 1_500) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSizeForShot(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    com.example.ui.components.PaywallContent(
+                        reasonMessage = null, isPro = false, offers = paywallOffers, busy = false,
+                        onDismiss = {}, onBuy = {}, onRestore = {}, onManage = {}, onOpenLegal = {}
+                    )
+                }
+            }
+        } finally {
+            com.example.ui.tv.TvDevice.overrideForTest = null
+        }
+    }
 }
+
+private fun androidx.compose.ui.Modifier.fillMaxSizeForShot(): androidx.compose.ui.Modifier =
+    this.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF07040F))

@@ -31,13 +31,14 @@
   {
    "h": "3. Subscriptions and Payments (CineStream PRO)",
    "p": [
-    "The App offers the following optional paid tiers: Monthly ₺80, Yearly ₺800, Lifetime ₺1500."
+    "The free version of the App includes 60 minutes of viewing every day; this time renews daily. The optional CineStream PRO removes this daily limit. PRO plans: Monthly subscription ₺80, Yearly subscription ₺800 and a one-time Lifetime plan ₺1500 (prices in Türkiye). The current price is shown on the Google Play screen before purchase and may vary by country."
    ],
    "list": [
     "All payments are processed by Google Play Billing; your card details never reach us.",
-    "Monthly/yearly subscriptions renew automatically unless you cancel. You can cancel from Google Play's subscription management screen.",
-    "Refund requests are subject to Google Play's refund policy and applicable consumer law.",
-    "The free tier offers a shared daily viewing time; this limit is shown in the App and may change without prior notice."
+    "Monthly and yearly subscriptions renew automatically at the end of each period unless you cancel. You can cancel in Google Play > Payments & subscriptions; after cancelling, PRO continues until the end of the paid period.",
+    "The Lifetime plan is a one-time payment and does not renew.",
+    "PRO is linked to the Google account used for the purchase. It can be activated on your other devices that use the same Google account with \"Restore purchases\".",
+    "Refund requests are subject to Google Play's refund policy and applicable consumer law."
    ]
   },
   {

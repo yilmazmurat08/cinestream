@@ -20,7 +20,7 @@
     "**Profil bilgileri:** Uygulama içinde isteğe bağlı olarak girdiğiniz ad, e-posta adresi ve seçtiğiniz avatar. Bu bilgiler doğrulanmaz, bir hesap oluşturmaz ve cihaz dışına gönderilmez.",
     "**Yapay zekâ API anahtarı:** Yapay zekâ özelliklerini kullanmak için eklerseniz kendi Google Gemini API anahtarınız.",
     "**İzleme geçmişi ve tercihler:** \"İzlemeye devam et\" listesi, izlenen bölümler, favoriler, arama geçmişi, yapay zekâ sohbet ve öneri geçmişi, ebeveyn kilidi PIN'i ve uygulama ayarları (tema, dil, görünüm modu vb.).",
-    "**Kullanım sayaçları:** Ücretsiz kullanım süresi sayacı (yalnızca cihazda).",
+    "**Kullanım sayacı:** Günlük ücretsiz izleme süresi sayacı (yalnızca cihazda; her gün sıfırlanır).",
     "**Hata kayıtları:** Uygulama beklenmedik şekilde kapanırsa, sorunun giderilmesine yardımcı olan kısa bir hata kaydı yalnızca cihazınızda tutulur; otomatik olarak hiçbir yere gönderilmez."
    ],
    "after": [
@@ -45,7 +45,7 @@
     "**The Movie Database (TMDB):** Film ve dizilerin afiş, özet, oyuncu ve puan bilgilerini göstermek için içerik adları ve arama terimleri TMDB'ye gönderilir. Kimlik veya liste bilgisi gönderilmez. TMDB gizlilik politikası: https://www.themoviedb.org/privacy-policy",
     "**Google Gemini API:** Yapay zekâ asistanını veya özetlerini kullanırsanız, yazdığınız mesajlar, anlattığınız sahneler ve ilgili içerik adları kendi API anahtarınızla Google'a gönderilir. Bu kullanım Google'ın koşullarına tabidir: https://ai.google.dev/gemini-api/terms",
     "**YouTube (fragmanlar):** Fragmanlar uygulama içinde YouTube'un resmi gömülü oynatıcısıyla (YouTube API Hizmetleri) oynatılır. Bir fragmanı açtığınızda YouTube ve Google; IP adresi ve cihaz bilgisi gibi verileri toplayabilir ve çerez benzeri teknolojiler kullanabilir. Bu işlem Google Gizlilik Politikası'na tabidir: https://policies.google.com/privacy",
-    "**Google Play hizmetleri:** Uygulama içi değerlendirme penceresi (Google Play In-App Review) ve varsa satın alımlar Google Play üzerinden işlenir; ödeme bilgilerinize erişimimiz yoktur.",
+    "**Google Play hizmetleri:** Satın alımlar Google Play üzerinden işlenir; uygulama, PRO durumunu doğrulamak için cihazdaki Google hesabının bu uygulamaya ait satın alımlarını Google Play'den sorgular. Uygulama içi değerlendirme penceresi (Google Play In-App Review) de Google Play üzerinden gösterilir. Ödeme bilgilerinize erişimimiz yoktur.",
     "**Telefondan giriş (Android TV, QR kod):** TV'deki QR kodu okuttuğunuzda liste bilgileriniz aynı yerel ağdaki (Wi-Fi) telefonunuzdan doğrudan TV'nize gönderilir; internete veya bize gönderilmez. Bu bağlantı yalnızca giriş ekranı açıkken çalışır."
    ]
   },
