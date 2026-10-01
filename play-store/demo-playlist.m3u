@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="" tvg-name="Apple Test Yayini" group-title="Test Yayinlari",Apple HLS Test Yayini
+https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8
+#EXTINF:-1 tvg-id="" tvg-name="Mux Test Yayini" group-title="Test Yayinlari",Mux HLS Test Yayini
+https://test-streams.mux.dev/test_001/stream.m3u8
+#EXTINF:-1 tvg-name="Big Buck Bunny" group-title="Filmler (Serbest Lisans)",Big Buck Bunny (2008)
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+#EXTINF:-1 tvg-name="Tears of Steel" group-title="Filmler (Serbest Lisans)",Tears of Steel (2012)
+https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov
+#EXTINF:-1 tvg-name="Elephants Dream" group-title="Filmler (Serbest Lisans)",Elephants Dream (2006)
+https://download.blender.org/ED/ED_1024.avi
