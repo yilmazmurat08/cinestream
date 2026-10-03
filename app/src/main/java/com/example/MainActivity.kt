@@ -112,6 +112,16 @@ class MainActivity : ComponentActivity() {
         if (!isChangingConfigurations) viewModel.flushPendingMetadata()
     }
 
+    /** Telefon arayüzü dikey, telefonda TV modu yatay; gerçek TV cihazında yöne dokunulmaz. */
+    private fun applyAppOrientation(viewMode: String) {
+        val target = when {
+            com.example.ui.tv.TvDevice.isTv(this) -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            viewMode == com.example.data.repository.ViewMode.TV -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+        if (requestedOrientation != target) requestedOrientation = target
+    }
+
     override fun onStart() {
         super.onStart()
         if (redirectedToCrashReport) return
@@ -160,16 +170,7 @@ class MainActivity : ComponentActivity() {
 
             // Telefon arayüzü yalnızca dikeydir; TV modu (telefonda denenirken) yataydır. Gerçek TV cihazında yöne
             // dokunulmaz. İzlerken oynatıcı kendi yönünü (yatay/dikey) ayrıca yönetir ve çıkınca buna geri döner.
-            LaunchedEffect(orientationViewMode) {
-                val targetOrientation = when {
-                    com.example.ui.tv.TvDevice.isTv(this@MainActivity) -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                    orientationViewMode == com.example.data.repository.ViewMode.TV -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                }
-                if (requestedOrientation != targetOrientation) {
-                    requestedOrientation = targetOrientation
-                }
-            }
+            LaunchedEffect(orientationViewMode) { applyAppOrientation(orientationViewMode) }
 
             androidx.compose.runtime.CompositionLocalProvider(
                 androidx.compose.ui.platform.LocalContext provides localizedContext,
@@ -192,6 +193,8 @@ class MainActivity : ComponentActivity() {
                         // Oynatıcıdan çıkınca TV kanal paneli bir sonraki girişte kapalı başlar.
                         LaunchedEffect(currentScreen is ActiveScreen.Player) {
                             if (currentScreen !is ActiveScreen.Player) {
+                                // Oynatıcı yönü (yatay/sensör) uygulamada kalmasın: çıkınca uygulamanın yönü geri gelir.
+                                applyAppOrientation(viewMode)
                                 tvPlayerUi.panelOpen = false
                                 tvPlayerUi.categoriesOpen = false
                                 tvPlayerUi.panelCategory = null

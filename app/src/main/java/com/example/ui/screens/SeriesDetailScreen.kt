@@ -201,7 +201,9 @@ fun SeriesDetailScreen(
 
     // Fallback to a single-episode show if not found in groups yet
     val tvShow = remember(item, currentTvShow, liveFetchedShow) {
-        liveFetchedShow ?: currentTvShow ?: TvShow(
+        // Canlı çekilen dizi yalnızca bu bölüme aitse kullanılır; önceki açılan dizinin bölümleri karışmasın.
+        liveFetchedShow?.takeIf { show -> show.seasons.any { s -> s.episodes.any { it.id == item.id } } }
+            ?: currentTvShow ?: TvShow(
             id = item.id,
             title = item.cleanedName,
             logoUrl = null,

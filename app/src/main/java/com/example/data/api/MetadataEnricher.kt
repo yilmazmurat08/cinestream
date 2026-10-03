@@ -620,7 +620,13 @@ object MetadataEnricher {
                     val epIdInt = epId.toIntOrNull() ?: continue
                     val epTitle = epObj.optString("title", "Bölüm ${i + 1}")
                     val containerExt = epObj.optString("container_extension", "mp4").ifEmpty { "mp4" }
-                    val epNum = epObj.optJSONObject("info")?.optInt("episode_num", i + 1) ?: (epObj.optInt("episode_num", i + 1))
+                    val epNum = com.example.data.model.SeriesParser.resolveXtreamEpisodeNumber(
+                        topLevel = epObj.optString("episode_num", ""),
+                        infoLevel = epObj.optJSONObject("info")?.optString("episode_num", ""),
+                        title = epTitle,
+                        seasonNumber = seasonNum,
+                        index = i
+                    )
                     val playUrl = "${creds.baseUrl}/series/${creds.user}/${creds.pass}/$epIdInt.$containerExt"
                     val epCover = epObj.optJSONObject("info")?.optString("movie_image", "") ?: ""
                     val syntheticId = -epIdInt

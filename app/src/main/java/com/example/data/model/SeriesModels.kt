@@ -99,6 +99,24 @@ object SeriesParser {
         return parseEpisodeInfo(item.cleanedName.ifBlank { item.name }) ?: parseEpisodeInfo(item.name)
     }
 
+    /**
+     * Xtream get_series_info bölüm numarası. Standart alan bölüm nesnesinin kendi "episode_num"udur; "info" içinde
+     * çoğu sağlayıcıda yoktur (eskiden oradan okunup dizideki sıra yazılıyordu, numaralar karışık görünüyordu).
+     * Sıra: üst alan → info alanı → başlıktaki "S01E05" (yalnızca aynı sezon için) → dizideki sıra.
+     */
+    fun resolveXtreamEpisodeNumber(topLevel: String?, infoLevel: String?, title: String, seasonNumber: Int, index: Int): Int {
+        topLevel?.trim()?.toIntOrNull()?.takeIf { it > 0 }?.let { return it }
+        infoLevel?.trim()?.toIntOrNull()?.takeIf { it > 0 }?.let { return it }
+        EPISODE_TAG_NUMBERS.find(title)?.let { m ->
+            val season = (m.groupValues[1].ifEmpty { m.groupValues[3] }).toIntOrNull()
+            val episode = (m.groupValues[2].ifEmpty { m.groupValues[4] }).toIntOrNull()
+            if (season == seasonNumber && episode != null && episode > 0) return episode
+        }
+        return index + 1
+    }
+
+    private val EPISODE_TAG_NUMBERS = Regex("""(?i)\bS(\d{1,2})\s*E(\d{1,3})\b|\b(\d{1,2})x(\d{1,3})\b""")
+
     fun parseEpisodeInfo(rawName: String): ParsedEpisodeInfo? {
         val cached = parseCache[rawName]
         if (cached != null) return cached

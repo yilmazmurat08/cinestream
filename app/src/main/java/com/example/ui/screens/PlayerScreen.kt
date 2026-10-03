@@ -203,7 +203,10 @@ fun LegacyExoPlayerScreen(
     var currentAspectRatioMode by remember { mutableStateOf(AspectRatioMode.FILL) }
     var showAspectRatioBadge by remember { mutableStateOf<String?>(null) }
     val configuration = LocalConfiguration.current
-    var isLandscapeMode by remember { mutableStateOf(true) }
+    // Oynatıcı yatay açılır, sonra telefonun yönünü takip eder. Tam ekran düğmesi yönü zorlar; telefon o yöne
+    // fiziksel olarak çevrilince zorlama kalkar ve yön yeniden sensöre bırakılır (otomatik döndürme açıksa).
+    var forcedPlayerOrientation by remember { mutableStateOf<Int?>(Configuration.ORIENTATION_LANDSCAPE) }
+    val isLandscapeMode = isTvDevice || configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // Screen Lock
     var isScreenLocked by remember { mutableStateOf(false) }
@@ -371,7 +374,6 @@ fun LegacyExoPlayerScreen(
 
     // Keep screen awake during playback + durum çubuğunu gizle (immersive mod)
     DisposableEffect(Unit) {
-        val originalOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         activity?.window?.let { window ->
             WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -386,7 +388,6 @@ fun LegacyExoPlayerScreen(
             }
         }
         onDispose {
-            activity?.requestedOrientation = originalOrientation
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             // Oynatıcıda parmakla ayarlanan parlaklık yalnızca oynatıcı için geçerli; çıkınca sistem ayarına dön.
             activity?.window?.let { window ->
@@ -403,14 +404,27 @@ fun LegacyExoPlayerScreen(
 
     // Tam ekran (yatay, sistem çubukları gizli) / küçült (dikey, sistem çubukları görünür).
     // TV'de ekran yönüne dokunulmaz; her zaman tam ekrandır.
-    LaunchedEffect(isLandscapeMode) {
+    // Uygulamanın kendi yönüne dönüş MainActivity'dedir (oynatıcıdan çıkınca); burada yalnızca oynatıcı yönü ayarlanır.
+    LaunchedEffect(forcedPlayerOrientation) {
         if (!isTvDevice) {
-            activity?.requestedOrientation = if (isLandscapeMode) {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            }
+            activity?.requestedOrientation = playerRequestedOrientation(forcedPlayerOrientation)
         }
+    }
+    if (!isTvDevice) {
+        DisposableEffect(context) {
+            val listener = object : android.view.OrientationEventListener(context) {
+                override fun onOrientationChanged(degrees: Int) {
+                    val forced = forcedPlayerOrientation ?: return
+                    if (tvMode) return // Telefonda TV modu hep yataydır.
+                    if (degrees == ORIENTATION_UNKNOWN || !isAutoRotateEnabled(context)) return
+                    if (physicalOrientationOf(degrees) == forced) forcedPlayerOrientation = null
+                }
+            }
+            if (listener.canDetectOrientation()) listener.enable()
+            onDispose { listener.disable() }
+        }
+    }
+    LaunchedEffect(isLandscapeMode) {
         activity?.window?.let { window ->
             WindowCompat.setDecorFitsSystemWindows(window, false)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
@@ -1655,7 +1669,11 @@ fun LegacyExoPlayerScreen(
                             if (!isTvDevice) {
                                 Surface(
                                     onClick = {
-                                        isLandscapeMode = !isLandscapeMode
+                                        forcedPlayerOrientation = if (isLandscapeMode) {
+                                            Configuration.ORIENTATION_PORTRAIT
+                                        } else {
+                                            Configuration.ORIENTATION_LANDSCAPE
+                                        }
                                         resetControlsTimer()
                                     },
                                     shape = CircleShape,
@@ -2818,4 +2836,24 @@ private fun formatTime(seconds: Long): String {
     } else {
         String.format("%02d:%02d", m, s)
     }
+}
+
+/** Zorlanan yön yoksa sensör (kullanıcının döndürme kilidine uyar), varsa o yön. */
+internal fun playerRequestedOrientation(forced: Int?): Int = when (forced) {
+    Configuration.ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    Configuration.ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    else -> ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+}
+
+/** Sensör açısından telefonun tutuluş yönü; çaprazda (geçişte) null. */
+internal fun physicalOrientationOf(degrees: Int): Int? = when (degrees) {
+    in 0..25, in 335..359 -> Configuration.ORIENTATION_PORTRAIT
+    in 65..115, in 245..295 -> Configuration.ORIENTATION_LANDSCAPE
+    else -> null
+}
+
+private fun isAutoRotateEnabled(context: Context): Boolean = try {
+    android.provider.Settings.System.getInt(context.contentResolver, android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) == 1
+} catch (e: Exception) {
+    false
 }
