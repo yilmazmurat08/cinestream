@@ -69,7 +69,12 @@ class BoundedInputStream(
     }
 }
 
-class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.example.data.db.AppDatabase? = null) {
+class IPTVRepository(
+    private val iptvDao: IPTVDao,
+    private val database: com.example.data.db.AppDatabase? = null,
+    /** Xtream hesaplarını player_api ile yenilemek için (bkz. syncPlaylist). Testlerde boş olabilir. */
+    private val appContext: android.content.Context? = null
+) {
 
     companion object {
         private const val TAG = "IPTVRepository"
@@ -184,6 +189,20 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
     suspend fun syncPlaylist(playlist: Playlist, onProgress: (Map<String, Int>) -> Unit = {}): Int = withContext(Dispatchers.IO) {
         if (!playlist.url.startsWith("http", ignoreCase = true)) return@withContext 0
 
+        // Xtream hesapları her zaman Xtream API'siyle (player_api) yenilenir. Sağlayıcının get.php M3U dosyası
+        // indirilmez: çoğu sağlayıcı bunu reddeder (HTTP 403) ve indirilse bile kanallar farklı kimliklerle
+        // yeniden yazılıp canlı kanallar, EPG ve izleme geçmişi bozuluyordu.
+        val xtream = xtreamCredentialsOf(playlist)
+        val context = appContext
+        if (xtream != null && context != null) {
+            val count = syncMutex.withLock {
+                importXtreamDirectly(context, playlist.name, xtream.first, xtream.second, xtream.third, existingPlaylistId = playlist.id, onProgress = onProgress)
+            }
+            if (count > 0) return@withContext count
+            // API hiçbir şey döndürmediyse eski yola (M3U) düşülür; o yol da başarısızsa mevcut kayıtlar korunur.
+            Log.w(TAG, "Xtream API yenilemesi boş döndü, M3U yoluna geçiliyor")
+        }
+
         syncMutex.withLock {
             val urlClean = playlist.url.trim()
             val client = com.example.data.api.NetworkModule.iptvOkHttpClient
@@ -285,12 +304,33 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
     suspend fun findSeriesEpisodesByTitleLike(titlePattern: String): List<IPTVItem> =
         iptvDao.findSeriesEpisodesByTitleLike(titlePattern)
 
+    /**
+     * Xtream hesabının (sunucu, kullanıcı, şifre) bilgisi: kayıtta işaretliyse ya da adres bir Xtream
+     * get.php adresiyse. Örn. http://host:8080/get.php?username=u&password=p&type=m3u_plus
+     */
+    internal fun xtreamCredentialsOf(playlist: Playlist): Triple<String, String, String>? {
+        val uri = try { java.net.URI(playlist.url.trim()) } catch (e: Exception) { return null }
+        val isXtreamUrl = uri.path?.endsWith("/get.php", ignoreCase = true) == true
+        if (!playlist.isXtream && !isXtreamUrl) return null
+        val query = uri.rawQuery.orEmpty().split('&').mapNotNull {
+            val i = it.indexOf('='); if (i <= 0) null else it.substring(0, i) to java.net.URLDecoder.decode(it.substring(i + 1), "UTF-8")
+        }.toMap()
+        val user = playlist.xtreamUsername?.takeIf { it.isNotBlank() } ?: query["username"] ?: return null
+        val pass = playlist.xtreamPassword?.takeIf { it.isNotBlank() } ?: query["password"] ?: return null
+        val scheme = uri.scheme ?: return null
+        val host = uri.host ?: return null
+        val port = if (uri.port != -1) ":${uri.port}" else ""
+        return Triple("$scheme://$host$port", user, pass)
+    }
+
     suspend fun importXtreamDirectly(
         context: android.content.Context,
         playlistName: String,
         hostRaw: String,
         user: String,
         pass: String,
+        /** Yenilemede mevcut liste kaydı (adresi farklı biçimde kaydedilmiş olsa da yeni liste açılmaz). */
+        existingPlaylistId: Int? = null,
         onProgress: (Map<String, Int>) -> Unit = {}
     ): Int = withContext(Dispatchers.IO) {
         val host = hostRaw.trim().let {
@@ -300,7 +340,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
         val markerUrl = "$host/get.php?username=$user&password=$pass&type=m3u_plus&output=ts"
         val xtreamEpgUrl = "$host/xmltv.php?username=$user&password=$pass"
 
-        val existing = iptvDao.findPlaylistByUrl(markerUrl)
+        val existing = existingPlaylistId?.let { iptvDao.getPlaylistById(it) } ?: iptvDao.findPlaylistByUrl(markerUrl)
         val playlistId = existing?.id ?: iptvDao.insertPlaylist(
             Playlist(name = playlistName, url = markerUrl, isXtream = true, xtreamUsername = user, xtreamPassword = pass, epgUrl = xtreamEpgUrl)
         ).toInt()

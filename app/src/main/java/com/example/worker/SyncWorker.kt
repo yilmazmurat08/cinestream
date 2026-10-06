@@ -56,7 +56,7 @@ class SyncWorker(
         Log.d(TAG, "Executing background sync worker for IPTV playlists...")
         return try {
             val database = AppDatabase.getDatabase(context)
-            val repository = IPTVRepository(database.iptvDao(), database)
+            val repository = IPTVRepository(database.iptvDao(), database, context.applicationContext)
 
             val list: List<com.example.data.model.Playlist> = database.iptvDao().getAllPlaylists()
             if (list.isEmpty()) {

@@ -745,10 +745,12 @@ class IPTVViewModel(
         viewModelScope.launch(coroutineExceptionHandler) {
             combine(playlists, settingsRepository.manualEpgUrlFlow) { list, manualUrl ->
                 Pair(manualUrl.trim(), list.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl)
-            }.collect { (manualUrl, autoUrl) ->
+            }.distinctUntilChanged().collect { (manualUrl, autoUrl) ->
                 val lastFetch = settingsRepository.lastEpgFetchTimeFlow.first()
                 val sixHoursMillis = 6 * 60 * 60 * 1000L
-                if (System.currentTimeMillis() - lastFetch < sixHoursMillis) {
+                // Rehber yalnızca bellekte tutuluyor: uygulama yeniden açıldığında (veya liste yenilenip
+                // EPG adresi yeni geldiğinde) bellek boşsa süreye bakmadan indir.
+                if (_realEpgPrograms.value.isNotEmpty() && System.currentTimeMillis() - lastFetch < sixHoursMillis) {
                     return@collect
                 }
                 if (manualUrl.isNotBlank()) {
@@ -760,7 +762,7 @@ class IPTVViewModel(
                         if (!autoUrl.isNullOrBlank()) {
                             try {
                                 _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
-                                settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                                if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
                             } catch (e2: Exception) {
                                 android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e2.message}")
                             }
@@ -769,7 +771,7 @@ class IPTVViewModel(
                 } else if (!autoUrl.isNullOrBlank()) {
                     try {
                         _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
-                        settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                        if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
                     } catch (e: Exception) {
                         android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e.message}")
                     }
@@ -2265,7 +2267,8 @@ class IPTVViewModel(
                     showSummary = catalogShow.summary,
                     showCast = catalogShow.cast,
                     showDirector = catalogShow.director,
-                    anyItemForCredentials = credSource
+                    anyItemForCredentials = credSource,
+                    showCategory = catalogShow.platformName.takeIf { it.isNotBlank() && it != "Diğer" } ?: catalogShow.category
                 )
                 if (fetchedShow != null) {
                     _liveFetchedShow.value = fetchedShow
@@ -2921,7 +2924,7 @@ class IPTVViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val database = AppDatabase.getDatabase(application)
-            val repository = IPTVRepository(database.iptvDao(), database)
+            val repository = IPTVRepository(database.iptvDao(), database, application)
             return IPTVViewModel(application, repository) as T
         }
     }

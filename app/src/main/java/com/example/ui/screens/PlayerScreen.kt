@@ -157,6 +157,9 @@ fun LegacyExoPlayerScreen(
     val isTvDevice = remember(context) { com.example.ui.tv.TvDevice.isTv(context) }
 
     // Subtitle Customization
+    // "Sıradaki Bölüm" kartlarında izlenen kısmı göstermek için (itemId -> 0..1).
+    val trayWatchHistory by (iptvViewModel?.continueWatching?.collectAsState() ?: remember { mutableStateOf(emptyList()) })
+    val trayProgressById = remember(trayWatchHistory) { WatchedFractions(trayWatchHistory) }
     val subtitleSize by (iptvViewModel?.subtitleSize?.collectAsState() ?: remember { mutableStateOf(16) })
     val subtitleColor by (iptvViewModel?.subtitleColor?.collectAsState() ?: remember { mutableStateOf("Beyaz") })
 
@@ -1866,14 +1869,27 @@ fun LegacyExoPlayerScreen(
                                                     Spacer(modifier = Modifier.width(10.dp))
                                                 }
                                                 Column(modifier = Modifier.weight(1f)) {
+                                                    val sibEpisodeLabel = trayEpisodeLabel(sib)
                                                     Text(
-                                                        text = sib.cleanedName,
+                                                        text = sibEpisodeLabel ?: sib.cleanedName,
                                                         color = Color.White,
                                                         fontSize = 12.sp,
                                                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis
                                                     )
+                                                    trayEpisodeName(sib)?.let { epName ->
+                                                        Text(
+                                                            text = epName,
+                                                            color = MutedText,
+                                                            fontSize = 10.sp,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
+                                                    trayProgressById.of(sib)?.let { fraction ->
+                                                        TrayWatchProgress(fraction, Modifier.padding(top = 4.dp))
+                                                    }
                                                     if (isCurrent) {
                                                         Text(
                                                             text = stringResource(R.string.player_now_playing),
@@ -2021,17 +2037,34 @@ fun LegacyExoPlayerScreen(
                                                 }
                                             }
 
-                                            Text(
-                                                text = sib.cleanedName,
-                                                color = Color.White,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
+                                            Column(
                                                 modifier = Modifier
                                                     .align(Alignment.BottomStart)
+                                                    .fillMaxWidth()
                                                     .padding(8.dp)
-                                            )
+                                            ) {
+                                                val sibEpisodeLabel = trayEpisodeLabel(sib)
+                                                Text(
+                                                    text = sibEpisodeLabel ?: sib.cleanedName,
+                                                    color = Color.White,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = if (sibEpisodeLabel != null) 1 else 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                trayEpisodeName(sib)?.let { epName ->
+                                                    Text(
+                                                        text = epName,
+                                                        color = Color.White.copy(alpha = 0.75f),
+                                                        fontSize = 9.sp,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                                trayProgressById.of(sib)?.let { fraction ->
+                                                    TrayWatchProgress(fraction, Modifier.padding(top = 4.dp))
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -2921,3 +2954,58 @@ private fun FreeTimeRemainingBadge(remainingSeconds: Long, modifier: Modifier = 
 
 /** Yayın bu süre içinde oynatılabilir duruma gelmezse hata gösterilir. */
 private const val STREAM_START_TIMEOUT_MS = 20_000L
+
+/**
+ * İzlenen kısım oranları (0..1). Liste yenilenince kayıt kimlikleri değişebildiği için akış adresiyle de eşlenir.
+ * Süresi bilinmeyen veya hiç izlenmemiş kayıtlar alınmaz.
+ */
+internal class WatchedFractions(history: List<com.example.data.model.ContinueWatching>) {
+    private val byId = HashMap<Int, Float>()
+    private val byUrl = HashMap<String, Float>()
+
+    init {
+        history.forEach {
+            if (it.totalSeconds > 0 && it.progressSeconds > 0) {
+                val fraction = (it.progressSeconds.toFloat() / it.totalSeconds.toFloat()).coerceIn(0f, 1f)
+                byId.putIfAbsent(it.itemId, fraction)
+                if (it.streamUrl.isNotBlank()) byUrl.putIfAbsent(it.streamUrl, fraction)
+            }
+        }
+    }
+
+    fun of(item: IPTVItem): Float? = byId[item.id] ?: item.streamUrl.takeIf { it.isNotBlank() }?.let { byUrl[it] }
+}
+
+/** Dizi bölümü için "Sezon 1 · Bölüm 3"; bölüm numarası bilinmiyorsa null (kart adı gösterir). */
+@Composable
+private fun trayEpisodeLabel(item: IPTVItem): String? {
+    if (item.type != "SERIES") return null
+    val info = remember(item) { com.example.data.model.SeriesParser.episodeInfoOf(item) } ?: return null
+    return stringResource(R.string.tv_season_episode, info.season, info.episode)
+}
+
+/** Bölümün kendi adı (dizi adıyla aynıysa gösterilmez). */
+@Composable
+private fun trayEpisodeName(item: IPTVItem): String? {
+    if (item.type != "SERIES") return null
+    val info = remember(item) { com.example.data.model.SeriesParser.episodeInfoOf(item) } ?: return null
+    return info.episodeName.trim().takeIf { it.isNotBlank() && !it.equals(info.showTitle.trim(), ignoreCase = true) }
+}
+
+@Composable
+private fun TrayWatchProgress(fraction: Float, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(3.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(Color.White.copy(alpha = 0.25f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraction.coerceIn(0.02f, 1f))
+                .fillMaxHeight()
+                .background(NeonPink)
+        )
+    }
+}

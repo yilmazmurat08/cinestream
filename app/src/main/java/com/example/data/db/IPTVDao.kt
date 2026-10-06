@@ -24,6 +24,9 @@ interface IPTVDao {
     @Query("SELECT * FROM playlists WHERE url = :url LIMIT 1")
     suspend fun findPlaylistByUrl(url: String): Playlist?
 
+    @Query("SELECT * FROM playlists WHERE id = :id LIMIT 1")
+    suspend fun getPlaylistById(id: Int): Playlist?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlaylist(playlist: Playlist): Long
 
