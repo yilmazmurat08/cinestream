@@ -20,7 +20,7 @@ Bu rehber, uygulamayı Google Play'e ilk kez yüklerken Play Console'un sorduğu
 
 **Tüm uygulamalar > Uygulama oluştur**
 
-- Uygulama adı: **CineStream: IPTV Oynatıcı**
+- Uygulama adı: **CineStream AI TV**
 - Varsayılan dil: **Türkçe – tr-TR**
 - Uygulama mı, oyun mu: **Uygulama**
 - Ücretsiz mi, ücretli mi: **Ücretsiz** (uygulama içi satın alma olsa da indirmesi ücretsiz)
