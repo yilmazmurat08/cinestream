@@ -1,196 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gizlilik Politikası — CineStream</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gizlilik Politikası – Zendit Play</title>
 <style>
-  :root {
-    --bg: #0D0A16;
-    --bg-panel: #17122A;
-    --bg-panel-alt: #1E1832;
-    --border: #2E2547;
-    --text: #EDE9F7;
-    --text-dim: #A79FC4;
-    --text-faint: #756D93;
-    --accent: #E93DE0;
-    --accent-soft: #C084FC;
-    --accent-blue: #4CC9F0;
-    --radius: 14px;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: radial-gradient(ellipse at top, #1A1330 0%, #0D0A16 55%);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
-  header.top {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 8px;
-  }
-  .logo-mark {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent) 0%, #7C3AED 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 18px; color: #fff;
-    flex-shrink: 0;
-    box-shadow: 0 4px 18px rgba(233,61,224,0.35);
-  }
-  .brand { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
-  .brand span { color: var(--accent-soft); }
-  h1 {
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin: 40px 0 6px;
-    color: #fff;
-  }
-  .meta {
-    color: var(--text-faint);
-    font-size: 14px;
-    margin-bottom: 40px;
-    padding-bottom: 28px;
-    border-bottom: 1px solid var(--border);
-  }
-  h2 {
-    font-size: 19px;
-    font-weight: 700;
-    color: #fff;
-    margin: 44px 0 14px;
-    padding-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  h2::before {
-    content: "";
-    width: 4px; height: 18px;
-    background: linear-gradient(180deg, var(--accent), var(--accent-blue));
-    border-radius: 2px;
-    display: inline-block;
-  }
-  p { color: var(--text-dim); margin: 0 0 14px; font-size: 15.5px; }
-  ul { margin: 0 0 16px; padding-left: 0; list-style: none; }
-  li {
-    color: var(--text-dim);
-    font-size: 15.5px;
-    padding: 10px 0 10px 26px;
-    position: relative;
-    border-bottom: 1px solid var(--border);
-  }
-  li:last-child { border-bottom: none; }
-  li::before {
-    content: "";
-    position: absolute; left: 4px; top: 19px;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent-soft);
-  }
-  li strong { color: var(--text); }
-  .callout {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent-blue);
-    border-radius: var(--radius);
-    padding: 18px 20px;
-    margin: 18px 0 24px;
-    font-size: 14.5px;
-    color: var(--text-dim);
-  }
-  .callout strong { color: var(--accent-blue); }
-  .card {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 22px 24px;
-    margin: 16px 0;
-  }
-  .fill {
-    background: var(--bg-panel-alt);
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    padding: 2px 8px;
-    color: var(--accent-soft);
-    font-size: 0.95em;
-  }
-  footer {
-    margin-top: 64px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    color: var(--text-faint);
-    font-size: 13px;
-    text-align: center;
-  }
-  a { color: var(--accent-blue); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  strong.hl { color: #fff; }
+  :root { color-scheme: light dark; --bg: #ffffff; --fg: #1d1b2e; --muted: #5f5c74; --accent: #d9452a; --line: #e6e4ef; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1b1938; --fg: #f5f5fa; --muted: #b3b0c9; --accent: #ff7a59; --line: #2f2c55; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; }
+  .meta { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+  .intro { font-size: 17px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+  h2 { font-size: 18px; margin: 28px 0 8px; }
+  ul { padding-left: 22px; }
+  a { color: var(--accent); word-break: break-word; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="logo-mark">C</div>
-    <div class="brand">Cine<span>Stream</span></div>
-  </header>
-  <h1>Gizlilik Politikası</h1>
-  <div class="meta">Son güncelleme: 6 Ekim 2026 · <a href="kullanim-kosullari.html">Hizmet Şartları</a> · <a href="privacy-policy.html">English</a></div>
-  <p>Bu Gizlilik Politikası, lusnika tarafından geliştirilen CineStream uygulamasını ("Uygulama", "CineStream", "biz") telefonda ve Android TV'de kullanırken hangi verilerin nasıl işlendiğini açıklar.</p>
-  <div class="callout">Özetle: CineStream'in kendi sunucusu yoktur ve hesap açmanızı gerektirmez. Girdiğiniz yayın listesi bilgileri, profil bilgileri, API anahtarınız ve izleme geçmişiniz yalnızca cihazınızda saklanır; bize gönderilmez. Bazı özellikler çalışmak için yalnızca gerekli bilgiyi, doğrudan cihazınızdan ilgili hizmete gönderir (aşağıda listelenmiştir). Reklam, takip veya veri satışı yoktur.</div>
-  <h2>1. Kim Olduğumuz</h2>
-  <p>CineStream, kullanıcıların kendi IPTV yayın listelerini (M3U/M3U8 bağlantısı veya Xtream Codes bilgileri) ekleyerek içerik izleyebildiği bir medya oynatıcı uygulamasıdır. Telefonda ve Android TV'de çalışır. Uygulamanın geliştiricisi ve bu politika kapsamındaki veri sorumlusu: lusnika. İletişim: <a href="mailto:yilmazmurat08@gmail.com">yilmazmurat08@gmail.com</a></p>
-  <h2>2. Cihazınızda Saklanan Veriler</h2>
-  <p>Aşağıdaki bilgiler yalnızca cihazınızın uygulamaya ayrılmış korumalı alanında saklanır ve bize gönderilmez:</p>
-  <ul>
-    <li><strong>Yayın listesi bilgileri:</strong> M3U/M3U8 bağlantı adresi veya Xtream Codes sunucu adresi, kullanıcı adı ve şifresi; yayın akışı (EPG) adresi.</li>
-    <li><strong>Profil bilgileri:</strong> Uygulama içinde isteğe bağlı olarak girdiğiniz ad, e-posta adresi ve seçtiğiniz avatar. Bu bilgiler doğrulanmaz, bir hesap oluşturmaz ve cihaz dışına gönderilmez.</li>
-    <li><strong>Yapay zekâ API anahtarı:</strong> Yapay zekâ özelliklerini kullanmak için eklerseniz kendi Google Gemini API anahtarınız.</li>
-    <li><strong>İzleme geçmişi ve tercihler:</strong> "İzlemeye devam et" listesi, izlenen bölümler, favoriler, arama geçmişi, yapay zekâ sohbet ve öneri geçmişi, ebeveyn kilidi PIN'i ve uygulama ayarları (tema, dil, görünüm modu vb.).</li>
-    <li><strong>Kullanım sayacı:</strong> Günlük ücretsiz izleme süresi sayacı (yalnızca cihazda; her gün sıfırlanır).</li>
-    <li><strong>Hata kayıtları:</strong> Uygulama beklenmedik şekilde kapanırsa, sorunun giderilmesine yardımcı olan kısa bir hata kaydı yalnızca cihazınızda tutulur; otomatik olarak hiçbir yere gönderilmez.</li>
-  </ul>
-  <p>Konum, rehber, fotoğraf, reklam kimliği veya benzeri kişisel verileri toplamayız.</p>
-  <h2>3. Kullandığımız İzinler</h2>
-  <ul>
-    <li><strong>İnternet ve ağ durumu:</strong> Yayınları, afişleri ve içerik bilgilerini yüklemek için.</li>
-    <li><strong>Mikrofon (isteğe bağlı):</strong> Yalnızca sesli arama düğmesine bastığınızda, söylediklerinizi yazıya çevirmek için kullanılır. Ses kaydı uygulama tarafından saklanmaz. Konuşma tanıma, cihazınızın ses tanıma hizmeti (genellikle Google) tarafından yapılır ve o hizmetin gizlilik koşullarına tabidir. İzin vermezseniz ekran klavyesiyle yazmaya devam edebilirsiniz.</li>
-    <li><strong>Bildirimler ve ön plan hizmeti:</strong> Oynatma sürerken (örneğin küçük pencere modunda) oynatma kontrollerini içeren bildirimi göstermek için.</li>
-  </ul>
-  <h2>4. Verilerin Gönderildiği Hizmetler</h2>
-  <p>Aşağıdaki hizmetlere bilgi, yalnızca ilgili özelliği kullandığınızda ve doğrudan cihazınızdan gönderilir; aradan bizim geçtiğimiz bir sunucu yoktur:</p>
-  <ul>
-    <li><strong>Kendi IPTV / Xtream sağlayıcınız:</strong> Yayın listesi bilgileriniz ve oynatma istekleriniz, içeriği getirmek için doğrudan seçtiğiniz sağlayıcının sunucusuna gider. Sağlayıcınızın gizlilik uygulamalarından ve içeriğinden biz sorumlu değiliz.</li>
-    <li><strong>The Movie Database (TMDB):</strong> Film ve dizilerin afiş, özet, oyuncu ve puan bilgilerini göstermek için içerik adları ve arama terimleri TMDB'ye gönderilir. Kimlik veya liste bilgisi gönderilmez. TMDB gizlilik politikası: <a href="https://www.themoviedb.org/privacy-policy" rel="noopener">https://www.themoviedb.org/privacy-policy</a></li>
-    <li><strong>Google Gemini API:</strong> Yapay zekâ asistanını veya özetlerini kullanırsanız, yazdığınız mesajlar, anlattığınız sahneler ve ilgili içerik adları kendi API anahtarınızla Google'a gönderilir. Bu kullanım Google'ın koşullarına tabidir: <a href="https://ai.google.dev/gemini-api/terms" rel="noopener">https://ai.google.dev/gemini-api/terms</a></li>
-    <li><strong>YouTube (fragmanlar):</strong> Fragmanlar uygulama içinde YouTube'un resmi gömülü oynatıcısıyla (YouTube API Hizmetleri) oynatılır. Bir fragmanı açtığınızda YouTube ve Google; IP adresi ve cihaz bilgisi gibi verileri toplayabilir ve çerez benzeri teknolojiler kullanabilir. Bu işlem Google Gizlilik Politikası'na tabidir: <a href="https://policies.google.com/privacy" rel="noopener">https://policies.google.com/privacy</a></li>
-    <li><strong>Google Play hizmetleri:</strong> Satın alımlar Google Play üzerinden işlenir; uygulama, PRO durumunu doğrulamak için cihazdaki Google hesabının bu uygulamaya ait satın alımlarını Google Play'den sorgular. Uygulama içi değerlendirme penceresi (Google Play In-App Review) de Google Play üzerinden gösterilir. Ödeme bilgilerinize erişimimiz yoktur.</li>
-    <li><strong>Telefondan giriş (Android TV, QR kod):</strong> TV'deki QR kodu okuttuğunuzda liste bilgileriniz aynı yerel ağdaki (Wi-Fi) telefonunuzdan doğrudan TV'nize gönderilir; internete veya bize gönderilmez. Bu bağlantı yalnızca giriş ekranı açıkken çalışır.</li>
-    <li><strong>Yapay zekâ yanıtı bildirimleri:</strong> Bir yapay zekâ yanıtını "Bildir" ile işaretlerseniz seçtiğiniz gerekçe, isteğe bağlı notunuz, bildirilen yanıtın metni ve uygulama sürümü bize (geliştiriciye) iletilir. Bu bilgiler yalnızca bildirimi incelemek ve yapay zekâ özelliklerini iyileştirmek için kullanılır, kimliğinizle eşleştirilmez ve üçüncü taraflarla paylaşılmaz. Bildirim e-posta ile gönderilirse e-posta uygulamanız üzerinden, e-posta adresinizle birlikte gider.</li>
-  </ul>
-  <h2>5. Reklam ve Takip</h2>
-  <p>CineStream reklam göstermez, üçüncü taraf reklam veya analiz (istatistik) araçları kullanmaz, kullanıcıları reklam amacıyla takip etmez ve hiçbir veriyi satmaz veya paylaşmaz.</p>
-  <h2>6. Veri Güvenliği ve Saklama</h2>
-  <p>Tüm veriler Android'in uygulamaya ayrılmış korumalı alanında saklanır ve başka uygulamalar tarafından okunamaz. Yapay zekâ API anahtarınız cihazın güvenli donanım anahtar deposu (Android Keystore) ile şifrelenerek saklanır. Yayın listeleriniz (Xtream bilgileri dahil), izleme geçmişiniz, API anahtarınız, ebeveyn kilidi PIN'iniz ve ayarlarınız Android bulut yedeğine ve cihazdan cihaza aktarıma dahil edilmez.</p>
-  <p>Sağlayıcınızın sunucusuna bağlantının şifreli (HTTPS) olup olmadığı, sağlayıcınızın verdiği adrese bağlıdır. Veriler, siz silene veya uygulamayı kaldırana kadar cihazınızda kalır.</p>
-  <h2>7. Verilerinizi Silme</h2>
-  <ul>
-    <li>Yayın listelerinizi, API anahtarınızı (Ayarlar &gt; "Anahtarı sil") ve yapay zekâ geçmişinizi uygulamanın Ayarlar bölümünden silebilirsiniz.</li>
-    <li>Tüm verileri silmek için Ayarlar &gt; Yasal &gt; "Tüm verileri sil" seçeneğini kullanabilir, Android Ayarlar &gt; Uygulamalar &gt; CineStream &gt; Depolama &gt; "Verileri temizle" yolunu izleyebilir veya uygulamayı kaldırabilirsiniz; bu işlemler cihazdaki tüm CineStream verilerini kalıcı olarak siler.</li>
-  </ul>
-  <p>Gönderdiğiniz yapay zekâ bildirimleri dışında sunucumuzda sizinle ilgili veri saklanmaz. Bir bildiriminizin silinmesini isterseniz bize yazmanız yeterlidir.</p>
-  <h2>8. Çocukların Gizliliği</h2>
-  <p>CineStream 13 yaşından küçük çocuklara yönelik değildir ve bilerek 13 yaşından küçük çocuklardan veri toplamaz. Eklenen yayın listelerine bağlı olarak yetişkinlere yönelik içerik kategorileri görünebilir; bu kategoriler varsayılan olarak ebeveyn kilidiyle (PIN) kilitlidir. 18 yaşından küçük kullanıcıların uygulamayı ebeveyn veya vasi gözetiminde kullanmasını öneririz. 13 yaşından küçük bir çocuğun uygulamaya bilgi girdiğini düşünüyorsanız cihazdaki verileri yukarıdaki yöntemle silebilir veya bize yazabilirsiniz.</p>
-  <h2>9. Haklarınız</h2>
-  <p>6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve geçerli olduğu durumlarda Avrupa Birliği Genel Veri Koruma Tüzüğü (GDPR) kapsamındaki erişim, düzeltme ve silme gibi haklarınızı kullanabilirsiniz. Verileriniz yalnızca cihazınızda bulunduğundan bu hakların çoğunu doğrudan uygulama içinden kullanabilirsiniz. Diğer talepleriniz için <a href="mailto:yilmazmurat08@gmail.com">yilmazmurat08@gmail.com</a> adresine yazabilirsiniz.</p>
-  <h2>10. Bu Politikadaki Değişiklikler</h2>
-  <p>Bu politikayı zaman zaman güncelleyebiliriz. Güncel sürüm her zaman uygulama içinde yayınlanır ve üstteki "Son güncelleme" tarihi değişir. Önemli değişikliklerde sizi uygulama içinde bilgilendiririz.</p>
-  <h2>11. Bize Ulaşın</h2>
-  <p>Gizlilikle ilgili sorularınız için: <a href="mailto:yilmazmurat08@gmail.com">yilmazmurat08@gmail.com</a></p>
-  <footer>© 2026 CineStream</footer>
-</div>
+<main>
+<h1>Gizlilik Politikası</h1>
+<p class="meta">Zendit Play · Son güncelleme: 6 Ekim 2026 · Lusnika</p>
+<p class="intro">Bu politika, Lusnika tarafından geliştirilen Zendit Play uygulamasının ("Uygulama") hangi bilgileri nasıl kullandığını açıklar. Kısaca: Uygulama kişisel verilerinizi Lusnika’ya ait herhangi bir sunucuya göndermez; hesap oluşturma, reklam ve kullanıcı takibi yoktur.</p>
+<section><h2>1. Topladığımız veriler</h2><p>Lusnika, Uygulama üzerinden sizden hiçbir kişisel veri toplamaz, saklamaz, satmaz veya paylaşmaz. Uygulamada reklam, analiz (istatistik) veya kullanıcı takibi yapan üçüncü taraf yazılım bulunmaz.</p></section>
+<section><h2>2. Yalnızca cihazınızda saklanan bilgiler</h2><p>Uygulamanın çalışabilmesi için aşağıdaki bilgiler yalnızca cihazınızda, Uygulamaya özel depolama alanında saklanır:</p><ul><li>Eklediğiniz hesap bilgileri: sunucu adresi, kullanıcı adı, şifre veya M3U / EPG adresleri</li><li>Hizmet sağlayıcınızdan indirilen kanal, film ve dizi listeleri ile yayın akışı (EPG) önbelleği</li><li>Favoriler, izleme geçmişi, kaldığınız yer bilgisi ve izleme istatistikleri</li><li>Uygulama ayarları ve ekranda gösterilen, cihazda rastgele üretilen Cihaz ID / Cihaz PIN numaraları</li><li>Ebeveyn denetimi şifresi: şifrenin kendisi değil, geri çevrilemeyen bir özeti (hash) saklanır</li></ul><p>Bu bilgiler Lusnika’ya iletilmez.</p></section>
+<section><h2>3. Bağlantı kurulan üçüncü taraflar</h2><p>Uygulama, siz kullandıkça yalnızca şu adreslere bağlanır:</p><ul><li>IPTV hizmet sağlayıcınızın sunucuları: listeleri indirmek ve yayınları oynatmak için hesap bilgileriniz bu sunuculara gönderilir. Sağlayıcınız, bağlantı sırasında IP adresiniz gibi teknik bilgileri görebilir.</li><li>Yayın akışı (EPG) kaynakları ile kanal logosu ve poster adresleri: bu adresler sağlayıcınızın listesinden veya sizin girdiğiniz bilgilerden gelir.</li><li>YouTube: fragman izlediğinizde video, YouTube (Google) üzerinden oynatılır; bu sırada Google’ın gizlilik politikası geçerlidir (policies.google.com/privacy).</li><li>Harici oynatıcılar: VLC veya MX Player ile açmayı seçerseniz, yayın adresi seçtiğiniz uygulamaya iletilir.</li></ul><p>Bu hizmetlerin verilerinizi nasıl işlediğinden Lusnika sorumlu değildir; lütfen ilgili hizmetin gizlilik politikasını inceleyin.</p></section>
+<section><h2>4. İzinler</h2><p>Uygulama yalnızca yayınları ve listeleri indirebilmek için internet erişimi izni kullanır. Konum, kamera, mikrofon, rehber, dosyalar veya benzeri kişisel verilere erişim izni istemez.</p></section>
+<section><h2>5. Veri güvenliği</h2><p>Bilgileriniz Android’in her uygulamaya ayırdığı korumalı depolama alanında tutulur ve diğer uygulamalar tarafından okunamaz.</p><p>Bazı IPTV sunucuları şifrelenmemiş (HTTP) bağlantı kullanır. Bu durumda hesap bilgileri ve yayınlar sağlayıcıya şifresiz iletilebilir; bağlantının güvenliği sağlayıcınızın altyapısına bağlıdır.</p><p>Android’in otomatik yedekleme özelliği açıksa, Uygulama verileri cihazınızın Google hesabınıza aldığı yedeğe dahil edilebilir. Bu yedekleme Google tarafından yürütülür ve Android ayarlarından yönetilir.</p></section>
+<section><h2>6. Saklama süresi ve verilerin silinmesi</h2><p>Bilgiler, siz silene kadar cihazınızda kalır. İstediğiniz zaman şu yollarla silebilirsiniz:</p><ul><li>Ayarlar &gt; Veri &gt; "Hesaptan çık ve tüm verileri sil": hesap, listeler, favoriler, geçmiş ve ayarlar silinir</li><li>Ayarlar &gt; Veri &gt; "İzleme geçmişini sil" ve "Önbelleği temizle"</li><li>Uygulamayı cihazınızdan kaldırmak: Uygulamaya ait tüm veriler silinir</li></ul><p>Lusnika verilerinizi saklamadığı için silinmesini istemeniz gereken başka bir kopya bulunmaz.</p></section>
+<section><h2>7. Çocukların gizliliği</h2><p>Uygulama 13 yaşından küçük çocuklara yönelik değildir ve çocuklardan bilerek veri toplamaz. Ebeveynler, çocukların erişimini Ebeveyn denetimi özelliğiyle sınırlayabilir.</p></section>
+<section><h2>8. KVKK kapsamındaki haklarınız</h2><p>6698 sayılı Kişisel Verilerin Korunması Kanunu’nun 11. maddesi kapsamındaki haklarınıza (verilerinizin işlenip işlenmediğini öğrenme, bilgi talep etme, düzeltme, silme ve itiraz) ilişkin taleplerinizi <a href="mailto:yilmazmurat08@gmail.com">yilmazmurat08@gmail.com</a> adresine iletebilirsiniz. Lusnika sizinle ilgili kişisel veri saklamadığından, talepleriniz bu çerçevede yanıtlanır.</p></section>
+<section><h2>9. Politikadaki değişiklikler</h2><p>Bu politika, Uygulamadaki değişikliklere göre güncellenebilir. Güncel metin Uygulamanın Ayarlar bölümünde ve <a href="https://yilmazmurat08.github.io/cinestream/gizlilik-politikasi.html">https://yilmazmurat08.github.io/cinestream/gizlilik-politikasi.html</a> adresinde yayımlanır; son güncelleme tarihi metnin başında yer alır.</p></section>
+<section><h2>10. İletişim</h2><p>Sorularınız ve talepleriniz için: Lusnika · <a href="mailto:yilmazmurat08@gmail.com">yilmazmurat08@gmail.com</a></p></section>
+<footer>Kullanım Koşulları: <a href="kullanim-kosullari.html">https://yilmazmurat08.github.io/cinestream/kullanim-kosullari.html</a></footer>
+</main>
 </body>
 </html>
