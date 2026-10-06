@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?><!--
    Android 11 (API 30) ve altı için otomatik yedekleme kuralları.
+   Veritabanı (listeler; Xtream kullanıcı adı/şifresi içeren adresler) de yedeklenmez.
    Hassas ayarlar (Gemini anahtarı, ebeveyn PIN'i vb.) DataStore dosyalarında
    (files/datastore/) ve SharedPreferences'ta tutulur; bunlar yedeklenmez.
    Not: "datastore" geçerli bir domain değildir; DataStore dosyaları "file" domain'indedir.
@@ -9,4 +10,5 @@
     <exclude domain="sharedpref" path="." />
     <exclude domain="file" path="datastore/" />
     <exclude domain="file" path="crash_logs/" />
+    <exclude domain="database" path="." />
 </full-backup-content>

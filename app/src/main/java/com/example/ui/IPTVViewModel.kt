@@ -132,7 +132,7 @@ class IPTVViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Beyaz")
 
     val parentalLock: StateFlow<Boolean> = settingsRepository.parentalLockFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     val parentalPin: StateFlow<String> = settingsRepository.parentalPinFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "0000")
@@ -357,6 +357,13 @@ class IPTVViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
     /** Ücretsiz kullanıcının bugünkü izleme hakkı doldu mu (anlık, gün değişimini hemen dikkate alır)? */
+    /** Yeni içerik başlatılırken: DataStore'daki güncel kullanım okunarak (soğuk açılışta da doğru) kontrol eder. */
+    suspend fun isFreeWatchLimitReachedNow(): Boolean {
+        if (!com.example.BuildConfig.FREE_WATCH_LIMIT || isProUser.value) return false
+        val usage = kotlinx.coroutines.withTimeoutOrNull(2_000) { settingsRepository.watchUsageFlow.first() } ?: watchUsage.value
+        return usage.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
+    }
+
     fun isFreeWatchLimitReached(): Boolean =
         com.example.BuildConfig.FREE_WATCH_LIMIT && !isProUser.value &&
             watchUsage.value.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
@@ -436,15 +443,8 @@ class IPTVViewModel(
             val updated = settingsRepository.addWatchSeconds(seconds)
             lastRecordedWatchSeconds = updated
 
-            if (
-                com.example.BuildConfig.FREE_WATCH_LIMIT &&
-                updated >= FREE_DAILY_WATCH_SECONDS &&
-                !_showPaywallDialog.value &&
-                !isProUser.value
-            ) {
-                _paywallReasonMessage.value = getApplication<Application>().getString(com.example.R.string.paywall_reason_daily_limit)
-                _showPaywallDialog.value = true
-            }
+            // Süre dolsa da oynayan içerik kesilmez ve araya paywall çıkmaz; sınır yalnızca yeni içerik
+            // başlatılırken uygulanır (bkz. PlayerScreen, isFreeWatchLimitReachedNow).
         }
     }
 
@@ -1951,7 +1951,7 @@ class IPTVViewModel(
             _isLoading.value = true
             val effectiveEmail = email.trim()
             val effectiveName = name.trim().ifBlank { "Kullanıcı" }
-            val avatar = photoUrl ?: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80"
+            val avatar = photoUrl ?: "avatar_1" // paket içi avatar; dışarıdan (gerçek kişi) fotoğraf çekilmez
             
             withContext(Dispatchers.IO) {
                 userPreferencesRepository.setUserEmail(effectiveEmail)

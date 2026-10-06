@@ -88,6 +88,7 @@ import com.example.ui.IPTVViewModel
 import com.example.ui.theme.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.coroutineScope
 import kotlin.math.max
@@ -249,9 +250,10 @@ fun LegacyExoPlayerScreen(
     var hasRecordedSession by remember(item.id) { mutableStateOf(false) }
 
     // Check watch limit effect
-    LaunchedEffect(totalWatchSeconds, isProUser) {
-        // Günlük ücretsiz süre doldu mu? (gün değişimi anlık kontrol edilir; gece yarısından sonra yeniden izlenebilir)
-        if (iptvViewModel?.isFreeWatchLimitReached() == true) {
+    // Günlük ücretsiz süre yalnızca yeni bir içerik başlatılırken kontrol edilir: süre izlerken dolarsa
+    // oynayan içerik kesilmez (gece yarısından sonra süre yeniden başlar).
+    LaunchedEffect(item.id) {
+        if (iptvViewModel?.isFreeWatchLimitReachedNow() == true) {
             player.stop()
             iptvViewModel.openPaywall(context.getString(R.string.paywall_reason_daily_limit))
         }
@@ -512,6 +514,18 @@ fun LegacyExoPlayerScreen(
 
     // Yayın tüm denemelere rağmen açılamazsa hata penceresi gösterilir ("Tekrar dene" sayacı sıfırlar).
     var streamFailed by remember(player) { mutableStateOf(false) }
+    // Yayın hiç başlamazsa (sunucu yanıt vermiyor, bağlantı asılı kaldı) sonsuz "yükleniyor" yerine hata ve
+    // "Yeniden dene" gösterilir.
+    var reachedReady by remember(player) { mutableStateOf(false) }
+    LaunchedEffect(player, streamFailed) {
+        if (streamFailed || reachedReady) return@LaunchedEffect
+        delay(STREAM_START_TIMEOUT_MS)
+        if (!reachedReady && !streamFailed && player.playbackState != Player.STATE_READY) {
+            android.util.Log.w("PlayerScreen", "Stream did not start within ${STREAM_START_TIMEOUT_MS / 1000}s")
+            try { player.stop() } catch (e: Exception) { }
+            streamFailed = true
+        }
+    }
     var localRetryCount by remember(player) { mutableIntStateOf(0) }
 
     // Resim içinde resim: video oynarken ana ekran tuşuna basılınca küçük pencerede devam eder.
@@ -557,6 +571,7 @@ fun LegacyExoPlayerScreen(
             }
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) {
+                    reachedReady = true
                     val dur = player.duration / 1000
                     if (dur > 0) {
                         totalDuration = dur
@@ -576,6 +591,14 @@ fun LegacyExoPlayerScreen(
             }
             override fun onPlayerError(error: PlaybackException) {
                 android.util.Log.w("PlayerScreen", "ExoPlayer playback error: ${error.message} (${error.errorCodeName})")
+                // Canlı yayında oynatma canlı pencerenin gerisinde kaldı (uzun duraklatma / ağ kesintisi):
+                // yayın yeniden kurulmaz, en güncel noktadan devam edilir. Bu, deneme hakkını tüketmez.
+                if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+                    player.seekToDefaultPosition()
+                    player.prepare()
+                    player.playWhenReady = true
+                    return
+                }
                 val rawUrl = item.streamUrl.trim()
                 val sanitizedUrl = ExoPlayerConfigurator.sanitizeUrl(rawUrl)
                 val mediaUri = android.net.Uri.parse(sanitizedUrl)
@@ -1135,6 +1158,13 @@ fun LegacyExoPlayerScreen(
                     Modifier.fillMaxSize()
                 }
             )
+        
+            if (com.example.BuildConfig.FREE_WATCH_LIMIT && iptvViewModel != null && !isProUser) {
+                FreeTimeRemainingBadge(
+                    remainingSeconds = com.example.ui.IPTVViewModel.FREE_DAILY_WATCH_SECONDS - totalWatchSeconds,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp)
+                )
+            }
         }
 
         // PiP penceresinde yalnızca video görünür; kontroller, paneller ve pencereler gizlenir.
@@ -2859,3 +2889,35 @@ private fun isAutoRotateEnabled(context: Context): Boolean = try {
 } catch (e: Exception) {
     false
 }
+
+/**
+ * Ücretsiz sürümde günün son 15 dakikasında sağ alt köşede kalan süre (önce 5 sn belirgin, sonra yarı saydam).
+ * Süre dolduğunda oynayan içerik devam eder; yalnızca bilgi verilir. Yalnızca bu bileşen yeniden çizilir.
+ */
+@Composable
+private fun FreeTimeRemainingBadge(remainingSeconds: Long, modifier: Modifier = Modifier) {
+    if (remainingSeconds > 15 * 60) return
+    var emphasized by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(5_000)
+        emphasized = false
+    }
+    val alpha by animateFloatAsState(if (emphasized) 1f else 0.55f, label = "free_time_alpha")
+    val minutes = ((remainingSeconds + 59) / 60).coerceAtLeast(0)
+    Text(
+        text = if (remainingSeconds > 0) stringResource(R.string.player_free_time_left, minutes.toInt())
+        else stringResource(R.string.player_free_time_over),
+        color = Color.White,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = modifier
+            .graphicsLayer { this.alpha = alpha }
+            .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(10.dp))
+            .border(1.dp, CineOrange.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .testTag("player_free_time_badge")
+    )
+}
+
+/** Yayın bu süre içinde oynatılabilir duruma gelmezse hata gösterilir. */
+private const val STREAM_START_TIMEOUT_MS = 20_000L

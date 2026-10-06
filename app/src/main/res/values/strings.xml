@@ -641,4 +641,7 @@
     <string name="ai_report_send">Gönder</string>
     <string name="ai_report_thanks">Teşekkürler, bildiriminiz alındı. Bu yanıt gizlendi.</string>
     <string name="ai_report_hidden">Bu yanıtı bildirdiniz; gizlendi.</string>
+    <string name="pin_default_hint">PIN\'i değiştirmediysen varsayılan PIN: 0000. Ayarlar > Ebeveyn Kilidi\'nden değiştirebilirsin.</string>
+    <string name="player_free_time_left">Ücretsiz süre: %1$d dk</string>
+    <string name="player_free_time_over">Bugünkü ücretsiz süre doldu · bu içerik bitene kadar izleyebilirsin</string>
 </resources>

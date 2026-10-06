@@ -46,7 +46,8 @@ class UserPreferencesRepository(private val context: Context) {
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
-            preferences[PROFILE_AVATAR] ?: "avatar_1"
+            // Eski sürümlerin dış kaynaklı varsayılan fotoğrafı yerine paket içi avatar.
+            preferences[PROFILE_AVATAR]?.takeUnless { it.contains("images.unsplash.com") } ?: "avatar_1"
         }
 
     val isSetupCompletedFlow: Flow<Boolean> = context.userPreferencesDataStore.data

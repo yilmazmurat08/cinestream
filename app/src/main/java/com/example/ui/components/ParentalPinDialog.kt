@@ -138,8 +138,10 @@ fun ParentalPinDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // PIN hiç değiştirilmediyse varsayılanı söylenir (yetişkin klasörleri artık varsayılan olarak kilitli).
+                val pinIsDefault = viewModel.parentalPin.collectAsState().value == com.example.data.repository.SettingsRepository.DEFAULT_PARENTAL_PIN
                 Text(
-                    text = subtitle,
+                    text = if (pinIsDefault) subtitle + "\n" + stringResource(R.string.pin_default_hint) else subtitle,
                     fontSize = 13.sp,
                     color = Color(0xFFB0AEC7),
                     textAlign = TextAlign.Center,
