@@ -575,6 +575,14 @@ class IPTVViewModel(
         }
     }
 
+    /** Kullanıcının Gemini anahtarını cihazdaki tüm ayar depolarından siler. */
+    fun deleteGeminiApiKey() {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setGeminiApiKey("")
+            userPreferencesRepository.setGeminiApiKey("")
+        }
+    }
+
     fun validateAndSaveGeminiApiKey(
         key: String,
         onResult: (Boolean, String) -> Unit = { _, _ -> }

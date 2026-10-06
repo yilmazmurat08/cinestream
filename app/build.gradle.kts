@@ -86,8 +86,9 @@ android {
     getByName("androidTest").assets.directories.add("$projectDir/schemas")
   }
   lint {
-    abortOnError = false
-    checkReleaseBuilds = false
+    // Lint hataları (ör. NewApi, MissingPermission) derlemeyi durdurur; release derlemesinde de kontrol edilir.
+    abortOnError = true
+    checkReleaseBuilds = true
   }
   // Uygulama içinden TR/EN dil değiştirilebildiği için tüm dil kaynakları her kurulumda bulunmalı
   // (Play, AAB dil bölmesiyle yalnızca cihaz dilini indirirdi; lint AppBundleLocaleChanges).

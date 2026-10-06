@@ -196,7 +196,7 @@ class SettingsRepository(private val context: Context) {
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
-            preferences[GEMINI_API_KEY] ?: ""
+            com.example.util.SecretCipher.decrypt(preferences[GEMINI_API_KEY])
         }
 
     val tmdbApiKeyFlow: Flow<String> = context.dataStore.data
@@ -275,7 +275,7 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setGeminiApiKey(key: String) {
         context.dataStore.edit { preferences ->
-            preferences[GEMINI_API_KEY] = key
+            preferences[GEMINI_API_KEY] = com.example.util.SecretCipher.encrypt(key)
         }
     }
 

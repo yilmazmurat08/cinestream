@@ -645,4 +645,6 @@
     <string name="pin_default_hint">If you haven\'t changed it, the default PIN is 0000. You can change it in Settings > Parental Lock.</string>
     <string name="player_free_time_left">Free time: %1$d min</string>
     <string name="player_free_time_over">Today\'s free time is used up · you can finish this one</string>
+    <string name="settings_gemini_key_delete">Delete key</string>
+    <string name="settings_gemini_key_deleted">AI key deleted from this device.</string>
 </resources>

@@ -871,7 +871,7 @@ object MetadataEnricher {
             )
         }
 
-        val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key"))
+        val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
         val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
         if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")
@@ -1198,7 +1198,7 @@ object MetadataEnricher {
          */
         fast: Boolean = false
     ): String? = withContext(Dispatchers.IO) {
-        val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key"))
+        val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
         val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
         if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
             Log.w(TAG, "Gemini API Key is missing, placeholder, or default.")
@@ -2101,7 +2101,7 @@ object MetadataEnricher {
             Log.e(TAG, "Error reading cached person from Room DB", e)
         }
 
-        val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key"))
+        val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
         val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
         if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")

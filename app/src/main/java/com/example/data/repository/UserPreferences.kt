@@ -21,7 +21,7 @@ class UserPreferences(private val context: Context) {
 
     suspend fun saveUserSettings(apiKey: String, playlistUrl: String, epgUrl: String = "") {
         context.dataStore.edit { prefs ->
-            if (apiKey.isNotBlank()) prefs[GEMINI_API_KEY] = apiKey
+            if (apiKey.isNotBlank()) prefs[GEMINI_API_KEY] = com.example.util.SecretCipher.encrypt(apiKey)
             if (playlistUrl.isNotBlank()) prefs[MEDIA_PLAYLIST_URL] = playlistUrl
             if (epgUrl.isNotBlank()) prefs[MANUAL_EPG_URL] = epgUrl
         }

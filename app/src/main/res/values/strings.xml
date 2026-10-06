@@ -644,4 +644,6 @@
     <string name="pin_default_hint">PIN\'i değiştirmediysen varsayılan PIN: 0000. Ayarlar > Ebeveyn Kilidi\'nden değiştirebilirsin.</string>
     <string name="player_free_time_left">Ücretsiz süre: %1$d dk</string>
     <string name="player_free_time_over">Bugünkü ücretsiz süre doldu · bu içerik bitene kadar izleyebilirsin</string>
+    <string name="settings_gemini_key_delete">Anahtarı sil</string>
+    <string name="settings_gemini_key_deleted">Yapay zekâ anahtarı bu cihazdan silindi.</string>
 </resources>
