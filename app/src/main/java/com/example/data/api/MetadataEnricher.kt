@@ -620,7 +620,13 @@ object MetadataEnricher {
                     val epIdInt = epId.toIntOrNull() ?: continue
                     val epTitle = epObj.optString("title", "Bölüm ${i + 1}")
                     val containerExt = epObj.optString("container_extension", "mp4").ifEmpty { "mp4" }
-                    val epNum = epObj.optJSONObject("info")?.optInt("episode_num", i + 1) ?: (epObj.optInt("episode_num", i + 1))
+                    val epNum = com.example.data.model.SeriesParser.resolveXtreamEpisodeNumber(
+                        topLevel = epObj.optString("episode_num", ""),
+                        infoLevel = epObj.optJSONObject("info")?.optString("episode_num", ""),
+                        title = epTitle,
+                        seasonNumber = seasonNum,
+                        index = i
+                    )
                     val playUrl = "${creds.baseUrl}/series/${creds.user}/${creds.pass}/$epIdInt.$containerExt"
                     val epCover = epObj.optJSONObject("info")?.optString("movie_image", "") ?: ""
                     val syntheticId = -epIdInt
@@ -865,7 +871,7 @@ object MetadataEnricher {
             )
         }
 
-        val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key"))
+        val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
         val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
         if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")
@@ -908,15 +914,12 @@ object MetadataEnricher {
             }
 
             val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
-            val models = listOf("gemini-2.5-flash", "gemini-1.5-flash")
+            val models = com.example.util.GeminiApi.MODELS
             var responseBody: String? = null
             var lastError: String? = null
 
             for (model in models) {
-                val request = Request.Builder()
-                    .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
-                    .post(requestBody)
-                    .build()
+                val request = com.example.util.GeminiApi.request(model, apiKey, requestBody)
 
                 try {
                     val response = clientByTimeout.newCall(request).execute()
@@ -1195,7 +1198,7 @@ object MetadataEnricher {
          */
         fast: Boolean = false
     ): String? = withContext(Dispatchers.IO) {
-        val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key"))
+        val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
         val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
         if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
             Log.w(TAG, "Gemini API Key is missing, placeholder, or default.")
@@ -1225,20 +1228,17 @@ object MetadataEnricher {
         } else {
             null
         }
-        val models = listOf("gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-latest")
+        val models = com.example.util.GeminiApi.MODELS
         // Hızlı modda önce düşünmesiz istek; olmazsa normal istek.
         val attempts = buildList {
-            if (fastBody != null) add("gemini-2.5-flash" to fastBody)
+            if (fastBody != null) add(com.example.util.GeminiApi.FAST_MODEL to fastBody)
             models.forEach { add(it to plainBody) }
         }
         var responseBody: String? = null
         var lastError: String? = null
 
         for ((model, requestBody) in attempts) {
-            val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
-                .post(requestBody)
-                .build()
+            val request = com.example.util.GeminiApi.request(model, apiKey, requestBody)
 
             try {
                 val response = clientByTimeout.newCall(request).execute()
@@ -2101,7 +2101,7 @@ object MetadataEnricher {
             Log.e(TAG, "Error reading cached person from Room DB", e)
         }
 
-        val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key"))
+        val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
         val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
         if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")
@@ -2150,15 +2150,12 @@ object MetadataEnricher {
             }
 
             val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
-            val models = listOf("gemini-2.5-flash", "gemini-1.5-flash")
+            val models = com.example.util.GeminiApi.MODELS
             var responseBody: String? = null
             var lastError: String? = null
 
             for (model in models) {
-                val request = Request.Builder()
-                    .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
-                    .post(requestBody)
-                    .build()
+                val request = com.example.util.GeminiApi.request(model, apiKey, requestBody)
 
                 try {
                     val response = clientByTimeout.newCall(request).execute()
@@ -2292,7 +2289,7 @@ object MetadataEnricher {
     }
 
     /**
-     * Gemini AI "Günün Seçkisi": Requests Gemini model (gemini-1.5-flash / gemini-2.5-flash)
+     * Gemini AI "Günün Seçkisi": Requests Gemini (models in GeminiApi)
      * to generate 5 popular movies and 5 popular series formatted as JSON.
      */
     suspend fun getGeminiDailyPicks(

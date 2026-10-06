@@ -37,7 +37,7 @@ object ExoPlayerConfigurator {
                     var request = chain.request()
                     val requestBuilder = request.newBuilder()
                     if (request.header("User-Agent").isNullOrEmpty()) {
-                        requestBuilder.header("User-Agent", "VLC/3.0.18 (Linux; Android 11)")
+                        requestBuilder.header("User-Agent", com.example.util.AppUserAgent.app)
                     }
                     if (request.header("Accept").isNullOrEmpty()) {
                         requestBuilder.header("Accept", "*/*")
@@ -71,7 +71,7 @@ object ExoPlayerConfigurator {
                     val original = chain.request()
                     val requestBuilder = original.newBuilder()
                     if (original.header("User-Agent").isNullOrEmpty()) {
-                        requestBuilder.header("User-Agent", "IPTVSmartersPlayer")
+                        requestBuilder.header("User-Agent", com.example.util.AppUserAgent.app)
                     }
                     chain.proceed(requestBuilder.build())
                 }
@@ -179,7 +179,7 @@ object ExoPlayerConfigurator {
         )
 
         val httpDataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
-            .setUserAgent("VLC/3.0.18 (Linux; Android 11)")
+            .setUserAgent(com.example.util.AppUserAgent.app)
             .setDefaultRequestProperties(defaultRequestProperties)
 
         val dataSourceFactory = DefaultDataSource.Factory(wrappedContext, httpDataSourceFactory)

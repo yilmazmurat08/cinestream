@@ -63,7 +63,7 @@ object RadioPlayerManager {
                 .setAllowCrossProtocolRedirects(true)
                 .setConnectTimeoutMs(15_000)
                 .setReadTimeoutMs(20_000)
-                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 IPTVRadio/2.0")
+                .setUserAgent(com.example.util.AppUserAgent.app)
 
             val dataSourceFactory = DefaultDataSource.Factory(appContext, httpDataSourceFactory)
             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)

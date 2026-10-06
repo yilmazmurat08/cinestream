@@ -1,12 +1,9 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
-
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
-  alias(libs.plugins.google.services)
 }
 
 android {
@@ -17,8 +14,8 @@ android {
     applicationId = "com.cinestream.iptv"
     minSdk = 26
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 3
+    versionName = "1.0.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -89,8 +86,9 @@ android {
     getByName("androidTest").assets.directories.add("$projectDir/schemas")
   }
   lint {
-    abortOnError = false
-    checkReleaseBuilds = false
+    // Lint hataları (ör. NewApi, MissingPermission) derlemeyi durdurur; release derlemesinde de kontrol edilir.
+    abortOnError = true
+    checkReleaseBuilds = true
   }
   // Uygulama içinden TR/EN dil değiştirilebildiği için tüm dil kaynakları her kurulumda bulunmalı
   // (Play, AAB dil bölmesiyle yalnızca cihaz dilini indirirdi; lint AppBundleLocaleChanges).
@@ -125,16 +123,12 @@ ksp {
   arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-googleServices {
-  missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN
-}
 
 
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
-  implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
   // implementation(libs.androidx.camera.camera2)
@@ -167,8 +161,6 @@ dependencies {
   // QR kod (TV'de "Telefonla gir")
   implementation("com.google.zxing:core:3.5.3")
   implementation(libs.converter.moshi)
-  implementation(libs.firebase.ai)
-  implementation(libs.firebase.appcheck.recaptcha)
   implementation(libs.billing.ktx)
   implementation(libs.play.review)
   implementation(libs.play.review.ktx)

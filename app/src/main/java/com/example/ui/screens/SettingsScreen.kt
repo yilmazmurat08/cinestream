@@ -326,6 +326,11 @@ fun SettingsScreen(
                                 viewModel.validateAndSaveGeminiApiKey(apiKeyInputValue) { _, message ->
                                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                 }
+                            },
+                            onDeleteClick = {
+                                viewModel.deleteGeminiApiKey()
+                                apiKeyInputValue = ""
+                                Toast.makeText(context, context.getString(R.string.settings_gemini_key_deleted), Toast.LENGTH_SHORT).show()
                             }
                         )
 
@@ -462,6 +467,11 @@ fun SettingsScreen(
                             viewModel.validateAndSaveGeminiApiKey(apiKeyInputValue) { _, message ->
                                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                             }
+                        },
+                        onDeleteClick = {
+                            viewModel.deleteGeminiApiKey()
+                            apiKeyInputValue = ""
+                            Toast.makeText(context, context.getString(R.string.settings_gemini_key_deleted), Toast.LENGTH_SHORT).show()
                         }
                     )
 
@@ -2646,7 +2656,8 @@ fun GeminiApiKeyCard(
     apiKey: String,
     isValidating: Boolean,
     onApiKeyChange: (String) -> Unit,
-    onValidateClick: () -> Unit
+    onValidateClick: () -> Unit,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
@@ -2757,6 +2768,14 @@ fun GeminiApiKeyCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.settings_verify_save), fontWeight = FontWeight.Bold)
+                }
+            }
+            if (onDeleteClick != null && apiKey.isNotBlank()) {
+                TextButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.fillMaxWidth().testTag("gemini_api_key_delete_button")
+                ) {
+                    Text(stringResource(R.string.settings_gemini_key_delete), color = MaterialTheme.colorScheme.error)
                 }
             }
         }

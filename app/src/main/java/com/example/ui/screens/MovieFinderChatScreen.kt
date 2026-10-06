@@ -675,71 +675,85 @@ private fun ChatBubble(
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
         Column(modifier = Modifier.widthIn(max = 300.dp)) {
-            Box(
-                modifier = Modifier
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 18.dp, topEnd = 18.dp,
-                            bottomStart = if (isUser) 18.dp else 4.dp,
-                            bottomEnd = if (isUser) 4.dp else 18.dp
-                        )
-                    )
-                    .background(if (isUser) CineOrange else Color.White.copy(alpha = 0.08f))
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
-                Text(
-                    text = message.text,
-                    color = if (isUser) Color.Black else Color.White,
-                    fontSize = 14.sp,
-                    lineHeight = 19.sp
-                )
-            }
-
-            message.matchedItem?.let { item ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
+            if (isUser) {
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color.White.copy(alpha = 0.06f))
-                        .border(1.dp, CineOrange.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
-                        .clickable { onOpenItem(item) }
-                        .padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 4.dp))
+                        .background(CineOrange)
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
-                    SafeAsyncImage(
-                        model = item.logoUrl,
-                        contentDescription = item.cleanedName,
-                        modifier = Modifier
-                            .size(width = 46.dp, height = 64.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.chat_found_in_library),
-                            color = CineOrange,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = item.cleanedName,
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.PlayCircleFilled,
-                        contentDescription = stringResource(R.string.player_play_desc),
-                        tint = CineOrange,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    Text(text = message.text, color = Color.Black, fontSize = 14.sp, lineHeight = 19.sp)
+                }
+            } else {
+                // Yapay zekâ yanıtı: altında "yapay zekâ üretti" notu ve uygulama içi "Bildir" (Play AI politikası).
+                com.example.ui.components.AiReportableContent(response = message.text, screen = "chat") {
+                    AssistantBubble(message, onOpenItem)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AssistantBubble(message: ChatMessage, onOpenItem: (IPTVItem) -> Unit) {
+    Column {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp))
+                .background(Color.White.copy(alpha = 0.08f))
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Text(text = message.text, color = Color.White, fontSize = 14.sp, lineHeight = 19.sp)
+        }
+        message.matchedItem?.let { item -> LibraryMatchCard(item, onOpenItem) }
+    }
+}
+
+@Composable
+private fun LibraryMatchCard(item: IPTVItem, onOpenItem: (IPTVItem) -> Unit) {
+    Column {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White.copy(alpha = 0.06f))
+                    .border(1.dp, CineOrange.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                    .clickable { onOpenItem(item) }
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SafeAsyncImage(
+                    model = item.logoUrl,
+                    contentDescription = item.cleanedName,
+                    modifier = Modifier
+                        .size(width = 46.dp, height = 64.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.chat_found_in_library),
+                        color = CineOrange,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = item.cleanedName,
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.PlayCircleFilled,
+                    contentDescription = stringResource(R.string.player_play_desc),
+                    tint = CineOrange,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
     }
 }
 

@@ -4,7 +4,7 @@
 
 **Uygulama adı** (en fazla 30 karakter)
 
-CineStream: IPTV Oynatıcı
+CineStream AI TV
 
 **Kısa açıklama** (en fazla 80 karakter)
 
@@ -14,7 +14,7 @@ Kendi M3U/Xtream listenle canlı TV, film ve dizi; telefonda ve Android TV'de.
 
 CineStream, kendi IPTV listeni (M3U/M3U8 bağlantısı veya Xtream Codes bilgileri) ekleyerek canlı TV, film ve dizileri tek yerden izlemeni sağlayan modern bir medya oynatıcıdır. Telefonda ve Android TV'de aynı keyifle çalışır.
 
-ÖNEMLİ: CineStream bir oynatıcıdır. Hiçbir kanal, film, dizi veya yayın içeriği sağlamaz, satmaz ya da barındırmaz. Uygulamayı kullanmak için yasal olarak edindiğin kendi yayın listen gerekir.
+ÖNEMLİ: CineStream içerik sağlamaz; kendi playlist veya Xtream hesabınızı eklersiniz. Uygulama hiçbir kanal, film, dizi veya yayın içeriği satmaz ya da barındırmaz. Yalnızca erişim hakkına sahip olduğunuz kaynakları ekleyin.
 
 ÖNE ÇIKAN ÖZELLİKLER
 
@@ -22,12 +22,12 @@ CineStream, kendi IPTV listeni (M3U/M3U8 bağlantısı veya Xtream Codes bilgile
 • Android TV desteği: Kumandayla rahat gezinme, büyük ekran için tasarlanmış arayüz.
 • Telefondan kolay kurulum: TV'deki QR kodu okut, liste bilgilerini telefonundan gönder.
 • Uygulama içi fragmanlar: Fragmanlar YouTube'a gitmeden film ve dizi sayfasında oynar.
-• Yapay zekâ asistanı: Adını hatırlamadığın filmin sahnesini anlat, asistan kütüphanende arasın. Sesle arama da yapabilirsin. (Kendi Google Gemini API anahtarını ekleyerek kullanılır.)
+• Yapay zekâ film asistanı: Adını hatırlamadığın filmin sahnesini anlat, asistan kütüphanende arasın. Sesle arama da yapabilirsin. (Kendi Google Gemini API anahtarını ekleyerek kullanılır; her yanıt uygulama içinden bildirilebilir.)
 • Spoiler vermeyen bölüm özetleri: Kaldığın yere kadar olan bölümlerin kısa özetini yapay zekâyla oku.
 • Kaldığın yerden devam et: Yarım kalan film ve bölümler, izlenen bölümlerde "İzlendi" işareti.
 • Film ve dizi bilgileri: Afiş, özet, oyuncular ve puanlar (TMDB).
 • Yayın akışı (EPG) ve favoriler.
-• Ebeveyn kilidi: Yetişkin kategorilerini PIN ile gizle.
+• Ebeveyn kilidi: Yetişkin kategorileri varsayılan olarak PIN ile kilitli.
 • Türkçe ve İngilizce arayüz.
 
 ÜCRETSİZ VE PRO
@@ -46,7 +46,7 @@ Bu ürün TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamış ve
 
 **App name**
 
-CineStream: IPTV Player
+CineStream AI TV
 
 **Short description**
 
@@ -56,7 +56,7 @@ Watch live TV, films and series from your own M3U/Xtream list on phone and TV.
 
 CineStream is a modern media player that lets you watch live TV, films and series in one place by adding your own IPTV list (an M3U/M3U8 link or Xtream Codes details). It works just as well on phones and Android TV.
 
-IMPORTANT: CineStream is a player. It does not provide, sell or host any channels, films, series or broadcast content. You need your own legally obtained playlist to use the app.
+IMPORTANT: CineStream does not provide content; you add your own playlist or Xtream account. The app does not sell or host any channels, films, series or broadcast content. Only add sources you have the right to access.
 
 HIGHLIGHTS
 
@@ -64,12 +64,12 @@ HIGHLIGHTS
 • Android TV support: easy remote navigation and an interface designed for the big screen.
 • Easy setup from your phone: scan the QR code on your TV and send your list details from your phone.
 • In-app trailers: trailers play right on the film or series page, without leaving for YouTube.
-• AI assistant: describe a scene from a film you can't remember and the assistant searches your library. Voice search included. (Uses your own Google Gemini API key.)
+• AI film assistant: describe a scene from a film you can't remember and the assistant searches your library. Voice search included. (Uses your own Google Gemini API key; every answer can be reported in the app.)
 • Spoiler-free episode recaps: read a short AI summary of the episodes up to where you left off.
 • Continue watching: pick up unfinished films and episodes; watched episodes are marked.
 • Film and series details: posters, summaries, cast and ratings (TMDB).
 • Programme guide (EPG) and favourites.
-• Parental lock: hide adult categories with a PIN.
+• Parental lock: adult categories are PIN-locked by default.
 • Turkish and English interface.
 
 FREE AND PRO

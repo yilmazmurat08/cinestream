@@ -42,21 +42,20 @@ import com.example.ui.theme.SlateGray
 /**
  * Ana sayfa "Sinemada Bu Hafta" satırı. Liste kullanıcının ülkesinin sinemalarından gelir; başlığın
  * yanındaki ülke rozetine dokununca ülke değiştirilebilir (ya da otomatiğe dönülebilir).
- * Kütüphanede olan filmlerde "İzle" rozeti vardır ve dokununca doğrudan oynar; olmayanlarda
- * "Vizyonda" rozeti vardır ve dokununca TMDB bilgileriyle detay açılır.
+ * Satır yalnızca bilgi verir: her film "Vizyonda" rozetiyle gösterilir ve dokununca TMDB bilgileri ve
+ * fragmanla detay açılır. Vizyondaki filmler kullanıcının listesiyle eşleştirilmez ve buradan oynatılmaz
+ * (Google Play fikri mülkiyet politikası: oynatıcı korsan erişimi öne çıkarıyormuş gibi görünmemeli).
  */
 @Composable
 fun NowPlayingSection(
     entries: List<NowPlayingEntry>,
     region: NowPlayingRegionInfo?,
     onRegionSelected: (String?) -> Unit,
-    onPlay: (IPTVItem) -> Unit,
     onOpen: (IPTVItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (entries.isEmpty()) return
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
-    val inLibraryCount = entries.count { it.libraryItem != null }
     val english = region?.uiLanguage == "en"
     var showPicker by remember { mutableStateOf(false) }
 
@@ -64,9 +63,6 @@ fun NowPlayingSection(
         region != null && region.isGlobalFallback ->
             if (english) "No cinema list for ${region.name}, showing worldwide releases."
             else "${region.name} için sinema listesi bulunamadı, dünya genelinde vizyondakiler gösteriliyor."
-        inLibraryCount > 0 ->
-            if (english) "Now showing in cinemas. $inLibraryCount in your library, tap to play."
-            else "Vizyondaki filmler. $inLibraryCount tanesi kütüphanende, dokununca oynar."
         else -> if (english) "Now showing in cinemas." else "Vizyondaki filmler."
     }
 
@@ -140,10 +136,7 @@ fun NowPlayingSection(
                     entry = entry,
                     english = english,
                     width = layout.cardWidth,
-                    onClick = {
-                        val libraryItem = entry.libraryItem
-                        if (libraryItem != null) onPlay(libraryItem) else onOpen(entry.tmdbItem)
-                    }
+                    onClick = { onOpen(entry.tmdbItem) }
                 )
             }
         }
@@ -238,13 +231,12 @@ private fun NowPlayingCard(
     width: androidx.compose.ui.unit.Dp,
     onClick: () -> Unit
 ) {
-    val inLibrary = entry.libraryItem != null
     Column(
         modifier = Modifier
             .width(width)
             .clip(RoundedCornerShape(12.dp))
             .clickable(
-                onClickLabel = if (inLibrary) (if (english) "Play" else "Oynat") else (if (english) "Details" else "Ayrıntılar"),
+                onClickLabel = if (english) "Details" else "Ayrıntılar",
                 onClick = onClick
             )
             .testTag("now_playing_card_${entry.tmdbItem.id}")
@@ -257,7 +249,7 @@ private fun NowPlayingCard(
                 .background(Color(0xFF1E1A34))
                 .border(
                     width = 1.dp,
-                    color = if (inLibrary) AccentNeonPurple.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.08f),
+                    color = Color.White.copy(alpha = 0.08f),
                     shape = RoundedCornerShape(12.dp)
                 )
         ) {
@@ -272,21 +264,12 @@ private fun NowPlayingCard(
                     .align(Alignment.TopStart)
                     .padding(8.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(if (inLibrary) AccentNeonPurple else Color.Black.copy(alpha = 0.7f))
+                    .background(Color.Black.copy(alpha = 0.7f))
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (inLibrary) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                }
                 Text(
-                    text = if (inLibrary) (if (english) "Play" else "İzle") else (if (english) "In cinemas" else "Vizyonda"),
+                    text = if (english) "In cinemas" else "Vizyonda",
                     color = Color.White,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold

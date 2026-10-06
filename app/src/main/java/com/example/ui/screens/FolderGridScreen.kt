@@ -530,42 +530,42 @@ fun FolderCard(
             nameLower.contains("netflix") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF0F0F0F), Color(0xFF1F1F1F))),
                 Color(0xFFE50914),
-                if (isLive) context.getString(R.string.folder_tag_netflix_live) else if (isMovie) context.getString(R.string.folder_tag_netflix_movie) else if (isSeries) context.getString(R.string.folder_tag_netflix_series) else context.getString(R.string.folder_tag_netflix_other)
+                defaultTagline
             )
             nameLower.contains("prime") || nameLower.contains("amazon") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF0D1B2A), Color(0xFF1B263B))),
                 Color(0xFF00A8E1),
-                if (isLive) context.getString(R.string.folder_tag_prime_live) else if (isMovie) context.getString(R.string.folder_tag_prime_movie) else if (isSeries) context.getString(R.string.folder_tag_prime_series) else context.getString(R.string.folder_tag_prime_other)
+                defaultTagline
             )
             nameLower.contains("disney") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF020024), Color(0xFF090979), Color(0xFF1E3A8A))),
                 Color(0xFF38BDF8),
-                if (isLive) context.getString(R.string.folder_tag_disney_live) else if (isMovie) context.getString(R.string.folder_tag_disney_movie) else if (isSeries) context.getString(R.string.folder_tag_disney_series) else context.getString(R.string.folder_tag_disney_other)
+                defaultTagline
             )
             nameLower.contains("blu") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF030712), Color(0xFF1E3A8A))),
                 Color(0xFF3B82F6),
-                if (isLive) context.getString(R.string.folder_tag_blu_live) else if (isMovie) context.getString(R.string.folder_tag_blu_movie) else if (isSeries) context.getString(R.string.folder_tag_blu_series) else context.getString(R.string.folder_tag_blu_other)
+                defaultTagline
             )
             nameLower.contains("exxen") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF0F172A), Color(0xFF1E293B))),
                 Color(0xFFFACC15),
-                if (isLive) context.getString(R.string.folder_tag_exxen_live) else if (isMovie) context.getString(R.string.folder_tag_exxen_movie) else if (isSeries) context.getString(R.string.folder_tag_exxen_series) else context.getString(R.string.folder_tag_exxen_other)
+                defaultTagline
             )
             nameLower.contains("gain") || nameLower.contains("gaın") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF1C1917), Color(0xFF292524))),
                 Color(0xFF22C55E),
-                if (isLive) context.getString(R.string.folder_tag_gain_live) else if (isMovie) context.getString(R.string.folder_tag_gain_movie) else if (isSeries) context.getString(R.string.folder_tag_gain_series) else context.getString(R.string.folder_tag_gain_other)
+                defaultTagline
             )
             nameLower.contains("apple") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF000000), Color(0xFF27272A))),
                 Color.White,
-                if (isLive) context.getString(R.string.folder_tag_apple_live) else if (isMovie) context.getString(R.string.folder_tag_apple_movie) else if (isSeries) context.getString(R.string.folder_tag_apple_series) else context.getString(R.string.folder_tag_apple_other)
+                defaultTagline
             )
             nameLower.contains("bein") || nameLower.contains("connect") || nameLower.contains("tod") || nameLower.contains("spor") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF1E1B4B), Color(0xFF311042))),
                 Color(0xFFD946EF),
-                if (isLive) context.getString(R.string.folder_tag_sport_live) else if (isMovie) context.getString(R.string.folder_tag_sport_movie) else if (isSeries) context.getString(R.string.folder_tag_sport_series) else context.getString(R.string.folder_tag_sport_other)
+                defaultTagline
             )
             nameLower.contains("belgesel") || nameLower.contains("docu") -> Triple(
                 Brush.horizontalGradient(colors = listOf(Color(0xFF064E3B), Color(0xFF022C22))),

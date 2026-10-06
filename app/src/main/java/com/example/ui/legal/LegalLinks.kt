@@ -1,5 +1,18 @@
 package com.example.ui.legal
 
+import android.app.ActivityManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.SmartDisplay
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.BuildConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,7 +65,9 @@ fun LegalLinks(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier, color:
 
 /** Ayarlar > Yasal kartı (telefon ve TV ayar panelinde aynı kart). */
 @Composable
-fun LegalSettingsCard(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier) {
+fun LegalSettingsCard(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier, showTmdbNotice: Boolean = true) {
+    val context = LocalContext.current
+    var confirmDelete by remember { mutableStateOf(false) }
     Card(
         modifier = modifier.fillMaxWidth().testTag("legal_settings_card"),
         shape = RoundedCornerShape(16.dp),
@@ -71,7 +86,57 @@ fun LegalSettingsCard(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier)
             LegalRow(Icons.Outlined.Description, stringResource(R.string.legal_terms), "legal_open_terms") { onOpen(LegalDoc.TERMS) }
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
             LegalRow(Icons.Outlined.PrivacyTip, stringResource(R.string.legal_privacy), "legal_open_privacy") { onOpen(LegalDoc.PRIVACY) }
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            LegalRow(Icons.Outlined.SmartDisplay, stringResource(R.string.legal_youtube_terms), "legal_open_youtube_terms") {
+                openUrl(context, YOUTUBE_TERMS_URL)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            LegalRow(Icons.Outlined.DeleteForever, stringResource(R.string.legal_delete_all_data), "legal_delete_all_data") {
+                confirmDelete = true
+            }
+            Text(
+                stringResource(R.string.app_disclaimer), fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                modifier = Modifier.padding(top = 10.dp).testTag("settings_disclaimer")
+            )
+            if (showTmdbNotice) {
+                Text(
+                    stringResource(R.string.settings_tmdb_notice), fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+            Text(
+                stringResource(R.string.legal_app_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.padding(top = 6.dp).testTag("settings_app_version")
+            )
         }
+    }
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.legal_delete_all_title)) },
+            text = { Text(stringResource(R.string.legal_delete_all_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    // Tüm uygulama verilerini (listeler, ayarlar, anahtar, geçmiş) siler; sistem uygulamayı kapatır.
+                    (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.clearApplicationUserData()
+                }) { Text(stringResource(R.string.legal_delete_all_confirm), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) } }
+        )
+    }
+}
+
+private const val YOUTUBE_TERMS_URL = "https://www.youtube.com/t/terms"
+
+private fun openUrl(context: Context, url: String) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (e: Exception) {
+        // Tarayıcı yoksa (bazı TV'ler) sessizce geçilir.
     }
 }
 

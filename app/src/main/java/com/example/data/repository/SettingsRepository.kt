@@ -15,6 +15,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "us
 class SettingsRepository(private val context: Context) {
 
     companion object {
+        const val DEFAULT_PARENTAL_PIN = "0000"
         val HARDWARE_ACCELERATION = booleanPreferencesKey("hardware_acceleration")
         val BUFFER_SIZE = stringPreferencesKey("buffer_size")
         val REDUCE_CELLULAR_QUALITY = booleanPreferencesKey("reduce_cellular_quality")
@@ -73,7 +74,8 @@ class SettingsRepository(private val context: Context) {
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
-            preferences[PROFILE_AVATAR] ?: "avatar_1"
+            // Eski sürümlerin dış kaynaklı varsayılan fotoğrafı yerine paket içi avatar.
+            preferences[PROFILE_AVATAR]?.takeUnless { it.contains("images.unsplash.com") } ?: "avatar_1"
         }
 
     val syncIntervalFlow: Flow<String> = context.dataStore.data
@@ -179,21 +181,22 @@ class SettingsRepository(private val context: Context) {
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
-            preferences[PARENTAL_LOCK] ?: false
+            // Yetişkin kategorileri varsayılan olarak kilitli; kullanıcı Ayarlar'dan kapatabilir.
+            preferences[PARENTAL_LOCK] ?: true
         }
 
     val parentalPinFlow: Flow<String> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
-            preferences[PARENTAL_PIN] ?: "0000"
+            preferences[PARENTAL_PIN] ?: DEFAULT_PARENTAL_PIN
         }
 
     val geminiApiKeyFlow: Flow<String> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
-            preferences[GEMINI_API_KEY] ?: ""
+            com.example.util.SecretCipher.decrypt(preferences[GEMINI_API_KEY])
         }
 
     val tmdbApiKeyFlow: Flow<String> = context.dataStore.data
@@ -272,7 +275,7 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setGeminiApiKey(key: String) {
         context.dataStore.edit { preferences ->
-            preferences[GEMINI_API_KEY] = key
+            preferences[GEMINI_API_KEY] = com.example.util.SecretCipher.encrypt(key)
         }
     }
 

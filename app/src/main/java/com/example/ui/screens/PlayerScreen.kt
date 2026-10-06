@@ -88,6 +88,7 @@ import com.example.ui.IPTVViewModel
 import com.example.ui.theme.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.coroutineScope
 import kotlin.math.max
@@ -203,7 +204,10 @@ fun LegacyExoPlayerScreen(
     var currentAspectRatioMode by remember { mutableStateOf(AspectRatioMode.FILL) }
     var showAspectRatioBadge by remember { mutableStateOf<String?>(null) }
     val configuration = LocalConfiguration.current
-    var isLandscapeMode by remember { mutableStateOf(true) }
+    // Oynatıcı yatay açılır, sonra telefonun yönünü takip eder. Tam ekran düğmesi yönü zorlar; telefon o yöne
+    // fiziksel olarak çevrilince zorlama kalkar ve yön yeniden sensöre bırakılır (otomatik döndürme açıksa).
+    var forcedPlayerOrientation by remember { mutableStateOf<Int?>(Configuration.ORIENTATION_LANDSCAPE) }
+    val isLandscapeMode = isTvDevice || configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // Screen Lock
     var isScreenLocked by remember { mutableStateOf(false) }
@@ -246,9 +250,10 @@ fun LegacyExoPlayerScreen(
     var hasRecordedSession by remember(item.id) { mutableStateOf(false) }
 
     // Check watch limit effect
-    LaunchedEffect(totalWatchSeconds, isProUser) {
-        // Günlük ücretsiz süre doldu mu? (gün değişimi anlık kontrol edilir; gece yarısından sonra yeniden izlenebilir)
-        if (iptvViewModel?.isFreeWatchLimitReached() == true) {
+    // Günlük ücretsiz süre yalnızca yeni bir içerik başlatılırken kontrol edilir: süre izlerken dolarsa
+    // oynayan içerik kesilmez (gece yarısından sonra süre yeniden başlar).
+    LaunchedEffect(item.id) {
+        if (iptvViewModel?.isFreeWatchLimitReachedNow() == true) {
             player.stop()
             iptvViewModel.openPaywall(context.getString(R.string.paywall_reason_daily_limit))
         }
@@ -371,7 +376,6 @@ fun LegacyExoPlayerScreen(
 
     // Keep screen awake during playback + durum çubuğunu gizle (immersive mod)
     DisposableEffect(Unit) {
-        val originalOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         activity?.window?.let { window ->
             WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -386,7 +390,6 @@ fun LegacyExoPlayerScreen(
             }
         }
         onDispose {
-            activity?.requestedOrientation = originalOrientation
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             // Oynatıcıda parmakla ayarlanan parlaklık yalnızca oynatıcı için geçerli; çıkınca sistem ayarına dön.
             activity?.window?.let { window ->
@@ -403,14 +406,27 @@ fun LegacyExoPlayerScreen(
 
     // Tam ekran (yatay, sistem çubukları gizli) / küçült (dikey, sistem çubukları görünür).
     // TV'de ekran yönüne dokunulmaz; her zaman tam ekrandır.
-    LaunchedEffect(isLandscapeMode) {
+    // Uygulamanın kendi yönüne dönüş MainActivity'dedir (oynatıcıdan çıkınca); burada yalnızca oynatıcı yönü ayarlanır.
+    LaunchedEffect(forcedPlayerOrientation) {
         if (!isTvDevice) {
-            activity?.requestedOrientation = if (isLandscapeMode) {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            }
+            activity?.requestedOrientation = playerRequestedOrientation(forcedPlayerOrientation)
         }
+    }
+    if (!isTvDevice) {
+        DisposableEffect(context) {
+            val listener = object : android.view.OrientationEventListener(context) {
+                override fun onOrientationChanged(degrees: Int) {
+                    val forced = forcedPlayerOrientation ?: return
+                    if (tvMode) return // Telefonda TV modu hep yataydır.
+                    if (degrees == ORIENTATION_UNKNOWN || !isAutoRotateEnabled(context)) return
+                    if (physicalOrientationOf(degrees) == forced) forcedPlayerOrientation = null
+                }
+            }
+            if (listener.canDetectOrientation()) listener.enable()
+            onDispose { listener.disable() }
+        }
+    }
+    LaunchedEffect(isLandscapeMode) {
         activity?.window?.let { window ->
             WindowCompat.setDecorFitsSystemWindows(window, false)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
@@ -498,6 +514,18 @@ fun LegacyExoPlayerScreen(
 
     // Yayın tüm denemelere rağmen açılamazsa hata penceresi gösterilir ("Tekrar dene" sayacı sıfırlar).
     var streamFailed by remember(player) { mutableStateOf(false) }
+    // Yayın hiç başlamazsa (sunucu yanıt vermiyor, bağlantı asılı kaldı) sonsuz "yükleniyor" yerine hata ve
+    // "Yeniden dene" gösterilir.
+    var reachedReady by remember(player) { mutableStateOf(false) }
+    LaunchedEffect(player, streamFailed) {
+        if (streamFailed || reachedReady) return@LaunchedEffect
+        delay(STREAM_START_TIMEOUT_MS)
+        if (!reachedReady && !streamFailed && player.playbackState != Player.STATE_READY) {
+            android.util.Log.w("PlayerScreen", "Stream did not start within ${STREAM_START_TIMEOUT_MS / 1000}s")
+            try { player.stop() } catch (e: Exception) { }
+            streamFailed = true
+        }
+    }
     var localRetryCount by remember(player) { mutableIntStateOf(0) }
 
     // Resim içinde resim: video oynarken ana ekran tuşuna basılınca küçük pencerede devam eder.
@@ -543,6 +571,7 @@ fun LegacyExoPlayerScreen(
             }
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) {
+                    reachedReady = true
                     val dur = player.duration / 1000
                     if (dur > 0) {
                         totalDuration = dur
@@ -562,6 +591,14 @@ fun LegacyExoPlayerScreen(
             }
             override fun onPlayerError(error: PlaybackException) {
                 android.util.Log.w("PlayerScreen", "ExoPlayer playback error: ${error.message} (${error.errorCodeName})")
+                // Canlı yayında oynatma canlı pencerenin gerisinde kaldı (uzun duraklatma / ağ kesintisi):
+                // yayın yeniden kurulmaz, en güncel noktadan devam edilir. Bu, deneme hakkını tüketmez.
+                if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+                    player.seekToDefaultPosition()
+                    player.prepare()
+                    player.playWhenReady = true
+                    return
+                }
                 val rawUrl = item.streamUrl.trim()
                 val sanitizedUrl = ExoPlayerConfigurator.sanitizeUrl(rawUrl)
                 val mediaUri = android.net.Uri.parse(sanitizedUrl)
@@ -1121,6 +1158,13 @@ fun LegacyExoPlayerScreen(
                     Modifier.fillMaxSize()
                 }
             )
+        
+            if (com.example.BuildConfig.FREE_WATCH_LIMIT && iptvViewModel != null && !isProUser) {
+                FreeTimeRemainingBadge(
+                    remainingSeconds = com.example.ui.IPTVViewModel.FREE_DAILY_WATCH_SECONDS - totalWatchSeconds,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp)
+                )
+            }
         }
 
         // PiP penceresinde yalnızca video görünür; kontroller, paneller ve pencereler gizlenir.
@@ -1655,7 +1699,11 @@ fun LegacyExoPlayerScreen(
                             if (!isTvDevice) {
                                 Surface(
                                     onClick = {
-                                        isLandscapeMode = !isLandscapeMode
+                                        forcedPlayerOrientation = if (isLandscapeMode) {
+                                            Configuration.ORIENTATION_PORTRAIT
+                                        } else {
+                                            Configuration.ORIENTATION_LANDSCAPE
+                                        }
                                         resetControlsTimer()
                                     },
                                     shape = CircleShape,
@@ -2231,13 +2279,15 @@ fun LegacyExoPlayerScreen(
                                                 )
                                             }
                                             Spacer(modifier = Modifier.height(6.dp))
-                                            Text(
-                                                text = aiRecapText ?: "",
-                                                color = Color.White.copy(alpha = 0.85f),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                lineHeight = 18.sp
-                                            )
+                                            com.example.ui.components.AiReportableContent(response = aiRecapText ?: "", screen = "player_recap") {
+                                                Text(
+                                                    text = aiRecapText ?: "",
+                                                    color = Color.White.copy(alpha = 0.85f),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    lineHeight = 18.sp
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -2819,3 +2869,55 @@ private fun formatTime(seconds: Long): String {
         String.format("%02d:%02d", m, s)
     }
 }
+
+/** Zorlanan yön yoksa sensör (kullanıcının döndürme kilidine uyar), varsa o yön. */
+internal fun playerRequestedOrientation(forced: Int?): Int = when (forced) {
+    Configuration.ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    Configuration.ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    else -> ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+}
+
+/** Sensör açısından telefonun tutuluş yönü; çaprazda (geçişte) null. */
+internal fun physicalOrientationOf(degrees: Int): Int? = when (degrees) {
+    in 0..25, in 335..359 -> Configuration.ORIENTATION_PORTRAIT
+    in 65..115, in 245..295 -> Configuration.ORIENTATION_LANDSCAPE
+    else -> null
+}
+
+private fun isAutoRotateEnabled(context: Context): Boolean = try {
+    android.provider.Settings.System.getInt(context.contentResolver, android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) == 1
+} catch (e: Exception) {
+    false
+}
+
+/**
+ * Ücretsiz sürümde günün son 15 dakikasında sağ alt köşede kalan süre (önce 5 sn belirgin, sonra yarı saydam).
+ * Süre dolduğunda oynayan içerik devam eder; yalnızca bilgi verilir. Yalnızca bu bileşen yeniden çizilir.
+ */
+@Composable
+private fun FreeTimeRemainingBadge(remainingSeconds: Long, modifier: Modifier = Modifier) {
+    if (remainingSeconds > 15 * 60) return
+    var emphasized by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(5_000)
+        emphasized = false
+    }
+    val alpha by animateFloatAsState(if (emphasized) 1f else 0.55f, label = "free_time_alpha")
+    val minutes = ((remainingSeconds + 59) / 60).coerceAtLeast(0)
+    Text(
+        text = if (remainingSeconds > 0) stringResource(R.string.player_free_time_left, minutes.toInt())
+        else stringResource(R.string.player_free_time_over),
+        color = Color.White,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = modifier
+            .graphicsLayer { this.alpha = alpha }
+            .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(10.dp))
+            .border(1.dp, CineOrange.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .testTag("player_free_time_badge")
+    )
+}
+
+/** Yayın bu süre içinde oynatılabilir duruma gelmezse hata gösterilir. */
+private const val STREAM_START_TIMEOUT_MS = 20_000L

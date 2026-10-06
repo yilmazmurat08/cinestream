@@ -516,7 +516,6 @@ fun HomeScreen(
                                         entries = nowPlaying,
                                         region = nowPlayingRegion,
                                         onRegionSelected = { code -> viewModel.setNowPlayingRegion(code) },
-                                        onPlay = { item -> onPlayItem(item) },
                                         onOpen = { item -> viewModel.selectItem(item) },
                                         modifier = Modifier.fillMaxWidth().wrapContentHeight()
                                     )
