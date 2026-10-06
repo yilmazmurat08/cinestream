@@ -377,14 +377,22 @@ private fun TvChatBubble(message: IPTVViewModel.ChatMessage, onOpenItem: (IPTVIt
     val isUser = message.role == "user"
     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start) {
         Column(Modifier.widthIn(max = 640.dp)) {
-            TvFocusableText(
-                text = message.text,
-                background = if (isUser) TvTheme.Accent.copy(alpha = 0.85f) else TvTheme.Glass,
-                shape = RoundedCornerShape(
-                    topStart = 20.dp, topEnd = 20.dp,
-                    bottomStart = if (isUser) 20.dp else 6.dp, bottomEnd = if (isUser) 6.dp else 20.dp
+            val bubble: @Composable () -> Unit = {
+                TvFocusableText(
+                    text = message.text,
+                    background = if (isUser) TvTheme.Accent.copy(alpha = 0.85f) else TvTheme.Glass,
+                    shape = RoundedCornerShape(
+                        topStart = 20.dp, topEnd = 20.dp,
+                        bottomStart = if (isUser) 20.dp else 6.dp, bottomEnd = if (isUser) 6.dp else 20.dp
+                    )
                 )
-            )
+            }
+            if (isUser) {
+                bubble()
+            } else {
+                // Yapay zekâ yanıtı: "yapay zekâ üretti" notu ve kumandayla seçilebilen "Bildir" (Play AI politikası).
+                com.example.ui.components.AiReportableContent(response = message.text, screen = "tv_assistant", content = bubble)
+            }
             val found = message.matchedItems.ifEmpty { listOfNotNull(message.matchedItem) }
             if (found.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))

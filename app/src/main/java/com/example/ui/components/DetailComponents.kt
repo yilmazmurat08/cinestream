@@ -306,14 +306,16 @@ fun GeminiSpoilerFreeSummaryCard(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = aiSummary.orEmpty(),
-                    color = Color.White.copy(alpha = 0.95f),
-                    fontSize = 14.sp,
-                    lineHeight = 22.sp,
-                    maxLines = if (isExpanded) Int.MAX_VALUE else 3,
-                    overflow = TextOverflow.Ellipsis
-                )
+                com.example.ui.components.AiReportableContent(response = aiSummary.orEmpty(), screen = "detail_summary") {
+                    Text(
+                        text = aiSummary.orEmpty(),
+                        color = Color.White.copy(alpha = 0.95f),
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         } else if (errorMessage != null) {
             Row(

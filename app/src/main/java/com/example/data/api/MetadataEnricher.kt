@@ -914,15 +914,12 @@ object MetadataEnricher {
             }
 
             val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
-            val models = listOf("gemini-2.5-flash", "gemini-1.5-flash")
+            val models = com.example.util.GeminiApi.MODELS
             var responseBody: String? = null
             var lastError: String? = null
 
             for (model in models) {
-                val request = Request.Builder()
-                    .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
-                    .post(requestBody)
-                    .build()
+                val request = com.example.util.GeminiApi.request(model, apiKey, requestBody)
 
                 try {
                     val response = clientByTimeout.newCall(request).execute()
@@ -1231,20 +1228,17 @@ object MetadataEnricher {
         } else {
             null
         }
-        val models = listOf("gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-latest")
+        val models = com.example.util.GeminiApi.MODELS
         // Hızlı modda önce düşünmesiz istek; olmazsa normal istek.
         val attempts = buildList {
-            if (fastBody != null) add("gemini-2.5-flash" to fastBody)
+            if (fastBody != null) add(com.example.util.GeminiApi.FAST_MODEL to fastBody)
             models.forEach { add(it to plainBody) }
         }
         var responseBody: String? = null
         var lastError: String? = null
 
         for ((model, requestBody) in attempts) {
-            val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
-                .post(requestBody)
-                .build()
+            val request = com.example.util.GeminiApi.request(model, apiKey, requestBody)
 
             try {
                 val response = clientByTimeout.newCall(request).execute()
@@ -2156,15 +2150,12 @@ object MetadataEnricher {
             }
 
             val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
-            val models = listOf("gemini-2.5-flash", "gemini-1.5-flash")
+            val models = com.example.util.GeminiApi.MODELS
             var responseBody: String? = null
             var lastError: String? = null
 
             for (model in models) {
-                val request = Request.Builder()
-                    .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
-                    .post(requestBody)
-                    .build()
+                val request = com.example.util.GeminiApi.request(model, apiKey, requestBody)
 
                 try {
                     val response = clientByTimeout.newCall(request).execute()
@@ -2298,7 +2289,7 @@ object MetadataEnricher {
     }
 
     /**
-     * Gemini AI "Günün Seçkisi": Requests Gemini model (gemini-1.5-flash / gemini-2.5-flash)
+     * Gemini AI "Günün Seçkisi": Requests Gemini (models in GeminiApi)
      * to generate 5 popular movies and 5 popular series formatted as JSON.
      */
     suspend fun getGeminiDailyPicks(

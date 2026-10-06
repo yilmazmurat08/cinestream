@@ -2249,13 +2249,15 @@ fun LegacyExoPlayerScreen(
                                                 )
                                             }
                                             Spacer(modifier = Modifier.height(6.dp))
-                                            Text(
-                                                text = aiRecapText ?: "",
-                                                color = Color.White.copy(alpha = 0.85f),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                lineHeight = 18.sp
-                                            )
+                                            com.example.ui.components.AiReportableContent(response = aiRecapText ?: "", screen = "player_recap") {
+                                                Text(
+                                                    text = aiRecapText ?: "",
+                                                    color = Color.White.copy(alpha = 0.85f),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    lineHeight = 18.sp
+                                                )
+                                            }
                                         }
                                     }
                                 }

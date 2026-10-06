@@ -1400,13 +1400,22 @@ fun AIRecapDialog(
                             )
                         }
                     } else {
-                        Text(
-                            text = recapText ?: stringResource(R.string.series_recap_unavailable),
-                            color = if (currentTheme.isDark) Color.White.copy(alpha = 0.95f) else Color.Black.copy(alpha = 0.85f),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 22.sp
-                        )
+                        val recapColor = if (currentTheme.isDark) Color.White else Color.Black
+                        val recapBody: @Composable () -> Unit = {
+                            Text(
+                                text = recapText ?: stringResource(R.string.series_recap_unavailable),
+                                color = if (currentTheme.isDark) Color.White.copy(alpha = 0.95f) else Color.Black.copy(alpha = 0.85f),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                lineHeight = 22.sp
+                            )
+                        }
+                        val generated = recapText
+                        if (generated != null && generated != stringResource(R.string.series_recap_unavailable)) {
+                            com.example.ui.components.AiReportableContent(response = generated, screen = "series_recap", textColor = recapColor, content = recapBody)
+                        } else {
+                            recapBody()
+                        }
                     }
                 }
 

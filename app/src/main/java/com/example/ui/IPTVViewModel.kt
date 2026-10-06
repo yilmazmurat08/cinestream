@@ -615,14 +615,11 @@ class IPTVViewModel(
             }.toString()
 
             val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
-            val models = listOf("gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-latest")
+            val models = com.example.util.GeminiApi.MODELS
             var valid = false
 
             for (model in models) {
-                val request = okhttp3.Request.Builder()
-                    .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
-                    .post(requestBody)
-                    .build()
+                val request = com.example.util.GeminiApi.request(model, apiKey, requestBody)
 
                 try {
                     val response = client.newCall(request).execute()

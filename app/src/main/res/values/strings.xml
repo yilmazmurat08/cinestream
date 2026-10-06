@@ -629,4 +629,16 @@
     <string name="legal_delete_all_message">Listeleriniz, ayarlarınız, yapay zekâ anahtarınız ve izleme geçmişiniz bu cihazdan kalıcı olarak silinir ve uygulama kapanır. PRO satın alımınız Google Play hesabınızda kalır.</string>
     <string name="legal_delete_all_confirm">Sil</string>
     <string name="legal_app_version">Sürüm %1$s (%2$d)</string>
+    <string name="ai_generated_notice">Yapay zekâ tarafından üretildi; hatalı olabilir.</string>
+    <string name="ai_report_action">Bildir</string>
+    <string name="ai_report_title">Bu yanıtı bildir</string>
+    <string name="ai_report_reason_harmful">Zararlı veya saldırgan</string>
+    <string name="ai_report_reason_sexual">Cinsel veya uygunsuz</string>
+    <string name="ai_report_reason_wrong">Yanlış veya yanıltıcı bilgi</string>
+    <string name="ai_report_reason_off_topic">Konu dışı</string>
+    <string name="ai_report_reason_other">Diğer</string>
+    <string name="ai_report_note_hint">Not (isteğe bağlı)</string>
+    <string name="ai_report_send">Gönder</string>
+    <string name="ai_report_thanks">Teşekkürler, bildiriminiz alındı. Bu yanıt gizlendi.</string>
+    <string name="ai_report_hidden">Bu yanıtı bildirdiniz; gizlendi.</string>
 </resources>

@@ -383,7 +383,10 @@ fun TvDetailScreen(
                                 Spacer(Modifier.width(12.dp))
                                 Text(stringResource(R.string.detail_ai_analyzing), color = TvTheme.TextSecondary, fontSize = 15.sp)
                             }
-                            else -> TvReadableText(aiText ?: stringResource(R.string.series_recap_unavailable), "tv_series_recap_text")
+                            aiText != null -> com.example.ui.components.AiReportableContent(response = aiText.orEmpty(), screen = "tv_series_recap") {
+                                TvReadableText(aiText.orEmpty(), "tv_series_recap_text")
+                            }
+                            else -> TvReadableText(stringResource(R.string.series_recap_unavailable), "tv_series_recap_text")
                         }
                     }
                 }
