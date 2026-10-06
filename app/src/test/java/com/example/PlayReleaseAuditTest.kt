@@ -88,6 +88,14 @@ class PlayReleaseAuditTest {
     }
 
     @Test
+    fun gemini_usesOnlyTheUsersOwnKey() {
+        // Uygulamaya gömülü anahtar yok: kullanıcı anahtar girmediyse yapay zekâ kapalıdır.
+        assertFalse(com.example.ui.tv.hasUsableGeminiKey(""))
+        assertTrue(com.example.ui.tv.hasUsableGeminiKey("AIzaUSERKEY"))
+        assertFalse(BuildConfig::class.java.declaredFields.any { it.name == "GEMINI_API_KEY" })
+    }
+
+    @Test
     fun aiReport_hidesReportedResponse() {
         val text = "Önerdiğim film: Örnek"
         assertFalse(AiReportStore.isHidden(context, text))

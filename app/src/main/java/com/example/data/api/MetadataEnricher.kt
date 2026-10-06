@@ -872,8 +872,8 @@ object MetadataEnricher {
         }
 
         val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
-        val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
+        val apiKey = savedKey // yalnızca kullanıcının kendi anahtarı; uygulamaya gömülü anahtar yok
+        if (apiKey.isBlank()) {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")
             return@withContext generateLocalMovieMetadata(item)
         }
@@ -1199,8 +1199,8 @@ object MetadataEnricher {
         fast: Boolean = false
     ): String? = withContext(Dispatchers.IO) {
         val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
-        val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
+        val apiKey = savedKey // yalnızca kullanıcının kendi anahtarı; uygulamaya gömülü anahtar yok
+        if (apiKey.isBlank()) {
             Log.w(TAG, "Gemini API Key is missing, placeholder, or default.")
             return@withContext null
         }
@@ -2102,8 +2102,8 @@ object MetadataEnricher {
         }
 
         val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
-        val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
+        val apiKey = savedKey // yalnızca kullanıcının kendi anahtarı; uygulamaya gömülü anahtar yok
+        if (apiKey.isBlank()) {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")
             return@withContext generateLocalPersonDetails(name, role)
         }

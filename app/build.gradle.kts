@@ -99,16 +99,15 @@ android {
   }
 }
 
-// Automatically generate .env file from environment variables if present without committing secrets
+// Automatically generate .env file from environment variables if present without committing secrets.
+// Gemini anahtarı uygulamaya gömülmez: yapay zekâ yalnızca kullanıcının kendi girdiği anahtarla çalışır.
 val envFile = rootProject.file(".env")
-val envApiKey = System.getenv("GEMINI_API_KEY") ?: ""
 val tmdbApiKey = System.getenv("TMDB_API_KEY") ?: ""
 val youtubeApiKey = System.getenv("YOUTUBE_API_KEY") ?: ""
-val finalGemini = envApiKey.ifEmpty { "placeholder" }
 val finalTmdb = tmdbApiKey.ifEmpty { "placeholder" }
 val finalYoutube = youtubeApiKey.ifEmpty { "placeholder" }
-if (!envFile.exists() || envApiKey.isNotEmpty() || tmdbApiKey.isNotEmpty() || youtubeApiKey.isNotEmpty()) {
-  envFile.writeText("GEMINI_API_KEY=\"$finalGemini\"\nTMDB_API_KEY=\"$finalTmdb\"\nYOUTUBE_API_KEY=\"$finalYoutube\"\n")
+if (!envFile.exists() || envFile.readText().contains("GEMINI_API_KEY") || tmdbApiKey.isNotEmpty() || youtubeApiKey.isNotEmpty()) {
+  envFile.writeText("TMDB_API_KEY=\"$finalTmdb\"\nYOUTUBE_API_KEY=\"$finalYoutube\"\n")
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
