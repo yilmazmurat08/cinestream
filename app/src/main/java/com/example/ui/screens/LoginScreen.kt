@@ -687,6 +687,14 @@ fun LoginScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
+                Text(
+                    text = stringResource(R.string.app_disclaimer),
+                    color = Color.White.copy(alpha = 0.55f),
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp).testTag("login_disclaimer")
+                )
+
                 // Hizmet Şartları ve Gizlilik Politikası (telefon ve TV modunda; kumandayla da seçilebilir).
                 com.example.ui.legal.LegalLinks(
                     onOpen = { doc -> viewModel?.openLegal(doc) },
@@ -1044,17 +1052,10 @@ fun StepOneVisual() {
             Row(
                 modifier = Modifier
                     .background(Color.White, RoundedCornerShape(6.dp))
-                    .border(1.dp, Color(0xFF4285F4).copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                    .border(1.dp, Color(0xFF5F6368).copy(alpha = 0.3f), RoundedCornerShape(6.dp))
                     .padding(horizontal = 10.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "G",
-                    color = Color(0xFF4285F4),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = stringResource(R.string.login_google),
                     color = Color(0xFF5F6368),

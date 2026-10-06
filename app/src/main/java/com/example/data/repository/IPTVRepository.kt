@@ -173,16 +173,8 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
         }
     }
 
-    private val IPTV_USER_AGENTS = listOf(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "VLC/3.0.18 (Linux; Android 11)",
-        "IPTVSmartersPro/3.1.5.1 (Android; TV)",
-        "TiviMate/4.7.0 (Android TV)",
-        "OTT Navigator/1.6.8.5 (Android TV)",
-        "AppleCoreMedia/1.0.0.19E241 (iPad; CPU OS 15_4 like Mac OS X)",
-        "ExoPlayerDemo/2.18.0 (Linux; Android 11)",
-        "CineStreamIPTV/1.0"
-    )
+    /** Önce uygulamanın kendi kimliği, kabul edilmezse genel tarayıcı kimliği denenir (bkz. AppUserAgent). */
+    private val IPTV_USER_AGENTS = listOf(com.example.util.AppUserAgent.app, com.example.util.AppUserAgent.BROWSER)
 
     /**
      * Safely synchronizes an individual playlist from remote HTTP/HTTPS stream
@@ -208,17 +200,7 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
                         .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,application/x-mpegURL,audio/x-mpegurl,*/*;q=0.8")
                         .header("Accept-Language", "tr-TR,tr;q=0.9,en-US,en;q=0.8")
                         .header("Connection", "keep-alive")
-                        .header("Upgrade-Insecure-Requests", "1")
 
-                    if (userAgent.contains("Chrome") || userAgent.contains("Mozilla")) {
-                        requestBuilder.header("Sec-Ch-Ua", "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"")
-                        requestBuilder.header("Sec-Ch-Ua-Mobile", "?0")
-                        requestBuilder.header("Sec-Ch-Ua-Platform", "\"Windows\"")
-                        requestBuilder.header("Sec-Fetch-Dest", "document")
-                        requestBuilder.header("Sec-Fetch-Mode", "navigate")
-                        requestBuilder.header("Sec-Fetch-Site", "none")
-                        requestBuilder.header("Sec-Fetch-User", "?1")
-                    }
 
                     val request = requestBuilder.build()
                     response = client.newCall(request).execute()
@@ -979,46 +961,12 @@ class IPTVRepository(private val iptvDao: IPTVDao, private val database: com.exa
         return name.ifEmpty { rawName }
     }
 
-    private fun cleanChannelCasing(input: String): String {
-        val lower = input.lowercase(Locale.ROOT)
-        return when {
-            lower.contains("bein sports") -> {
-                val num = lower.filter { it.isDigit() }
-                if (num.isNotEmpty()) "BeIN Sports $num" else "BeIN Sports"
-            }
-            lower.contains("s sport") -> {
-                val num = lower.filter { it.isDigit() }
-                if (num.isNotEmpty()) "S Sport $num" else "S Sport"
-            }
-            lower.contains("trt") -> {
-                val suffix = input.split(Regex("(?i)trt"), 2).getOrNull(1)?.trim() ?: ""
-                "TRT ${suffix.uppercase(Locale.ROOT)}"
-            }
-            lower.contains("hbo") -> "HBO"
-            lower.contains("netflix") -> "Netflix"
-            lower.contains("disney") -> "Disney Channel"
-            lower.contains("atv") -> "ATV"
-            lower.contains("tv8") -> "TV8"
-            lower.contains("now") -> "NOW"
-            lower.contains("exxen") -> "Exxen"
-            lower.contains("blutv") -> "BluTV"
-            lower.contains("gain") -> "Gain"
-            lower.contains("star tv") || lower == "star" -> "Star TV"
-            lower.contains("show tv") || lower == "show" -> "Show TV"
-            lower.contains("kanal d") -> "Kanal D"
-            lower.contains("bloomberg") -> "Bloomberg HT"
-            lower.contains("ntv") -> "NTV"
-            lower.contains("cnn turk") || lower.contains("cnn türk") -> "CNN Türk"
-            lower.contains("haberturk") || lower.contains("habertürk") -> "Habertürk"
-            lower.contains("sinema") -> {
-                val digits = input.filter { it.isDigit() }
-                if (digits.isNotEmpty()) "Sinema TV $digits" else "Sinema TV"
-            }
-            else -> {
-                input.split(" ").joinToString(" ") { word ->
-                    word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-                }
-            }
+    /**
+     * Yalnızca küçük harfle başlayan kelimelerin ilk harfini büyütür. Ad içinde geçen kelimeye göre kanal/marka
+     * adına çevirme yapılmaz: bu kural film ve dizi adlarını da bozuyordu ("Now You See Me" → "NOW").
+     */
+    private fun cleanChannelCasing(input: String): String =
+        input.split(" ").joinToString(" ") { word ->
+            word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
         }
-    }
 }

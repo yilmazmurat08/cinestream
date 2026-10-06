@@ -68,7 +68,7 @@ object NetworkModule {
         val builder = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .header("User-Agent", "CineStreamIPTV/1.0 (Android)")
+                    .header("User-Agent", com.example.util.AppUserAgent.app)
                     .build()
                 chain.proceed(request)
             }

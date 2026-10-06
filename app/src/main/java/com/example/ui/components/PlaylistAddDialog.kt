@@ -178,7 +178,7 @@ fun PlaylistAddDialog(
                             value = playlistUrl,
                             onValueChange = { playlistUrl = it },
                             label = { Text("M3U/M3U8 Liste Linki (URL)") },
-                            placeholder = { Text("https://iptv-org.github.io/iptv/countries/tr.m3u") },
+                            placeholder = { Text("http://example.com/playlist.m3u") },
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
