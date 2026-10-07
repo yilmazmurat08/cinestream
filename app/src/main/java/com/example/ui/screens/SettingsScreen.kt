@@ -835,35 +835,7 @@ fun DataAndMemoryCard(
                 CrashLogsDialog(onDismiss = { showCrashLogsDialog = false })
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.settings_about),
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.tmdb_logo),
-                    contentDescription = "TMDB",
-                    modifier = Modifier.height(16.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = stringResource(R.string.settings_tmdb_notice),
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
-            }
+            // TMDB bildirimi (logo + metin) Ayarlar > Yasal kartında; burada tekrarlanmaz.
         }
     }
 }

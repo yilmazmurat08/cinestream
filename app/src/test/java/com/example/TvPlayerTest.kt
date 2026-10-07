@@ -82,6 +82,8 @@ class TvPlayerTest {
         )
         runBlocking { db.iptvDao().insertItems(channels) }
         val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        // Telefonda/TV'de bir klasör seçili kalmış olabilir: oynatıcının kategori listesi yine tüm kategorileri göstermeli.
+        vm.selectCategory("TvPlayer Haber")
         val ui = TvPlayerUiState().apply { launch = TvPlayerUiState.LAUNCH_ENTER }
         var played: IPTVItem? = null
         compose.setContent {
@@ -112,6 +114,9 @@ class TvPlayerTest {
         press(Key.DirectionLeft)
         waitForTag("tv_player_categories")
         assertTrue(ui.categoriesOpen)
+        compose.onAllNodes(androidx.compose.ui.test.hasText("TvPlayer Spor")).fetchSemanticsNodes().let {
+            assertTrue("diğer kategori de listelenmeli", it.isNotEmpty())
+        }
 
         // Geri: önce kategoriler, sonra panel; odak oynat/duraklat
         back()
@@ -131,7 +136,7 @@ class TvPlayerTest {
         compose.waitForIdle()
         press(Key.DirectionUp)
         // Sıra, telefondaki CH+/CH− ile aynı kanal halkası
-        val ring = vm.channelRingFor(channels[0], vm.liveChannels.value)
+        val ring = vm.channelRingFor(channels[0], vm.allLiveChannels.value)
         assertEquals(listOf(7001, 7002, 7003).toSet(), ring.map { it.id }.toSet())
         val current = ring.indexOfFirst { it.id == 7001 }
         assertEquals(ring[(current + 1) % ring.size].id, played?.id)

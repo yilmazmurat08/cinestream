@@ -810,8 +810,11 @@ fun LegacyExoPlayerScreen(
     // CH+/CH-: oynatıcının kanal listesindeki (canlı kanallar) sonraki/önceki kanal.
     fun switchChannel(step: Int) {
         // İzlenen klasördeki kanallar arasında dolaşır (yetişkin kanallar karışmaz).
-        val all = iptvViewModel?.liveChannels?.value?.takeIf { it.isNotEmpty() } ?: return
-        val channels = iptvViewModel.channelRingFor(item, all)
+        // TV oynatıcısı tüm kanalları kullanır (seçili klasör süzgecinden bağımsız); halka yine kanalın klasörüdür.
+        val vm = iptvViewModel ?: return
+        val source = if (tvMode) vm.allLiveChannels else vm.liveChannels
+        val all = source.value.takeIf { it.isNotEmpty() } ?: return
+        val channels = vm.channelRingFor(item, all)
         val index = channels.indexOfFirst { it.id == item.id }
         val target = if (index == -1) {
             channels.first()
@@ -833,7 +836,7 @@ fun LegacyExoPlayerScreen(
     }
 
     // ---------------- TV modu (telefonda bu blok hiçbir şey yapmaz) ----------------
-    val tvLiveChannels by (iptvViewModel?.liveChannels?.collectAsState() ?: remember { mutableStateOf(emptyList<IPTVItem>()) })
+    val tvLiveChannels by (iptvViewModel?.allLiveChannels?.collectAsState() ?: remember { mutableStateOf(emptyList<IPTVItem>()) })
     // Kanal halkası: izlenen kanalın klasörü (telefondaki CH+/CH− ile aynı kural); numaralar buna göre.
     val tvRing = com.example.ui.components.rememberComputedOffMain(
         item.id, tvLiveChannels, tvMode,

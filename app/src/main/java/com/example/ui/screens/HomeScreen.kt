@@ -1339,6 +1339,14 @@ fun HomeScreen(
                                     .height(600.dp)
                             ) {
                                 // Dizi Takvimi tanıtım kartı kaldırıldı (özellik geri çekildi)
+                                item(key = "series_title_header") {
+                                    com.example.ui.screens.FolderTitleHeader(
+                                        title = "Dizi Klasörleri",
+                                        displayTitle = stringResource(R.string.home_folder_series),
+                                        viewModel = viewModel,
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                }
                                 item(key = "series_category_search_bar") {
                                     OutlinedTextField(
                                         value = seriesCategorySearchQuery,
