@@ -444,6 +444,7 @@
     <string name="settings_toast_updated">Oynatma listesi güncellendi.</string>
     <string name="settings_toast_cache_cleared">Uygulama önbelleği başarıyla temizlendi.</string>
     <string name="settings_toast_photo_failed">Fotoğraf yüklenemedi, tekrar deneyin.</string>
+    <string name="settings_toast_photo_picker_unavailable">Bu cihazda fotoğraf seçici bulunmuyor.</string>
     <string name="settings_player">Oynatıcı Ayarları</string>
     <string name="settings_hw_accel">Donanımsal Hızlandırma</string>
     <string name="settings_hw_accel_desc">Donanım çözücüleri kullanarak video performansını artırır.</string>

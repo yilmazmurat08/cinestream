@@ -152,6 +152,7 @@ object NowPlayingRepository {
     private fun topTen(results: List<TmdbNowPlayingMovie>): List<TmdbNowPlayingMovie> =
         results
             .filter { !it.posterPath.isNullOrBlank() && it.adult != true }
+            .distinctBy { it.id } // aynı film iki kez gelirse liste anahtarı tekrarlanıp ekran çökmesin
             .sortedByDescending { it.popularity ?: 0.0 }
             .take(10)
 

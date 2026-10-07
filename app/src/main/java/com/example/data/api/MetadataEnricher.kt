@@ -631,9 +631,13 @@ object MetadataEnricher {
 
             val seasons = mutableListOf<com.example.data.model.Season>()
             var totalEpisodes = 0
-            val seasonKeys = episodesObj.keys()
-            while (seasonKeys.hasNext()) {
-                val seasonKey = seasonKeys.next()
+            // Bazı sağlayıcılar aynı bölümü iki sezonda listeler (ör. "0" özel bölümler). Aynı kimlik iki kez eklenirse
+            // bölüm listeleri (oynatıcı paneli, TV detay) aynı anahtarı iki kez görüp çöküyordu: bölüm bir kez eklenir,
+            // normal sezonlar "0"dan önce işlenir (sezon sırası aşağıda zaten numaraya göre yeniden dizilir).
+            val seenEpisodeIds = HashSet<Int>()
+            val seasonKeys = episodesObj.keys().asSequence().toList()
+                .sortedBy { key -> key.toIntOrNull()?.takeIf { it != 0 } ?: Int.MAX_VALUE }
+            for (seasonKey in seasonKeys) {
                 val seasonNum = seasonKey.toIntOrNull() ?: continue
                 val episodeArray = episodesObj.optJSONArray(seasonKey) ?: continue
                 val episodes = mutableListOf<com.example.data.model.Episode>()
@@ -641,6 +645,7 @@ object MetadataEnricher {
                     val epObj = episodeArray.optJSONObject(i) ?: continue
                     val epId = epObj.optString("id", "").ifEmpty { epObj.optInt("id", -1).toString() }
                     val epIdInt = epId.toIntOrNull() ?: continue
+                    if (!seenEpisodeIds.add(epIdInt)) continue
                     val epTitle = epObj.optString("title", "Bölüm ${i + 1}")
                     val containerExt = epObj.optString("container_extension", "mp4").ifEmpty { "mp4" }
                     val epNum = com.example.data.model.SeriesParser.resolveXtreamEpisodeNumber(

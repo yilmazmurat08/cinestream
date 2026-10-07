@@ -2431,14 +2431,20 @@ fun EditProfileDialog(
 
                 OutlinedButton(
                     onClick = {
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
+                        // Cihazda fotoğraf/dosya seçici yoksa (Android TV ve bazı telefonlar) launch()
+                        // ActivityNotFoundException fırlatır; yakalanmazsa uygulama kapanıyordu.
+                        try {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        } catch (e: Exception) {
+                            Toast.makeText(context, context.getString(R.string.settings_toast_photo_picker_unavailable), Toast.LENGTH_LONG).show()
+                        }
                     },
                     enabled = !isCopyingPhoto,
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, CineOrange.copy(alpha = 0.6f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_pick_photo")
                 ) {
                     if (isCopyingPhoto) {
                         CircularProgressIndicator(

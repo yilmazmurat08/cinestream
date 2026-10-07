@@ -109,6 +109,14 @@ fun InAppTrailerPlayer(
                             failed = true
                             latestError()
                         }
+                    },
+                    onRendererGone = {
+                        // WebView yok edildi: yaşam döngüsü ve temizlik artık ona dokunmaz.
+                        webHolder[0] = null
+                        if (!failed) {
+                            failed = true
+                            latestError()
+                        }
                     }
                 )?.also { webHolder[0] = it } ?: View(context).also {
                     // Cihazda WebView yoksa (bazı TV'ler) çökmek yerine hata bildirilir.
@@ -129,6 +137,25 @@ private const val YT_ENDED = 0
 private const val YT_PLAYING = 1
 private const val TRAILER_START_TIMEOUT_MS = 15_000L
 
+/**
+ * Fragman WebView'inin istemcisi. Bağlantılar açılmaz (YouTube uygulamasına gidilmez). WebView'in iç işlemi
+ * (renderer) bellek yetersizliğinden kapanırsa ve bu olay karşılanmazsa Android TÜM uygulamayı kapatır: ölü WebView
+ * görünümden kaldırılıp yok edilir, fragman hata olarak bildirilir (yerinde kapak görseli kalır).
+ */
+internal class TrailerWebViewClient(private val onRendererGone: () -> Unit) : WebViewClient() {
+    // YouTube logosu vb. tıklansa bile sayfadan çıkılmaz (YouTube uygulaması açılmaz).
+    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean = true
+
+    override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
+        view?.let { dead ->
+            runCatching { (dead.parent as? ViewGroup)?.removeView(dead) }
+            runCatching { dead.destroy() }
+        }
+        onRendererGone()
+        return true
+    }
+}
+
 @SuppressLint("SetJavaScriptEnabled")
 private fun createTrailerWebView(
     context: Context,
@@ -136,7 +163,8 @@ private fun createTrailerWebView(
     showControls: Boolean,
     fillArea: Boolean,
     onState: (Int) -> Unit,
-    onError: () -> Unit
+    onError: () -> Unit,
+    onRendererGone: () -> Unit
 ): WebView? = runCatching {
     val main = Handler(Looper.getMainLooper())
     WebView(context).apply {
@@ -155,10 +183,7 @@ private fun createTrailerWebView(
             override fun getDefaultVideoPoster(): android.graphics.Bitmap? =
                 super.getDefaultVideoPoster() ?: android.graphics.Bitmap.createBitmap(1, 1, android.graphics.Bitmap.Config.RGB_565)
         }
-        webViewClient = object : WebViewClient() {
-            // YouTube logosu vb. tıklansa bile sayfadan çıkılmaz (YouTube uygulaması açılmaz).
-            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean = true
-        }
+        webViewClient = TrailerWebViewClient(onRendererGone)
         addJavascriptInterface(object {
             @JavascriptInterface
             fun state(value: Int) {

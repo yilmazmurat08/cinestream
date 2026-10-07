@@ -445,6 +445,7 @@
     <string name="settings_toast_updated">Playlist updated.</string>
     <string name="settings_toast_cache_cleared">App cache cleared successfully.</string>
     <string name="settings_toast_photo_failed">Couldn\'t upload the photo, please try again.</string>
+    <string name="settings_toast_photo_picker_unavailable">No photo picker is available on this device.</string>
     <string name="settings_player">Player Settings</string>
     <string name="settings_hw_accel">Hardware Acceleration</string>
     <string name="settings_hw_accel_desc">Improves video performance using hardware decoders.</string>

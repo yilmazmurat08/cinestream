@@ -190,21 +190,37 @@ class IPTVViewModel(
         }
 
     // --- TV modu: Filmler/Diziler (veritabanından sayfa sayfa; telefonla aynı kurallar) ---
+    /**
+     * TV ekranlarının veritabanı okumaları ekranın kendi coroutine'inde çalışır (genel hata yakalayıcı yoktur):
+     * okuma hatası (ör. TV kutusunda depolama doldu) uygulamayı kapatmaz, boş sonuçla devam edilir.
+     */
+    internal suspend fun <T> tvRead(label: String, fallback: T, block: suspend () -> T): T = try {
+        block()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w("IPTVViewModel", "TV $label failed", e)
+        fallback
+    }
+
     private val tvCatalog by lazy { com.example.data.repository.TvCatalogRepository(AppDatabase.getDatabase(getApplication()).iptvDao()) }
 
-    suspend fun tvCategories(type: String): List<com.example.data.repository.TvCategory> =
+    suspend fun tvCategories(type: String): List<com.example.data.repository.TvCategory> = tvRead("categories", emptyList()) {
         tvCatalog.categories(type) { if (type == "SERIES") seriesCategoryRank(it) else movieCategoryRank(it) }
+    }
 
     suspend fun tvSpecial(type: String, section: com.example.data.repository.TvSpecialSection): List<com.example.data.repository.TvPoster> =
-        tvCatalog.special(type, section)
+        tvRead("special", emptyList()) { tvCatalog.special(type, section) }
 
     /** Kategorinin [offset]'ten başlayan sayfası. Dizilerde M3U bölümleri tek seferde gruplanır (sayfa yok). */
     suspend fun tvCategoryPage(type: String, categoryKey: String, offset: Int, limit: Int, covers: Map<String, String>): List<com.example.data.repository.TvPoster> =
-        when {
-            type == "MOVIE" -> tvCatalog.moviePage(categoryKey, offset, limit)
-            tvCatalog.hasSeriesCatalog() -> tvCatalog.catalogPage(categoryKey, offset, limit)
-            offset == 0 -> tvCatalog.seriesInCategory(categoryKey, covers)
-            else -> emptyList()
+        tvRead("category page", emptyList()) {
+            when {
+                type == "MOVIE" -> tvCatalog.moviePage(categoryKey, offset, limit)
+                tvCatalog.hasSeriesCatalog() -> tvCatalog.catalogPage(categoryKey, offset, limit)
+                offset == 0 -> tvCatalog.seriesInCategory(categoryKey, covers)
+                else -> emptyList()
+            }
         }
 
     /** Dizi bölümünün dizisi (Xtream'den canlı çekilmişse o, yoksa yalnızca bu dizinin bölümleri sorgulanır). */
@@ -212,7 +228,7 @@ class IPTVViewModel(
         _liveFetchedShow.value?.let { show ->
             if (show.seasons.any { s -> s.episodes.any { it.item.id == item.id } }) return show
         }
-        return tvCatalog.showForEpisode(item, covers)
+        return tvRead("show for item", null) { tvCatalog.showForEpisode(item, covers) }
     }
 
     /**
@@ -282,12 +298,14 @@ class IPTVViewModel(
     // --- TV modu: Canlı TV ---
 
     /** Canlı TV'ye girişte açılacak kanal: son izlenen canlı kanal, yoksa ilk (yetişkin olmayan) kanal. */
-    suspend fun tvStartChannel(): IPTVItem? = withContext(Dispatchers.IO) {
-        val last = AppDatabase.getDatabase(getApplication()).iptvDao().getAllContinueWatchingOnce()
-            .filter { it.itemType == "LIVE" }
-            .maxByOrNull { it.lastPlayedAt }
-            ?.let { repository.getItemByIdDirect(it.itemId) }
-        last ?: tvCatalog.firstLiveChannel { isAdultContent(it) }
+    suspend fun tvStartChannel(): IPTVItem? = tvRead("start channel", null) {
+        withContext(Dispatchers.IO) {
+            val last = AppDatabase.getDatabase(getApplication()).iptvDao().getAllContinueWatchingOnce()
+                .filter { it.itemType == "LIVE" }
+                .maxByOrNull { it.lastPlayedAt }
+                ?.let { repository.getItemByIdDirect(it.itemId) }
+            last ?: tvCatalog.firstLiveChannel { isAdultContent(it) }
+        }
     }
 
     /** Kanalın EPG'deki şu anki ve sonraki programı (EPG yoksa ikisi de null). */

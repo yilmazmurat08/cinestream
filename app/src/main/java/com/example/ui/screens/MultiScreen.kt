@@ -775,8 +775,7 @@ fun ChannelSelectorDialog(
         workSize = allChannels.size,
         fallback = listOf("Tümü")
     ) {
-        val raw = allChannels.map { it.category }.distinct().filter { it.isNotBlank() }
-        listOf("Tümü") + raw.sorted()
+        multiScreenCategories(allChannels)
     }
 
     // Perform interactive filtering
@@ -1009,4 +1008,13 @@ fun ChannelSelectorDialog(
             }
         }
     }
+}
+
+/**
+ * Çoklu ekran kanal seçicisinin kategorileri: "Tümü" + listedeki kategoriler. Sağlayıcıda da "Tümü" adlı bir kategori
+ * varsa aynı anahtar iki kez oluşup ekran çöküyordu; o kategori ayrıca listelenmez ("Tümü" zaten hepsini gösterir).
+ */
+internal fun multiScreenCategories(channels: List<IPTVItem>): List<String> {
+    val raw = channels.map { it.category }.distinct().filter { it.isNotBlank() && it != "Tümü" }
+    return listOf("Tümü") + raw.sorted()
 }
