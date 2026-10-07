@@ -909,6 +909,10 @@ class IPTVViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Tüm canlı kanallar (seçili klasöre göre süzülmez). TV oynatıcısının kategori listesi için. */
+    val allLiveChannels: StateFlow<List<IPTVItem>> = liveItemsShared.debounce(400)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val movies: StateFlow<List<IPTVItem>> = combine(
         movieItemsShared.debounce(400),
         _selectedCategory

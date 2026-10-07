@@ -327,55 +327,7 @@ fun FolderListLayout(
             .testTag("folder_grid_view")
     ) {
         item(key = "folder_title_header") {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
-            ) {
-                CategoryAdaptiveIcon(
-                    category = title,
-                    type = if (title.contains("Canlı", ignoreCase = true)) "LIVE" else if (title.contains("Sinema", ignoreCase = true) || title.contains("Film", ignoreCase = true)) "MOVIE" else if (title.contains("Dizi", ignoreCase = true)) "SERIES" else null,
-                    size = 20.dp,
-                    containerColor = Color.White.copy(alpha = 0.08f),
-                    modifier = Modifier.padding(end = 10.dp)
-                )
-                Text(
-                    text = displayTitle,
-                    color = Color(0xFFF5F5F7),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (title.contains("Canlı", ignoreCase = true)) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    Surface(
-                        onClick = { viewModel.setSelectedTypeFilter("EPG") },
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFFF6D00).copy(alpha = 0.15f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6D00).copy(alpha = 0.4f))
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CalendarViewDay,
-                                contentDescription = null,
-                                tint = Color(0xFFFF6D00),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = "EPG",
-                                color = Color(0xFFFF6D00),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
+            FolderTitleHeader(title = title, displayTitle = displayTitle, viewModel = viewModel)
         }
 
         if (isParentalLockEnabled && isSafeSessionActive) {
@@ -1892,6 +1844,61 @@ fun CompactEPGSection(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.close),
                         tint = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Klasör ekranlarının başlığı (Canlı Yayın / Sinema / Dizi klasörleri). */
+@Composable
+fun FolderTitleHeader(title: String, displayTitle: String, viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp)
+    ) {
+        CategoryAdaptiveIcon(
+            category = title,
+            type = if (title.contains("Canlı", ignoreCase = true)) "LIVE" else if (title.contains("Sinema", ignoreCase = true) || title.contains("Film", ignoreCase = true)) "MOVIE" else if (title.contains("Dizi", ignoreCase = true)) "SERIES" else null,
+            size = 20.dp,
+            containerColor = Color.White.copy(alpha = 0.08f),
+            modifier = Modifier.padding(end = 10.dp)
+        )
+        Text(
+            text = displayTitle,
+            color = Color(0xFFF5F5F7),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            // Başlık kalan alanın tamamını kullanır; EPG düğmesi sağa yaslanır (eskiden başlık yarıya sığıp kesiliyordu).
+            modifier = Modifier.weight(1f)
+        )
+        if (title.contains("Canlı", ignoreCase = true)) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Surface(
+                onClick = { viewModel.setSelectedTypeFilter("EPG") },
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFFF6D00).copy(alpha = 0.15f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6D00).copy(alpha = 0.4f))
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarViewDay,
+                        contentDescription = null,
+                        tint = Color(0xFFFF6D00),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "EPG",
+                        color = Color(0xFFFF6D00),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -100,11 +101,21 @@ fun LegalSettingsCard(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier,
                 modifier = Modifier.padding(top = 10.dp).testTag("settings_disclaimer")
             )
             if (showTmdbNotice) {
-                Text(
-                    stringResource(R.string.settings_tmdb_notice), fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 6.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("settings_tmdb_notice")
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.tmdb_logo),
+                        contentDescription = "TMDB",
+                        modifier = Modifier.height(16.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        stringResource(R.string.settings_tmdb_notice), fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
             }
             Text(
                 stringResource(R.string.legal_app_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), fontSize = 11.sp,
