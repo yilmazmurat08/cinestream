@@ -27,6 +27,7 @@ import com.example.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -62,8 +63,8 @@ class PhoneSmokeTest {
         val movieCategories = listOf("Aksiyon", "Tümü", "", "Yeni Filmler")
         movies = (0 until 120).map { i ->
             IPTVItem(
-                id = 9000 + i, playlistId = 1, name = if (i == 7) longName else "Film $i", cleanedName = if (i == 7) longName else "Film $i",
-                logoUrl = null, streamUrl = "http://10.255.255.1/m/${9000 + i}.mp4", category = movieCategories[i % 4], type = "MOVIE",
+                id = 71000 + i, playlistId = SMOKE_PLAYLIST, name = if (i == 7) longName else "Film $i", cleanedName = if (i == 7) longName else "Film $i",
+                logoUrl = null, streamUrl = "http://10.255.255.1/m/${71000 + i}.mp4", category = movieCategories[i % 4], type = "MOVIE",
                 rating = (i % 10).toDouble(), releaseDate = "${2000 + i % 25}-01-01", genre = "Aksiyon, Dram",
                 summary = "Film $i özeti.", cast = "Ada Yıldız, Ada Yıldız, Bora Kaya", director = "Deniz Arslan, Deniz Arslan",
                 isFavorite = i % 9 == 0
@@ -72,7 +73,7 @@ class PhoneSmokeTest {
         episodes = listOf("Kuzey Yıldızı", "Dağların Kızı").flatMapIndexed { k, show ->
             (1..6).map { e ->
                 IPTVItem(
-                    id = 9500 + k * 20 + e, playlistId = 1, name = "$show S01E0$e", cleanedName = "$show S01E0$e", logoUrl = null,
+                    id = 72000 + k * 20 + e, playlistId = SMOKE_PLAYLIST, name = "$show S01E0$e", cleanedName = "$show S01E0$e", logoUrl = null,
                     streamUrl = "http://10.255.255.1/s/${k}_$e.mp4", category = if (k == 0) "Yerli Diziler" else "Tümü", type = "SERIES",
                     season = 1, episode = e, cast = "Selin Aydın, Selin Aydın"
                 )
@@ -80,14 +81,14 @@ class PhoneSmokeTest {
         }
         val live = (0 until 60).map { i ->
             IPTVItem(
-                id = 9700 + i, playlistId = 1, name = if (i == 3) longName else "Kanal $i", cleanedName = if (i == 3) longName else "Kanal $i",
+                id = 73000 + i, playlistId = SMOKE_PLAYLIST, name = if (i == 3) longName else "Kanal $i", cleanedName = if (i == 3) longName else "Kanal $i",
                 logoUrl = null, streamUrl = "http://10.255.255.1/l/$i.ts", category = listOf("Ulusal", "Tümü", "Haber", "")[i % 4],
                 type = if (i % 15 == 0) "RADIO" else "LIVE", tvgId = "k$i.tr", isFavorite = i == 1
             )
         }
         val catalog = (0 until 30).map { i ->
             XtreamSeriesCatalogEntity(
-                seriesId = 9900 + i, name = if (i == 5) longName else "Dizi $i", canonicalKey = "dizi $i", coverUrl = "",
+                seriesId = 74000 + i, name = if (i == 5) longName else "Dizi $i", canonicalKey = "dizi $i", coverUrl = "",
                 rating = (i % 10).toDouble(), cast = "Ece Ak, Ece Ak", categoryId = listOf("Amazon", "Tümü", "Diğer")[i % 3]
             )
         }
@@ -95,11 +96,11 @@ class PhoneSmokeTest {
             val dao = db.iptvDao()
             dao.insertItems(movies + episodes + live)
             dao.insertXtreamSeriesCatalog(catalog)
-            dao.insertContinueWatching(ContinueWatching(itemId = 9501, itemName = "Kuzey Yıldızı S01E01", itemType = "SERIES", itemLogo = null,
+            dao.insertContinueWatching(ContinueWatching(itemId = 72001, itemName = "Kuzey Yıldızı S01E01", itemType = "SERIES", itemLogo = null,
                 streamUrl = "http://10.255.255.1/s/0_1.mp4", category = "Yerli Diziler", progressSeconds = 1200, totalSeconds = 2700))
-            dao.insertContinueWatching(ContinueWatching(itemId = 9003, itemName = "Film 3", itemType = "MOVIE", itemLogo = null,
-                streamUrl = "http://10.255.255.1/m/9003.mp4", category = "Aksiyon", progressSeconds = 600, totalSeconds = 0))
-            dao.insertContinueWatching(ContinueWatching(itemId = 9701, itemName = "Kanal 1", itemType = "LIVE", itemLogo = null,
+            dao.insertContinueWatching(ContinueWatching(itemId = 71003, itemName = "Film 3", itemType = "MOVIE", itemLogo = null,
+                streamUrl = "http://10.255.255.1/m/71003.mp4", category = "Aksiyon", progressSeconds = 600, totalSeconds = 0))
+            dao.insertContinueWatching(ContinueWatching(itemId = 73001, itemName = "Kanal 1", itemType = "LIVE", itemLogo = null,
                 streamUrl = "http://10.255.255.1/l/1.ts", category = "Tümü", progressSeconds = 0, totalSeconds = 0))
         }
         // Uygulamadaki gibi: ViewModel etkinliğin deposunda fabrikayla oluşturulur; viewModel() çağıran
@@ -108,6 +109,18 @@ class PhoneSmokeTest {
         // Yükleme animasyonları (sonsuz) test saatini kilitlemesin: saat elle ilerletilir. Gerçek bir sonsuz
         // yeniden çizim döngüsü olsaydı yine de durgunluğa ulaşılamazdı.
         compose.mainClock.autoAdvance = false
+    }
+
+    /**
+     * Testler aynı veritabanı örneğini paylaşır: başka testlerin verisini kirletmemek için (ör. "izlemeye devam"
+     * kaydı başka bir testin "izlenmemiş" bölümünü izlenmiş gösteriyordu) bu testin eklediği her şey silinir.
+     */
+    @After
+    fun cleanUp() {
+        val db = AppDatabase.getDatabase(app)
+        runBlocking { db.iptvDao().deleteItemsByPlaylist(SMOKE_PLAYLIST) }
+        db.openHelper.writableDatabase.execSQL("DELETE FROM continue_watching WHERE itemId BETWEEN 71000 AND 74999")
+        db.openHelper.writableDatabase.execSQL("DELETE FROM xtream_series_catalog WHERE seriesId BETWEEN 74000 AND 74999")
     }
 
     private fun settle(ms: Long) {
@@ -192,3 +205,6 @@ class PhoneSmokeTest {
         backgroundAndReturn()
     }
 }
+
+/** Duman testinin kendi listesi (temizlik bu kimlikle yapılır). */
+private const val SMOKE_PLAYLIST = 71
