@@ -80,35 +80,38 @@ class IPTVRepository(
         private const val TAG = "IPTVRepository"
         const val MAX_M3U_DOWNLOAD_BYTES = 200L * 1024L * 1024L // 200 MB Safety Limit
         const val BATCH_SIZE = 250
+        /** Okuma akışında geçici veritabanı hatasında en fazla deneme sayısı (bkz. guardedRead). */
+        private const val MAX_READ_RETRIES = 5L
         private val syncMutex = Mutex()
         val ambiguousMovieClassificationSamples = java.util.Collections.synchronizedList(mutableListOf<String>())
     }
 
-    val allPlaylistsFlow: Flow<List<Playlist>> = iptvDao.getAllPlaylistsFlow()
-    val allItemsFlow: Flow<List<IPTVItem>> = iptvDao.getAllItemsFlow()
-    val favoriteItemsFlow: Flow<List<IPTVItem>> = iptvDao.getFavoriteItemsFlow()
-    val continueWatchingFlow: Flow<List<ContinueWatching>> = iptvDao.getContinueWatchingFlow()
-
     /**
-     * Türe göre tüm öğeler. Okuma hatası (ör. aşırı büyük bir satır, "Couldn't read row") uygulamayı
-     * kapatmasın: önce alanlar kırpılıp birkaç kez yeniden denenir; yine olmazsa hata kaydedilir ve
-     * ekrandaki mevcut liste korunur.
+     * Veritabanı okuma akışlarının ortak koruması: okuma hatası (ör. "Row too big to fit into CursorWindow",
+     * "Couldn't read row") uygulamayı kapatmaz. Aşırı büyük alanlar kırpılıp sorgu kısa beklemelerle yeniden
+     * çalıştırılır; yine olmazsa hata kaydedilir ve ekrandaki mevcut liste korunur.
      */
-    fun getItemsByType(type: String): Flow<List<IPTVItem>> = iptvDao.getItemsByTypeFlow(type)
-        .retryWhen { cause, attempt ->
-            if (attempt < 3 && (cause is IllegalStateException || cause is android.database.sqlite.SQLiteException)) {
-                Log.w("IPTVRepository", "Reading $type items failed (attempt ${attempt + 1}), trimming oversized rows", cause)
-                try { iptvDao.trimOversizedItemFields() } catch (e: Exception) { Log.w("IPTVRepository", "Trim failed", e) }
-                kotlinx.coroutines.delay(500L * (attempt + 1))
-                true
-            } else {
-                false
-            }
+    private fun <T> Flow<T>.guardedRead(label: String): Flow<T> = retryWhen { cause, attempt ->
+        if (attempt < MAX_READ_RETRIES && (cause is IllegalStateException || cause is android.database.sqlite.SQLiteException)) {
+            Log.w(TAG, "Reading $label failed (attempt ${attempt + 1}), retrying", cause)
+            try { iptvDao.trimOversizedItemFields() } catch (e: Exception) { Log.w(TAG, "Trim failed", e) }
+            kotlinx.coroutines.delay(500L * (attempt + 1))
+            true
+        } else {
+            false
         }
-        .catch { e ->
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            Log.e("IPTVRepository", "Reading $type items failed", e)
-        }
+    }.catch { e ->
+        if (e is kotlinx.coroutines.CancellationException) throw e
+        Log.e(TAG, "Reading $label failed", e)
+    }
+
+    val allPlaylistsFlow: Flow<List<Playlist>> = iptvDao.getAllPlaylistsFlow().guardedRead("playlists")
+    val allItemsFlow: Flow<List<IPTVItem>> = iptvDao.getAllItemsFlow().guardedRead("all items")
+    val favoriteItemsFlow: Flow<List<IPTVItem>> = iptvDao.getFavoriteItemsFlow().guardedRead("favorites")
+    val continueWatchingFlow: Flow<List<ContinueWatching>> = iptvDao.getContinueWatchingFlow().guardedRead("continue watching")
+
+    /** Türe göre tüm öğeler (okuma hatasında bkz. [guardedRead]). */
+    fun getItemsByType(type: String): Flow<List<IPTVItem>> = iptvDao.getItemsByTypeFlow(type).guardedRead("$type items")
 
     /** Aşırı büyük alanları kırpar (açılışta ve doğrudan eklemelerden sonra). */
     suspend fun trimOversizedItemFields() {
@@ -119,20 +122,20 @@ class IPTVRepository(
         }
     }
 
-    fun getDistinctCategoriesFlow(): Flow<List<String>> = iptvDao.getDistinctCategoriesFlow()
+    fun getDistinctCategoriesFlow(): Flow<List<String>> = iptvDao.getDistinctCategoriesFlow().guardedRead("categories")
 
     suspend fun getAllSeriesCovers(): Map<String, String> =
         iptvDao.getAllSeriesCovers().associate { it.showTitleKey to it.coverUrl }
 
     fun getAllSeriesCoversFlow(): Flow<Map<String, String>> =
-        iptvDao.getAllSeriesCoversFlow().map { list -> list.associate { it.showTitleKey to it.coverUrl } }
+        iptvDao.getAllSeriesCoversFlow().guardedRead("series covers").map { list -> list.associate { it.showTitleKey to it.coverUrl } }
 
     suspend fun saveSeriesCover(showTitleKey: String, coverUrl: String) {
         iptvDao.upsertSeriesCover(com.example.data.model.SeriesCoverEntity(showTitleKey, coverUrl))
     }
 
     val xtreamSeriesCatalogFlow: Flow<List<com.example.data.model.XtreamSeriesCatalogEntity>> =
-        iptvDao.getAllXtreamSeriesCatalogFlow()
+        iptvDao.getAllXtreamSeriesCatalogFlow().guardedRead("series catalog")
 
     suspend fun getAllXtreamSeriesCatalog(): List<com.example.data.model.XtreamSeriesCatalogEntity> =
         iptvDao.getAllXtreamSeriesCatalogDirect()
@@ -152,7 +155,7 @@ class IPTVRepository(
             iptvDao.updateItemsType(ids, newType)
         }
     }
-    fun getDistinctCategoriesByTypeFlow(type: String): Flow<List<String>> = iptvDao.getDistinctCategoriesByTypeFlow(type)
+    fun getDistinctCategoriesByTypeFlow(type: String): Flow<List<String>> = iptvDao.getDistinctCategoriesByTypeFlow(type).guardedRead("$type categories")
     suspend fun getAllItemsDirect(): List<IPTVItem> = try {
         iptvDao.getAllItemsDirect()
     } catch (e: Exception) {
@@ -360,8 +363,8 @@ class IPTVRepository(
         try {
             val liveItems = com.example.data.api.MetadataEnricher.fetchXtreamLiveStreamsAsItems(context, host, user, pass, playlistId)
             if (liveItems.isNotEmpty()) {
-                iptvDao.deleteItemsByPlaylistAndType(playlistId, "LIVE")
-                iptvDao.insertItems(liveItems)
+                // Tek işlemde yenilenir: okuyan ekran tabloyu yarı boş görmez, favoriler korunur.
+                iptvDao.replaceItemsOfType(playlistId, "LIVE", liveItems)
                 trimOversizedItemFields()
                 totalCount += liveItems.size
                 typeCounts["LIVE"] = liveItems.size
@@ -375,8 +378,7 @@ class IPTVRepository(
             val movieItems = com.example.data.api.MetadataEnricher.fetchXtreamVodStreamsAsItems(context, credCarrier)
             if (movieItems.isNotEmpty()) {
                 val moviesWithPlaylist = movieItems.map { it.copy(playlistId = playlistId) }
-                iptvDao.deleteItemsByPlaylistAndType(playlistId, "MOVIE")
-                iptvDao.insertItems(moviesWithPlaylist)
+                iptvDao.replaceItemsOfType(playlistId, "MOVIE", moviesWithPlaylist)
                 trimOversizedItemFields()
                 totalCount += moviesWithPlaylist.size
                 typeCounts["MOVIE"] = moviesWithPlaylist.size
@@ -389,8 +391,7 @@ class IPTVRepository(
         try {
             val seriesCatalog = com.example.data.api.MetadataEnricher.fetchFullXtreamSeriesCatalog(context, credCarrier)
             if (seriesCatalog.isNotEmpty()) {
-                iptvDao.clearXtreamSeriesCatalog()
-                iptvDao.insertXtreamSeriesCatalog(seriesCatalog)
+                iptvDao.replaceXtreamSeriesCatalog(seriesCatalog)
                 totalCount += seriesCatalog.size
                 typeCounts["SERIES"] = seriesCatalog.size
                 onProgress(typeCounts.toMap())
@@ -402,14 +403,9 @@ class IPTVRepository(
         totalCount
     }
 
-    suspend fun replaceAllMovies(items: List<IPTVItem>) {
-        iptvDao.deleteAllMovies()
-        iptvDao.insertItems(items)
-        trimOversizedItemFields()
-    }
-    fun getItemById(id: Int): Flow<IPTVItem?> = iptvDao.getItemByIdFlow(id)
+    fun getItemById(id: Int): Flow<IPTVItem?> = iptvDao.getItemByIdFlow(id).guardedRead("item $id")
     suspend fun getItemByIdDirect(id: Int): IPTVItem? = iptvDao.getItemById(id)
-    fun searchItems(query: String): Flow<List<IPTVItem>> = iptvDao.searchItemsFlow("%$query%")
+    fun searchItems(query: String): Flow<List<IPTVItem>> = iptvDao.searchItemsFlow("%$query%").guardedRead("search")
 
     suspend fun searchCollectionItems(query: String, limit: Int = 20): List<IPTVItem> {
         val wildcard = "%${query.trim()}%"
@@ -567,12 +563,12 @@ class IPTVRepository(
         }
     }
 
-    fun getRecentSearchQueriesFlow(limit: Int = 5): Flow<List<SearchHistory>> = iptvDao.getRecentSearchQueriesFlow(limit)
+    fun getRecentSearchQueriesFlow(limit: Int = 5): Flow<List<SearchHistory>> = iptvDao.getRecentSearchQueriesFlow(limit).guardedRead("search history")
     suspend fun deleteSearchQuery(query: String) = iptvDao.deleteSearchQuery(query)
     suspend fun clearSearchHistory() = iptvDao.clearSearchHistory()
 
     // AI Recommendation History
-    fun getAiRecommendationHistoryFlow(): Flow<List<AiRecommendationHistory>> = iptvDao.getAllAiRecommendationHistoryFlow()
+    fun getAiRecommendationHistoryFlow(): Flow<List<AiRecommendationHistory>> = iptvDao.getAllAiRecommendationHistoryFlow().guardedRead("AI history")
     suspend fun saveAiRecommendationHistory(history: AiRecommendationHistory) = iptvDao.insertAiRecommendationHistory(history)
     suspend fun deleteAiRecommendationHistory(id: Int) = iptvDao.deleteAiRecommendationHistory(id)
     suspend fun clearAllAiRecommendationHistory() = iptvDao.clearAllAiRecommendationHistory()

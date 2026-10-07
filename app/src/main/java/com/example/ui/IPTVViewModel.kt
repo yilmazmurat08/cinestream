@@ -1349,7 +1349,6 @@ class IPTVViewModel(
                 loadTMDBDiscoverContent()
                 prefetchSeriesCovers()
                 syncXtreamSeriesCatalog()
-                runVodStreamsDiagnostic()
             } catch (oom: OutOfMemoryError) {
                 Log.e("IPTVViewModel", "OutOfMemory during startup. Resetting volatile caches.", oom)
                 com.example.util.StorageOptimizer.emergencyResetCorruptedData(getApplication())
@@ -1659,7 +1658,7 @@ class IPTVViewModel(
             try {
                 val prefs = getApplication<Application>().getSharedPreferences("cinestream_sync_prefs", android.content.Context.MODE_PRIVATE)
                 val lastSync = prefs.getLong("last_xtream_series_catalog_sync", 0L)
-                val sixHoursMillis = 2L * 60L * 1000L // GEÇİCİ: aktif test için 2 dakika
+                val sixHoursMillis = 6L * 60L * 60L * 1000L
                 if (System.currentTimeMillis() - lastSync < sixHoursMillis) {
                     Log.d("IPTVViewModel", "syncXtreamSeriesCatalog: son senkronizasyon yakın zamanda oldu, atlanıyor")
                     return@launch
@@ -1683,29 +1682,6 @@ class IPTVViewModel(
                 }
             } catch (e: Exception) {
                 Log.w("IPTVViewModel", "syncXtreamSeriesCatalog hatası: ${e.message}")
-            }
-        }
-    }
-
-    private fun runVodStreamsDiagnostic() {
-        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            try {
-                val prefs = getApplication<Application>().getSharedPreferences("cinestream_sync_prefs", android.content.Context.MODE_PRIVATE)
-                val lastRun = prefs.getLong("last_vod_streams_diag", 0L)
-                val cooldownMillis = 2L * 60L * 1000L // GEÇİCİ: aktif test için 2 dakika
-                if (System.currentTimeMillis() - lastRun < cooldownMillis) return@launch
-
-                kotlinx.coroutines.delay(3000)
-                val movieItems = repository.getItemsByTypeDirect("MOVIE")
-                val representative = movieItems.firstOrNull { it.streamUrl.isNotBlank() } ?: return@launch
-                val newMovies = com.example.data.api.MetadataEnricher.fetchXtreamVodStreamsAsItems(getApplication(), representative)
-                if (newMovies.isNotEmpty()) {
-                    repository.replaceAllMovies(newMovies)
-                    Log.d("IPTVViewModel", "runVodStreamsDiagnostic: ${newMovies.size} film Xtream'den değiştirildi")
-                }
-                prefs.edit().putLong("last_vod_streams_diag", System.currentTimeMillis()).apply()
-            } catch (e: Exception) {
-                Log.w("IPTVViewModel", "runVodStreamsDiagnostic hatası: ${e.message}")
             }
         }
     }

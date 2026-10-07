@@ -1,18 +1,18 @@
-# Sürüm notları — 1.0.4 (5)
+# Sürüm notları — 1.0.5 (6)
 
 Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
 
 ```
 <tr-TR>
-• Android TV oynatıcısında tüm canlı yayın kategorileri listeleniyor.
-• Dizi klasörleri ekranına başlık eklendi.
-• Canlı Yayın başlığı artık kesilmiyor.
-• Ayarlar'daki TMDB bilgisi tek yerde, logosuyla birlikte gösteriliyor.
+• Liste yenilenirken uygulamanın kapanmasına yol açan hata giderildi.
+• Liste yenilemesi artık favori kanal ve filmlerinizi silmiyor.
+• Yenileme sırasında listeler bir anlığına boş görünmüyor.
+• Açılışta gereksiz yere tüm filmleri yeniden indiren işlem kaldırıldı; uygulama daha hızlı açılıyor.
 </tr-TR>
 <en-US>
-• The Android TV player lists all live TV categories.
-• The series folders screen now has a title.
-• The Live TV title is no longer cut off.
-• The TMDB notice in Settings is shown once, with its logo.
+• Fixed a crash that could occur while the list was refreshing.
+• Refreshing the list no longer removes your favorite channels and movies.
+• Lists no longer appear empty for a moment during a refresh.
+• Removed a startup task that needlessly re-downloaded all movies; the app opens faster.
 </en-US>
 ```
