@@ -404,14 +404,12 @@ class MainActivity : ComponentActivity() {
                                                                 if (matchesActiveShow) {
                                                                     liveEpisodeItems.orEmpty()
                                                                 } else {
-                                                                    val parsedInfo = com.example.data.model.SeriesParser.parseEpisodeInfo(activeItem.cleanedName)
-                                                                        ?: com.example.data.model.SeriesParser.parseEpisodeInfo(activeItem.name)
+                                                                    val parsedInfo = com.example.data.model.SeriesParser.episodeInfoOf(activeItem)
                                                                     val activeShowTitle = parsedInfo?.showTitle?.lowercase()?.trim() ?: ""
                                                                     if (activeShowTitle.isNotEmpty()) {
                                                                         series
                                                                             .mapNotNull { candidate ->
-                                                                                val info = com.example.data.model.SeriesParser.parseEpisodeInfo(candidate.cleanedName)
-                                                                                    ?: com.example.data.model.SeriesParser.parseEpisodeInfo(candidate.name)
+                                                                                val info = com.example.data.model.SeriesParser.episodeInfoOf(candidate)
                                                                                 if (info?.showTitle?.lowercase()?.trim() == activeShowTitle) candidate to info else null
                                                                             }
                                                                             .sortedWith(compareBy({ it.second.season }, { it.second.episode }))

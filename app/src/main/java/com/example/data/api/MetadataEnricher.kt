@@ -116,6 +116,27 @@ object MetadataEnricher {
 
     private val clientByTimeout by lazy { NetworkModule.okHttpClient }
 
+    /**
+     * Xtream player_api istemcisi: bazı sağlayıcılar bir kimliği (User-Agent) 403 ile reddediyor. 403 gelirse
+     * istek bir kez diğer kimlikle (uygulama ↔ tarayıcı) tekrarlanır.
+     */
+    private val xtreamClient by lazy {
+        clientByTimeout.newBuilder()
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val response = chain.proceed(request)
+                if (response.code != 403) return@addInterceptor response
+                val other = if (request.header("User-Agent") == com.example.util.AppUserAgent.app) {
+                    com.example.util.AppUserAgent.BROWSER
+                } else {
+                    com.example.util.AppUserAgent.app
+                }
+                response.close()
+                chain.proceed(request.newBuilder().header("User-Agent", other).build())
+            }
+            .build()
+    }
+
     private val apiService: TMDBApiService by lazy { NetworkModule.tmdbApiService }
 
     private val requestSemaphore = Semaphore(3)
@@ -253,7 +274,7 @@ object MetadataEnricher {
 
             if (com.example.util.DiagnosticLog.enabled) try {
                 com.example.util.DiagnosticLog.write(context, "xtream_cover_diag", 
-                    "BAŞARILI ÇAĞRI\nÖğe: ${item.name}\nAPI URL: $apiUrl\n" +
+                    "BAŞARILI ÇAĞRI\nÖğe: ${item.name}\nAPI: ${apiUrl.substringBefore("?")}\n" +
                     "rating (ham): '${info.optString("rating", "YOK")}'\n" +
                     "rating_5based (ham): '${info.optString("rating_5based", "YOK")}'\n" +
                     "hesaplanan ratingVal: $ratingVal\n" +
@@ -294,7 +315,7 @@ object MetadataEnricher {
 
         val creds = parseXtreamCredentials(anySeriesItem)
         if (creds == null) {
-            writeDiag("TOPLU ÇEKİM: Kimlik bilgisi çıkarılamadı.\nÖrnek öğe: ${anySeriesItem.name}\nstreamUrl: ${anySeriesItem.streamUrl}")
+            writeDiag("TOPLU ÇEKİM: Kimlik bilgisi çıkarılamadı.\nÖrnek öğe: ${anySeriesItem.name}")
             return@withContext emptyMap()
         }
         try {
@@ -305,14 +326,14 @@ object MetadataEnricher {
             val response = clientByTimeout.newCall(request).execute()
             if (!response.isSuccessful) {
                 Log.w(TAG, "Xtream get_series çağrısı başarısız: code=${response.code}")
-                writeDiag("TOPLU ÇEKİM BAŞARISIZ\nAPI URL: $apiUrl\nHTTP kodu: ${response.code}")
+                writeDiag("TOPLU ÇEKİM BAŞARISIZ\nAPI: ${apiUrl.substringBefore("?")}\nHTTP kodu: ${response.code}")
                 return@withContext emptyMap()
             }
 
             val responseBody = response.body?.string() ?: return@withContext emptyMap()
             if (responseBody.isBlank() || !responseBody.trim().startsWith("[")) {
                 Log.w(TAG, "Xtream get_series geçersiz/boş yanıt döndürdü")
-                writeDiag("TOPLU ÇEKİM GEÇERSİZ YANIT\nAPI URL: $apiUrl\nYanıtın ilk 300 karakteri: ${responseBody.take(300)}")
+                writeDiag("TOPLU ÇEKİM GEÇERSİZ YANIT\nAPI: ${apiUrl.substringBefore("?")}\nYanıtın ilk 300 karakteri: ${responseBody.take(300)}")
                 return@withContext emptyMap()
             }
 
@@ -341,7 +362,7 @@ object MetadataEnricher {
             }
             Log.d(TAG, "Xtream toplu dizi listesi: ${jsonArray.length()} dizi bulundu, ${result.size} tanesinde kapak var")
             writeDiag(
-                "TOPLU ÇEKİM BAŞARILI\nAPI URL: $apiUrl\n" +
+                "TOPLU ÇEKİM BAŞARILI\nAPI: ${apiUrl.substringBefore("?")}\n" +
                 "Xtream'in döndürdüğü toplam dizi sayısı: ${jsonArray.length()}\n" +
                 "İçlerinden kapağı olan: ${result.size}\n" +
                 "Xtream'in kendi dizi adlarından örnekler (bizim hesapladığımız başlıklarla KARŞILAŞTIRMAK için):\n" +
@@ -367,7 +388,7 @@ object MetadataEnricher {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .get()
                 .build()
-            val response = clientByTimeout.newCall(request).execute()
+            val response = xtreamClient.newCall(request).execute()
             if (!response.isSuccessful) return emptyMap()
             val body = response.body?.string() ?: return emptyMap()
             if (body.isBlank() || !body.trim().startsWith("[")) return emptyMap()
@@ -396,7 +417,7 @@ object MetadataEnricher {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .get()
                 .build()
-            val response = clientByTimeout.newCall(request).execute()
+            val response = xtreamClient.newCall(request).execute()
             val elapsedMs = System.currentTimeMillis() - startTime
             if (!response.isSuccessful) {
                 writeDiag("CANLI LİSTESİ BAŞARISIZ\nHTTP kodu: ${response.code}\nSüre: ${elapsedMs}ms")
@@ -441,7 +462,7 @@ object MetadataEnricher {
                 )
             }
             writeDiag(
-                "CANLI LİSTESİ BAŞARILI\nAPI URL: $apiUrl\n" +
+                "CANLI LİSTESİ BAŞARILI\nAPI: ${apiUrl.substringBefore("?")}\n" +
                 "Ağ isteği süresi: ${elapsedMs}ms\n" +
                 "Toplam kanal sayısı: ${jsonArray.length()}\n" +
                 "Geçerli üretilen: ${result.size}\n" +
@@ -458,7 +479,7 @@ object MetadataEnricher {
         fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_vod_streams_diag", msg)
         val creds = parseXtreamCredentials(anyMovieItem)
         if (creds == null) {
-            writeDiag("VOD LİSTESİ: Kimlik bilgisi çıkarılamadı.\nstreamUrl: ${anyMovieItem.streamUrl}")
+            writeDiag("VOD LİSTESİ: Kimlik bilgisi çıkarılamadı.")
             return@withContext emptyList()
         }
         try {
@@ -470,7 +491,7 @@ object MetadataEnricher {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .get()
                 .build()
-            val response = clientByTimeout.newCall(request).execute()
+            val response = xtreamClient.newCall(request).execute()
             val elapsedMs = System.currentTimeMillis() - startTime
             if (!response.isSuccessful) {
                 writeDiag("VOD LİSTESİ BAŞARISIZ\nHTTP kodu: ${response.code}\nSüre: ${elapsedMs}ms")
@@ -510,7 +531,7 @@ object MetadataEnricher {
                 )
             }
             writeDiag(
-                "VOD LİSTESİ BAŞARILI (tam çekim)\nAPI URL: $apiUrl\n" +
+                "VOD LİSTESİ BAŞARILI (tam çekim)\nAPI: ${apiUrl.substringBefore("?")}\n" +
                 "Ağ isteği süresi: ${elapsedMs}ms\n" +
                 "Toplam film sayısı: ${jsonArray.length()}\n" +
                 "Geçerli (id+isim dolu) IPTVItem üretilen: ${result.size}\n" +
@@ -527,7 +548,7 @@ object MetadataEnricher {
         fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_vod_streams_diag", msg)
         val creds = parseXtreamCredentials(anyMovieItem)
         if (creds == null) {
-            writeDiag("VOD LİSTESİ: Kimlik bilgisi çıkarılamadı.\nstreamUrl: ${anyMovieItem.streamUrl}")
+            writeDiag("VOD LİSTESİ: Kimlik bilgisi çıkarılamadı.")
             return@withContext 0
         }
         try {
@@ -538,7 +559,7 @@ object MetadataEnricher {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .get()
                 .build()
-            val response = clientByTimeout.newCall(request).execute()
+            val response = xtreamClient.newCall(request).execute()
             val elapsedMs = System.currentTimeMillis() - startTime
             if (!response.isSuccessful) {
                 writeDiag("VOD LİSTESİ BAŞARISIZ\nHTTP kodu: ${response.code}\nSüre: ${elapsedMs}ms")
@@ -557,7 +578,7 @@ object MetadataEnricher {
                 jsonArray.optJSONObject(it)?.optString("name", "") ?: ""
             }
             writeDiag(
-                "VOD LİSTESİ BAŞARILI\nAPI URL: $apiUrl\n" +
+                "VOD LİSTESİ BAŞARILI\nAPI: ${apiUrl.substringBefore("?")}\n" +
                 "Yanıt boyutu: ${responseBody.length} karakter\n" +
                 "Ağ isteği süresi: ${elapsedMs}ms\n" +
                 "Toplam film sayısı: ${jsonArray.length()}\n" +
@@ -580,7 +601,9 @@ object MetadataEnricher {
         showSummary: String,
         showCast: String,
         showDirector: String,
-        anyItemForCredentials: IPTVItem
+        anyItemForCredentials: IPTVItem,
+        /** Dizinin klasörü (ör. "Amazon"). Kimlik kaynağı rastgele bir film olduğundan onun kategorisi kullanılmaz. */
+        showCategory: String = ""
     ): com.example.data.model.TvShow? = withContext(Dispatchers.IO) {
         fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "series_info_live_diag", msg)
         val creds = parseXtreamCredentials(anyItemForCredentials) ?: run {
@@ -594,7 +617,7 @@ object MetadataEnricher {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .get()
                 .build()
-            val response = clientByTimeout.newCall(request).execute()
+            val response = xtreamClient.newCall(request).execute()
             if (!response.isSuccessful) {
                 writeDiag("CANLI BÖLÜM ÇEKME BAŞARISIZ\nDizi: $showTitle (id=$seriesId)\nHTTP kodu: ${response.code}")
                 return@withContext null
@@ -638,7 +661,7 @@ object MetadataEnricher {
                         cleanedName = showTitle,
                         logoUrl = epCover.ifBlank { showCover },
                         streamUrl = playUrl,
-                        category = anyItemForCredentials.category,
+                        category = showCategory.ifBlank { "Dizi" },
                         type = "SERIES",
                         rating = showRating,
                         summary = showSummary,
@@ -676,7 +699,7 @@ object MetadataEnricher {
                 id = seriesId,
                 title = showTitle,
                 logoUrl = showCover,
-                category = "",
+                category = showCategory,
                 rating = showRating,
                 summary = showSummary,
                 cast = showCast,
@@ -703,7 +726,7 @@ object MetadataEnricher {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .get()
                 .build()
-            val response = clientByTimeout.newCall(request).execute()
+            val response = xtreamClient.newCall(request).execute()
             if (!response.isSuccessful) return@withContext emptyList()
 
             val responseBody = response.body?.string() ?: return@withContext emptyList()
@@ -872,8 +895,8 @@ object MetadataEnricher {
         }
 
         val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
-        val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
+        val apiKey = savedKey // yalnızca kullanıcının kendi anahtarı; uygulamaya gömülü anahtar yok
+        if (apiKey.isBlank()) {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")
             return@withContext generateLocalMovieMetadata(item)
         }
@@ -1199,8 +1222,8 @@ object MetadataEnricher {
         fast: Boolean = false
     ): String? = withContext(Dispatchers.IO) {
         val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
-        val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
+        val apiKey = savedKey // yalnızca kullanıcının kendi anahtarı; uygulamaya gömülü anahtar yok
+        if (apiKey.isBlank()) {
             Log.w(TAG, "Gemini API Key is missing, placeholder, or default.")
             return@withContext null
         }
@@ -2102,8 +2125,8 @@ object MetadataEnricher {
         }
 
         val savedKey = com.example.util.SecretCipher.decrypt(context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("gemini_api_key")))
-        val apiKey = if (!savedKey.isNullOrEmpty()) savedKey else BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY" || apiKey == "placeholder") {
+        val apiKey = savedKey // yalnızca kullanıcının kendi anahtarı; uygulamaya gömülü anahtar yok
+        if (apiKey.isBlank()) {
             Log.w(TAG, "Gemini API Key is missing or default. Using local generator fallback.")
             return@withContext generateLocalPersonDetails(name, role)
         }

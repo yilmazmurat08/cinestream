@@ -1,6 +1,6 @@
 # Play Console Kontrol Listesi (senin yapacakların)
 
-Sürüm: **1.0.2 (versionCode 3)** · Dosya: `CineStream-1.0.2.aab`
+Sürüm: **1.0.3 (versionCode 4)** · Dosya: `CineStream-1.0.3.aab`
 
 ## Bugün (dahili/kapalı test için)
 

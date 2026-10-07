@@ -76,12 +76,8 @@ import com.example.data.model.AiRecommendationHistory
 import com.example.data.model.IPTVItem
 import com.example.ui.IPTVViewModel
 
-/** Kayıtlı ya da uygulamaya gömülü kullanılabilir bir Gemini anahtarı var mı (Gemini davranışı değişmez). */
-internal fun hasUsableGeminiKey(saved: String): Boolean {
-    if (saved.isNotBlank()) return true
-    val builtIn = BuildConfig.GEMINI_API_KEY
-    return builtIn.isNotEmpty() && builtIn != "MY_GEMINI_API_KEY" && builtIn != "placeholder"
-}
+/** Kullanıcının kendi Gemini anahtarı kayıtlı mı (uygulamaya gömülü anahtar yoktur). */
+internal fun hasUsableGeminiKey(saved: String): Boolean = saved.isNotBlank()
 
 /**
  * TV asistanı: telefondaki ✨ asistanın (aynı sohbet, aynı Gemini tahmini, aynı kütüphane eşleştirmesi) büyük yazılı,
