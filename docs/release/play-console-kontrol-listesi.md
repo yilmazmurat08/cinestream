@@ -1,6 +1,6 @@
 # Play Console Kontrol Listesi (senin yapacakların)
 
-Sürüm: **1.0.6 (versionCode 7)** · Dosya: `CineStream-1.0.6.aab`
+Sürüm: **1.0.7 (versionCode 8)** · Dosya: `CineStream-1.0.7.aab`
 
 ## Bugün (dahili/kapalı test için)
 
@@ -29,13 +29,12 @@ Sürüm: **1.0.6 (versionCode 7)** · Dosya: `CineStream-1.0.6.aab`
 - [ ] Ayarlar > Lisans testi: kendi Gmail'in ve testçilerin
 - [ ] Dahili testte test kartıyla satın alma ve iptal denemesi
 
-## Yapay zekâ "Bildir" için Google Formu (yayından önce)
+## Yapay zekâ "Bildir" için Google Formu ✅ (1.0.7)
 
-Şu an bildirimler, form tanımlı olmadığı için hazır doldurulmuş e-posta ile gönderiliyor. Politika uygulamadan çıkmadan gönderim istediği için üretime geçmeden önce:
-
-1. forms.google.com'da "CineStream AI bildirimleri" adında bir form aç.
-2. Dört adet **kısa yanıt** sorusu ekle: Gerekçe, Not, Yanıt, Sürüm.
-3. Formun "Önceden doldurulmuş bağlantı al" seçeneğiyle linki bana gönder. Alan kimliklerini çıkarıp uygulamaya koyarım; sonraki sürümle bildirim uygulama içinden gider.
+- [x] "Cinestream Ai bildirimleri" formu herkese açık (oturum açma istemez); bildirimler uygulamadan çıkmadan gönderilir.
+- [x] Deneme gönderimi 8 Ekim 2026'da yapıldı ("Your response has been recorded"); formun Yanıtlar sekmesindeki "TEST" kaydı silinebilir.
+- [ ] Google Dokümanlar'daki gizlilik politikası: yapay zekâ bildirimleri paragrafını `gizlilik-politikasi.html` / `privacy-policy.html` ile aynı yap (Google Formlar cümlesi eklendi, tarih 8 Ekim 2026).
+- Not: Formun ayarlarını değiştirme ("1 yanıtla sınırla", "E-posta adreslerini topla: Doğrulandı" ya da yanıt verenleri kısıtlamak oturum açmayı zorunlu kılar ve bildirimler yeniden e-postaya düşer).
 
 ## Android TV
 

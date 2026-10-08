@@ -84,16 +84,19 @@ object AiReportStore {
  * gönderilir, kullanıcı uygulamadan çıkmaz. Tanımlı değilse veya gönderim başarısızsa hazır doldurulmuş e-posta açılır.
  */
 object AiReportSender {
-    /** Google Form gönderim adresi: https://docs.google.com/forms/d/e/<FORM_ID>/formResponse */
-    const val FORM_ACTION_URL = ""
-    const val FIELD_REASON = ""
-    const val FIELD_NOTE = ""
-    const val FIELD_RESPONSE = ""
-    const val FIELD_META = ""
+    /** "Cinestream Ai bildirimleri" Google Formu (herkese açık, oturum açma istemez). */
+    const val FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLScktJisHhDoExfqnoGYcMG2YghS-EUlJq1SciDz1lWReI19xA/formResponse"
+    const val FIELD_REASON = "entry.333790031"   // Gerekçe
+    const val FIELD_NOTE = "entry.43921070"      // Not
+    const val FIELD_RESPONSE = "entry.867632422" // Yanıt
+    const val FIELD_META = "entry.439200195"     // Sürüm (ekran · sürüm)
     const val DEVELOPER_EMAIL = "yilmazmurat08@gmail.com"
 
-    suspend fun sendInApp(report: AiReport): Boolean = withContext(Dispatchers.IO) {
-        if (FORM_ACTION_URL.isBlank()) return@withContext false
+    suspend fun sendInApp(report: AiReport): Boolean = sendTo(FORM_ACTION_URL, report)
+
+    /** Bildirimi verilen form adresine gönderir (testte sahte sunucuya yönlendirilir). */
+    internal suspend fun sendTo(url: String, report: AiReport): Boolean = withContext(Dispatchers.IO) {
+        if (url.isBlank()) return@withContext false
         try {
             val body = FormBody.Builder()
                 .add(FIELD_REASON, report.reason.code)
@@ -101,7 +104,7 @@ object AiReportSender {
                 .add(FIELD_RESPONSE, report.response.take(4000))
                 .add(FIELD_META, "${report.screen} · v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
                 .build()
-            val request = Request.Builder().url(FORM_ACTION_URL).post(body).build()
+            val request = Request.Builder().url(url).post(body).build()
             com.example.data.api.NetworkModule.okHttpClient.newCall(request).execute().use { it.isSuccessful }
         } catch (e: Exception) {
             false
