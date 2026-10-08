@@ -76,6 +76,9 @@ class IPTVRepository(
     private val appContext: android.content.Context? = null
 ) {
 
+    /** Aynı veritabanı (TV kataloğu okumaları için; uygulamada tek veritabanı örneği). */
+    internal val dao: IPTVDao get() = iptvDao
+
     companion object {
         private const val TAG = "IPTVRepository"
         const val MAX_M3U_DOWNLOAD_BYTES = 200L * 1024L * 1024L // 200 MB Safety Limit

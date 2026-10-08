@@ -221,6 +221,7 @@ fun TvPlayerOverlay(
     val parentalLock by viewModel.parentalLock.collectAsState()
     val safeSession by viewModel.isSafeSessionActive.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
+    val favoriteSeriesIds by viewModel.favoriteSeriesIds.collectAsState()
     val epg = remember(item.id, positionSec / 30) { if (isLive) viewModel.tvEpgNowNext(item) else null to null }
     var pinCategory by remember { mutableStateOf<String?>(null) }
 
@@ -307,7 +308,7 @@ fun TvPlayerOverlay(
                         positionSec = positionSec,
                         durationSec = durationSec,
                         now = epg.first,
-                        isSaved = favorites.any { it.id == item.id },
+                        isSaved = viewModel.isFavorite(item, favorites, favoriteSeriesIds),
                         playPauseFocus = playPauseFocus,
                         onPlayPause = onPlayPause,
                         onSeek = onSeek,

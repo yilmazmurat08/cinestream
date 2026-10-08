@@ -203,7 +203,7 @@ class IPTVViewModel(
         fallback
     }
 
-    private val tvCatalog by lazy { com.example.data.repository.TvCatalogRepository(AppDatabase.getDatabase(getApplication()).iptvDao()) }
+    private val tvCatalog by lazy { com.example.data.repository.TvCatalogRepository(repository.dao) }
 
     suspend fun tvCategories(type: String): List<com.example.data.repository.TvCategory> = tvRead("categories", emptyList()) {
         tvCatalog.categories(type) { if (type == "SERIES") seriesCategoryRank(it) else movieCategoryRank(it) }
@@ -979,25 +979,59 @@ class IPTVViewModel(
 
     val xtreamSeriesCatalog: StateFlow<List<com.example.data.model.TvShow>> =
         repository.xtreamSeriesCatalogFlow
-            .map { list ->
-                list.map { entity ->
-                    com.example.data.model.TvShow(
-                        id = entity.seriesId,
-                        title = entity.name,
-                        logoUrl = entity.coverUrl.ifEmpty { entity.backdropUrl }.ifEmpty { null },
-                        category = entity.genre.ifEmpty { "Dizi" },
-                        rating = entity.rating,
-                        summary = entity.plot,
-                        cast = entity.cast,
-                        director = entity.director,
-                        isFavorite = false,
-                        seasons = emptyList(),
-                        platformName = entity.categoryId.ifBlank { "Diğer" }
-                    )
-                }
-            }
+            .map { list -> list.map { entity -> catalogShowOf(entity) } }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Xtream kataloğundaki favori diziler (bkz. FavoriteSeriesStore). Bölüm kimliği → dizi kimliği eşlemesi,
+    // dizi canlı çekildiğinde kaydedilir: detay ve oynatıcıdaki favori düğmesi bölümü değil diziyi işaretler.
+    private val favoriteSeriesStore = com.example.data.repository.FavoriteSeriesStore(application)
+    val favoriteSeriesIds: StateFlow<Set<Int>> = favoriteSeriesStore.ids
+    private val episodeToSeries = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+
+    /** Favori listeleri (Listem, ana sayfa, TV Kaydedilenler): veritabanındaki favoriler + favori katalog dizileri. */
+    val favoritesWithSeries: StateFlow<List<IPTVItem>> = combine(favorites, favoriteSeriesIds, xtreamSeriesCatalog) { dbFavorites, ids, catalog ->
+        if (ids.isEmpty()) {
+            dbFavorites
+        } else {
+            catalog.filter { it.id in ids }.map { show ->
+                IPTVItem(
+                    id = show.id, playlistId = 0, name = show.title, cleanedName = show.title, logoUrl = show.logoUrl,
+                    streamUrl = "", category = show.platformName, type = "SERIES", rating = show.rating,
+                    summary = show.summary, cast = show.cast, director = show.director, isFavorite = true
+                )
+            } + dbFavorites
+        }
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Öğe bir Xtream katalog dizisine aitse dizinin kimliği (katalog kartı ya da canlı çekilmiş bir bölüm). */
+    fun catalogSeriesIdOf(item: IPTVItem): Int? {
+        if (item.type != "SERIES") return null
+        if (item.playlistId == 0 && item.id > 0 && item.streamUrl.isBlank()) return item.id
+        if (item.id < 0) return episodeToSeries[item.id]
+        return null
+    }
+
+    /** Favori düğmesinin durumu: katalog dizilerinde dizinin kendisi, diğerlerinde öğenin kendisi. */
+    fun isFavorite(item: IPTVItem, dbFavorites: List<IPTVItem>, seriesIds: Set<Int>): Boolean {
+        val seriesId = catalogSeriesIdOf(item)
+        return if (seriesId != null) seriesId in seriesIds else dbFavorites.any { it.id == item.id } || item.isFavorite
+    }
+
+    private fun catalogShowOf(entity: com.example.data.model.XtreamSeriesCatalogEntity) = com.example.data.model.TvShow(
+        id = entity.seriesId,
+        title = entity.name,
+        logoUrl = entity.coverUrl.ifEmpty { entity.backdropUrl }.ifEmpty { null },
+        category = entity.genre.ifEmpty { "Dizi" },
+        rating = entity.rating,
+        summary = entity.plot,
+        cast = entity.cast,
+        director = entity.director,
+        isFavorite = false,
+        seasons = emptyList(),
+        platformName = entity.categoryId.ifBlank { "Diğer" }
+    )
 
     val seriesCoversMap: StateFlow<Map<String, String>> = combine(
         repository.getAllSeriesCoversFlow(),
@@ -2245,8 +2279,10 @@ class IPTVViewModel(
     private val _isLoadingLiveShow = MutableStateFlow(false)
     val isLoadingLiveShow: StateFlow<Boolean> = _isLoadingLiveShow.asStateFlow()
 
-    fun openCatalogShow(catalogShow: com.example.data.model.TvShow) {
+    /** [fallbackItem]: dizi sağlayıcıdan çekilemezse eskisi gibi bu öğenin sayfası açılır. */
+    fun openCatalogShow(catalogShow: com.example.data.model.TvShow, fallbackItem: IPTVItem? = null) {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            var opened = false
             try {
                 _isLoadingLiveShow.value = true
                 _liveFetchedShow.value = null
@@ -2269,38 +2305,57 @@ class IPTVViewModel(
                     showCategory = catalogShow.platformName.takeIf { it.isNotBlank() && it != "Diğer" } ?: catalogShow.category
                 )
                 if (fetchedShow != null) {
+                    fetchedShow.seasons.forEach { season -> season.episodes.forEach { episodeToSeries[it.item.id] = fetchedShow.id } }
                     _liveFetchedShow.value = fetchedShow
                     val firstEp = fetchedShow.seasons.firstOrNull()?.episodes?.firstOrNull()
                     if (firstEp != null) {
                         selectItem(firstEp.item)
+                        opened = true
                     }
                 } else {
                     Log.w("IPTVViewModel", "openCatalogShow: '${catalogShow.title}' canlı çekilemedi")
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.w("IPTVViewModel", "openCatalogShow hatası: ${e.message}")
             } finally {
                 _isLoadingLiveShow.value = false
             }
+            if (!opened && fallbackItem != null) showItemDetail(fallbackItem)
         }
     }
 
     // Detail Action
     fun selectItem(item: IPTVItem?) {
-        if (item != null) {
-            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
-                val dbItem = if (item.id != 0) {
-                    repository.getItemByIdDirect(item.id) ?: _allItems.value.firstOrNull { it.id == item.id } ?: item
-                } else {
-                    findMatchedItem(item)
-                }
-                _selectedItem.value = dbItem.withPendingMetadata()
-                if (dbItem.type == "MOVIE" || dbItem.type == "SERIES") {
-                    enrichItemMetadata(dbItem)
-                }
+        // Xtream katalog dizisi (ana sayfa "Popüler Diziler", arama, favoriler, oyuncu filmografisi, asistan): klasördeki
+        // gibi dizinin kendisi açılır. Eskiden adı benzeyen başka bir kayıt açılabiliyor, sayfada farklı poster çıkıyordu.
+        if (item != null && item.id > 0 && catalogSeriesIdOf(item) != null) {
+            viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+                val entity = try { repository.dao.findCatalogShow(item.id, item.name) } catch (e: Exception) { null }
+                if (entity != null) openCatalogShow(catalogShowOf(entity), fallbackItem = item) else showItemDetail(item)
             }
+            return
+        }
+        if (item != null) {
+            showItemDetail(item)
         } else {
             _selectedItem.value = null
+        }
+    }
+
+    private fun showItemDetail(item: IPTVItem) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
+            val dbItem = when {
+                // Katalog dizisinin numarası veritabanında başka bir kanal/filme ait olabilir: numarayla aranmaz.
+                catalogSeriesIdOf(item) != null -> item
+                item.id != 0 -> repository.getItemByIdDirect(item.id) ?: _allItems.value.firstOrNull { it.id == item.id } ?: item
+                else -> findMatchedItem(item)
+            }
+            _selectedItem.value = dbItem.withPendingMetadata()
+            if (dbItem.type == "MOVIE" || dbItem.type == "SERIES") {
+                enrichItemMetadata(dbItem)
+            }
         }
     }
 
@@ -2640,6 +2695,11 @@ class IPTVViewModel(
 
     // Favorite Action
     fun toggleFavorite(item: IPTVItem) {
+        val seriesId = catalogSeriesIdOf(item)
+        if (seriesId != null) {
+            favoriteSeriesStore.toggle(seriesId)
+            return
+        }
         viewModelScope.launch(coroutineExceptionHandler) {
             val updatedVal = !item.isFavorite
             repository.toggleFavorite(item.id, updatedVal)

@@ -131,7 +131,8 @@ fun TvDetailScreen(
     val favorites by viewModel.favorites.collectAsState()
     val continueWatching by viewModel.continueWatching.collectAsState()
     val covers by viewModel.seriesCoversMap.collectAsState()
-    val isFavorite = favorites.any { it.id == item.id } || item.isFavorite
+    val favoriteSeriesIds by viewModel.favoriteSeriesIds.collectAsState()
+    val isFavorite = viewModel.isFavorite(item, favorites, favoriteSeriesIds)
 
     var show by remember(item.id) { mutableStateOf<TvShow?>(null) }
     var tmdb by remember(item.id) { mutableStateOf<TMDBMediaDetails?>(null) }

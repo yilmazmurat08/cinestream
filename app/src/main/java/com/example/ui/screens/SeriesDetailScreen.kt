@@ -125,8 +125,14 @@ fun SeriesDetailScreen(
     } else {
         remember { mutableStateOf(emptyList<IPTVItem>()) }
     }
-    val isFavorite = remember(item, favoritesList) {
-        favoritesList.any { it.id == item.id } || item.isFavorite
+    val favoriteSeriesIds by if (viewModel != null) {
+        viewModel.favoriteSeriesIds.collectAsState()
+    } else {
+        remember { mutableStateOf(emptySet<Int>()) }
+    }
+    val isFavorite = remember(item, favoritesList, favoriteSeriesIds) {
+        viewModel?.isFavorite(item, favoritesList, favoriteSeriesIds)
+            ?: (favoritesList.any { it.id == item.id } || item.isFavorite)
     }
 
     // Dynamic trailer URL resolution using simulated ViewModel fetcher

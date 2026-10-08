@@ -121,6 +121,7 @@ fun HomeScreen(
     val movieGroups by viewModel.movieGroups.collectAsState()
     val seriesGroups by viewModel.seriesGroups.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
+    val favoritesRow by viewModel.favoritesWithSeries.collectAsState()
     val continueWatching by viewModel.continueWatching.collectAsState()
     val isProUser by viewModel.isProUser.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -552,11 +553,8 @@ fun HomeScreen(
                                         title = "📺 Popüler Diziler",
                                         displayTitle = stringResource(R.string.home_top10_series),
                                         items = top10Series,
-                                        onItemClick = { item ->
-                                            val matched = viewModel.findMatchedItem(item)
-                                            val targetItem = if (matched.streamUrl.isNotEmpty()) matched else item
-                                            viewModel.selectItem(targetItem)
-                                        },
+                                        // Katalog dizisi: klasördeki gibi dizinin kendisi açılır (adı benzeyen başka kayıt değil).
+                                        onItemClick = { item -> viewModel.selectItem(item) },
                                         onItemLongClick = { },
                                         modifier = Modifier.fillMaxWidth().wrapContentHeight()
                                     )
@@ -990,7 +988,7 @@ fun HomeScreen(
                                 }
 
                                 // 6. Watchlist (İzleme Listem)
-                                if (favorites.isNotEmpty() && (selectedCategory == null || selectedCategory == "Tümü")) {
+                                if (favoritesRow.isNotEmpty() && (selectedCategory == null || selectedCategory == "Tümü")) {
                                     item(key = "watchlist_section") {
                                         Column(modifier = Modifier.padding(vertical = 16.dp)) {
                                             Row(
@@ -1019,7 +1017,7 @@ fun HomeScreen(
                                                     modifier = Modifier.testTag("see_all_watchlist_button")
                                                 ) {
                                                     Text(
-                                                        text = stringResource(R.string.home_see_all_count, favorites.size),
+                                                        text = stringResource(R.string.home_see_all_count, favoritesRow.size),
                                                         color = CineOrange,
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.Bold
@@ -1030,7 +1028,7 @@ fun HomeScreen(
                                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                                 horizontalArrangement = Arrangement.spacedBy(14.dp)
                                             ) {
-                                                itemsIndexed(favorites.filterNotNull(), key = { index, item -> "${item.id}_$index" }) { _, item ->
+                                                itemsIndexed(favoritesRow.filterNotNull(), key = { index, item -> "${item.id}_$index" }) { _, item ->
                                                     MediaCard(
                                                         item = item,
                                                         onClick = { viewModel.selectItem(item) },

@@ -63,7 +63,7 @@ fun WatchlistScreen(
     modifier: Modifier = Modifier
 ) {
     val adaptiveLayout = rememberAppAdaptiveLayout()
-    val favorites by viewModel.favorites.collectAsState()
+    val favorites by viewModel.favoritesWithSeries.collectAsState()
     val currentTheme = LocalAppTheme.current
     var selectedTab by remember { mutableStateOf("ALL") } // ALL, MOVIE, SERIES, LIVE
     var searchQuery by remember { mutableStateOf("") }
