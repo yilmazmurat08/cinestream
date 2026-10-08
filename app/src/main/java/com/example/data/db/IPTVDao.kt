@@ -74,6 +74,9 @@ interface IPTVDao {
     @Query("SELECT * FROM series_covers")
     fun getAllSeriesCoversFlow(): Flow<List<com.example.data.model.SeriesCoverEntity>>
 
+    @Query("DELETE FROM series_covers")
+    suspend fun clearSeriesCovers()
+
     @androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun upsertSeriesCover(cover: com.example.data.model.SeriesCoverEntity)
 

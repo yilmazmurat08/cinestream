@@ -35,7 +35,9 @@ data class EnrichedMetadata(
     val logoUrl: String? = null,
     val trailerUrl: String? = null,
     val releaseDate: String = "",
-    val genre: String = ""
+    val genre: String = "",
+    /** Yatay sahne görseli (yalnızca detay ekranının üst görseli için; poster yerine kullanılmaz). */
+    val backdropUrl: String? = null
 )
 
 /**
@@ -203,10 +205,11 @@ object MetadataEnricher {
             } catch (e: Exception) { }
             return@withContext null
         }
+        // Dizi bölümünün adresindeki numara bölümün numarasıdır, dizinin değil. Onunla get_series_info istenirse sağlayıcı
+        // aynı numaralı BAŞKA bir dizinin konusunu, oyuncularını ve posterini döndürüyordu. Dizi bilgisi kataloğdan gelir.
+        if (creds.isSeries) return@withContext null
 
-        val action = if (creds.isSeries) "get_series_info" else "get_vod_info"
-        val idParam = if (creds.isSeries) "series_id" else "vod_id"
-        val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=$action&$idParam=${creds.streamId}"
+        val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_vod_info&vod_id=${creds.streamId}"
 
         Log.d(TAG, "Calling Xtream API GET request: $apiUrl")
 
@@ -257,11 +260,10 @@ object MetadataEnricher {
             val backdropFromArray = info.optJSONArray("backdrop_path")?.let { arr ->
                 if (arr.length() > 0) arr.optString(0, "") else ""
             } ?: ""
-            val cover = backdropFromArray.ifEmpty {
-                info.optString("cover_big", "").ifEmpty {
-                    info.optString("movie_image", "").ifEmpty {
-                        info.optString("cover", "")
-                    }
+            // Poster dikey kapaktır; yatay sahne görseli (backdrop) poster yerine kullanılmaz (listedeki kartla aynı kalsın).
+            val cover = info.optString("cover_big", "").ifEmpty {
+                info.optString("movie_image", "").ifEmpty {
+                    info.optString("cover", "")
                 }
             }
 
@@ -295,7 +297,8 @@ object MetadataEnricher {
                 logoUrl = cover.ifEmpty { item.logoUrl },
                 trailerUrl = trailer.ifEmpty { item.trailerUrl },
                 releaseDate = releaseDate,
-                genre = genre
+                genre = genre,
+                backdropUrl = backdropFromArray.ifEmpty { null }
             )
 
         } catch (e: Exception) {

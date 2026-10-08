@@ -133,6 +133,8 @@ class IPTVRepository(
     fun getAllSeriesCoversFlow(): Flow<Map<String, String>> =
         iptvDao.getAllSeriesCoversFlow().guardedRead("series covers").map { list -> list.associate { it.showTitleKey to it.coverUrl } }
 
+    suspend fun clearSeriesCovers() = iptvDao.clearSeriesCovers()
+
     suspend fun saveSeriesCover(showTitleKey: String, coverUrl: String) {
         iptvDao.upsertSeriesCover(com.example.data.model.SeriesCoverEntity(showTitleKey, coverUrl))
     }

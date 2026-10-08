@@ -1610,10 +1610,23 @@ class IPTVViewModel(
         iptvItem = this
     )
 
+    /**
+     * Eski sürümler dizi kapağını bulamayınca bölüm numarasıyla dizi bilgisi istiyor ve gelen (başka bir dizinin) kapağını
+     * kaydediyordu. Bu kayıtlar bir kez silinir; kapaklar sağlayıcının dizi listesinden yeniden alınır (kullanıcı verisi değil,
+     * sağlayıcıdan gelen önbellek).
+     */
+    internal suspend fun dropUnverifiedSeriesCoversOnce() {
+        val prefs = getApplication<Application>().getSharedPreferences("poster_sources", android.content.Context.MODE_PRIVATE)
+        if (prefs.getBoolean("series_covers_verified_v1", false)) return
+        repository.clearSeriesCovers()
+        prefs.edit().putBoolean("series_covers_verified_v1", true).apply()
+    }
+
     private fun prefetchSeriesCovers() {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             try {
                 kotlinx.coroutines.delay(2000)
+                dropUnverifiedSeriesCoversOnce()
                 val seriesItems = repository.getItemsByTypeDirect("SERIES")
                 if (seriesItems.isEmpty()) return@launch
 
@@ -1633,7 +1646,7 @@ class IPTVViewModel(
                     ambiguousMovies.forEachIndexed { i, s -> msg.append("  ${i + 1}. $s\n") }
                     com.example.util.DiagnosticLog.write(getApplication<Application>(), "series_grouping_diag", msg.toString())
                 } catch (e: Exception) { }
-                var pending = shows.filter { show ->
+                val pending = shows.filter { show ->
                     val key = show.title.lowercase(java.util.Locale.ROOT).trim()
                     !existingCovers.containsKey(key) && show.logoUrl.isNullOrBlank()
                 }
@@ -1662,37 +1675,11 @@ class IPTVViewModel(
                                 }
                             }
                         }
-                        val matchedKeys = bulkCovers.keys
-                        pending = pending.filter { show ->
-                            !matchedKeys.contains(show.title.lowercase(java.util.Locale.ROOT).trim())
-                        }
-                        Log.d("IPTVViewModel", "Toplu çağrı: ${bulkCovers.size} kapak bulundu, ${pending.size} dizi hâlâ eksik")
+                        Log.d("IPTVViewModel", "Toplu çağrı: ${bulkCovers.size} kapak bulundu")
                     }
                 }
-                if (pending.isEmpty()) return@launch
-
-                for (show in pending) {
-                    val representativeItem = show.seasons.firstOrNull()?.episodes?.firstOrNull()?.item
-                    if (representativeItem == null) continue
-                    val key = show.title.lowercase(java.util.Locale.ROOT).trim()
-                    var resolvedCover: String? = null
-                    try {
-                        val meta = com.example.data.api.MetadataEnricher.fetchXtreamMetadata(getApplication(), representativeItem)
-                        if (meta != null && !meta.logoUrl.isNullOrBlank()) {
-                            resolvedCover = meta.logoUrl
-                        }
-                    } catch (e: Exception) {
-                        Log.w("IPTVViewModel", "prefetchSeriesCovers: ${show.title} Xtream API hatası: ${e.message}")
-                    }
-                    if (!resolvedCover.isNullOrBlank()) {
-                        try {
-                            repository.saveSeriesCover(key, resolvedCover)
-                        } catch (e: Exception) {
-                            Log.w("IPTVViewModel", "prefetchSeriesCovers: ${show.title} kaydetme hatası: ${e.message}")
-                        }
-                    }
-                    kotlinx.coroutines.delay(400)
-                }
+                // Toplu listede bulunamayan diziler için bölüm üzerinden kapak aranmaz: bölüm numarasıyla yapılan istek
+                // başka bir dizinin kapağını getiriyordu. Kapak yoksa dürüst yer tutucu gösterilir.
                 Log.d("IPTVViewModel", "prefetchSeriesCovers: tamamlandı")
             } catch (e: Exception) {
                 Log.w("IPTVViewModel", "prefetchSeriesCovers genel hata: ${e.message}")
@@ -2359,16 +2346,23 @@ class IPTVViewModel(
         }
     }
 
+    private val _detailBackdrop = MutableStateFlow<Pair<Int, String>?>(null)
+    /** Açık detayın yatay sahne görseli (öğe kimliğiyle): yalnızca üst görsel için. */
+    val detailBackdrop: StateFlow<Pair<Int, String>?> = _detailBackdrop.asStateFlow()
+
     private fun enrichItemMetadata(item: IPTVItem) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
             try {
                 val meta = com.example.data.api.MetadataEnricher.enrichWithXtreamOrFallback(getApplication(), item)
+                // Yatay sahne görseli yalnızca detayın üst görseli olur; poster olarak kaydedilmez.
+                meta.backdropUrl?.takeIf { it.isNotBlank() }?.let { _detailBackdrop.value = item.id to it }
                 val updatedItem = item.copy(
                     summary = meta.summary.ifBlank { item.summary },
                     cast = meta.cast.ifBlank { item.cast },
                     director = meta.director.ifBlank { item.director },
                     rating = if (meta.rating > 0.0) meta.rating else item.rating,
-                    logoUrl = meta.logoUrl?.ifBlank { null } ?: item.logoUrl,
+                    // Listedeki poster korunur (detayda ve listede aynı görsel); poster yoksa sağlayıcınınki kullanılır.
+                    logoUrl = item.logoUrl?.takeIf { it.isNotBlank() } ?: meta.logoUrl?.ifBlank { null },
                     trailerUrl = meta.trailerUrl?.ifBlank { null } ?: item.trailerUrl,
                     releaseDate = meta.releaseDate.ifBlank { item.releaseDate },
                     genre = meta.genre.ifBlank { item.genre }

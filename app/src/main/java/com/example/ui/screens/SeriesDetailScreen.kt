@@ -584,9 +584,9 @@ fun SeriesDetailScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
 
-                                // Release Date Pill
-                                val releaseDateText = item.releaseDate.ifBlank { "2026-04-29" }
-                                Row(
+                                // Çıkış tarihi, tür ve oyuncu: bilgi yoksa gösterilmez (eskiden uydurma değer yazılıyordu).
+                                val releaseDateText = item.releaseDate
+                                if (releaseDateText.isNotBlank()) Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
                                         .background(Color(0xFF1E1E24), RoundedCornerShape(18.dp))
@@ -609,8 +609,8 @@ fun SeriesDetailScreen(
                                 }
 
                                 // Genre Pill
-                                val genreText = item.genre.ifBlank { if (tvShow.category.isNotBlank()) tvShow.category else "Komedi, Dram" }
-                                Box(
+                                val genreText = item.genre.ifBlank { tvShow.category }
+                                if (genreText.isNotBlank()) Box(
                                     modifier = Modifier
                                         .background(Color(0xFF1E1E24), RoundedCornerShape(18.dp))
                                         .border(0.8.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
@@ -627,8 +627,8 @@ fun SeriesDetailScreen(
                                 }
 
                                 // Cast Pill
-                                val castText = item.cast.ifBlank { "Meryl Streep, Anne H..." }
-                                Box(
+                                val castText = item.cast
+                                if (castText.isNotBlank()) Box(
                                     modifier = Modifier
                                         .background(Color(0xFF1E1E24), RoundedCornerShape(18.dp))
                                         .border(0.8.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
