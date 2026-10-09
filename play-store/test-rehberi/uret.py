@@ -62,6 +62,14 @@ h1{font-size:68px;line-height:1.08;font-weight:800;letter-spacing:-1px}
  box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:nowrap}
 .finger{position:absolute;font-size:96px;line-height:1;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
 
+
+.mk{position:absolute;border:6px solid #ff7a1a;border-radius:26px;box-shadow:0 0 0 12px rgba(255,122,26,.30)}
+.mk.no{border-color:#e02020;box-shadow:0 0 0 12px rgba(224,32,32,.30)}
+.mk.ok{border-color:#22c55e;box-shadow:0 0 0 12px rgba(34,197,94,.30)}
+.lab{position:absolute;color:#fff;font-weight:800;font-size:28px;line-height:1;padding:12px 20px;border-radius:26px;background:#ff7a1a;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.lab.no{background:#e02020}
+.lab.ok{background:#16a34a}
+
 /* play düğmeleri */
 .gbtn{background:#01875f;color:#fff;font-weight:800;text-align:center;border-radius:30px}
 .gout{border:3px solid #01875f;color:#01875f;font-weight:800;text-align:center;border-radius:30px;background:#fff}
@@ -80,7 +88,7 @@ h1{font-size:68px;line-height:1.08;font-weight:800;letter-spacing:-1px}
 
 def page(step, title, sub, body, foot="Telefonuna göre yazılar küçük farklar gösterebilir.<br>Takılırsan ekran görüntüsünü gruba at 💬"):
     badge = f'<div class="badge">{step}</div>' if step else ""
-    pill = f'<div class="pill">Adım {step}/5</div>' if step else '<div class="pill">Rehber</div>'
+    pill = f'<div class="pill">Adım {step}/6</div>' if step else '<div class="pill">Rehber</div>'
     return f"""<!doctype html><html lang="tr"><head><meta charset="utf-8"><style>{CSS}</style></head><body>
 <div class="top"><div class="brand"><img src="icon.png"><b>Cine<span>Stream</span></b></div>{pill}</div>
 <div class="hero"><div class="herorow">{badge}<h1>{title}</h1></div><div class="sub">{sub}</div></div>
@@ -92,33 +100,83 @@ def status(dark=False):
     return '<div class="sb"><span>12:30</span><span>▂▄▆ 🔋</span></div>'
 
 
+# ---------------------------------------------------------------- gerçek ekran görüntüsü yardımcıları
+SHOTS = HERE / "ekranlar"
+SRC_W, SRC_H = 900, 2000  # işaret koordinatları bu ölçekte verilir (görüntüler 1080x2400, aynı oran)
+
+
+def shot(name, y0, y1, width, marks, gutter=0):
+    """Gerçek ekran görüntüsünün y0..y1 bandı. İşaretler çerçevenin içinde, etiketler dışında (yazıların üstüne binmez).
+    marks: (tür, x0, y0, x1, y1, etiket, yer) ; yer: 'right' (sağ yan) ya da 'below' (altta)."""
+    s = width / SRC_W
+    h = (y1 - y0) * s
+    col = {"tap": "#ff7a1a", "no": "#e02020", "ok": "#16a34a"}
+    pad = 10
+    frame = [f'<div style="position:relative;width:{width}px;height:{h:.0f}px;border-radius:40px;overflow:hidden;'
+             f'border:3px solid #3a3a48;background:#000;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 90px rgba(168,85,247,.25)">'
+             f'<img src="file://{SHOTS / name}" style="position:absolute;left:0;top:{-y0 * s:.1f}px;width:{width}px">']
+    outside = []
+    for kind, x0, ym0, x1, ym1, label, where in marks:
+        left, top = (x0 - pad) * s, (ym0 - y0 - pad) * s
+        w, hh = (x1 - x0 + 2 * pad) * s, (ym1 - ym0 + 2 * pad) * s
+        frame.append(f'<div class="mk {kind}" style="left:{left:.0f}px;top:{top:.0f}px;width:{w:.0f}px;height:{hh:.0f}px"></div>')
+        c = col[kind]
+        if where == "right":
+            cy = top + hh / 2
+            x_from = left + w
+            x_to = width + 30
+            outside.append(f'<div style="position:absolute;left:{x_from:.0f}px;top:{cy - 3:.0f}px;width:{x_to - x_from:.0f}px;height:6px;background:{c};border-radius:3px"></div>')
+            outside.append(f'<div class="lab {kind}" style="left:{x_to:.0f}px;top:{cy - 30:.0f}px">{label}</div>')
+        else:
+            cx = left + w / 2
+            y_from = top + hh
+            y_to = h + 34
+            outside.append(f'<div style="position:absolute;left:{cx - 3:.0f}px;top:{y_from:.0f}px;width:6px;height:{y_to - y_from:.0f}px;background:{c};border-radius:3px"></div>')
+            outside.append(f'<div class="lab {kind}" style="left:{cx:.0f}px;top:{y_to:.0f}px;transform:translateX(-50%)">{label}</div>')
+    frame.append("</div>")
+    total_h = h + (110 if any(m[6] == "below" for m in marks) else 0)
+    return (f'<div style="position:relative;width:{width + gutter}px;height:{total_h:.0f}px;flex:none">'
+            + "".join(frame) + "".join(outside) + "</div>")
+
+
+def legend():
+    chip = ('<div style="display:flex;align-items:center;gap:14px;font-size:32px;font-weight:700">'
+            '<div style="width:34px;height:34px;border-radius:10px;background:{c}"></div>{t}</div>')
+    return ('<div style="display:flex;justify-content:center;gap:34px;margin-top:26px;flex-wrap:wrap">'
+            + chip.format(c="#ff7a1a", t="Buna bas")
+            + chip.format(c="#e02020", t="Basma")
+            + chip.format(c="#22c55e", t="Doğru yerdesin")
+            + "</div>")
+
+
 # ---------------------------------------------------------------- 0. kapak
 def s0():
     rows = [
         ("1", "Gmail adresini gruba yaz", "✉️"),
         ("2", "Gelen bağlantıya dokun", "👆"),
-        ("3", "“Test kullanıcısı ol” düğmesine bas", "✅"),
-        ("4", "Google Play'den indir ve aç", "⬇️"),
-        ("5", "14 gün boyunca silme, kullan", "📅"),
+        ("3", "“Test uzmanı olun” düğmesine bas", "✅"),
+        ("4", "“Google Play'den indirin”e bas", "⬇️"),
+        ("5", "“Yükle”ye bas, bitince “Aç”", "📲"),
+        ("6", "14 gün boyunca silme, kullan", "📅"),
     ]
     items = "".join(
-        f'<div style="display:flex;align-items:center;gap:26px;margin:0 64px 26px;padding:28px 32px;border-radius:44px;'
+        f'<div style="display:flex;align-items:center;gap:24px;margin:0 64px 20px;padding:20px 30px;border-radius:40px;'
         f'background:rgba(255,255,255,.09);border:2px solid rgba(255,255,255,.18)">'
-        f'<div style="flex:none;width:96px;height:96px;border-radius:48px;background:linear-gradient(135deg,#a855f7,#ff7a1a);'
-        f'display:flex;align-items:center;justify-content:center;font-size:60px;font-weight:800">{n}</div>'
-        f'<div style="font-size:46px;font-weight:800;line-height:1.15;flex:1">{t}</div>'
-        f'<div style="font-size:66px">{e}</div></div>'
+        f'<div style="flex:none;width:82px;height:82px;border-radius:41px;background:linear-gradient(135deg,#a855f7,#ff7a1a);'
+        f'display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800">{n}</div>'
+        f'<div style="font-size:42px;font-weight:800;line-height:1.15;flex:1">{t}</div>'
+        f'<div style="font-size:60px">{e}</div></div>'
         for n, t, e in rows
     )
     info = (
-        '<div class="warn" style="margin-top:14px">📱 <b>Android</b> telefon veya tablet gerekir (iPhone’da olmaz).<br>'
+        '<div class="warn" style="margin-top:10px">📱 <b>Android</b> telefon veya tablet gerekir (iPhone’da olmaz).<br>'
         '🗓️ Test <b>14 gün</b> sürer, bu yüzden uygulamayı silme.</div>'
     )
     return page(
         None,
         "CineStream<br>test katılım rehberi",
-        "Yalnızca <b>5 kolay adım</b>, yaklaşık 2 dakika.",
-        f'<div style="margin-top:46px">{items}</div>{info}',
+        "Yalnızca <b>6 kolay adım</b>, yaklaşık 2 dakika.",
+        f'<div style="margin-top:34px">{items}</div>{info}',
         "Her adımın görseli ayrı gelecek. Sırayla yap 👇<br>Takılırsan ekran görüntüsünü gruba at 💬",
     )
 
@@ -184,68 +242,46 @@ def s2():
                 f'<div class="center">{phone}</div>{note}')
 
 
-# ---------------------------------------------------------------- 3. test kullanıcısı ol
+# ---------------------------------------------------------------- 3. test uzmanı olun (gerçek ekran)
 def s3():
-    icon = '<img class="appicon" src="icon.png" style="width:150px;height:150px">'
-    urlbar = '<div style="margin:18px 28px 0;height:64px;border-radius:32px;background:#eef0f4;display:flex;align-items:center;padding-left:26px;font-size:26px;color:#3c4043">🔒 play.google.com</div>'
-    left = f"""
-<div><div class="cap"><i>1</i>Bu düğmeye bas</div>
-<div class="phone" style="zoom:.84"><div class="screen">
-  {status()}{urlbar}
-  <div style="text-align:center;padding-top:120px">{icon}
-    <div style="font-size:44px;font-weight:800;margin-top:20px">CineStream</div>
-    <div style="font-size:28px;color:#5f6368;margin:14px 50px 0;line-height:1.35">Bu uygulamanın test sürümüne katılabilirsiniz</div>
-    <div class="hl" style="margin:62px 60px 0"><div class="gbtn" style="height:96px;line-height:96px;font-size:38px;border-radius:32px">Test kullanıcısı ol</div>
-      <div class="finger" style="right:20px;bottom:-80px">👆</div></div>
-  </div>
-</div></div></div>"""
-    right = f"""
-<div><div class="cap"><i>2</i>Bunu görürsen tamam</div>
-<div class="phone" style="zoom:.84"><div class="screen">
-  {status()}{urlbar}
-  <div style="text-align:center;padding-top:130px">
-    <div style="width:150px;height:150px;border-radius:75px;background:#e6f4ea;display:inline-flex;align-items:center;justify-content:center;font-size:96px;color:#01875f">✔</div>
-    <div style="font-size:40px;font-weight:800;margin-top:26px">Test kullanıcısı oldunuz</div>
-    <div style="font-size:28px;color:#5f6368;margin:14px 46px 0;line-height:1.35">Şimdi uygulamayı indirebilirsiniz</div>
-    <div class="hl" style="margin:62px 60px 0"><div class="gout" style="height:92px;line-height:86px;font-size:34px;border-radius:32px">Google Play'den indir</div></div>
-  </div>
-</div></div></div>"""
-    note = '<div class="warn">✅ Yeşil işareti görmediysen düğmeye bir daha bas.<br>🔑 Telefonda <b>Gmail’inle giriş yapılmış</b> olmalı.</div>'
-    return page(3, "“Test kullanıcısı ol”<br>düğmesine bas", "Açılan sayfada tek düğme var.", f'<div class="center" style="gap:20px;margin-top:30px">{left}{right}</div>{note}')
+    img = shot("1-davet.jpg", 740, 1960, 600, [
+        ("tap", 50, 1768, 473, 1882, "☝ Bu mavi düğmeye bas", "right"),
+    ], gutter=360)
+    note = ('<div class="warn">📜 Sayfa uzundur: <b>en aşağı kaydır</b>, mavi düğme en altta.<br>'
+            '🔑 Telefonda <b>Gmail’inle giriş yapılmış</b> olmalı.</div>')
+    return page(3, "“Test uzmanı olun”<br>düğmesine bas", "Gruptaki bağlantıyı açınca bu sayfa gelir.",
+                f'{legend()}<div class="center" style="margin-top:26px">{img}</div>{note}')
 
 
-# ---------------------------------------------------------------- 4. indir ve aç
+# ---------------------------------------------------------------- 4. Google Play'den indirin (gerçek ekran)
 def s4():
-    icon = '<img class="appicon" src="icon.png" style="width:130px;height:130px">'
-    shots = '<div style="display:flex;gap:14px;padding:0 26px;margin-top:44px">' + ''.join(
-        '<div style="flex:1;height:470px;border-radius:22px;background:linear-gradient(160deg,#2a1450,#14101f)"></div>' for _ in range(3)) + '</div>'
-    head = f"""<div style="padding:22px 30px 0;font-size:40px;color:#5f6368">←</div>
-  <div style="display:flex;gap:26px;align-items:center;padding:20px 30px 0">{icon}
-    <div><div style="font-size:42px;font-weight:800">CineStream</div><div style="font-size:26px;color:#01875f;font-weight:700;margin-top:6px">Canlı TV, film ve dizi</div></div></div>"""
-    left = f"""
-<div><div class="cap"><i>1</i>“Yükle”ye bas</div>
-<div class="phone" style="zoom:.84"><div class="screen">
-  {status()}{head}
-  <div class="hl" style="margin:50px 40px 0"><div class="gbtn" style="height:92px;line-height:92px;font-size:38px;border-radius:32px">Yükle</div>
-    <div class="finger" style="right:30px;bottom:-78px">👆</div></div>
-  {shots}
-</div></div></div>"""
-    right = f"""
-<div><div class="cap"><i>2</i>Bitince “Aç”a bas</div>
-<div class="phone" style="zoom:.84"><div class="screen">
-  {status()}{head}
-  <div style="display:flex;gap:30px;margin:50px 40px 0">
-    <div class="gout" style="flex:1;height:92px;line-height:86px;font-size:34px;color:#5f6368;border-color:#c4c7cc;border-radius:32px">Kaldır</div>
-    <div class="hl" style="flex:1"><div class="gbtn" style="height:92px;line-height:92px;font-size:38px;border-radius:32px">Aç</div>
-      <div class="finger" style="right:10px;bottom:-78px">👆</div></div></div>
-  {shots}
-</div></div></div>"""
-    note = '<div class="warn">⏳ <b>Yükle düğmesi yoksa</b> bir iki saat bekle, sonra 2. adımdaki bağlantıya tekrar dokun.<br>Play Store’da arayınca çıkmayabilir: <b>hep bağlantıdan gir.</b></div>'
-    return page(4, "Google Play’den<br>indir ve aç", "Telefonun seni Google Play’e götürür.", f'<div class="center" style="gap:20px;margin-top:30px">{left}{right}</div>{note}')
+    img = shot("2-uzman.jpg", 100, 1900, 480, [
+        ("ok", 208, 137, 652, 229, "✔ Bunu görmelisin", "right"),
+        ("tap", 366, 515, 788, 562, "☝ Buna bas", "right"),
+        ("no", 28, 1707, 458, 1860, "✖ BASMA!", "right"),
+    ], gutter=400)
+    note = ('<div class="warn" style="margin-top:22px">⚠️ En alttaki <b>“Programdan ayrıl”</b> düğmesine <b>basma</b>, testten çıkarsın.<br>'
+            '✅ Yeşil “Siz bir test uzmanısınız” yazısı: <b>katıldın</b>, tamam.</div>')
+    return page(4, "“Google Play’den<br>indirin”e bas", "Katıldıktan sonra bu ekran gelir.",
+                f'{legend()}<div class="center" style="margin-top:22px">{img}</div>{note}')
 
 
-# ---------------------------------------------------------------- 5. 14 gün
+# ---------------------------------------------------------------- 5. Yükle / Aç (gerçek ekran)
 def s5():
+    img = shot("3-play.jpg", 250, 1000, 640, [
+        ("no", 34, 868, 432, 980, "✖ BASMA!", "below"),
+        ("tap", 466, 868, 866, 980, "☝ Yüklenince buna bas", "below"),
+    ])
+    steps = ('<div class="card" style="margin-top:34px"><p style="font-size:38px;line-height:1.4">'
+             '1️⃣ İlk önce burada mavi <b>“Yükle”</b> düğmesi olur. Ona bas.<br>'
+             '2️⃣ Yükleme bitince düğme <b>“Aç”</b> olur. Ona bas.<br>'
+             '3️⃣ <b>“Kaldır”</b> uygulamayı siler, <b>basma</b>.</p></div>')
+    return page(5, "“Yükle”ye bas,<br>bitince “Aç”a bas", "Adı “Erken Erişim” yazar, bu normaldir.",
+                f'{legend()}<div class="center" style="margin-top:26px">{img}</div>{steps}')
+
+
+# ---------------------------------------------------------------- 6. 14 gün
+def s6():
     days = "".join(
         f'<div style="width:124px;height:124px;border-radius:30px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);'
         f'display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:38px;font-weight:800">'
@@ -260,7 +296,7 @@ def s5():
     rules = (
         '<div class="card" style="margin-top:40px"><div style="font-size:42px;line-height:1.3;color:#e8defc">'
         + rule("<b style='color:#ffb27a'>Uygulamayı silme</b>")
-        + rule("Play Store’da <b style='color:#ffb27a'>testten çıkma</b>")
+        + rule("Play Store’da <b style='color:#ffb27a'>“Programdan ayrıl”a basma</b>")
         + rule("Arada aç: canlı TV, film, dizi <b style='color:#ffb27a'>dene</b>, favori ekle")
         + rule("Hata görürsen <b style='color:#ffb27a'>ekran görüntüsünü gruba at</b>")
         + '</div></div>'
@@ -269,20 +305,20 @@ def s5():
         'background:linear-gradient(135deg,rgba(168,85,247,.55),rgba(255,122,26,.5));border:2px solid rgba(255,255,255,.3)">'
         '🎉 Hepsi bu kadar!<br><span style="font-size:38px;font-weight:700">Katkın için çok teşekkürler 💜</span></div>'
     )
-    return page(5, "14 gün boyunca<br>silme, kullan", "Başka bir şey yapman gerekmiyor.", cal + rules)
+    return page(6, "14 gün boyunca<br>silme, kullan", "Başka bir şey yapman gerekmiyor.", cal + rules)
 
 
-# ---------------------------------------------------------------- 6. sorun giderme
-def s6():
+# ---------------------------------------------------------------- 7. sorun giderme
+def s7():
     def card(n, t, d):
         return f'<div class="card" style="margin-top:26px"><h2>{n} {t}</h2><p>{d}</p></div>'
     body = (
         card("😕", "Sayfa açılmıyor ya da “katılamazsınız” diyor",
              "Yanlış hesapla açıyor olabilirsin. Bağlantıyı açan uygulamada <b>sağ üstteki yuvarlak resme</b> dokunup <b>gruba yazdığın Gmail’i</b> seç. Hâlâ olmuyorsa gruba Gmail adresini tekrar yaz.")
         + card("🔍", "Play Store’da uygulamayı bulamıyorum",
-               "Arayınca çıkmaz, normal. <b>Gruptaki bağlantıdan</b> gir ve “Google Play’den indir”e bas. Katıldıktan sonra çıkması birkaç saat sürebilir.")
+               "Arayınca çıkmaz, normal. <b>Gruptaki bağlantıdan</b> gir. Katıldıktan sonra çıkması birkaç saat sürebilir.")
         + card("🔄", "Güncelleme geldi",
-               "Play Store ➜ <b>sağ üstte yuvarlak resim</b> ➜ <b>Uygulamaları ve cihazı yönet</b> ➜ <b>CineStream</b> yanındaki <b>Güncelle</b>.")
+               "Play Store ➜ <b>sağ üstte yuvarlak resim</b> ➜ <b>Uygulamaları ve cihazı yönet</b> ➜ <b>CineStream AI TV</b> yanındaki <b>Güncelle</b>.")
         + card("📱", "iPhone kullanıyorum",
                "Üzgünüz, uygulama <b>yalnızca Android</b>’de çalışır. Android telefonu olan bir yakınından yardım isteyebilirsin.")
     )
@@ -294,12 +330,12 @@ SLIDES = [
     ("00-baslangic.png", s0),
     ("01-gmail-adresi.png", s1),
     ("02-baglantiya-dokun.png", s2),
-    ("03-test-kullanicisi-ol.png", s3),
-    ("04-indir-ve-ac.png", s4),
-    ("05-14-gun-kullan.png", s5),
-    ("06-sorun-cozumleri.png", s6),
+    ("03-test-uzmani-olun.png", s3),
+    ("04-google-play-indirin.png", s4),
+    ("05-yukle-ve-ac.png", s5),
+    ("06-14-gun-kullan.png", s6),
+    ("07-sorun-cozumleri.png", s7),
 ]
-
 
 def main():
     only = set(sys.argv[1:])
