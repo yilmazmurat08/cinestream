@@ -126,7 +126,8 @@ def shot(name, y0, y1, width, marks, gutter=0):
             x_from = left + w
             x_to = width + 30
             outside.append(f'<div style="position:absolute;left:{x_from:.0f}px;top:{cy - 3:.0f}px;width:{x_to - x_from:.0f}px;height:6px;background:{c};border-radius:3px"></div>')
-            outside.append(f'<div class="lab {kind}" style="left:{x_to:.0f}px;top:{cy - 30:.0f}px">{label}</div>')
+            off = 52 if "<br>" in label else 30
+            outside.append(f'<div class="lab {kind}" style="left:{x_to:.0f}px;top:{cy - off:.0f}px;line-height:1.2">{label}</div>')
         else:
             cx = left + w / 2
             y_from = top + hh
@@ -258,9 +259,9 @@ def s4():
     img = shot("2-uzman.jpg", 100, 1900, 480, [
         ("ok", 208, 137, 652, 229, "✔ Bunu görmelisin", "right"),
         ("tap", 366, 515, 788, 562, "☝ Buna bas", "right"),
-        ("no", 28, 1707, 458, 1860, "✖ BASMA!", "right"),
+        ("no", 28, 1707, 458, 1860, "✖ BURAYA<br>KESİNLİKLE BASMA!", "right"),
     ], gutter=400)
-    note = ('<div class="warn" style="margin-top:22px">⚠️ En alttaki <b>“Programdan ayrıl”</b> düğmesine <b>basma</b>, testten çıkarsın.<br>'
+    note = ('<div class="warn" style="margin-top:22px">⚠️ En alttaki <b>“Programdan ayrıl”</b> düğmesine <b>KESİNLİKLE BASMA</b>, testten çıkarsın ve test bozulur.<br>'
             '✅ Yeşil “Siz bir test uzmanısınız” yazısı: <b>katıldın</b>, tamam.</div>')
     return page(4, "“Google Play’den<br>indirin”e bas", "Katıldıktan sonra bu ekran gelir.",
                 f'{legend()}<div class="center" style="margin-top:22px">{img}</div>{note}')
