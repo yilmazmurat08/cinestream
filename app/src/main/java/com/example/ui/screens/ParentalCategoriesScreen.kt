@@ -59,7 +59,12 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.IPTVViewModel
 import com.example.ui.IPTVViewModel.LockableCategory
-import com.example.ui.theme.CineOrange
+import com.example.ui.theme.AccentNeonPurple
+import com.example.ui.theme.CineBorder
+import com.example.ui.theme.CineSurface
+import com.example.ui.theme.CinematicBackgroundGradient
+import com.example.ui.theme.MutedText
+import com.example.ui.theme.PinkToPurpleGradient
 import java.util.Locale
 
 private val LOCK_TYPES = listOf("LIVE", "MOVIE", "SERIES")
@@ -124,7 +129,7 @@ internal fun ParentalCategoriesContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFF4A1230), Color(0xFF241238), Color(0xFF14102A))))
+            .background(CinematicBackgroundGradient)
             .statusBarsPadding()
             .navigationBarsPadding()
             .testTag("parental_categories_screen")
@@ -147,7 +152,7 @@ internal fun ParentalCategoriesContent(
             item(key = "intro") {
                 Text(
                     text = stringResource(R.string.category_locks_intro),
-                    color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, lineHeight = 20.sp,
+                    color = MutedText, fontSize = 14.sp, lineHeight = 20.sp,
                     modifier = Modifier.padding(bottom = 14.dp)
                 )
             }
@@ -181,10 +186,11 @@ internal fun ParentalCategoriesContent(
                         .fillMaxWidth()
                         .padding(bottom = 14.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Black.copy(alpha = 0.35f))
+                        .background(CineSurface)
+                        .border(1.dp, CineBorder, RoundedCornerShape(16.dp))
                         .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
-                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.55f))
+                    Icon(Icons.Default.Search, contentDescription = null, tint = MutedText)
                     Box(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                         if (query.isEmpty()) {
                             Text(stringResource(R.string.category_locks_search), color = Color.White.copy(alpha = 0.45f), fontSize = 16.sp)
@@ -194,7 +200,7 @@ internal fun ParentalCategoriesContent(
                             onValueChange = { query = it },
                             singleLine = true,
                             textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 16.sp),
-                            cursorBrush = SolidColor(CineOrange),
+                            cursorBrush = SolidColor(AccentNeonPurple),
                             modifier = Modifier.fillMaxWidth().testTag("category_locks_search")
                         )
                     }
@@ -219,7 +225,7 @@ internal fun ParentalCategoriesContent(
                         onClick = onResetAll,
                         modifier = Modifier.padding(top = 12.dp).testTag("category_locks_reset")
                     ) {
-                        Text(stringResource(R.string.category_locks_reset), color = CineOrange, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.category_locks_reset), color = AccentNeonPurple, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -227,11 +233,11 @@ internal fun ParentalCategoriesContent(
     }
 }
 
-/** Kumandayla gezinirken (TV) odaktaki öğeyi turuncu çerçeveyle gösterir. */
+/** Kumandayla gezinirken (TV) odaktaki öğeyi mor çerçeveyle gösterir. */
 private fun Modifier.focusRing(shape: Shape): Modifier = composed {
     var focused by remember { mutableStateOf(false) }
     this.onFocusChanged { focused = it.isFocused }
-        .then(if (focused) Modifier.border(2.dp, CineOrange, shape) else Modifier)
+        .then(if (focused) Modifier.border(2.dp, AccentNeonPurple, shape) else Modifier)
 }
 
 @Composable
@@ -239,7 +245,10 @@ private fun LockChip(text: String, selected: Boolean, tag: String, onClick: () -
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(26.dp))
-            .background(if (selected) Color(0xFFFF5A36) else Color.White.copy(alpha = 0.10f))
+            .then(
+                if (selected) Modifier.background(PinkToPurpleGradient)
+                else Modifier.background(CineSurface).border(1.dp, CineBorder, RoundedCornerShape(26.dp))
+            )
             .focusRing(RoundedCornerShape(26.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 13.dp)
@@ -256,7 +265,7 @@ private fun CategoryLockRow(category: LockableCategory, onToggle: (Boolean) -> U
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.06f))
+            .background(CineSurface)
             .focusRing(RoundedCornerShape(4.dp))
             .clickable { onToggle(!category.locked) }
             .padding(horizontal = 16.dp, vertical = 14.dp)
@@ -267,12 +276,12 @@ private fun CategoryLockRow(category: LockableCategory, onToggle: (Boolean) -> U
             modifier = Modifier
                 .size(46.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(if (category.locked) Color(0xFFFF5A36).copy(alpha = 0.22f) else Color.White.copy(alpha = 0.08f))
+                .background(if (category.locked) AccentNeonPurple.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.08f))
         ) {
             Icon(
                 imageVector = if (category.locked) Icons.Default.Lock else Icons.Default.LockOpen,
                 contentDescription = null,
-                tint = if (category.locked) Color(0xFFFF5A36) else Color.White.copy(alpha = 0.6f),
+                tint = if (category.locked) AccentNeonPurple else Color.White.copy(alpha = 0.6f),
                 modifier = Modifier.size(22.dp)
             )
         }
@@ -285,7 +294,7 @@ private fun CategoryLockRow(category: LockableCategory, onToggle: (Boolean) -> U
             val items = stringResource(R.string.category_locks_items, category.count)
             Text(
                 text = if (category.manual) "$items · ${stringResource(R.string.category_locks_manual)}" else items,
-                color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp
+                color = MutedText, fontSize = 13.sp
             )
         }
         Switch(
@@ -294,7 +303,7 @@ private fun CategoryLockRow(category: LockableCategory, onToggle: (Boolean) -> U
             // Satırın tamamı odak durağıdır (kumanda); anahtarın ayrı bir durağı yoktur.
             modifier = Modifier.focusProperties { canFocus = false }.testTag("category_lock_switch_$tag"),
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White, checkedTrackColor = Color(0xFFFF5A36),
+                checkedThumbColor = Color.White, checkedTrackColor = AccentNeonPurple,
                 uncheckedThumbColor = Color.White, uncheckedTrackColor = Color.White.copy(alpha = 0.22f),
                 uncheckedBorderColor = Color.Transparent
             )

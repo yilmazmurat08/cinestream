@@ -1,4 +1,4 @@
-# Sürüm notları — 1.1.0 (11)
+# Sürüm notları — 1.1.1 (12)
 
 Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter). 1.0.8 ve 1.0.9'un değişikliklerini de içerir.
 
