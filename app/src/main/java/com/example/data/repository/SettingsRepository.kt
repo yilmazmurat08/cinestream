@@ -12,7 +12,11 @@ import coil.imageLoader
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_settings")
 
-class SettingsRepository(private val context: Context) {
+class SettingsRepository(
+    private val context: Context,
+    /** Ayarların saklandığı DataStore (testlerde ayrı bir dosyayla değiştirilebilir). */
+    private val store: DataStore<Preferences> = context.dataStore
+) {
 
     companion object {
         const val DEFAULT_PARENTAL_PIN = "0000"
@@ -24,6 +28,8 @@ class SettingsRepository(private val context: Context) {
         val SUBTITLE_COLOR = stringPreferencesKey("subtitle_color")
         val PARENTAL_LOCK = booleanPreferencesKey("parental_lock")
         val PARENTAL_PIN = stringPreferencesKey("parental_pin")
+        /** Kullanıcının elle kilitlediği/açtığı kategoriler ("L|TİP|kategori" / "U|TİP|kategori"). */
+        val PARENTAL_CATEGORY_LOCKS = stringSetPreferencesKey("parental_category_locks")
         val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
         val TMDB_API_KEY = stringPreferencesKey("tmdb_api_key")
         val LAST_EPG_FETCH_TIME = stringPreferencesKey("last_epg_fetch_time")
@@ -43,7 +49,7 @@ class SettingsRepository(private val context: Context) {
     }
 
     /** Görünüm modu: [ViewMode.PHONE] / [ViewMode.TV]; hiç seçilmediyse [ViewMode.UNSET] (ilk açılışta sorulur). */
-    val viewModeFlow: Flow<String> = context.dataStore.data
+    val viewModeFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
@@ -51,26 +57,26 @@ class SettingsRepository(private val context: Context) {
         }
 
     suspend fun setViewMode(mode: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[VIEW_MODE] = mode
         }
     }
 
-    val manualEpgUrlFlow: Flow<String> = context.dataStore.data
+    val manualEpgUrlFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[MANUAL_EPG_URL] ?: ""
         }
 
-    val userNameFlow: Flow<String> = context.dataStore.data
+    val userNameFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[USER_NAME] ?: "Kullanıcı"
         }
 
-    val profileAvatarFlow: Flow<String> = context.dataStore.data
+    val profileAvatarFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
@@ -78,28 +84,28 @@ class SettingsRepository(private val context: Context) {
             preferences[PROFILE_AVATAR]?.takeUnless { it.contains("images.unsplash.com") } ?: "avatar_1"
         }
 
-    val syncIntervalFlow: Flow<String> = context.dataStore.data
+    val syncIntervalFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[SYNC_INTERVAL] ?: "24_HOURS"
         }
 
-    val completedPlaybackSessionsFlow: Flow<Int> = context.dataStore.data
+    val completedPlaybackSessionsFlow: Flow<Int> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[COMPLETED_PLAYBACK_SESSIONS] ?: 0
         }
 
-    val hasTriggeredInAppReviewFlow: Flow<Boolean> = context.dataStore.data
+    val hasTriggeredInAppReviewFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[HAS_TRIGGERED_IN_APP_REVIEW] ?: false
         }
 
-    val isProUserFlow: Flow<Boolean> = context.dataStore.data
+    val isProUserFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
@@ -107,77 +113,77 @@ class SettingsRepository(private val context: Context) {
         }
 
     /** İzleme sayacı ve ait olduğu gün. Gün bugün değilse bugünkü izleme 0 sayılır. */
-    val watchUsageFlow: Flow<WatchUsage> = context.dataStore.data
+    val watchUsageFlow: Flow<WatchUsage> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             WatchUsage(day = preferences[WATCH_DAY], seconds = preferences[TOTAL_WATCH_SECONDS] ?: 0L)
         }
 
-    val firstLaunchTimeFlow: Flow<Long> = context.dataStore.data
+    val firstLaunchTimeFlow: Flow<Long> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             val time = preferences[FIRST_LAUNCH_TIME] ?: 0L
             if (time == 0L) {
                 val now = System.currentTimeMillis()
-                context.dataStore.edit { prefs -> prefs[FIRST_LAUNCH_TIME] = now }
+                store.edit { prefs -> prefs[FIRST_LAUNCH_TIME] = now }
                 now
             } else {
                 time
             }
         }
 
-    val appLanguageFlow: Flow<String> = context.dataStore.data
+    val appLanguageFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[APP_LANGUAGE] ?: com.example.util.LocaleHelper.getSavedLanguage(context)
         }
 
-    val hardwareAccelerationFlow: Flow<Boolean> = context.dataStore.data
+    val hardwareAccelerationFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[HARDWARE_ACCELERATION] ?: true
         }
 
-    val bufferSizeFlow: Flow<String> = context.dataStore.data
+    val bufferSizeFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[BUFFER_SIZE] ?: "Normal"
         }
 
-    val reduceCellularQualityFlow: Flow<Boolean> = context.dataStore.data
+    val reduceCellularQualityFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[REDUCE_CELLULAR_QUALITY] ?: false
         }
 
-    val autoRefreshListFlow: Flow<Boolean> = context.dataStore.data
+    val autoRefreshListFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[AUTO_REFRESH_LIST] ?: true
         }
 
-    val subtitleSizeFlow: Flow<Int> = context.dataStore.data
+    val subtitleSizeFlow: Flow<Int> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[SUBTITLE_SIZE] ?: 16
         }
 
-    val subtitleColorFlow: Flow<String> = context.dataStore.data
+    val subtitleColorFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[SUBTITLE_COLOR] ?: "Beyaz"
         }
 
-    val parentalLockFlow: Flow<Boolean> = context.dataStore.data
+    val parentalLockFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
@@ -185,21 +191,29 @@ class SettingsRepository(private val context: Context) {
             preferences[PARENTAL_LOCK] ?: true
         }
 
-    val parentalPinFlow: Flow<String> = context.dataStore.data
+    /** Elle ayarlanmış kategori kilitleri: anahtar ([com.example.util.CategoryLocks.key]) → kilitli mi. */
+    val parentalCategoryLocksFlow: Flow<Map<String, Boolean>> = store.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.map { preferences ->
+            com.example.util.CategoryLocks.decode(preferences[PARENTAL_CATEGORY_LOCKS].orEmpty())
+        }
+
+    val parentalPinFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             preferences[PARENTAL_PIN] ?: DEFAULT_PARENTAL_PIN
         }
 
-    val geminiApiKeyFlow: Flow<String> = context.dataStore.data
+    val geminiApiKeyFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             com.example.util.SecretCipher.decrypt(preferences[GEMINI_API_KEY])
         }
 
-    val tmdbApiKeyFlow: Flow<String> = context.dataStore.data
+    val tmdbApiKeyFlow: Flow<String> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
@@ -226,66 +240,82 @@ class SettingsRepository(private val context: Context) {
         }
 
     suspend fun setHardwareAcceleration(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[HARDWARE_ACCELERATION] = enabled
         }
     }
 
     suspend fun setBufferSize(size: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[BUFFER_SIZE] = size
         }
     }
 
     suspend fun setReduceCellularQuality(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[REDUCE_CELLULAR_QUALITY] = enabled
         }
     }
 
     suspend fun setAutoRefreshList(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[AUTO_REFRESH_LIST] = enabled
         }
     }
 
     suspend fun setSubtitleSize(size: Int) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[SUBTITLE_SIZE] = size
         }
     }
 
     suspend fun setSubtitleColor(color: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[SUBTITLE_COLOR] = color
         }
     }
 
     suspend fun setParentalLock(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[PARENTAL_LOCK] = enabled
         }
     }
 
+    /** Kategorinin kilidini elle ayarlar; [locked] null ise elle ayar silinir (otomatik tespite döner). */
+    suspend fun setCategoryLock(key: String, locked: Boolean?) {
+        store.edit { preferences ->
+            val current = preferences[PARENTAL_CATEGORY_LOCKS].orEmpty()
+                .filterNot { it.length > 2 && it[1] == '|' && it.substring(2) == key }
+                .toMutableSet()
+            if (locked != null) current.add(com.example.util.CategoryLocks.encode(key, locked))
+            preferences[PARENTAL_CATEGORY_LOCKS] = current
+        }
+    }
+
+    /** Tüm elle kategori kilidi ayarlarını siler (varsayılana döner). */
+    suspend fun clearCategoryLocks() {
+        store.edit { preferences -> preferences.remove(PARENTAL_CATEGORY_LOCKS) }
+    }
+
     suspend fun setParentalPin(pin: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[PARENTAL_PIN] = pin
         }
     }
 
     suspend fun setGeminiApiKey(key: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[GEMINI_API_KEY] = com.example.util.SecretCipher.encrypt(key)
         }
     }
 
     suspend fun setManualEpgUrl(url: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[MANUAL_EPG_URL] = url.trim()
         }
     }
 
-    val lastEpgFetchTimeFlow: Flow<Long> = context.dataStore.data
+    val lastEpgFetchTimeFlow: Flow<Long> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
@@ -293,38 +323,38 @@ class SettingsRepository(private val context: Context) {
         }
 
     suspend fun setLastEpgFetchTime(timeMillis: Long) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[LAST_EPG_FETCH_TIME] = timeMillis.toString()
         }
     }
 
     suspend fun setAppLanguage(language: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[APP_LANGUAGE] = language
         }
     }
 
     suspend fun setSyncInterval(interval: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[SYNC_INTERVAL] = interval
         }
         com.example.worker.SyncWorker.scheduleSync(context, interval)
     }
 
     suspend fun setProUser(isPro: Boolean) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[IS_PRO_USER] = isPro
         }
     }
 
     suspend fun setUserName(name: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[USER_NAME] = name
         }
     }
 
     suspend fun setProfileAvatar(avatar: String) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[PROFILE_AVATAR] = avatar
         }
     }
@@ -333,7 +363,7 @@ class SettingsRepository(private val context: Context) {
         if (secondsToAdd <= 0L) return 0L
         var updatedSeconds = 0L
         val today = WatchUsage.today()
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             // Yeni günde sayaç sıfırdan başlar.
             val current = if (preferences[WATCH_DAY] == today) preferences[TOTAL_WATCH_SECONDS] ?: 0L else 0L
             updatedSeconds = current + secondsToAdd
@@ -348,14 +378,14 @@ class SettingsRepository(private val context: Context) {
     }
 
     suspend fun resetWatchSeconds() {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[TOTAL_WATCH_SECONDS] = 0L
         }
     }
 
     suspend fun incrementCompletedPlaybackSessions(): Int {
         var updatedCount = 0
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             val current = preferences[COMPLETED_PLAYBACK_SESSIONS] ?: 0
             updatedCount = current + 1
             preferences[COMPLETED_PLAYBACK_SESSIONS] = updatedCount
@@ -364,7 +394,7 @@ class SettingsRepository(private val context: Context) {
     }
 
     suspend fun setHasTriggeredInAppReview(triggered: Boolean) {
-        context.dataStore.edit { preferences ->
+        store.edit { preferences ->
             preferences[HAS_TRIGGERED_IN_APP_REVIEW] = triggered
         }
     }

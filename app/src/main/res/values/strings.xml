@@ -647,4 +647,20 @@
     <string name="player_free_time_over">Bugünkü ücretsiz süre doldu · bu içerik bitene kadar izleyebilirsin</string>
     <string name="settings_gemini_key_delete">Anahtarı sil</string>
     <string name="settings_gemini_key_deleted">Yapay zekâ anahtarı bu cihazdan silindi.</string>
+    <!-- Kilitli kategoriler (ebeveyn kilidi) -->
+    <string name="settings_category_locks_title">Kilitli kategoriler</string>
+    <string name="settings_category_locks_desc">Hangi klasörlerin PIN ile açılacağını sen seç.</string>
+    <string name="category_locks_intro">Yetişkin kategorileri varsayılan olarak kilitlidir. İstediğiniz kategoriyi kilitleyebilir veya kilidini kaldırabilirsiniz. Kilitli kategoriler PIN ister; ana sayfa vitrinlerinde ve kanal geçişinde görünmez.</string>
+    <string name="category_locks_tab_live">Canlı TV</string>
+    <string name="category_locks_tab_movies">Filmler</string>
+    <string name="category_locks_tab_series">Diziler</string>
+    <string name="category_locks_tab_count">%1$s · %2$d kilitli</string>
+    <string name="category_locks_only_locked">Yalnızca kilitliler</string>
+    <string name="category_locks_search">Kategori ara</string>
+    <string name="category_locks_items">%d içerik</string>
+    <string name="category_locks_manual">elle ayarlandı</string>
+    <string name="category_locks_empty">Bu listede kategori yok.</string>
+    <string name="category_locks_reset">Elle yapılan ayarları sıfırla</string>
+    <string name="category_locks_pin_subtitle">Kilitli kategorileri değiştirmek için PIN kodunuzu girin.</string>
+    <string name="category_locks_lock_desc">%1$s kategorisini kilitle</string>
 </resources>

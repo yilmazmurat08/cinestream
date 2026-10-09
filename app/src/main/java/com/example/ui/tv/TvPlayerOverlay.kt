@@ -240,9 +240,9 @@ fun TvPlayerOverlay(
                 TvPlayerCategories(
                     categories = categories,
                     current = ui.panelCategory ?: item.category,
-                    isLocked = { cat -> parentalLock && !safeSession && viewModel.isAdultContent(cat) },
+                    isLocked = { cat -> parentalLock && !safeSession && viewModel.isCategoryLocked("LIVE", cat) },
                     onSelect = { cat ->
-                        if (parentalLock && !safeSession && viewModel.isAdultContent(cat)) {
+                        if (parentalLock && !safeSession && viewModel.isCategoryLocked("LIVE", cat)) {
                             pinCategory = cat
                         } else {
                             ui.panelCategory = cat

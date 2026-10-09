@@ -1,20 +1,18 @@
-# Sürüm notları — 1.0.9 (10)
+# Sürüm notları — 1.1.0 (11)
 
-Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter). 1.0.8'in değişikliklerini de içerir.
+Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter). 1.0.8 ve 1.0.9'un değişikliklerini de içerir.
 
 ```
 <tr-TR>
-• Dizileri favorilere ekleyebilirsiniz; favori diziler Listem'de görünür ve yenilemede korunur.
-• Diziler hangi ekrandan açılırsa açılsın doğru dizi, klasördeki posterle açılıyor.
-• Film ve dizi sayfalarındaki poster artık listedekiyle aynı; başka bir dizinin bilgisi gösterilmiyor.
+• Yeni: Ayarlar > Ebeveyn denetimi > Kilitli kategoriler. Canlı TV, film ve dizi kategorilerini (ör. yetişkin, aksiyon) kendiniz kilitleyin veya kilidini açın.
+• Kilitli kategoriler PIN ister; vitrinlerde ve kanal geçişinde görünmez.
+• Dizileri favorilere ekleyebilirsiniz; doğru dizi, doğru posterle açılır.
 • Bilgisi olmayan yapımlarda uydurma tarih, tür veya oyuncu gösterilmiyor.
-• Dizi favorisi artık aynı numaralı bir kanalı favorilere eklemiyor.
 </tr-TR>
 <en-US>
-• You can add series to favorites; they appear in My List and are kept on refresh.
-• Series now open as the right show with the folder poster, from any screen.
-• Movie and series pages show the same poster as the list and never another show's details.
+• New: Settings > Parental controls > Locked categories. Lock or unlock Live TV, movie and series categories (e.g. adult, action) yourself.
+• Locked categories ask for the PIN and are hidden from shelves and channel zapping.
+• You can add series to favorites; the right show opens with the right poster.
 • Titles without information no longer show a made-up date, genre or cast.
-• A series favorite no longer adds a channel with the same number.
 </en-US>
 ```

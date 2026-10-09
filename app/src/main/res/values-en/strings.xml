@@ -648,4 +648,20 @@
     <string name="player_free_time_over">Today\'s free time is used up · you can finish this one</string>
     <string name="settings_gemini_key_delete">Delete key</string>
     <string name="settings_gemini_key_deleted">AI key deleted from this device.</string>
+    <!-- Locked categories (parental lock) -->
+    <string name="settings_category_locks_title">Locked categories</string>
+    <string name="settings_category_locks_desc">Choose which folders need your PIN to open.</string>
+    <string name="category_locks_intro">Adult categories are locked by default. You can lock any category or remove its lock. Locked categories ask for your PIN and are hidden from the home shelves and channel zapping.</string>
+    <string name="category_locks_tab_live">Live TV</string>
+    <string name="category_locks_tab_movies">Movies</string>
+    <string name="category_locks_tab_series">Series</string>
+    <string name="category_locks_tab_count">%1$s · %2$d locked</string>
+    <string name="category_locks_only_locked">Locked only</string>
+    <string name="category_locks_search">Search categories</string>
+    <string name="category_locks_items">%d items</string>
+    <string name="category_locks_manual">set manually</string>
+    <string name="category_locks_empty">There are no categories in this list.</string>
+    <string name="category_locks_reset">Reset manual settings</string>
+    <string name="category_locks_pin_subtitle">Enter your PIN to change locked categories.</string>
+    <string name="category_locks_lock_desc">Lock the %1$s category</string>
 </resources>

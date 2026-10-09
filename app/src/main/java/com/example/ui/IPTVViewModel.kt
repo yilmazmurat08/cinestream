@@ -38,7 +38,9 @@ data class SpotlightCollection(val title: String, val subtitle: String, val quer
 
 class IPTVViewModel(
     application: Application,
-    private val repository: IPTVRepository
+    private val repository: IPTVRepository,
+    /** Testlerde ayrı bir DataStore ile değiştirilebilir; uygulamada her zaman varsayılan kullanılır. */
+    settingsOverride: com.example.data.repository.SettingsRepository? = null
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -110,7 +112,7 @@ class IPTVViewModel(
     // Featured Movie Repository (12 Hours Random M3U Movie)
 
     // Settings Repository Integration
-    private val settingsRepository = com.example.data.repository.SettingsRepository(application)
+    private val settingsRepository = settingsOverride ?: com.example.data.repository.SettingsRepository(application)
 
     // Exposed Settings flows as StateFlows
     val hardwareAcceleration: StateFlow<Boolean> = settingsRepository.hardwareAccelerationFlow
@@ -136,6 +138,58 @@ class IPTVViewModel(
 
     val parentalPin: StateFlow<String> = settingsRepository.parentalPinFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "0000")
+
+    // Kategori kilitleri: mantık (ör. vitrinlerden süzme) senkron okur, bu yüzden hemen dinlenen akışlardır.
+    private val parentalLockNow: StateFlow<Boolean> = settingsRepository.parentalLockFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    /** Kullanıcının elle kilitlediği/açtığı kategoriler (anahtar: [com.example.util.CategoryLocks.key]). */
+    val parentalCategoryLocks: StateFlow<Map<String, Boolean>> = settingsRepository.parentalCategoryLocksFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** Ayar ekranındaki bir kategori satırı. [name] sağlayıcıdaki ham kategori adıdır. */
+    data class LockableCategory(val type: String, val name: String, val count: Int, val locked: Boolean, val manual: Boolean)
+
+    /** Kategorinin kilitli olması: elle ayar varsa o, yoksa yetişkin otomatik tespiti. (Kilit anahtarından bağımsız.) */
+    fun isCategoryLocked(type: String, category: String): Boolean =
+        com.example.util.CategoryLocks.isLocked(
+            parentalCategoryLocks.value, type, category, com.example.util.AdultContentFilter.isAdult(category)
+        )
+
+    /** Türdeki kategoriler, sayılarıyla ve kilit durumuyla (yalnızca veritabanı sayımı; öğeler belleğe alınmaz). */
+    suspend fun lockableCategories(type: String): List<LockableCategory> = withContext(Dispatchers.IO) {
+        try {
+            val locks = parentalCategoryLocks.value
+            tvCatalog.categoryCounts(type).map { (name, count) ->
+                val manual = locks.containsKey(com.example.util.CategoryLocks.key(type, name))
+                LockableCategory(type, name, count, isCategoryLocked(type, name), manual)
+            }.sortedBy { it.name.lowercase(java.util.Locale.ROOT) }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("IPTVViewModel", "Kategori listesi okunamadı: ${e.message}")
+            emptyList()
+        }
+    }
+
+    /** Kategoriyi kilitler ya da açar (elle ayar). */
+    fun setCategoryLocked(type: String, category: String, locked: Boolean) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setCategoryLock(com.example.util.CategoryLocks.key(type, category), locked)
+        }
+    }
+
+    /** Kategorinin elle ayarını siler: yetişkin otomatik tespitine döner. */
+    fun resetCategoryLock(type: String, category: String) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setCategoryLock(com.example.util.CategoryLocks.key(type, category), null)
+        }
+    }
+
+    /** Tüm elle kategori kilitlerini siler. */
+    fun resetAllCategoryLocks() {
+        viewModelScope.launch(coroutineExceptionHandler) { settingsRepository.clearCategoryLocks() }
+    }
 
     val geminiApiKey: StateFlow<String> = settingsRepository.geminiApiKeyFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -206,7 +260,9 @@ class IPTVViewModel(
     private val tvCatalog by lazy { com.example.data.repository.TvCatalogRepository(repository.dao) }
 
     suspend fun tvCategories(type: String): List<com.example.data.repository.TvCategory> = tvRead("categories", emptyList()) {
+        // Kilit durumu (elle ayar > otomatik tespit) kategori satırına yansıtılır; özel bölümler kilitlenemez.
         tvCatalog.categories(type) { if (type == "SERIES") seriesCategoryRank(it) else movieCategoryRank(it) }
+            .map { c -> if (c.special != null) c else c.copy(isAdult = isCategoryLocked(type, c.key)) }
     }
 
     suspend fun tvSpecial(type: String, section: com.example.data.repository.TvSpecialSection): List<com.example.data.repository.TvPoster> =
@@ -1301,11 +1357,11 @@ class IPTVViewModel(
         },
         _nlpSearchResults
     ) { results, nlpResults ->
-        val filtered = if (nlpResults.isNotEmpty() && _searchQuery.value.isNotEmpty()) {
+        val filtered = (if (nlpResults.isNotEmpty() && _searchQuery.value.isNotEmpty()) {
             nlpResults
         } else {
             results
-        }
+        }).filterNot { hiddenWhileLocked(it) }
         
         val seriesItems = filtered.filter { it.type == "SERIES" }
         val otherItems = filtered.filter { it.type != "SERIES" }
@@ -2952,12 +3008,23 @@ class IPTVViewModel(
         }
     }
 
+    /** Kilitli kategorideki öğe: ebeveyn kilidi açıkken ve güvenli oturum yokken aramada da görünmez. */
+    private fun hiddenWhileLocked(item: IPTVItem): Boolean =
+        parentalLockNow.value && !_isSafeSessionActive.value && isAdultContent(item)
+
     fun isAdultContent(category: String, name: String = ""): Boolean =
         com.example.util.AdultContentFilter.isAdult(category, name)
 
-    fun isAdultContent(item: IPTVItem): Boolean {
-        return isAdultContent(item.category, item.cleanedName.ifBlank { item.name })
-    }
+    /**
+     * Öğe kısıtlı mı (vitrinlerden süzülür, kanal geçişine girmez). Kategori kullanıcı tarafından kilitlendiyse
+     * ebeveyn kilidi açıkken kısıtlıdır; elle açıldıysa değildir; elle ayar yoksa yetişkin otomatik tespiti geçerlidir.
+     */
+    fun isAdultContent(item: IPTVItem): Boolean =
+        when (parentalCategoryLocks.value[com.example.util.CategoryLocks.key(item.type, item.category)]) {
+            true -> parentalLockNow.value
+            false -> false
+            null -> isAdultContent(item.category, item.cleanedName.ifBlank { item.name })
+        }
 
     /**
      * Oynatıcıdaki kanal listesi ve kanal ileri/geri için kanal halkası (izlenen kanal dahil, liste sırasıyla):
@@ -2967,9 +3034,18 @@ class IPTVViewModel(
     fun channelRingFor(current: IPTVItem, allChannels: List<IPTVItem>): List<IPTVItem> =
         buildChannelRing(current, allChannels) { isAdultContent(it) }
 
-    fun isAdultContent(group: IPTVGroup): Boolean {
+    /** Klasör kilitli mi: elle ayar (kilit açıkken) ya da otomatik tespit. */
+    fun isAdultContent(group: IPTVGroup): Boolean =
+        when (parentalCategoryLocks.value[com.example.util.CategoryLocks.key(group.type, group.name)]) {
+            true -> parentalLockNow.value
+            false -> false
+            null -> isAdultDetected(group)
+        }
+
+    /** Yalnızca otomatik tespit (klasör kartının "yetişkin" görünümü için); elle ayarlardan etkilenmez. */
+    fun isAdultDetected(group: IPTVGroup): Boolean {
         if (isAdultContent(group.name)) return true
-        return group.items.any { isAdultContent(it) }
+        return group.items.any { isAdultContent(it.category, it.cleanedName.ifBlank { it.name }) }
     }
 
     class Factory(private val application: Application) : ViewModelProvider.Factory {

@@ -181,6 +181,7 @@ fun HomeScreen(
     val activeFolderGroup by viewModel.activeFolderGroup.collectAsState()
     val selectedItem by viewModel.selectedItem.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
+    val isSafeSessionActiveHome by viewModel.isSafeSessionActive.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     // Handle back button on sub-tabs (e.g. LIVE, MOVIE, SERIES) to return to main ALL tab when no folder is open
@@ -1317,12 +1318,25 @@ fun HomeScreen(
                     val xtreamCatalog by viewModel.xtreamSeriesCatalog.collectAsState()
                     if (xtreamCatalog.isNotEmpty()) {
                         var selectedSeriesCategory by remember { mutableStateOf<String?>(null) }
+                        var pendingSeriesCategory by remember { mutableStateOf<String?>(null) }
                         val grouped = remember(xtreamCatalog) {
                             xtreamCatalog.groupBy { it.platformName.ifBlank { "Diğer" } }
                                 .toSortedMap()
                         }
                         var seriesCategorySearchQuery by remember { mutableStateOf("") }
                         val currentCategory = selectedSeriesCategory
+                        if (pendingSeriesCategory != null) {
+                            com.example.ui.components.ParentalPinDialog(
+                                viewModel = viewModel,
+                                title = stringResource(R.string.folder_pin_title),
+                                subtitle = stringResource(R.string.folder_pin_subtitle),
+                                onDismiss = { pendingSeriesCategory = null },
+                                onSuccess = {
+                                    selectedSeriesCategory = pendingSeriesCategory
+                                    pendingSeriesCategory = null
+                                }
+                            )
+                        }
                         if (currentCategory == null) {
                             val filteredCategoryEntries = remember(grouped, seriesCategorySearchQuery) {
                                 if (seriesCategorySearchQuery.isBlank()) {
@@ -1404,9 +1418,15 @@ fun HomeScreen(
                                             }
                                         )
                                     }
+                                    // Dizi klasörleri de kategori kilidine uyar (elle ayar ya da yetişkin otomatik tespiti).
+                                    val seriesLocked = viewModel.isAdultContent(syntheticGroup)
+                                    val seriesNeedsPin = seriesLocked && parentalLockEnabled && !isSafeSessionActiveHome
                                     FolderCard(
                                         group = syntheticGroup,
-                                        onClick = { selectedSeriesCategory = categoryName },
+                                        isAdult = viewModel.isAdultDetected(syntheticGroup),
+                                        isLocked = seriesNeedsPin,
+                                        isSafeSessionUnlocked = seriesLocked && parentalLockEnabled && isSafeSessionActiveHome,
+                                        onClick = { if (seriesNeedsPin) pendingSeriesCategory = categoryName else selectedSeriesCategory = categoryName },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = 16.dp, vertical = 6.dp)
