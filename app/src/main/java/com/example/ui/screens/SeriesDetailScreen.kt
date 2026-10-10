@@ -239,7 +239,11 @@ fun SeriesDetailScreen(
     val dynamicPosterUrl = remember(item, tvShow) {
         tvShow.logoUrl
     }
-    val dynamicBackdropUrl = remember(dynamicPosterUrl) { dynamicPosterUrl }
+    // Yatay sahne görseli sağlayıcı kataloğunda varsa üst görsel o olur; yoksa poster yumuşatılarak arka plan yapılır.
+    var dynamicBackdropUrl by remember(tvShow.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(tvShow.id, tvShow.title) {
+        dynamicBackdropUrl = viewModel?.catalogBackdropOf(tvShow.id, tvShow.title)
+    }
 
     // TMDB Plot Summary state for series
     var tmdbPlotSummary by remember(tvShow.title) { mutableStateOf<String?>(null) }
@@ -468,12 +472,10 @@ fun SeriesDetailScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                    SafeAsyncImage(
-                        model = dynamicBackdropUrl ?: dynamicPosterUrl ?: tvShow.logoUrl,
-                        contentDescription = "Series Cover Image",
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                    com.example.ui.components.HeroCover(
+                        backdropUrl = dynamicBackdropUrl,
+                        posterUrl = dynamicPosterUrl ?: tvShow.logoUrl,
+                        contentDescription = "Series Cover Image"
                     )
 
                     // Scrims for better readability and blend

@@ -2402,6 +2402,15 @@ class IPTVViewModel(
         }
     }
 
+    /** Dizinin sağlayıcı kataloğundaki yatay sahne görseli (detayın üst görseli için); yoksa null. */
+    suspend fun catalogBackdropOf(seriesId: Int, title: String): String? = withContext(Dispatchers.IO) {
+        try {
+            repository.dao.findCatalogShow(seriesId, title)?.backdropUrl?.trim()?.takeIf { it.startsWith("http") }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private val _detailBackdrop = MutableStateFlow<Pair<Int, String>?>(null)
     /** Açık detayın yatay sahne görseli (öğe kimliğiyle): yalnızca üst görsel için. */
     val detailBackdrop: StateFlow<Pair<Int, String>?> = _detailBackdrop.asStateFlow()

@@ -126,7 +126,7 @@ fun DetailScreen(
     } else {
         remember { mutableStateOf<Pair<Int, String>?>(null) }
     }
-    val dynamicBackdropUrl = detailBackdrop?.takeIf { it.first == item.id }?.second ?: item.logoUrl
+    val dynamicBackdropUrl = detailBackdrop?.takeIf { it.first == item.id }?.second
 
     // Dynamic trailer URL resolution using simulated ViewModel fetcher
     var dynamicTrailerUrl by remember(item) { mutableStateOf(item.trailerUrl) }
@@ -325,12 +325,10 @@ fun DetailScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                    SafeAsyncImage(
-                        model = dynamicBackdropUrl ?: dynamicPosterUrl ?: item.logoUrl,
-                        contentDescription = "Cover Image",
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                    com.example.ui.components.HeroCover(
+                        backdropUrl = dynamicBackdropUrl,
+                        posterUrl = dynamicPosterUrl ?: item.logoUrl,
+                        contentDescription = "Cover Image"
                     )
 
                     // Scrims for better readability and blend

@@ -166,6 +166,20 @@ class PosterSourceTest {
         assertEquals("http://img/istila.jpg", shown.logoUrl)
     }
 
+    /** Dizi detayının üst görseli: kataloğda yatay sahne görseli varsa o verilir, yoksa null (poster büyütülmez). */
+    @Test
+    fun seriesHeroBackdrop_comesFromCatalog_orIsNull() = withVm(emptyList()) { vm, db ->
+        runBlocking {
+            db.iptvDao().insertXtreamSeriesCatalog(
+                listOf(XtreamSeriesCatalogEntity(seriesId = 600, name = "Away", canonicalKey = "away",
+                    coverUrl = "http://img/away_poster.jpg", backdropUrl = "http://img/away_wide.jpg", categoryId = "Netflix"))
+            )
+            assertEquals("http://img/away_wide.jpg", vm.catalogBackdropOf(600, "Away"))
+            // Sahne görseli olmayan dizi (500: yalnızca poster) için null: üst görsel posterden yumuşatılır.
+            assertNull(vm.catalogBackdropOf(500, "İstila"))
+        }
+    }
+
     /** Detay ekranındaki sonsuz arka plan animasyonu test saatini kilitlemesin: saat elle ilerletilir. */
     private fun showDetail(item: IPTVItem) {
         compose.mainClock.autoAdvance = false
