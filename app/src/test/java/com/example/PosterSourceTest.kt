@@ -194,6 +194,8 @@ class PosterSourceTest {
     /** Eski sürümlerin bölüm numarasıyla bulup kaydettiği (başka dizilere ait) kapaklar bir kez temizlenir. */
     @Test
     fun seriesCoversSavedByOldVersions_areDroppedOnce() = withVm(emptyList()) { vm, db ->
+        // VM'nin arka plandaki başlangıç işi aynı bayrağı kendisi ayarlayabilir (yavaş makinede 2 sn dolar); test kendi durumunu kurar.
+        app.getSharedPreferences("poster_sources", android.content.Context.MODE_PRIVATE).edit().remove("series_covers_verified_v1").commit()
         runBlocking {
             db.iptvDao().upsertSeriesCover(com.example.data.model.SeriesCoverEntity("istila", "http://img/other.jpg"))
             vm.dropUnverifiedSeriesCoversOnce()

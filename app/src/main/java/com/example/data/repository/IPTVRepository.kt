@@ -504,6 +504,24 @@ class IPTVRepository(
         iptvDao.deleteItemsByPlaylist(playlistId)
         iptvDao.clearStagingItems(playlistId)
         iptvDao.deletePlaylist(playlistId)
+        dropSeriesCatalogIfNoXtreamSource()
+    }
+
+    /**
+     * Dizi kataloğu playlist'ten bağımsız ayrı bir tabloda durur ve yalnızca Xtream kimlik bilgisiyle çekilebilir.
+     * Xtream kaynağı olan liste silinip yerine yalnızca canlı yayın içeren (Xtream olmayan) bir liste yüklenince katalog
+     * eski listeden kalıyor, "açılmayan dizi kartları" olarak görünüyordu. Kalan öğelerde Xtream adresi yoksa katalog silinir
+     * (kataloğ bir önbellektir; Xtream listesi yeniden eklenince kendiliğinden tekrar dolar).
+     */
+    suspend fun dropSeriesCatalogIfNoXtreamSource() {
+        try {
+            if (iptvDao.seriesCatalogCount() == 0) return
+            val hasXtreamSource = iptvDao.sampleItemsWithStream()
+                .any { com.example.data.api.MetadataEnricher.parseXtreamCredentials(it) != null }
+            if (!hasXtreamSource) iptvDao.clearXtreamSeriesCatalog()
+        } catch (e: Exception) {
+            Log.w(TAG, "dropSeriesCatalogIfNoXtreamSource: ${e.message}")
+        }
     }
 
     suspend fun clearPlaylistItems(playlistId: Int) {

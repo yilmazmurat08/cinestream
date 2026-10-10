@@ -485,6 +485,10 @@ interface IPTVDao {
     @Query("SELECT COUNT(*) FROM xtream_series_catalog")
     suspend fun seriesCatalogCount(): Int
 
+    /** Listelerdeki adresleri incelemek için küçük bir örnek (Xtream kaynağı var mı diye bakılır). */
+    @Query("SELECT * FROM iptv_items WHERE streamUrl != '' LIMIT 200")
+    suspend fun sampleItemsWithStream(): List<IPTVItem>
+
     @Query("SELECT categoryId AS name, COUNT(*) AS count FROM xtream_series_catalog GROUP BY categoryId")
     suspend fun seriesCatalogCategoryCounts(): List<CategoryCount>
 

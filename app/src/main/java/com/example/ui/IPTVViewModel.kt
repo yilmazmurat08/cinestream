@@ -1456,6 +1456,8 @@ class IPTVViewModel(
                 }
                 loadTMDBDiscoverContent()
                 prefetchSeriesCovers()
+                // Eski listeden kalan dizi kataloğu (Xtream kaynağı artık yoksa) açılmayan kartlar göstermesin.
+                repository.dropSeriesCatalogIfNoXtreamSource()
                 syncXtreamSeriesCatalog()
             } catch (oom: OutOfMemoryError) {
                 Log.e("IPTVViewModel", "OutOfMemory during startup. Resetting volatile caches.", oom)
