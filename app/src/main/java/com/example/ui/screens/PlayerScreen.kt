@@ -629,6 +629,8 @@ fun LegacyExoPlayerScreen(
                 }
 
                 localRetryCount++
+                // Film/dizi bölümünde hata sonrası yeniden denemede baştan değil kaldığı yerden devam edilir.
+                val resumePositionMs = player.currentPosition.takeIf { it > 0 && player.isCurrentMediaItemSeekable } ?: C.TIME_UNSET
                 val previousMime = player.currentMediaItem?.localConfiguration?.mimeType
                 val urlLower = sanitizedUrl.lowercase()
                 val isVodUrl = urlLower.contains("/movie/") || urlLower.contains("/series/") || item.type == "MOVIE" || item.type == "SERIES"
@@ -702,7 +704,7 @@ fun LegacyExoPlayerScreen(
 
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     try {
-                        player.setMediaItem(retryItem)
+                        if (resumePositionMs != C.TIME_UNSET) player.setMediaItem(retryItem, resumePositionMs) else player.setMediaItem(retryItem)
                         player.prepare()
                         player.playWhenReady = true
                     } catch (e: Exception) {
@@ -2561,11 +2563,11 @@ fun LegacyExoPlayerScreen(
 
                         currentTracks?.groups?.forEach { group ->
                             if (group.type == C.TRACK_TYPE_AUDIO) {
-                                for (i in 0 until group.length) {
+                                for (i in com.example.player.selectableTrackIndices(group)) {
                                     audioTracks.add(group to i)
                                 }
                             } else if (group.type == C.TRACK_TYPE_TEXT) {
-                                for (i in 0 until group.length) {
+                                for (i in com.example.player.selectableTrackIndices(group)) {
                                     subtitleTracks.add(group to i)
                                 }
                             }
