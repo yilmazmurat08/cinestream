@@ -251,6 +251,7 @@ fun SeriesDetailScreen(
     var dynamicBackdropUrl by remember(tvShow.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(tvShow.id, tvShow.title) {
         dynamicBackdropUrl = viewModel?.catalogBackdropOf(tvShow.id, tvShow.title)
+            ?: viewModel?.tvTmdbDetails(tvShow.title, "SERIES")?.backdropUrl
     }
 
     // TMDB Plot Summary state for series

@@ -127,6 +127,15 @@ fun DetailScreen(
         remember { mutableStateOf<Pair<Int, String>?>(null) }
     }
     val dynamicBackdropUrl = detailBackdrop?.takeIf { it.first == item.id }?.second
+    // Sağlayıcının yatay görseli yoksa TMDB'nin yatay görseli (TV detayındaki aynı önbellekli çağrı) kullanılır.
+    var tmdbBackdropUrl by remember(item.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(item.id) {
+        val title = item.cleanedName.ifBlank { item.name }
+        // Canlı kanal adı bir film adıyla eşleşip ilgisiz bir görsel getirmesin.
+        if (viewModel != null && title.isNotBlank() && item.type != "LIVE") {
+            tmdbBackdropUrl = viewModel.tvTmdbDetails(title, if (item.type == "SERIES") "SERIES" else "MOVIE")?.backdropUrl
+        }
+    }
 
     // Dynamic trailer URL resolution using simulated ViewModel fetcher
     var dynamicTrailerUrl by remember(item) { mutableStateOf(item.trailerUrl) }
@@ -337,6 +346,7 @@ fun DetailScreen(
                     com.example.ui.components.HeroCover(
                         backdropUrl = dynamicBackdropUrl,
                         posterUrl = dynamicPosterUrl ?: item.logoUrl,
+                        tmdbBackdropUrl = tmdbBackdropUrl,
                         contentDescription = "Cover Image"
                     )
 
