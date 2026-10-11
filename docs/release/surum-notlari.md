@@ -1,18 +1,20 @@
-# Sürüm notları — 1.1.1 (12)
+# Sürüm notları — 1.1.2 (13)
 
-Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter). 1.0.8 ve 1.0.9'un değişikliklerini de içerir.
+Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter). 1.1.0 ve 1.1.1'in değişikliklerini de içerir.
 
 ```
 <tr-TR>
-• Yeni: Ayarlar > Ebeveyn denetimi > Kilitli kategoriler. Canlı TV, film ve dizi kategorilerini (ör. yetişkin, aksiyon) kendiniz kilitleyin veya kilidini açın.
-• Kilitli kategoriler PIN ister; vitrinlerde ve kanal geçişinde görünmez.
-• Dizileri favorilere ekleyebilirsiniz; doğru dizi, doğru posterle açılır.
-• Bilgisi olmayan yapımlarda uydurma tarih, tür veya oyuncu gösterilmiyor.
+• Yeni: Film ve dizi kartı açılınca fragman kendiliğinden oynar (telefon ve Android TV).
+• Oynatıcı veri beklerken ekranda dönen daire ve "Yükleniyor" uyarısı çıkar; bağlantı yavaşsa not eklenir.
+• Ses ve altyazı listesinde yalnızca cihazın çalabildiği kanallar görünür; hata sonrası film kaldığı yerden devam eder.
+• Kilitli kategoriler (Ayarlar > Ebeveyn denetimi) ve daha net film/dizi üst görselleri.
+• Silinen listeden kalan dizi klasörleri temizleniyor.
 </tr-TR>
 <en-US>
-• New: Settings > Parental controls > Locked categories. Lock or unlock Live TV, movie and series categories (e.g. adult, action) yourself.
-• Locked categories ask for the PIN and are hidden from shelves and channel zapping.
-• You can add series to favorites; the right show opens with the right poster.
-• Titles without information no longer show a made-up date, genre or cast.
+• New: the trailer plays automatically when you open a movie or series card (phone and Android TV).
+• A spinner and "Loading" notice appear while the player waits for data; a note is added if the connection is slow.
+• Audio and subtitle lists show only tracks your device can play; playback resumes where you left off after an error.
+• Locked categories (Settings > Parental controls) and sharper movie/series header images.
+• Series folders left over from a deleted list are cleaned up.
 </en-US>
 ```

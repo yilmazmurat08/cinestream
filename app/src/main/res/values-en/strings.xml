@@ -664,4 +664,6 @@
     <string name="category_locks_reset">Reset manual settings</string>
     <string name="category_locks_pin_subtitle">Enter your PIN to change locked categories.</string>
     <string name="category_locks_lock_desc">Lock the %1$s category</string>
+    <string name="player_buffering">Loading…</string>
+    <string name="player_buffering_slow">Connection is slow, waiting for the stream…</string>
 </resources>

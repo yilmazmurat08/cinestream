@@ -663,4 +663,6 @@
     <string name="category_locks_reset">Elle yapılan ayarları sıfırla</string>
     <string name="category_locks_pin_subtitle">Kilitli kategorileri değiştirmek için PIN kodunuzu girin.</string>
     <string name="category_locks_lock_desc">%1$s kategorisini kilitle</string>
+    <string name="player_buffering">Yükleniyor…</string>
+    <string name="player_buffering_slow">Bağlantı yavaş, yayın bekleniyor…</string>
 </resources>

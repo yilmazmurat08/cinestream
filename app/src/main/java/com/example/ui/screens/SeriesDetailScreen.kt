@@ -139,6 +139,14 @@ fun SeriesDetailScreen(
     var dynamicTrailerUrl by remember(item) { mutableStateOf(item.trailerUrl) }
     // Netflix tarzı: fragman YouTube'a gitmeden üstteki kapak görselinin yerinde oynar.
     var playingTrailerId by remember(item) { mutableStateOf<String?>(null) }
+    // Kart açılınca fragman kendiliğinden başlar; kullanıcı kapatır, biter ya da hata verirse aynı kartta tekrar başlamaz.
+    var trailerAutoDismissed by remember(item) { mutableStateOf(false) }
+    com.example.ui.components.AutoStartTrailerEffect(
+        videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl),
+        dismissed = trailerAutoDismissed,
+        playing = playingTrailerId != null,
+        onStart = { playingTrailerId = it }
+    )
 
     if (dynamicTrailerUrl.isNullOrEmpty() && viewModel != null) {
         LaunchedEffect(item) {
@@ -462,9 +470,10 @@ fun SeriesDetailScreen(
                         com.example.ui.components.InAppTrailerPlayer(
                             videoId = trailerId,
                             showControls = false,
-                            onEnded = { playingTrailerId = null },
+                            onEnded = { playingTrailerId = null; trailerAutoDismissed = true },
                             onError = {
                                 playingTrailerId = null
+                                trailerAutoDismissed = true
                                 android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
                             },
                             // Fragman kapak alanının tamamını kaplar (Netflix tarzı); taşan kenarlar kırpılır.
@@ -704,6 +713,7 @@ fun SeriesDetailScreen(
                                         val videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl)
                                         if (playingTrailerId != null) {
                                             playingTrailerId = null
+                                            trailerAutoDismissed = true
                                         } else if (!videoId.isNullOrEmpty()) {
                                             playingTrailerId = videoId
                                         } else {

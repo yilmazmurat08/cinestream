@@ -520,6 +520,8 @@ fun LegacyExoPlayerScreen(
     // Yayın hiç başlamazsa (sunucu yanıt vermiyor, bağlantı asılı kaldı) sonsuz "yükleniyor" yerine hata ve
     // "Yeniden dene" gösterilir.
     var reachedReady by remember(player) { mutableStateOf(false) }
+    // Veri beklerken (yükleniyor / donma) dönen daire gösterilir; kullanıcı programın duraklatıldığını sanmasın.
+    var isBuffering by remember(player) { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
     LaunchedEffect(player, streamFailed) {
         if (streamFailed || reachedReady) return@LaunchedEffect
         delay(STREAM_START_TIMEOUT_MS)
@@ -573,6 +575,7 @@ fun LegacyExoPlayerScreen(
                 currentTracks = tracks
             }
             override fun onPlaybackStateChanged(state: Int) {
+                isBuffering = state == Player.STATE_BUFFERING
                 if (state == Player.STATE_READY) {
                     reachedReady = true
                     val dur = player.duration / 1000
@@ -1167,6 +1170,11 @@ fun LegacyExoPlayerScreen(
                 }
             )
         
+            com.example.ui.components.BufferingOverlay(
+                visible = isBuffering && !streamFailed && !isInPip,
+                modifier = Modifier.align(Alignment.Center)
+            )
+
             if (com.example.BuildConfig.FREE_WATCH_LIMIT && iptvViewModel != null && !isProUser) {
                 FreeTimeRemainingBadge(
                     remainingSeconds = com.example.ui.IPTVViewModel.FREE_DAILY_WATCH_SECONDS - totalWatchSeconds,
