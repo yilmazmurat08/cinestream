@@ -90,7 +90,7 @@ fun ProPaywallDialog(
     onOpenLegal: (LegalDoc) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val activity = remember(context) { context.findActivity() }
+    val activity = rememberHostActivity()
     val offers by SubscriptionManager.offers.collectAsState()
     var busy by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { SubscriptionManager.refresh() }
@@ -394,4 +394,16 @@ private fun ProPackageRadioCard(
             }
         }
     }
+}
+
+/**
+ * Ekranı barındıran Activity. Uygulama dili için LocalContext, Activity'den türetilmiş ayrı bir bağlamla
+ * (createConfigurationContext) değiştirilir; ondan Activity bulunamadığı için satın alma Google Play'i hiç açmadan
+ * "kullanılamıyor" diyordu. Activity, ekranın kendi görünümünden bulunur.
+ */
+@Composable
+fun rememberHostActivity(): android.app.Activity? {
+    val view = androidx.compose.ui.platform.LocalView.current
+    val context = LocalContext.current
+    return remember(view, context) { view.context.findActivity() ?: context.findActivity() }
 }
