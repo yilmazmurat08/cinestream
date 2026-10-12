@@ -209,7 +209,7 @@ object MetadataEnricher {
         // aynı numaralı BAŞKA bir dizinin konusunu, oyuncularını ve posterini döndürüyordu. Dizi bilgisi kataloğdan gelir.
         if (creds.isSeries) return@withContext null
 
-        val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_vod_info&vod_id=${creds.streamId}"
+        val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_vod_info&vod_id=${creds.streamId}"
 
         Log.d(TAG, "Calling Xtream API GET request: $apiUrl")
 
@@ -322,7 +322,7 @@ object MetadataEnricher {
             return@withContext emptyMap()
         }
         try {
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_series"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_series"
             Log.d(TAG, "Xtream toplu dizi listesi çağrılıyor: $apiUrl")
 
             val request = Request.Builder().url(apiUrl).get().build()
@@ -385,7 +385,7 @@ object MetadataEnricher {
      */
     private suspend fun fetchCategoryNameMap(host: String, user: String, pass: String, action: String): Map<String, String> {
         return try {
-            val apiUrl = "$host/player_api.php?username=$user&password=$pass&action=$action"
+            val apiUrl = "$host/player_api.php?username=${com.example.util.XtreamUrls.queryValue(user)}&password=${com.example.util.XtreamUrls.queryValue(pass)}&action=$action"
             val request = Request.Builder()
                 .url(apiUrl)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -413,7 +413,7 @@ object MetadataEnricher {
         fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_live_streams_diag", msg)
         try {
             val categoryNames = fetchCategoryNameMap(host, user, pass, "get_live_categories")
-            val apiUrl = "$host/player_api.php?username=$user&password=$pass&action=get_live_streams"
+            val apiUrl = "$host/player_api.php?username=${com.example.util.XtreamUrls.queryValue(user)}&password=${com.example.util.XtreamUrls.queryValue(pass)}&action=get_live_streams"
             val startTime = System.currentTimeMillis()
             val request = Request.Builder()
                 .url(apiUrl)
@@ -487,7 +487,7 @@ object MetadataEnricher {
         }
         try {
             val categoryNames = fetchCategoryNameMap(creds.baseUrl, creds.user, creds.pass, "get_vod_categories")
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_vod_streams"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_vod_streams"
             val startTime = System.currentTimeMillis()
             val request = Request.Builder()
                 .url(apiUrl)
@@ -555,7 +555,7 @@ object MetadataEnricher {
             return@withContext 0
         }
         try {
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_vod_streams"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_vod_streams"
             val startTime = System.currentTimeMillis()
             val request = Request.Builder()
                 .url(apiUrl)
@@ -614,7 +614,7 @@ object MetadataEnricher {
             return@withContext null
         }
         try {
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_series_info&series_id=$seriesId"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_series_info&series_id=$seriesId"
             val request = Request.Builder()
                 .url(apiUrl)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -728,7 +728,7 @@ object MetadataEnricher {
         val creds = parseXtreamCredentials(anySeriesItem) ?: return@withContext emptyList()
         try {
             val categoryNames = fetchCategoryNameMap(creds.baseUrl, creds.user, creds.pass, "get_series_categories")
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_series"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_series"
             val request = Request.Builder()
                 .url(apiUrl)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")

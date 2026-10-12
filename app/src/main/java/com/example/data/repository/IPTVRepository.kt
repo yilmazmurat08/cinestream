@@ -317,19 +317,38 @@ class IPTVRepository(
      * get.php adresiyse. Örn. http://host:8080/get.php?username=u&password=p&type=m3u_plus
      */
     internal fun xtreamCredentialsOf(playlist: Playlist): Triple<String, String, String>? {
-        val uri = try { java.net.URI(playlist.url.trim()) } catch (e: Exception) { return null }
-        val isXtreamUrl = uri.path?.endsWith("/get.php", ignoreCase = true) == true
+        val raw = playlist.url.trim()
+        // Adres şifre kodlanmadan kaydedilir; şifrede URI'de geçersiz bir karakter (%, boşluk, |) varsa java.net.URI
+        // ayrıştıramaz. O zaman adres elle bölünür (önceden null dönüyor, liste Xtream'den hiç yenilenemiyordu).
+        val uri = try { java.net.URI(raw) } catch (e: Exception) { null }
+        val path = uri?.path ?: ("/" + raw.substringAfter("://", "").substringAfter('/', "").substringBefore('?'))
+        val isXtreamUrl = path.endsWith("/get.php", ignoreCase = true)
         if (!playlist.isXtream && !isXtreamUrl) return null
-        val query = uri.rawQuery.orEmpty().split('&').mapNotNull {
-            val i = it.indexOf('='); if (i <= 0) null else it.substring(0, i) to java.net.URLDecoder.decode(it.substring(i + 1), "UTF-8")
-        }.toMap()
+        // Kayıtlı kullanıcı adı/şifre önceliklidir; adresin sorgu kısmı yalnızca gerektiğinde ve hatasız okunur.
+        val query by lazy { parseQueryLeniently(uri?.rawQuery ?: raw.substringAfter('?', "")) }
         val user = playlist.xtreamUsername?.takeIf { it.isNotBlank() } ?: query["username"] ?: return null
         val pass = playlist.xtreamPassword?.takeIf { it.isNotBlank() } ?: query["password"] ?: return null
-        val scheme = uri.scheme ?: return null
-        val host = uri.host ?: return null
-        val port = if (uri.port != -1) ":${uri.port}" else ""
-        return Triple("$scheme://$host$port", user, pass)
+        if (uri?.scheme != null && uri.host != null) {
+            val port = if (uri.port != -1) ":${uri.port}" else ""
+            return Triple("${uri.scheme}://${uri.host}$port", user, pass)
+        }
+        // Elle: şema://sunucu[:port] (alt çizgili sunucu adlarında da java.net.URI host vermez).
+        val scheme = raw.substringBefore("://", "").takeIf { it.isNotBlank() } ?: return null
+        val authority = raw.substringAfter("://").substringBefore('/').substringBefore('?').substringBefore('#').substringAfter('@')
+        if (authority.isBlank()) return null
+        return Triple("$scheme://$authority", user, pass)
     }
+
+    /** Sorgu parametreleri; bozuk bir % kaçışı (ör. şifrede "%zz") hata fırlatmaz, ham değer kullanılır. */
+    private fun parseQueryLeniently(rawQuery: String): Map<String, String> = rawQuery.split('&').mapNotNull {
+        val i = it.indexOf('=')
+        if (i <= 0) {
+            null
+        } else {
+            val value = it.substring(i + 1)
+            it.substring(0, i) to (try { java.net.URLDecoder.decode(value, "UTF-8") } catch (e: Exception) { value })
+        }
+    }.toMap()
 
     suspend fun importXtreamDirectly(
         context: android.content.Context,
@@ -346,7 +365,7 @@ class IPTVRepository(
             withProtocol.trimEnd('/')
         }
         val markerUrl = "$host/get.php?username=$user&password=$pass&type=m3u_plus&output=ts"
-        val xtreamEpgUrl = "$host/xmltv.php?username=$user&password=$pass"
+        val xtreamEpgUrl = "$host/xmltv.php?username=${com.example.util.XtreamUrls.queryValue(user)}&password=${com.example.util.XtreamUrls.queryValue(pass)}"
 
         val existing = existingPlaylistId?.let { iptvDao.getPlaylistById(it) } ?: iptvDao.findPlaylistByUrl(markerUrl)
         val playlistId = existing?.id ?: iptvDao.insertPlaylist(

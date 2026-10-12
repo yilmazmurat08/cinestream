@@ -10,7 +10,14 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 import coil.imageLoader
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_settings")
+/** Ayar dosyası bozulursa (ör. cihaz yazarken kapandı) okuma/yazma hata fırlatmasın: dosya boş ayarlarla değiştirilir. */
+internal fun preferencesCorruptionHandler() =
+    androidx.datastore.core.handlers.ReplaceFileCorruptionHandler { emptyPreferences() }
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "user_settings",
+    corruptionHandler = preferencesCorruptionHandler()
+)
 
 class SettingsRepository(
     private val context: Context,

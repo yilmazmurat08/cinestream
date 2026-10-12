@@ -52,6 +52,29 @@ class XtreamRefreshAndTrayTest {
         assertNull(repo.xtreamCredentialsOf(Playlist(name = "m3u", url = "https://example.com/list.m3u")))
     }
 
+    /**
+     * Uygulama Xtream adresini şifreyi kodlamadan kaydeder (get.php?...&password=<şifre>). Şifrede URI'de geçersiz bir
+     * karakter (%, boşluk, |) varsa adres ayrıştırılamıyor ve yenileme Xtream yolunu atlıyordu (liste yenilenemiyordu).
+     */
+    @Test
+    fun xtreamPassword_withSpecialCharacters_stillRefreshesThroughPlayerApi() = withRepo { repo, _ ->
+        for (pass in listOf("ab%zz", "pa ss", "x|y^z", "50%")) {
+            val saved = Playlist(
+                name = "x", url = "http://example.com:8080/get.php?username=u1&password=$pass&type=m3u_plus&output=ts",
+                isXtream = true, xtreamUsername = "u1", xtreamPassword = pass
+            )
+            assertEquals("şifre: $pass", Triple("http://example.com:8080", "u1", pass), repo.xtreamCredentialsOf(saved))
+        }
+        // Alt çizgili sunucu adı (java.net.URI bunu "host" saymaz) da çalışır.
+        val underscore = Playlist(
+            name = "x", url = "http://my_server.tv:80/get.php?username=u&password=p", isXtream = true, xtreamUsername = "u", xtreamPassword = "p"
+        )
+        assertEquals(Triple("http://my_server.tv:80", "u", "p"), repo.xtreamCredentialsOf(underscore))
+        // Bayraksız eski kayıtta bozuk % kaçışı uygulamayı/yenilemeyi düşürmez: ham değer kullanılır.
+        val legacy = Playlist(name = "x", url = "http://example.com/get.php?username=a&password=b%zz")
+        assertEquals(Triple("http://example.com", "a", "b%zz"), repo.xtreamCredentialsOf(legacy))
+    }
+
     @Test
     fun playlistById_findsRecordForRefresh() = withRepo { _, db ->
         val id = db.iptvDao().insertPlaylist(Playlist(name = "a", url = "http://example.com/get.php?username=a&password=b")).toInt()

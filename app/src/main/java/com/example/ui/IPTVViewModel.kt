@@ -24,6 +24,7 @@ import com.example.util.ErrorHandlingManager
 import com.example.util.AppError
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
@@ -797,6 +798,8 @@ class IPTVViewModel(
 
     private val _realEpgPrograms = MutableStateFlow<Map<String, List<EPGProgram>>>(emptyMap())
     val realEpgPrograms: StateFlow<Map<String, List<EPGProgram>>> = _realEpgPrograms.asStateFlow()
+    /** Rehber indirmeleri üst üste binmesin: büyük bir XMLTV aynı anda iki kez belleğe alınmaz. */
+    private val epgLoadMutex = kotlinx.coroutines.sync.Mutex()
 
     val manualEpgUrl: StateFlow<String> = settingsRepository.manualEpgUrlFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -827,27 +830,29 @@ class IPTVViewModel(
                 if (_realEpgPrograms.value.isNotEmpty() && System.currentTimeMillis() - lastFetch < sixHoursMillis) {
                     return@collect
                 }
-                if (manualUrl.isNotBlank()) {
-                    try {
-                        _realEpgPrograms.value = RealEpgProvider.fetchProgramsFromUrl(manualUrl)
-                        settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
-                    } catch (e: Exception) {
-                        android.util.Log.w("IPTVViewModel", "Manuel EPG yüklenemedi, otomatiğe dönülüyor: ${e.message}")
-                        if (!autoUrl.isNullOrBlank()) {
-                            try {
-                                _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
-                                if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
-                            } catch (e2: Exception) {
-                                android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e2.message}")
+                epgLoadMutex.withLock {
+                    if (manualUrl.isNotBlank()) {
+                        try {
+                            _realEpgPrograms.value = RealEpgProvider.fetchProgramsFromUrl(manualUrl)
+                            settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                        } catch (e: Exception) {
+                            android.util.Log.w("IPTVViewModel", "Manuel EPG yüklenemedi, otomatiğe dönülüyor: ${e.message}")
+                            if (!autoUrl.isNullOrBlank()) {
+                                try {
+                                    _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
+                                    if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                                } catch (e2: Exception) {
+                                    android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e2.message}")
+                                }
                             }
                         }
-                    }
-                } else if (!autoUrl.isNullOrBlank()) {
-                    try {
-                        _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
-                        if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
-                    } catch (e: Exception) {
-                        android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e.message}")
+                    } else if (!autoUrl.isNullOrBlank()) {
+                        try {
+                            _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
+                            if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                        } catch (e: Exception) {
+                            android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e.message}")
+                        }
                     }
                 }
             }
@@ -1602,12 +1607,47 @@ class IPTVViewModel(
 
     /** Kullanıcı uygulamaya geri döndüğünde (arka plandan) Öne Çıkan içerikleri yenilenir. */
     fun onAppReturnedToForeground() {
+        refreshEpgIfStale()
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             // Paylaşılan film listesi zaten bellekte: veritabanını yeniden okumaya gerek yok.
             val items = movieItemsShared.first()
             if (items.isEmpty()) return@launch
             loadFeaturedMovie(items, forceUpdate = true)
             loadFeaturedCarousel(items)
+        }
+    }
+
+    /**
+     * Uygulama arka planda saatlerce/günlerce açık kalınca (özellikle TV kutularında) rehber hiç yenilenmiyordu;
+     * programlar bitince "şimdi" bilgisi boş kalıyordu. Ön plana dönüşte son indirme 6 saatten eskiyse yenilenir.
+     * İndirme başarısız olursa eldeki rehber korunur.
+     */
+    private fun refreshEpgIfStale() {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            val lastFetch = settingsRepository.lastEpgFetchTimeFlow.first()
+            if (System.currentTimeMillis() - lastFetch < 6 * 60 * 60 * 1000L) return@launch
+            // Açılıştaki indirme hâlâ sürüyorsa ikinci kez indirilmez.
+            if (!epgLoadMutex.tryLock()) return@launch
+            try {
+                val manualUrl = settingsRepository.manualEpgUrlFlow.first().trim()
+                val autoUrl = repository.allPlaylistsFlow.first().firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl
+                for (url in listOfNotNull(manualUrl.takeIf { it.isNotBlank() }, autoUrl?.takeIf { it.isNotBlank() }).distinct()) {
+                    val programs = try {
+                        RealEpgProvider.fetchProgramsFromUrl(url)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        android.util.Log.w("IPTVViewModel", "EPG yenilenemedi: ${e.message}")
+                        null
+                    }
+                    if (!programs.isNullOrEmpty()) {
+                        _realEpgPrograms.value = programs
+                        settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                        break
+                    }
+                }
+            } finally {
+                epgLoadMutex.unlock()
+            }
         }
     }
 

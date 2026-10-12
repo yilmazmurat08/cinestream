@@ -42,6 +42,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.ui.components.CategoryAdaptiveIcon
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -735,20 +737,57 @@ fun MultiScreenPlayerView(
         }
     }
 
-    AndroidView(
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                useController = false
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                this.player = player
-                keepScreenOn = true
+    // Kare donunca veya yayın açılamayınca kutu sadece siyah kalıyordu: durum kutunun içinde gösterilir.
+    var isBuffering by remember(player) { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
+    var failed by remember(player) { mutableStateOf(false) }
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                isBuffering = playbackState == Player.STATE_BUFFERING
+                if (playbackState == Player.STATE_READY) failed = false
             }
-        },
-        update = { playerView ->
-            playerView.player = player
-        },
-        modifier = modifier
-    )
+
+            override fun onPlayerError(error: PlaybackException) {
+                // Canlı yayın pencerenin gerisinde kaldı: en güncel noktadan sessizce devam edilir (oynatıcıdaki gibi).
+                if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+                    player.seekToDefaultPosition()
+                    player.prepare()
+                    return
+                }
+                isBuffering = false
+                failed = true
+            }
+        }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener) }
+    }
+
+    Box(modifier = modifier) {
+        AndroidView(
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    useController = false
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    this.player = player
+                    keepScreenOn = true
+                }
+            },
+            update = { playerView ->
+                playerView.player = player
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+        MultiScreenStatusOverlay(
+            isBuffering = isBuffering,
+            failed = failed,
+            onRetry = {
+                failed = false
+                isBuffering = true
+                player.prepare()
+                player.playWhenReady = true
+            }
+        )
+    }
 }
 
 @Composable
@@ -1017,4 +1056,64 @@ fun ChannelSelectorDialog(
 internal fun multiScreenCategories(channels: List<IPTVItem>): List<String> {
     val raw = channels.map { it.category }.distinct().filter { it.isNotBlank() && it != "Tümü" }
     return listOf("Tümü") + raw.sorted()
+}
+
+/** Çoklu ekran kutusunun durumu: veri beklerken dönen daire, yayın açılamazsa uyarı ve "Tekrar Deneyin". */
+@Composable
+fun MultiScreenStatusOverlay(isBuffering: Boolean, failed: Boolean, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    when {
+        failed -> Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+                .testTag("multi_failed"),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ErrorOutline,
+                    contentDescription = null,
+                    tint = com.example.ui.theme.CineOrange,
+                    modifier = Modifier.size(22.dp)
+                )
+                Text(
+                    text = stringResource(R.string.player_stream_failed_title),
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Surface(
+                    onClick = onRetry,
+                    shape = RoundedCornerShape(12.dp),
+                    color = com.example.ui.theme.CineOrange,
+                    modifier = Modifier.testTag("multi_retry")
+                ) {
+                    Text(
+                        text = stringResource(R.string.detail_retry),
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                    )
+                }
+            }
+        }
+        isBuffering -> Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                color = com.example.ui.theme.CineOrange,
+                strokeWidth = 3.dp,
+                modifier = Modifier
+                    .size(28.dp)
+                    .testTag("multi_buffering")
+            )
+        }
+    }
 }
