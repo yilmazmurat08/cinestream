@@ -309,9 +309,6 @@ class IPTVRepository(
 
     suspend fun getItemsByTypeDirect(type: String): List<IPTVItem> = iptvDao.getItemsByTypeDirect(type)
 
-    suspend fun findSeriesEpisodesByTitleLike(titlePattern: String): List<IPTVItem> =
-        iptvDao.findSeriesEpisodesByTitleLike(titlePattern)
-
     /**
      * Xtream hesabının (sunucu, kullanıcı, şifre) bilgisi: kayıtta işaretliyse ya da adres bir Xtream
      * get.php adresiyse. Örn. http://host:8080/get.php?username=u&password=p&type=m3u_plus
