@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -471,10 +475,24 @@ private fun TvChannelPanel(
             .padding(top = 24.dp)
             .testTag("tv_channel_panel")
     ) {
-        Text(title, color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 20.dp))
-        if (isLive) {
-            Text(stringResource(R.string.tv_panel_left_hint), color = TvTheme.TextMuted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
+        // Telefonda TV modunda kumanda (Sol tuşu) yok: başlığa dokununca kategori listesi açılır.
+        // Yalnızca dokunma algılanır; kumanda odağı değişmez.
+        val openCategories by rememberUpdatedState(onOpenCategories)
+        val touchDevice = !TvDevice.isTv(LocalContext.current)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .then(if (isLive) Modifier.pointerInput(Unit) { detectTapGestures { openCategories() } } else Modifier)
+                .testTag("tv_panel_header")
+        ) {
+            Text(title, color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 20.dp))
+            if (isLive) {
+                Text(
+                    stringResource(if (touchDevice) R.string.tv_panel_tap_hint else R.string.tv_panel_left_hint),
+                    color = TvTheme.TextMuted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp)
+                )
+            }
         }
         Spacer(Modifier.height(10.dp))
         LazyColumn(
