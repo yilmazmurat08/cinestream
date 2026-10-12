@@ -559,6 +559,10 @@ fun LegacyExoPlayerScreen(
         }
     }
 
+    // Canlı yayında üstteki bant: o an yayında olan program (yayın akışından); bilgi yoksa bant boş kalır.
+    // TV modunda bu bilgi zaten alttaki kanal bilgi kartında gösteriliyor.
+    val showLiveNowBand = !tvMode && item.type == "LIVE"
+
     // Track state listener
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -1331,6 +1335,15 @@ fun LegacyExoPlayerScreen(
                     exit = fadeOut(),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
+                        .then(
+                            if (showLiveNowBand) {
+                                Modifier
+                                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                                    .padding(top = com.example.ui.components.LIVE_NOW_BAND_HEIGHT)
+                            } else {
+                                Modifier
+                            }
+                        )
                         .padding(24.dp)
                 ) {
                     Button(
@@ -1390,6 +1403,8 @@ fun LegacyExoPlayerScreen(
                             .align(Alignment.TopCenter)
                             .fillMaxWidth()
                             .windowInsetsPadding(WindowInsets.safeDrawing)
+                            // Canlıda üstteki yayın bandının altından başlar (bant ile üst çubuk üst üste binmez).
+                            .padding(top = if (showLiveNowBand) com.example.ui.components.LIVE_NOW_BAND_HEIGHT else 0.dp)
                             .padding(
                                 horizontal = layout.playerHorizontalPadding,
                                 vertical = if (layout.isLandscape) 8.dp else 12.dp
@@ -1789,6 +1804,15 @@ fun LegacyExoPlayerScreen(
                         }
                     }
                 }
+            }
+
+            // Canlı yayın bandı: o an yayında olan program; tıklanmaz, dokunuşlar oynatıcıya geçer.
+            if (showLiveNowBand) {
+                com.example.ui.components.LiveNowBandFor(
+                    channel = item,
+                    viewModel = iptvViewModel,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
             }
 
             // 4. Bölümler ve Öneriler Paneli (SideDrawer in Landscape / BottomSheet in Portrait)

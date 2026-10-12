@@ -109,6 +109,8 @@ class TvPlayerTest {
         compose.onNodeWithTag("tv_channel_7001").assertIsFocused()
         compose.onNodeWithTag("tv_control_bar").assertExists()
         compose.onNodeWithTag("tv_channel_info").assertExists()
+        // TV'de "şimdi yayında" bilgisi alttaki kanal kartında; telefonun üst bandı gösterilmez.
+        compose.onNodeWithTag("live_now_band").assertDoesNotExist()
 
         // Sol: kategori listesi
         press(Key.DirectionLeft)
