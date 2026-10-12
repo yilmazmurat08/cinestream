@@ -1,20 +1,20 @@
-# Sürüm notları — 1.1.3 (14)
+# Sürüm notları — 1.1.4 (15)
 
-Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter). 1.1.0–1.1.2'nin değişikliklerini de içerir.
+Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
 
 ```
 <tr-TR>
-• PRO satın alma düzeltildi; film ve dizi sayfalarının üst görseli artık net.
-• Yeni: Film ve dizi kartı açılınca fragman kendiliğinden oynar (telefon ve Android TV).
-• Oynatıcı veri beklerken ekranda dönen daire ve "Yükleniyor" uyarısı çıkar; bağlantı yavaşsa not eklenir.
-• Ses ve altyazı listesinde yalnızca cihazın çalabildiği kanallar görünür; hata sonrası film kaldığı yerden devam eder.
-• Kilitli kategoriler (Ayarlar > Ebeveyn denetimi); Android TV'de çift Geri ile çıkış düzeldi.
+• Yeni: PRO paketinizi yükseltebilirsiniz (aylıktan yıllığa veya ömür boyuna, yıllıktan ömür boyuna).
+• Çoklu ekranda yükleniyor göstergesi; yayın açılamazsa "Tekrar Deneyin" düğmesi çıkar.
+• Yayın akışı (EPG) daha az bellek kullanır, "şimdi yayında" her zaman günceldir ve uygulamaya dönünce kendiliğinden yenilenir.
+• Çok büyük Xtream listeleri TV kutularında daha az bellekle yüklenir; şifresinde özel karakter olan hesaplar düzgün çalışır.
+• Kararlılık iyileştirmeleri.
 </tr-TR>
 <en-US>
-• PRO purchase fixed; movie and series page header images are now sharp.
-• New: the trailer plays automatically when you open a movie or series card (phone and Android TV).
-• A spinner and "Loading" notice appear while the player waits for data; a note is added if the connection is slow.
-• Audio and subtitle lists show only tracks your device can play; playback resumes where you left off after an error.
-• Locked categories (Settings > Parental controls); double Back now exits on Android TV.
+• New: upgrade your PRO plan (monthly to yearly or lifetime, yearly to lifetime).
+• Multi-screen shows a loading indicator, and a "Try Again" button if a stream can't be opened.
+• The TV guide (EPG) uses less memory, "now playing" is always up to date, and it refreshes when you return to the app.
+• Very large Xtream lists load with less memory on TV boxes; accounts with special characters in the password work correctly.
+• Stability improvements.
 </en-US>
 ```
