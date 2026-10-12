@@ -1,20 +1,16 @@
-# Sürüm notları — 1.1.4 (15)
+# Sürüm notları — 1.1.5 (16)
 
 Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
 
 ```
 <tr-TR>
-• Yeni: PRO paketinizi yükseltebilirsiniz (aylıktan yıllığa veya ömür boyuna, yıllıktan ömür boyuna).
-• Çoklu ekranda yükleniyor göstergesi; yayın açılamazsa "Tekrar Deneyin" düğmesi çıkar.
-• Yayın akışı (EPG) daha az bellek kullanır, "şimdi yayında" her zaman günceldir ve uygulamaya dönünce kendiliğinden yenilenir.
-• Çok büyük Xtream listeleri TV kutularında daha az bellekle yüklenir; şifresinde özel karakter olan hesaplar düzgün çalışır.
+• Yeni: Canlı yayın izlerken ekranın üstünde o an yayında olan program görünür.
+• Telefonda TV modu: canlı yayın panelinde kategori listesi dokunarak açılır, tüm kategoriler izlenebilir.
 • Kararlılık iyileştirmeleri.
 </tr-TR>
 <en-US>
-• New: upgrade your PRO plan (monthly to yearly or lifetime, yearly to lifetime).
-• Multi-screen shows a loading indicator, and a "Try Again" button if a stream can't be opened.
-• The TV guide (EPG) uses less memory, "now playing" is always up to date, and it refreshes when you return to the app.
-• Very large Xtream lists load with less memory on TV boxes; accounts with special characters in the password work correctly.
+• New: while watching live TV, the programme on air now is shown at the top of the screen.
+• TV mode on phones: tap to open the category list in the live TV panel and watch any category.
 • Stability improvements.
 </en-US>
 ```
