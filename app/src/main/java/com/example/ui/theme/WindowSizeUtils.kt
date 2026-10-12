@@ -10,30 +10,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@Composable
-fun rememberWindowWidthSizeClass(): WindowWidthSizeClass {
-    val configuration = LocalConfiguration.current
-    return remember(configuration.screenWidthDp) {
-        when {
-            configuration.screenWidthDp < 600 -> WindowWidthSizeClass.Compact
-            configuration.screenWidthDp < 840 -> WindowWidthSizeClass.Medium
-            else -> WindowWidthSizeClass.Expanded
-        }
-    }
-}
-
-@Composable
-fun rememberWindowHeightSizeClass(): WindowHeightSizeClass {
-    val configuration = LocalConfiguration.current
-    return remember(configuration.screenHeightDp) {
-        when {
-            configuration.screenHeightDp < 480 -> WindowHeightSizeClass.Compact
-            configuration.screenHeightDp < 900 -> WindowHeightSizeClass.Medium
-            else -> WindowHeightSizeClass.Expanded
-        }
-    }
-}
-
 data class AppAdaptiveLayout(
     val widthSizeClass: WindowWidthSizeClass,
     val heightSizeClass: WindowHeightSizeClass,

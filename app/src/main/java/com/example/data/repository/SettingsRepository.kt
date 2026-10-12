@@ -380,16 +380,6 @@ class SettingsRepository(
         return updatedSeconds
     }
 
-    suspend fun incrementWatchSeconds(): Long {
-        return addWatchSeconds(1L)
-    }
-
-    suspend fun resetWatchSeconds() {
-        store.edit { preferences ->
-            preferences[TOTAL_WATCH_SECONDS] = 0L
-        }
-    }
-
     suspend fun incrementCompletedPlaybackSessions(): Int {
         var updatedCount = 0
         store.edit { preferences ->

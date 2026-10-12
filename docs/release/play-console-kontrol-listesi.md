@@ -4,7 +4,7 @@ Sürüm: **1.0.9 (versionCode 10)** · Dosya: `CineStream-1.0.9.aab`
 
 ## Bugün (dahili/kapalı test için)
 
-- [ ] **Mağaza adı:** Ana mağaza girişinde adı **CineStream AI TV** yap; kısa ve tam açıklamayı `play-store/magaza-metinleri.md`'den yeniden yapıştır (sorumluluk cümlesi eklendi).
+- [ ] **Mağaza adı:** Ana mağaza girişinde adı **CineStream IPTV Player** yap; kısa ve tam açıklamayı `play-store/magaza-metinleri.md`'den yeniden yapıştır (sorumluluk cümlesi eklendi).
 - [ ] **Gizlilik politikası:** Google Dokümanlar'daki belgeyi yeni metinle güncelle (`gizlilik-politikasi.html` / uygulama içi metinle aynı; link değişmez).
 - [ ] **Uygulama içeriği** (✅ = tamamlandı):
   - [x] Gizlilik politikası URL'si

@@ -459,7 +459,6 @@
     <string name="settings_cache_desc">Biriken resim önbelleklerini ve geçici dosyaları temizler.</string>
     <string name="settings_crash_logs_title">Çökme Günlükleri (Tanılama)</string>
     <string name="settings_crash_logs_desc">Bir çökme olduysa detaylı kaydını buradan görüp kopyalayabilirsin.</string>
-    <string name="settings_about">Hakkında</string>
     <string name="settings_tmdb_notice">Bu ürün TMDB API\'sini kullanmaktadır ancak TMDB tarafından onaylanmamıştır veya sertifikalandırılmamıştır.</string>
     <string name="settings_no_crash_logs">Henüz kayıtlı bir çökme günlüğü yok. Bu iyi bir işaret! Bir çökme olursa burada listelenecek.</string>
     <string name="settings_subtitles">Altyazı Özelleştirme</string>
@@ -675,7 +674,6 @@
     <string name="category_locks_empty">Bu listede kategori yok.</string>
     <string name="category_locks_reset">Elle yapılan ayarları sıfırla</string>
     <string name="category_locks_pin_subtitle">Kilitli kategorileri değiştirmek için PIN kodunuzu girin.</string>
-    <string name="category_locks_lock_desc">%1$s kategorisini kilitle</string>
     <string name="player_buffering">Yükleniyor…</string>
     <string name="player_buffering_slow">Bağlantı yavaş, yayın bekleniyor…</string>
 </resources>

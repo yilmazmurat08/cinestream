@@ -543,11 +543,6 @@ class IPTVRepository(
         }
     }
 
-    suspend fun clearPlaylistItems(playlistId: Int) {
-        iptvDao.deleteItemsByPlaylist(playlistId)
-        iptvDao.clearStagingItems(playlistId)
-    }
-
     suspend fun clearPlaylists() {
         try {
             iptvDao.deleteAllPlaylists()

@@ -106,29 +106,6 @@ object GeminiAiService {
         return@withContext CastAndDirectorInfo(director = director, cast = castList)
     }
 
-    suspend fun fetchPersonProfilePhotoFromTMDB(context: Context, name: String, apiKey: String): String? = withContext(Dispatchers.IO) {
-        if (name.isBlank()) return@withContext null
-        try {
-            val searchResult = NetworkModule.tmdbApiService.searchPerson(apiKey, name)
-            val profilePath = searchResult.results?.firstOrNull()?.profile_path
-            if (!profilePath.isNullOrBlank()) {
-                val imageUrl = "https://image.tmdb.org/t/p/w185$profilePath"
-                val role = "Oyuncu"
-                val details = PersonDetails(
-                    name = name,
-                    role = role,
-                    biography = "$name hakkında biyografi bilgisi.",
-                    imageUrl = imageUrl
-                )
-                MetadataEnricher.savePersonToCache(context, details)
-                return@withContext imageUrl
-            }
-        } catch (e: Throwable) {
-            Log.w("GeminiAiService", "Error searching TMDB person photo for '$name': ${e.message}")
-        }
-        return@withContext null
-    }
-
     data class ChatAiResult(
         val reply: String,
         val detectedTitle: String = "",

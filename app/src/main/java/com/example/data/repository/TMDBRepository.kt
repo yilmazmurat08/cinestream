@@ -516,46 +516,6 @@ class TMDBRepository(
     fun cleanM3UData(rawTitle: String, rawDate: String?): Pair<String, String?> =
         TitleNormalizer.cleanM3UData(rawTitle, rawDate)
 
-    suspend fun getEnrichedContent(
-        rawTitle: String,
-        year: String? = null,
-        isMovie: Boolean = true,
-        tmdbApiKey: String = ""
-    ): EnrichedContentResult? = withContext(Dispatchers.IO) {
-        val tmdbResult = getTmdbFullData(rawTitle, year, isMovie) ?: return@withContext null
-        val castString = tmdbResult.castList.take(8).map { it.name }.joinToString(", ").ifBlank { null }
-        EnrichedContentResult(
-            tmdbId = tmdbResult.tmdbId,
-            overview = tmdbResult.overview,
-            cast = castString,
-            director = tmdbResult.directorName,
-            posterPath = tmdbResult.posterPath,
-            episodes = emptyList(),
-            isAiGenerated = false
-        )
-    }
-
-    suspend fun enrichContent(
-        title: String,
-        year: String = "",
-        isMovie: Boolean = true,
-        tmdbApiKey: String = ""
-    ): EnrichedContentResult? = getEnrichedContent(title, year.ifBlank { null }, isMovie, tmdbApiKey)
-
-    suspend fun searchTMDBForM3UContent(
-        rawTitle: String,
-        rawDate: String?,
-        isMovie: Boolean,
-        tmdbApiKey: String = ""
-    ): EnrichedContentResult? = getEnrichedContent(rawTitle, rawDate?.takeIf { it.length >= 4 }?.substring(0, 4), isMovie, tmdbApiKey)
-
-    suspend fun searchTMDB(
-        title: String,
-        year: String = "",
-        isMovie: Boolean = true,
-        tmdbApiKey: String = ""
-    ): EnrichedContentResult? = getEnrichedContent(title, year.ifBlank { null }, isMovie, tmdbApiKey)
-
     fun getPersonDetails(name: String, role: String, tmdbApiKey: String = ""): Flow<PersonDetails?> = flow {
         val normalizedName = name.lowercase(Locale.ROOT).trim()
         if (normalizedName.isBlank()) {
@@ -616,26 +576,6 @@ class TMDBRepository(
         val isMovie = !type.equals("SERIES", ignoreCase = true) && !type.equals("TV", ignoreCase = true)
         val result = getTmdbFullData(title, null, isMovie)
         result?.toMediaDetails(if (isMovie) "MOVIE" else "SERIES")
-    }
-
-    suspend fun searchAndGetDetails(seriesName: String, tmdbApiKey: String = ""): TMDBMediaDetails = withContext(Dispatchers.IO) {
-        fetchDetailsByTitle(seriesName, "SERIES", tmdbApiKey) ?: TMDBMediaDetails(
-            tmdbId = 0,
-            title = seriesName,
-            type = "SERIES",
-            overview = "",
-            posterUrl = null,
-            backdropUrl = null,
-            cast = emptyList(),
-            castString = "",
-            director = "",
-            rating = 0.0,
-            voteCount = 0,
-            releaseDate = "",
-            genres = emptyList(),
-            tagline = "",
-            runtimeOrEpisodes = ""
-        )
     }
 
     suspend fun getTrendingMoviesAndSeries(tmdbApiKey: String = ""): List<IPTVItem> = withContext(Dispatchers.IO) {
@@ -782,40 +722,6 @@ private fun TmdbContentResult.toMediaDetails(type: String): TMDBMediaDetails {
         runtimeOrEpisodes = ""
     )
 }
-
-/**
- * İçerik Detay Sonucu: Önce TMDb, Yoksa Yedek AI (LLM)
- */
-sealed class ContentDetailResult {
-    data class Tmdb(val data: EnrichedContentResult) : ContentDetailResult()
-    data class AiGenerated(val data: EnrichedContentResult) : ContentDetailResult()
-    object Empty : ContentDetailResult()
-}
-
-/**
- * Kullanılacak Veri Modeli: Hem Film hem Dizi zenginleştirme sonuçları
- */
-data class EnrichedContentResult(
-    val tmdbId: Int,
-    val overview: String?,
-    val cast: String?,
-    val director: String?,
-    val posterPath: String?,
-    val episodes: List<TmdbEpisode> = emptyList(),
-    val isAiGenerated: Boolean = false
-)
-
-/**
- * Dizi Bölüm Bilgileri Modeli
- */
-data class TmdbEpisode(
-    val id: Int,
-    val name: String,
-    val overview: String,
-    val seasonNumber: Int,
-    val episodeNumber: Int,
-    val stillPath: String? = null
-)
 
 /**
  * Film ve Dizi Detaylarını temsil eden TMDB Veri Modeli

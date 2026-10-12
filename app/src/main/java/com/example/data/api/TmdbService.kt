@@ -85,13 +85,6 @@ interface TmdbService {
         @Query("api_key") apiKey: String
     ): TmdbTvDetails
 
-    @GET("tv/{id}/credits")
-    suspend fun getTvCredits(
-        @Path("id") id: Int,
-        @Query("language") language: String = "tr-TR",
-        @Query("api_key") apiKey: String
-    ): TmdbCreditsResponse
-
     // ============================
     // FALLBACK / MULTI / POPULAR
     // ============================

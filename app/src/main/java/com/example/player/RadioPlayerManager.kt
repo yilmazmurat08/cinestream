@@ -120,11 +120,6 @@ object RadioPlayerManager {
         }
     }
 
-    fun pauseRadio() {
-        exoPlayer?.pause()
-        _isPlaying.value = false
-    }
-
     fun stopRadio() {
         exoPlayer?.let { player ->
             try {

@@ -1950,53 +1950,6 @@ fun Modifier.shimmerEffect(): Modifier {
 }
 
 @Composable
-fun ShimmerLiveItem() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(96.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(
-            modifier = Modifier
-                .width(60.dp)
-                .height(12.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
-        )
-    }
-}
-
-@Composable
-fun ShimmerCarouselItem() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(280.dp)
-            .padding(horizontal = 24.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .shimmerEffect()
-    )
-}
-
-@Composable
-fun ShimmerSeriesItem() {
-    val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
-    Box(
-        modifier = Modifier
-            .width(layout.cardWidth)
-            .aspectRatio(2f / 3f)
-            .clip(RoundedCornerShape(14.dp))
-            .shimmerEffect()
-    )
-}
-
-@Composable
 fun ShimmerRadioItem() {
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
     Box(

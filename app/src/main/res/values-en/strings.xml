@@ -460,7 +460,6 @@
     <string name="settings_cache_desc">Clears cached images and temporary files.</string>
     <string name="settings_crash_logs_title">Crash Logs (Diagnostics)</string>
     <string name="settings_crash_logs_desc">If a crash happened, you can view and copy its detailed log here.</string>
-    <string name="settings_about">About</string>
     <string name="settings_tmdb_notice">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
     <string name="settings_no_crash_logs">No crash logs yet. That\'s a good sign! If a crash happens, it will be listed here.</string>
     <string name="settings_subtitles">Subtitle Customization</string>
@@ -676,7 +675,6 @@
     <string name="category_locks_empty">There are no categories in this list.</string>
     <string name="category_locks_reset">Reset manual settings</string>
     <string name="category_locks_pin_subtitle">Enter your PIN to change locked categories.</string>
-    <string name="category_locks_lock_desc">Lock the %1$s category</string>
     <string name="player_buffering">Loading…</string>
     <string name="player_buffering_slow">Connection is slow, waiting for the stream…</string>
 </resources>

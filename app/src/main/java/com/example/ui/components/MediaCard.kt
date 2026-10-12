@@ -1,9 +1,6 @@
 package com.example.ui.components
-import androidx.compose.ui.res.stringResource
-import com.example.R
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -13,15 +10,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -34,10 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.IPTVItem
 import com.example.ui.theme.CineBorder
 import com.example.ui.theme.CineGold
-import com.example.ui.theme.LiveGold
 import com.example.ui.theme.LocalAppTheme
-import com.example.ui.theme.MidPurpleBg
-import com.example.ui.theme.WhiteText
 import com.example.ui.theme.isDark
 import com.example.ui.theme.rememberAppAdaptiveLayout
 
@@ -142,81 +132,3 @@ fun MediaCard(
     }
 }
 
-@Composable
-fun LiveTvHeaderBanner(
-    currentTimeStr: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MidPurpleBg.copy(alpha = 0.9f)),
-        border = BorderStroke(1.dp, WhiteText.copy(alpha = 0.15f)),
-        modifier = modifier
-            .fillMaxWidth()
-            .wrapContentHeight() // Ekran/font boyutuna göre dinamik esneme
-            .clip(RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f, fill = false)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(LiveGold)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.media_live_epg_badge),
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                if (currentTimeStr.isNotEmpty()) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        color = LiveGold.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(20.dp),
-                        border = BorderStroke(1.dp, LiveGold.copy(alpha = 0.4f))
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                tint = LiveGold,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = currentTimeStr,
-                                color = LiveGold,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

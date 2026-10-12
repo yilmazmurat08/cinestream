@@ -4,7 +4,7 @@
 
 **Uygulama adı** (en fazla 30 karakter)
 
-CineStream AI TV
+CineStream IPTV Player
 
 **Kısa açıklama** (en fazla 80 karakter)
 
@@ -46,7 +46,7 @@ Bu ürün TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamış ve
 
 **App name**
 
-CineStream AI TV
+CineStream IPTV Player
 
 **Short description**
 

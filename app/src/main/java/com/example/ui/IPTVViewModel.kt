@@ -439,10 +439,6 @@ class IPTVViewModel(
         return usage.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
     }
 
-    fun isFreeWatchLimitReached(): Boolean =
-        com.example.BuildConfig.FREE_WATCH_LIMIT && !isProUser.value &&
-            watchUsage.value.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
-
     val firstLaunchTime: StateFlow<Long> = settingsRepository.firstLaunchTimeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
@@ -478,17 +474,6 @@ class IPTVViewModel(
 
     private val _paywallReasonMessage = MutableStateFlow<String?>(null)
     val paywallReasonMessage: StateFlow<String?> = _paywallReasonMessage.asStateFlow()
-
-    /**
-     * Returns true if user is PRO OR within the 24-hour trial period from first launch.
-     */
-    fun isAiTrialActive(): Boolean {
-        if (isProUser.value) return true
-        val launch = firstLaunchTime.value
-        if (launch <= 0L) return true
-        val elapsed = System.currentTimeMillis() - launch
-        return elapsed < (24 * 60 * 60 * 1000L)
-    }
 
     fun openPaywall(reason: String? = null) {
         _paywallReasonMessage.value = reason
@@ -632,13 +617,6 @@ class IPTVViewModel(
 
     fun isSafeSessionValid(): Boolean {
         return _isSafeSessionActive.value && (_safeSessionRemainingSeconds.value > 0)
-    }
-
-    fun formatSafeSessionRemainingTime(): String {
-        val totalSec = _safeSessionRemainingSeconds.value
-        val mins = totalSec / 60
-        val secs = totalSec % 60
-        return String.format(java.util.Locale.ROOT, "%02d:%02d", mins, secs)
     }
 
     private val _isValidatingGeminiKey = MutableStateFlow(false)
@@ -1933,52 +1911,6 @@ class IPTVViewModel(
         }
     }
 
-    fun performMoodBasedRecommendation(
-        moodQuery: String,
-        onRecommendationFound: (IPTVItem) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        if (moodQuery.isBlank()) return
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
-            _isMoodLoading.value = true
-            try {
-                val pool = (_allItems.value + _trendingList.value + _popularMoviesList.value + _popularSeriesList.value)
-                    .distinctBy { it.id }
-
-                val matchedId = com.example.data.api.MetadataEnricher.getMoodBasedRecommendation(
-                    getApplication(),
-                    moodQuery,
-                    pool
-                )
-                if (matchedId != null) {
-                    val item = pool.find { it.id == matchedId }
-                    if (item != null) {
-                        onRecommendationFound(item)
-                    } else {
-                        val fallbackItem = pool.filter { it.type == "MOVIE" || it.type == "SERIES" }.randomOrNull() ?: pool.firstOrNull()
-                        if (fallbackItem != null) {
-                            onRecommendationFound(fallbackItem)
-                        } else {
-                            onError("Önerilen içerik bulunamadı. Lütfen tekrar deneyin!")
-                        }
-                    }
-                } else {
-                    val fallbackItem = pool.filter { it.type == "MOVIE" || it.type == "SERIES" }.randomOrNull() ?: pool.firstOrNull()
-                    if (fallbackItem != null) {
-                        onRecommendationFound(fallbackItem)
-                    } else {
-                        onError("Ruh halinize tam uyan bir içerik bulamadık. Lütfen farklı kelimeler kullanın!")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("IPTVViewModel", "Error in Mood-Based Recommendation", e)
-                onError("Yapay zeka analiz yaparken bir hata oluştu.")
-            } finally {
-                _isMoodLoading.value = false
-            }
-        }
-    }
-
     fun getSpoilerFreePreviousEpisodesSummary(showTitle: String, season: Int, episode: Int): Flow<String> = flow {
         emit("Yapay zeka bülteni hazırlanıyor...")
 
@@ -2109,14 +2041,6 @@ class IPTVViewModel(
         }
     }
 
-    fun setUserPhotoUrl(photoUrl: String) {
-        _userPhotoUrl.value = photoUrl
-        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            userPreferencesRepository.setProfileAvatar(photoUrl)
-            settingsRepository.setProfileAvatar(photoUrl)
-        }
-    }
-
     fun updateUserProfile(displayName: String, email: String, photoUrl: String? = null) {
         _userName.value = displayName
         _userEmail.value = email
@@ -2157,10 +2081,6 @@ class IPTVViewModel(
 
     private val _playlistSetupError = MutableStateFlow<String?>(null)
     val playlistSetupError: StateFlow<String?> = _playlistSetupError.asStateFlow()
-
-    fun clearPlaylistSetupError() {
-        _playlistSetupError.value = null
-    }
 
     private val _importProgress = MutableStateFlow<Map<String, Int>>(emptyMap())
     val importProgress: StateFlow<Map<String, Int>> = _importProgress.asStateFlow()
@@ -3040,23 +2960,6 @@ class IPTVViewModel(
             .trim()
             
         return cleaned.ifEmpty { name }
-    }
-
-    fun sortItems(items: List<IPTVItem>, sortBy: String): List<IPTVItem> {
-        return when (sortBy.uppercase(java.util.Locale.ROOT)) {
-            "NAME_AZ", "TITLE_ASC", "A-Z", "A_Z", "ALPHABETICAL" -> items.sortedWith(naturalOrderItemComparator)
-            "NAME_ZA", "TITLE_DESC", "Z-A", "Z_A" -> items.sortedWith(naturalOrderItemComparator.reversed())
-            "RATING_DESC", "IMDB_HIGH", "RATING_HIGH", "PUAN_AZALAN" -> items.sortedByDescending { it.rating }
-            "RATING_ASC", "IMDB_LOW", "RATING_LOW", "PUAN_ARTAN" -> items.sortedBy { it.rating }
-            "DATE_DESC", "RECENT", "ADDED_DESC", "YENİ", "YENİDEN_ESKİYE" -> items.sortedByDescending { it.id }
-            "YEAR", "YEAR_DESC", "YIL" -> items.sortedByDescending { 
-                it.releaseDate.takeIf { d -> d.length >= 4 }?.substring(0, 4)?.toIntOrNull() ?: 0 
-            }
-            "YEAR_ASC", "YIL_ARTAN" -> items.sortedBy { 
-                it.releaseDate.takeIf { d -> d.length >= 4 }?.substring(0, 4)?.toIntOrNull() ?: Int.MAX_VALUE 
-            }
-            else -> items.sortedWith(naturalOrderItemComparator)
-        }
     }
 
     /** Kilitli kategorideki öğe: ebeveyn kilidi açıkken ve güvenli oturum yokken aramada da görünmez. */

@@ -56,10 +56,6 @@ interface IPTVDao {
     suspend fun getItemsByTypeDirect(type: String): List<IPTVItem>
 
     @Transaction
-    @Query("SELECT * FROM iptv_items WHERE type = 'SERIES' AND cleanedName LIKE '%' || :titlePattern || '%' LIMIT 500")
-    suspend fun findSeriesEpisodesByTitleLike(titlePattern: String): List<IPTVItem>
-
-    @Transaction
     @Query("SELECT * FROM iptv_items WHERE type = :type ORDER BY id DESC")
     fun getItemsByTypeFlow(type: String): Flow<List<IPTVItem>>
 
@@ -100,9 +96,6 @@ interface IPTVDao {
     @Query("SELECT * FROM xtream_series_catalog WHERE coverUrl != '' ORDER BY (plot != '') DESC, RANDOM() LIMIT :limit")
     suspend fun randomSeriesCatalog(limit: Int): List<XtreamSeriesCatalogEntity>
 
-    @Query("SELECT * FROM xtream_series_catalog WHERE canonicalKey = :key LIMIT 1")
-    suspend fun findXtreamSeriesByCanonicalKey(key: String): com.example.data.model.XtreamSeriesCatalogEntity?
-
     @Query("DELETE FROM xtream_series_catalog")
     suspend fun clearXtreamSeriesCatalog()
 
@@ -120,10 +113,6 @@ interface IPTVDao {
     fun getDistinctCategoriesByTypeFlow(type: String): Flow<List<String>>
 
     @Transaction
-    @Query("SELECT * FROM iptv_items WHERE type = :type AND category = :category ORDER BY id DESC")
-    fun getItemsByTypeAndCategoryFlow(type: String, category: String): Flow<List<IPTVItem>>
-
-    @Transaction
     @Query("SELECT * FROM iptv_items WHERE isFavorite = 1")
     fun getFavoriteItemsFlow(): Flow<List<IPTVItem>>
 
@@ -135,9 +124,6 @@ interface IPTVDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItems(items: List<IPTVItem>)
-
-    @Query("DELETE FROM iptv_items WHERE type = 'MOVIE'")
-    suspend fun deleteAllMovies()
 
     @Query("DELETE FROM iptv_items WHERE playlistId = :playlistId AND type = :type")
     suspend fun deleteItemsByPlaylistAndType(playlistId: Int, type: String)
@@ -163,9 +149,6 @@ interface IPTVDao {
             if (!item.isFavorite && (item.id in favoriteIds || item.streamUrl in favoriteUrls)) item.copy(isFavorite = true) else item
         })
     }
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertItem(item: IPTVItem): Long
 
     @Query("UPDATE iptv_items SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun updateFavorite(id: Int, isFavorite: Boolean)
@@ -274,9 +257,6 @@ interface IPTVDao {
     @Query("SELECT id FROM iptv_items WHERE playlistId != :playlistId")
     suspend fun getExistingItemIdsExcludingPlaylist(playlistId: Int): List<Int>
 
-    @Query("SELECT id FROM iptv_items")
-    suspend fun getAllExistingItemIds(): List<Int>
-
     @Query("""
         UPDATE iptv_items_staging 
         SET isFavorite = 1 
@@ -367,9 +347,6 @@ interface IPTVDao {
         return count
     }
 
-    @Query("DELETE FROM continue_watching")
-    suspend fun clearContinueWatching()
-
     @Query("DELETE FROM playlists")
     suspend fun deleteAllPlaylists()
 
@@ -409,9 +386,6 @@ interface IPTVDao {
 
     @Query("DELETE FROM tmdb_cache WHERE updatedAt < :cutoffTime")
     suspend fun deleteExpiredTmdbCache(cutoffTime: Long)
-
-    @Query("DELETE FROM tmdb_cache")
-    suspend fun clearTmdbCache()
 
     // TMDB Person Details Cache
     @Query("SELECT * FROM tmdb_person_cache WHERE name = :name")
