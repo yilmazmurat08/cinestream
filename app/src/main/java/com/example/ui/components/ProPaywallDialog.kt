@@ -36,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -90,12 +91,21 @@ fun ProPaywallDialog(
     onOpenLegal: (LegalDoc) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val activity = remember(context) { context.findActivity() }
+    val activity = rememberHostActivity()
     val offers by SubscriptionManager.offers.collectAsState()
+    val owned by SubscriptionManager.owned.collectAsState()
     var busy by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { SubscriptionManager.refresh() }
 
     fun toast(res: Int, vararg args: Any) = Toast.makeText(context, context.getString(res, *args), Toast.LENGTH_LONG).show()
+
+    /** Google Play'in abonelik sayfası; [productId] verilirse doğrudan o abonelik açılır (iptal / ödeme yöntemi). */
+    fun openPlaySubscriptions(productId: String?) {
+        val query = if (productId != null) "sku=$productId&package=${context.packageName}" else "package=${context.packageName}"
+        val uri = Uri.parse("https://play.google.com/store/account/subscriptions?$query")
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { toast(R.string.paywall_unavailable) }
+    }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         PaywallContent(
@@ -104,18 +114,32 @@ fun ProPaywallDialog(
             offers = offers,
             busy = busy,
             onDismiss = onDismiss,
+            ownedPlan = owned.plan,
+            renewingSubscriptions = owned.renewingSubscriptions,
+            onCancelSubscription = { productId -> openPlaySubscriptions(productId) },
             onBuy = { productId ->
                 if (activity == null) {
                     toast(R.string.paywall_unavailable)
                     return@PaywallContent
                 }
                 busy = true
+                val wasPro = isPro
+                // Ömür boyu alınırken hâlâ yenilenen bir abonelik varsa, satın alımdan sonra iptal etmesi hatırlatılır.
+                val subscriptionLeftOpen = productId == SubscriptionManager.PRODUCT_LIFETIME && owned.renewingSubscriptions.isNotEmpty()
                 SubscriptionManager.purchase(activity, productId) { outcome ->
                     busy = false
                     when (outcome) {
-                        PurchaseOutcome.Success -> {
-                            toast(R.string.paywall_success)
-                            onDismiss()
+                        PurchaseOutcome.Success -> when {
+                            // Pencere açık kalır: "Aboneliği iptal et" düğmesi hemen görünür.
+                            subscriptionLeftOpen -> toast(R.string.paywall_lifetime_cancel_reminder)
+                            wasPro -> {
+                                toast(R.string.paywall_upgraded)
+                                onDismiss()
+                            }
+                            else -> {
+                                toast(R.string.paywall_success)
+                                onDismiss()
+                            }
                         }
                         PurchaseOutcome.Pending -> toast(R.string.paywall_pending)
                         PurchaseOutcome.AlreadyOwned -> toast(R.string.paywall_already_owned)
@@ -140,10 +164,8 @@ fun ProPaywallDialog(
                 }
             },
             onManage = {
-                // Google Play'in bu uygulamaya ait abonelik sayfası (iptal / ödeme yöntemi).
-                val uri = Uri.parse("https://play.google.com/store/account/subscriptions?package=${context.packageName}")
-                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                    .onFailure { toast(R.string.paywall_unavailable) }
+                // Google Play'in abonelik sayfası: mevcut abonelik biliniyorsa doğrudan o açılır.
+                openPlaySubscriptions(owned.renewingSubscriptions.firstOrNull())
             },
             onOpenLegal = { doc ->
                 onDismiss()
@@ -164,9 +186,18 @@ internal fun PaywallContent(
     onBuy: (String) -> Unit,
     onRestore: () -> Unit,
     onManage: () -> Unit,
-    onOpenLegal: (LegalDoc) -> Unit
+    onOpenLegal: (LegalDoc) -> Unit,
+    ownedPlan: SubscriptionManager.ProPlan = SubscriptionManager.ProPlan.NONE,
+    renewingSubscriptions: List<String> = emptyList(),
+    onCancelSubscription: (String) -> Unit = {}
 ) {
     val layout = rememberAppAdaptiveLayout()
+    // PRO kullanıcı: paketi biliniyorsa daha kapsamlı paketlere yükseltebilir; ömür boyuna geçip aboneliği hâlâ
+    // yenileniyorsa iptal etmesi istenir. Paket bilinmiyorsa (Play'e henüz ulaşılamadı) yalnızca yönetim gösterilir.
+    val upgradeTargets = if (isPro && ownedPlan != SubscriptionManager.ProPlan.NONE) SubscriptionManager.upgradeTargets(ownedPlan) else emptyList()
+    val subscriptionToCancel = if (isPro && ownedPlan == SubscriptionManager.ProPlan.LIFETIME) renewingSubscriptions.firstOrNull() else null
+    val showManage = isPro && ownedPlan != SubscriptionManager.ProPlan.LIFETIME
+    val focusOnClose = isPro && upgradeTargets.isEmpty() && subscriptionToCancel == null && !showManage
     var selected by remember { mutableStateOf(ProPackageType.YEARLY) }
     val firstFocus = remember { FocusRequester() }
     val savings = remember(offers) {
@@ -211,7 +242,12 @@ internal fun PaywallContent(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)).testTag("paywall_close")
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .then(if (focusOnClose) Modifier.focusRequester(firstFocus) else Modifier)
+                            .testTag("paywall_close")
                     ) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.paywall_close), tint = Color.White, modifier = Modifier.size(18.dp))
                     }
@@ -242,7 +278,13 @@ internal fun PaywallContent(
                     Spacer(Modifier.height(8.dp))
                 } else {
                     Text(
-                        stringResource(if (isPro) R.string.paywall_pro_active_desc else R.string.paywall_subtitle),
+                        stringResource(
+                            when {
+                                !isPro -> R.string.paywall_subtitle
+                                ownedPlan == SubscriptionManager.ProPlan.LIFETIME -> R.string.paywall_pro_lifetime_desc
+                                else -> R.string.paywall_pro_active_desc
+                            }
+                        ),
                         fontSize = 13.sp, color = Color.White.copy(alpha = 0.75f), textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(12.dp))
@@ -263,12 +305,19 @@ internal fun PaywallContent(
                 Spacer(Modifier.height(18.dp))
 
                 if (isPro) {
-                    Button(
-                        onClick = onManage,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = CineOrange),
-                        modifier = Modifier.fillMaxWidth().height(50.dp).focusRequester(firstFocus).testTag("paywall_manage")
-                    ) { Text(stringResource(R.string.paywall_manage), fontWeight = FontWeight.Bold, color = Color.White) }
+                    ProUpgradeSection(
+                        ownedPlan = ownedPlan,
+                        offers = offers,
+                        busy = busy,
+                        upgradeTargets = upgradeTargets,
+                        subscriptionToCancel = subscriptionToCancel,
+                        renewingSubscription = renewingSubscriptions.firstOrNull(),
+                        showManage = showManage,
+                        firstFocus = firstFocus,
+                        onBuy = onBuy,
+                        onManage = onManage,
+                        onCancelSubscription = onCancelSubscription
+                    )
                 } else {
                     Text(
                         stringResource(R.string.paywall_choose), fontSize = 13.sp, fontWeight = FontWeight.Bold,
@@ -337,6 +386,160 @@ internal fun PaywallContent(
 
 private fun pkgTitle(pkg: ProPackageType): Int = pkg.titleRes
 
+private fun packageOf(productId: String): ProPackageType? = ProPackageType.entries.firstOrNull { it.productId == productId }
+
+private fun planProductId(plan: SubscriptionManager.ProPlan): String? = when (plan) {
+    SubscriptionManager.ProPlan.MONTHLY -> SubscriptionManager.PRODUCT_MONTHLY
+    SubscriptionManager.ProPlan.YEARLY -> SubscriptionManager.PRODUCT_YEARLY
+    SubscriptionManager.ProPlan.LIFETIME -> SubscriptionManager.PRODUCT_LIFETIME
+    SubscriptionManager.ProPlan.NONE -> null
+}
+
+/** PRO kullanıcının bölümü: mevcut paket, açık kalan aboneliğin iptali, yükseltme seçenekleri ve abonelik yönetimi. */
+@Composable
+private fun ProUpgradeSection(
+    ownedPlan: SubscriptionManager.ProPlan,
+    offers: Map<String, ProOffer>,
+    busy: Boolean,
+    upgradeTargets: List<String>,
+    subscriptionToCancel: String?,
+    renewingSubscription: String?,
+    showManage: Boolean,
+    firstFocus: FocusRequester,
+    onBuy: (String) -> Unit,
+    onManage: () -> Unit,
+    onCancelSubscription: (String) -> Unit
+) {
+    planProductId(ownedPlan)?.let(::packageOf)?.let { current ->
+        Text(
+            stringResource(R.string.paywall_current_plan, stringResource(current.titleRes)),
+            fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().testTag("paywall_current_plan")
+        )
+        Spacer(Modifier.height(12.dp))
+    }
+
+    if (subscriptionToCancel != null) {
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = CineOrange.copy(alpha = 0.15f),
+            border = BorderStroke(1.dp, CineOrange.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                // Ömür boyu yenilenmez; iptal edilecek olan ESKİ aylık/yıllık aboneliktir (Google onu kendiliğinden kapatmaz).
+                val yearly = subscriptionToCancel == SubscriptionManager.PRODUCT_YEARLY
+                Text(
+                    stringResource(if (yearly) R.string.paywall_cancel_sub_warning_yearly else R.string.paywall_cancel_sub_warning_monthly),
+                    fontSize = 12.sp, color = Color.White, textAlign = TextAlign.Center, lineHeight = 16.sp,
+                    modifier = Modifier.testTag("paywall_cancel_warning")
+                )
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = { onCancelSubscription(subscriptionToCancel) },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CineOrange),
+                    modifier = Modifier.fillMaxWidth().height(46.dp).focusRequester(firstFocus).testTag("paywall_cancel_subscription")
+                ) {
+                    Text(
+                        stringResource(if (yearly) R.string.paywall_cancel_yearly_button else R.string.paywall_cancel_monthly_button),
+                        fontWeight = FontWeight.Bold, color = Color.White
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+    }
+
+    if (upgradeTargets.isNotEmpty()) {
+        var selected by remember(upgradeTargets) { mutableStateOf(upgradeTargets.first()) }
+        Text(
+            stringResource(R.string.paywall_upgrade_title), fontSize = 13.sp, fontWeight = FontWeight.Bold,
+            color = Color.White.copy(alpha = 0.8f), modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        upgradeTargets.forEachIndexed { index, productId ->
+            val pkg = packageOf(productId) ?: return@forEachIndexed
+            ProPackageRadioCard(
+                packageType = pkg,
+                offer = offers[productId],
+                badge = null,
+                isSelected = selected == productId,
+                onSelect = { selected = productId },
+                modifier = if (index == 0 && subscriptionToCancel == null) Modifier.focusRequester(firstFocus) else Modifier
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        val note = when {
+            selected == SubscriptionManager.PRODUCT_LIFETIME && renewingSubscription == SubscriptionManager.PRODUCT_YEARLY ->
+                R.string.paywall_upgrade_note_lifetime_yearly
+            selected == SubscriptionManager.PRODUCT_LIFETIME && renewingSubscription != null -> R.string.paywall_upgrade_note_lifetime_monthly
+            selected == SubscriptionManager.PRODUCT_YEARLY && ownedPlan == SubscriptionManager.ProPlan.MONTHLY -> R.string.paywall_upgrade_note_switch
+            else -> null
+        }
+        note?.let {
+            Text(
+                stringResource(it), fontSize = 11.sp, color = Color.White.copy(alpha = 0.65f), textAlign = TextAlign.Center,
+                lineHeight = 15.sp, modifier = Modifier.fillMaxWidth().testTag("paywall_upgrade_note")
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        val offer = offers[selected]
+        Button(
+            onClick = { onBuy(selected) },
+            enabled = !busy && offer != null,
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Unspecified, disabledContainerColor = Color.White.copy(alpha = 0.12f)),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .background(
+                    if (offer != null) Brush.horizontalGradient(listOf(CineOrange, Color(0xFFE91E63)))
+                    else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent)),
+                    RoundedCornerShape(16.dp)
+                )
+                .testTag("paywall_upgrade_button")
+        ) {
+            if (busy) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text(
+                    if (offer != null) stringResource(R.string.paywall_upgrade_button, offer.formattedPrice)
+                    else stringResource(packageOf(selected)?.titleRes ?: R.string.paywall_upgrade_title),
+                    fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+    }
+
+    if (showManage) {
+        val focusHere = upgradeTargets.isEmpty() && subscriptionToCancel == null
+        val manageModifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .then(if (focusHere) Modifier.focusRequester(firstFocus) else Modifier)
+            .testTag("paywall_manage")
+        if (upgradeTargets.isEmpty()) {
+            Button(
+                onClick = onManage,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = CineOrange),
+                modifier = manageModifier
+            ) { Text(stringResource(R.string.paywall_manage), fontWeight = FontWeight.Bold, color = Color.White) }
+        } else {
+            // Yükseltme düğmesiyle yarışmasın: ikincil görünüm.
+            OutlinedButton(
+                onClick = onManage,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+                modifier = manageModifier
+            ) { Text(stringResource(R.string.paywall_manage), fontWeight = FontWeight.SemiBold, color = Color.White) }
+        }
+    }
+}
+
 @Composable
 private fun ProFeatureRow(text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -394,4 +597,16 @@ private fun ProPackageRadioCard(
             }
         }
     }
+}
+
+/**
+ * Ekranı barındıran Activity. Uygulama dili için LocalContext, Activity'den türetilmiş ayrı bir bağlamla
+ * (createConfigurationContext) değiştirilir; ondan Activity bulunamadığı için satın alma Google Play'i hiç açmadan
+ * "kullanılamıyor" diyordu. Activity, ekranın kendi görünümünden bulunur.
+ */
+@Composable
+fun rememberHostActivity(): android.app.Activity? {
+    val view = androidx.compose.ui.platform.LocalView.current
+    val context = LocalContext.current
+    return remember(view, context) { view.context.findActivity() ?: context.findActivity() }
 }

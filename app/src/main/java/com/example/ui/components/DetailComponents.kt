@@ -539,6 +539,16 @@ fun SimilarMoviesSection(
     }
 }
 
+/**
+ * Gösterilecek oyuncu adları. Aynı ad iki kez gelirse (sağlayıcı verisinde "X, X" ya da aynı oyuncunun iki rolü)
+ * listede aynı anahtar iki kez oluşup ekran çöküyordu ("Key was already used"); adlar tekilleştirilir.
+ */
+internal fun castNamesForDisplay(rawCast: String): List<String> =
+    rawCast.split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.equals("Popüler Oyuncular", ignoreCase = true) && !it.equals("Belirtilmemiş", ignoreCase = true) && !it.equals("Bilinmiyor", ignoreCase = true) }
+        .distinct()
+
 @Composable
 fun CastSection(
     title: String,
@@ -605,11 +615,7 @@ fun CastSection(
         }
     }
 
-    val displayCastList = remember(currentCast) {
-        currentCast.split(",")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() && !it.equals("Popüler Oyuncular", ignoreCase = true) && !it.equals("Belirtilmemiş", ignoreCase = true) && !it.equals("Bilinmiyor", ignoreCase = true) }
-    }
+    val displayCastList = remember(currentCast) { castNamesForDisplay(currentCast) }
 
     val currentTheme = com.example.ui.theme.LocalAppTheme.current
 

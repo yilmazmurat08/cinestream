@@ -445,6 +445,7 @@
     <string name="settings_toast_updated">Playlist updated.</string>
     <string name="settings_toast_cache_cleared">App cache cleared successfully.</string>
     <string name="settings_toast_photo_failed">Couldn\'t upload the photo, please try again.</string>
+    <string name="settings_toast_photo_picker_unavailable">No photo picker is available on this device.</string>
     <string name="settings_player">Player Settings</string>
     <string name="settings_hw_accel">Hardware Acceleration</string>
     <string name="settings_hw_accel_desc">Improves video performance using hardware decoders.</string>
@@ -459,7 +460,6 @@
     <string name="settings_cache_desc">Clears cached images and temporary files.</string>
     <string name="settings_crash_logs_title">Crash Logs (Diagnostics)</string>
     <string name="settings_crash_logs_desc">If a crash happened, you can view and copy its detailed log here.</string>
-    <string name="settings_about">About</string>
     <string name="settings_tmdb_notice">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
     <string name="settings_no_crash_logs">No crash logs yet. That\'s a good sign! If a crash happens, it will be listed here.</string>
     <string name="settings_subtitles">Subtitle Customization</string>
@@ -571,6 +571,7 @@
     <string name="tv_saved_hint">Hold OK to remove</string>
     <string name="tv_removed_from_saved">Removed from Saved</string>
     <string name="tv_panel_left_hint">Left: categories</string>
+    <string name="tv_panel_tap_hint">Tap for categories</string>
     <string name="tv_channel_info">Channel Info</string>
     <string name="tv_up_next">Next %1$s  %2$s</string>
     <string name="tv_on">On</string>
@@ -617,6 +618,19 @@
     <string name="paywall_pro_active_desc">No time limit on your own playlists. You can manage or cancel your subscription in Google Play.</string>
     <string name="paywall_manage">Manage subscription</string>
     <string name="paywall_close">Close</string>
+    <string name="paywall_upgrade_note_lifetime_monthly">Lifetime is a one-time payment and never renews. But your monthly subscription does not stop by itself: cancel it after buying. Remaining days are not refunded.</string>
+    <string name="paywall_upgrade_note_lifetime_yearly">Lifetime is a one-time payment and never renews. But your yearly subscription does not stop by itself: cancel it after buying. Remaining days are not refunded.</string>
+    <string name="paywall_cancel_sub_warning_monthly">Your lifetime PRO is permanent and never renews. But your old monthly subscription is still active: unless you cancel it, Google Play keeps charging you every month.</string>
+    <string name="paywall_cancel_sub_warning_yearly">Your lifetime PRO is permanent and never renews. But your old yearly subscription is still active: unless you cancel it, Google Play keeps charging you every year.</string>
+    <string name="paywall_cancel_monthly_button">Cancel monthly subscription</string>
+    <string name="paywall_cancel_yearly_button">Cancel yearly subscription</string>
+    <string name="paywall_current_plan">Your current plan: %1$s</string>
+    <string name="paywall_upgrade_title">Upgrade your plan</string>
+    <string name="paywall_upgrade_button">Upgrade · %1$s</string>
+    <string name="paywall_upgrade_note_switch">Your monthly subscription is replaced by the yearly one; your remaining time is added to the new plan. Google Play shows the details at checkout.</string>
+    <string name="paywall_upgraded">Your plan has been updated. Enjoy!</string>
+    <string name="paywall_lifetime_cancel_reminder">Lifetime PRO is active. Now don\'t forget to cancel your old subscription.</string>
+    <string name="paywall_pro_lifetime_desc">Lifetime PRO: no time limit, no renewals.</string>
     <string name="pro_card_title_active">No time limit</string>
     <string name="pro_card_title_free">Subscription and benefits</string>
     <string name="pro_badge_active">PRO ACTIVE ✅</string>
@@ -647,4 +661,21 @@
     <string name="player_free_time_over">Today\'s free time is used up · you can finish this one</string>
     <string name="settings_gemini_key_delete">Delete key</string>
     <string name="settings_gemini_key_deleted">AI key deleted from this device.</string>
+    <!-- Locked categories (parental lock) -->
+    <string name="settings_category_locks_title">Locked categories</string>
+    <string name="settings_category_locks_desc">Choose which folders need your PIN to open.</string>
+    <string name="category_locks_intro">Adult categories are locked by default. You can lock any category or remove its lock. Locked categories ask for your PIN and are hidden from the home shelves and channel zapping.</string>
+    <string name="category_locks_tab_live">Live TV</string>
+    <string name="category_locks_tab_movies">Movies</string>
+    <string name="category_locks_tab_series">Series</string>
+    <string name="category_locks_tab_count">%1$s · %2$d locked</string>
+    <string name="category_locks_only_locked">Locked only</string>
+    <string name="category_locks_search">Search categories</string>
+    <string name="category_locks_items">%d items</string>
+    <string name="category_locks_manual">set manually</string>
+    <string name="category_locks_empty">There are no categories in this list.</string>
+    <string name="category_locks_reset">Reset manual settings</string>
+    <string name="category_locks_pin_subtitle">Enter your PIN to change locked categories.</string>
+    <string name="player_buffering">Loading…</string>
+    <string name="player_buffering_slow">Connection is slow, waiting for the stream…</string>
 </resources>

@@ -15,7 +15,10 @@ import java.io.IOException
 
 import androidx.datastore.preferences.core.stringPreferencesKey
 
-val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
+val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "user_preferences",
+    corruptionHandler = preferencesCorruptionHandler()
+)
 
 class UserPreferencesRepository(private val context: Context) {
 

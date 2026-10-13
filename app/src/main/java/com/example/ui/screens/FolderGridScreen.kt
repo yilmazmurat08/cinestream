@@ -436,12 +436,13 @@ fun FolderListLayout(
             }
         } else {
             itemsIndexed(filteredGroups, key = { index, group -> "${group.id}_$index" }) { _, group ->
-                val isAdult = viewModel.isAdultContent(group)
+                // Kilit: kullanıcının elle ayarı ya da otomatik yetişkin tespiti. Görünüm ("yetişkin") yalnızca tespitle belirlenir.
+                val locked = viewModel.isAdultContent(group)
                 FolderCard(
                     group = group,
-                    isAdult = isAdult,
-                    isLocked = isAdult && isParentalLockEnabled && !isSafeSessionActive,
-                    isSafeSessionUnlocked = isAdult && isParentalLockEnabled && isSafeSessionActive,
+                    isAdult = viewModel.isAdultDetected(group),
+                    isLocked = locked && isParentalLockEnabled && !isSafeSessionActive,
+                    isSafeSessionUnlocked = locked && isParentalLockEnabled && isSafeSessionActive,
                     onClick = { onFolderClick(group) }
                 )
             }

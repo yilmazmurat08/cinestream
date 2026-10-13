@@ -131,7 +131,8 @@ fun TvDetailScreen(
     val favorites by viewModel.favorites.collectAsState()
     val continueWatching by viewModel.continueWatching.collectAsState()
     val covers by viewModel.seriesCoversMap.collectAsState()
-    val isFavorite = favorites.any { it.id == item.id } || item.isFavorite
+    val favoriteSeriesIds by viewModel.favoriteSeriesIds.collectAsState()
+    val isFavorite = viewModel.isFavorite(item, favorites, favoriteSeriesIds)
 
     var show by remember(item.id) { mutableStateOf<TvShow?>(null) }
     var tmdb by remember(item.id) { mutableStateOf<TMDBMediaDetails?>(null) }
@@ -139,7 +140,15 @@ fun TvDetailScreen(
     // Netflix tarzı: fragman YouTube'a gitmeden arka plan görselinin yerinde oynar.
     var trailerPlaying by remember(item.id) { mutableStateOf(false) }
     var trailerFailed by remember(item.id) { mutableStateOf(false) }
-    BackHandler(enabled = trailerPlaying) { trailerPlaying = false }
+    // Kart açılınca fragman kendiliğinden başlar; kapatılır, biter ya da hata verirse aynı kartta tekrar başlamaz.
+    var trailerAutoDismissed by remember(item.id) { mutableStateOf(false) }
+    com.example.ui.components.AutoStartTrailerEffect(
+        videoId = com.example.ui.components.extractYouTubeVideoId(trailerUrl),
+        dismissed = trailerAutoDismissed,
+        playing = trailerPlaying,
+        onStart = { trailerPlaying = true }
+    )
+    BackHandler(enabled = trailerPlaying) { trailerPlaying = false; trailerAutoDismissed = true }
     var extraCast by remember(item.id) { mutableStateOf<List<String>>(emptyList()) }
     var extraDirector by remember(item.id) { mutableStateOf("") }
     var aiText by remember(item.id) { mutableStateOf<String?>(null) }
@@ -223,9 +232,10 @@ fun TvDetailScreen(
             com.example.ui.components.InAppTrailerPlayer(
                 videoId = trailerId,
                 showControls = false,
-                onEnded = { trailerPlaying = false },
+                onEnded = { trailerPlaying = false; trailerAutoDismissed = true },
                 onError = {
                     trailerPlaying = false
+                    trailerAutoDismissed = true
                     trailerFailed = true
                 },
                 modifier = Modifier.align(Alignment.TopEnd).fillMaxWidth(0.64f).aspectRatio(16f / 9f).testTag("tv_detail_trailer_player")
@@ -300,6 +310,7 @@ fun TvDetailScreen(
                             "tv_detail_trailer"
                         ) {
                             trailerFailed = false
+                            trailerAutoDismissed = true
                             trailerPlaying = !trailerPlaying && com.example.ui.components.extractYouTubeVideoId(url) != null
                         }
                     }

@@ -14,6 +14,11 @@ import java.util.zip.GZIPInputStream
 object RealEpgProvider {
     private const val TAG = "RealEpgProvider"
     private const val MAX_XMLTV_BYTES = 60L * 1024L * 1024L
+    // Büyük sağlayıcıların XMLTV'si geçmiş günler dahil 7-14 günlük program içerir. Hepsi açıklamalarıyla belleğe
+    // alınınca düşük bellekli TV kutularında uygulama kapanabiliyordu: yalnızca rehberde gereken aralık tutulur.
+    private const val KEEP_PAST_MS = 3L * 60L * 60L * 1000L
+    private const val KEEP_AHEAD_MS = 72L * 60L * 60L * 1000L
+    private const val MAX_DESCRIPTION_CHARS = 400
 
     private var cachedPrograms: Map<String, List<EPGProgram>> = emptyMap()
     private var cachedForUrl: String? = null
@@ -61,6 +66,12 @@ object RealEpgProvider {
     private fun parseXmltv(inputStream: java.io.InputStream): Map<String, List<EPGProgram>> {
         val result = mutableMapOf<String, MutableList<EPGProgram>>()
         val now = System.currentTimeMillis()
+        val keepFrom = now - KEEP_PAST_MS
+        val keepUntil = now + KEEP_AHEAD_MS
+        // Biçimlendiriciler her program için yeniden oluşturulmaz (yüz binlerce programda gereksiz yük).
+        val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val dateFmt = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US)
+        val dateFmtNoSpace = SimpleDateFormat("yyyyMMddHHmmssZ", Locale.US)
         var progCounter = 0
         try {
             val parser: XmlPullParser = Xml.newPullParser()
@@ -81,8 +92,8 @@ object RealEpgProvider {
                             "programme" -> {
                                 insideProgramme = true
                                 currentChannelId = parser.getAttributeValue(null, "channel")
-                                currentStart = parseXmltvDate(parser.getAttributeValue(null, "start"))
-                                currentStop = parseXmltvDate(parser.getAttributeValue(null, "stop"))
+                                currentStart = parseXmltvDate(parser.getAttributeValue(null, "start"), dateFmt, dateFmtNoSpace)
+                                currentStop = parseXmltvDate(parser.getAttributeValue(null, "stop"), dateFmt, dateFmtNoSpace)
                                 currentTitle = null
                                 currentDesc = null
                             }
@@ -99,7 +110,9 @@ object RealEpgProvider {
                             "desc" -> if (insideProgramme && currentDesc == null) currentDesc = textBuffer.toString().trim()
                             "programme" -> {
                                 val chId = currentChannelId
-                                if (!chId.isNullOrBlank() && !currentTitle.isNullOrBlank() && currentStart > 0 && currentStop > currentStart) {
+                                if (!chId.isNullOrBlank() && !currentTitle.isNullOrBlank() && currentStart > 0 && currentStop > currentStart &&
+                                    currentStop > keepFrom && currentStart < keepUntil
+                                ) {
                                     progCounter++
                                     val isLive = now in currentStart until currentStop
                                     val progress = when {
@@ -107,13 +120,13 @@ object RealEpgProvider {
                                         now >= currentStop -> 1f
                                         else -> 0f
                                     }
-                                    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+                                    val desc = currentDesc.orEmpty()
                                     val program = EPGProgram(
                                         id = "real_${chId}_$progCounter",
                                         channelId = 0,
                                         channelName = chId,
                                         title = currentTitle ?: "",
-                                        description = currentDesc ?: "",
+                                        description = if (desc.length > MAX_DESCRIPTION_CHARS) desc.take(MAX_DESCRIPTION_CHARS).trimEnd() + "…" else desc,
                                         category = "",
                                         startTimeFormatted = timeFmt.format(java.util.Date(currentStart)),
                                         endTimeFormatted = timeFmt.format(java.util.Date(currentStop)),
@@ -134,21 +147,26 @@ object RealEpgProvider {
             }
         } catch (e: Exception) {
             Log.w(TAG, "XMLTV ayrıştırma sırasında hata (kısmi veri korunuyor): ${e.message}")
+        } catch (e: OutOfMemoryError) {
+            // Rehber bu cihazın belleğine sığmadı: uygulama kapanmasın, rehber boş kalsın.
+            result.clear()
+            Log.w(TAG, "XMLTV belleğe sığmadı, rehber yüklenmedi")
         }
         return result
     }
 
-    private fun parseXmltvDate(raw: String?): Long {
+    private fun parseXmltvDate(raw: String?, fmt: SimpleDateFormat, fmtNoSpace: SimpleDateFormat): Long {
         if (raw.isNullOrBlank()) return 0L
+        val cleaned = raw.trim()
+        // parse() başarısızlıkta null değil hata döndürür: ikinci biçim (saat dilimi boşluksuz) ayrıca denenir.
         return try {
-            val cleaned = raw.trim()
-            val fmt = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US)
-            fmt.parse(cleaned)?.time ?: run {
-                val fmt2 = SimpleDateFormat("yyyyMMddHHmmssZ", Locale.US)
-                fmt2.parse(cleaned)?.time ?: 0L
-            }
+            fmt.parse(cleaned)?.time ?: 0L
         } catch (e: Exception) {
-            0L
+            try {
+                fmtNoSpace.parse(cleaned)?.time ?: 0L
+            } catch (e2: Exception) {
+                0L
+            }
         }
     }
 

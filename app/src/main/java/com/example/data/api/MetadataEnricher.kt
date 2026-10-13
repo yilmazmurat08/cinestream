@@ -35,7 +35,9 @@ data class EnrichedMetadata(
     val logoUrl: String? = null,
     val trailerUrl: String? = null,
     val releaseDate: String = "",
-    val genre: String = ""
+    val genre: String = "",
+    /** Yatay sahne görseli (yalnızca detay ekranının üst görseli için; poster yerine kullanılmaz). */
+    val backdropUrl: String? = null
 )
 
 /**
@@ -203,10 +205,11 @@ object MetadataEnricher {
             } catch (e: Exception) { }
             return@withContext null
         }
+        // Dizi bölümünün adresindeki numara bölümün numarasıdır, dizinin değil. Onunla get_series_info istenirse sağlayıcı
+        // aynı numaralı BAŞKA bir dizinin konusunu, oyuncularını ve posterini döndürüyordu. Dizi bilgisi kataloğdan gelir.
+        if (creds.isSeries) return@withContext null
 
-        val action = if (creds.isSeries) "get_series_info" else "get_vod_info"
-        val idParam = if (creds.isSeries) "series_id" else "vod_id"
-        val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=$action&$idParam=${creds.streamId}"
+        val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_vod_info&vod_id=${creds.streamId}"
 
         Log.d(TAG, "Calling Xtream API GET request: $apiUrl")
 
@@ -257,11 +260,10 @@ object MetadataEnricher {
             val backdropFromArray = info.optJSONArray("backdrop_path")?.let { arr ->
                 if (arr.length() > 0) arr.optString(0, "") else ""
             } ?: ""
-            val cover = backdropFromArray.ifEmpty {
-                info.optString("cover_big", "").ifEmpty {
-                    info.optString("movie_image", "").ifEmpty {
-                        info.optString("cover", "")
-                    }
+            // Poster dikey kapaktır; yatay sahne görseli (backdrop) poster yerine kullanılmaz (listedeki kartla aynı kalsın).
+            val cover = info.optString("cover_big", "").ifEmpty {
+                info.optString("movie_image", "").ifEmpty {
+                    info.optString("cover", "")
                 }
             }
 
@@ -295,7 +297,8 @@ object MetadataEnricher {
                 logoUrl = cover.ifEmpty { item.logoUrl },
                 trailerUrl = trailer.ifEmpty { item.trailerUrl },
                 releaseDate = releaseDate,
-                genre = genre
+                genre = genre,
+                backdropUrl = backdropFromArray.ifEmpty { null }
             )
 
         } catch (e: Exception) {
@@ -319,7 +322,7 @@ object MetadataEnricher {
             return@withContext emptyMap()
         }
         try {
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_series"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_series"
             Log.d(TAG, "Xtream toplu dizi listesi çağrılıyor: $apiUrl")
 
             val request = Request.Builder().url(apiUrl).get().build()
@@ -330,40 +333,40 @@ object MetadataEnricher {
                 return@withContext emptyMap()
             }
 
-            val responseBody = response.body?.string() ?: return@withContext emptyMap()
-            if (responseBody.isBlank() || !responseBody.trim().startsWith("[")) {
-                Log.w(TAG, "Xtream get_series geçersiz/boş yanıt döndürdü")
-                writeDiag("TOPLU ÇEKİM GEÇERSİZ YANIT\nAPI: ${apiUrl.substringBefore("?")}\nYanıtın ilk 300 karakteri: ${responseBody.take(300)}")
-                return@withContext emptyMap()
-            }
-
-            val jsonArray = JSONArray(responseBody)
+            val body = response.body ?: return@withContext emptyMap()
             val result = mutableMapOf<String, String>()
             val rawNameSamples = mutableListOf<String>()
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.optJSONObject(i) ?: continue
-                val name = obj.optString("name", "").ifEmpty { obj.optString("title", "") }.trim()
-                if (name.isEmpty()) continue
-                if (rawNameSamples.size < 15) rawNameSamples.add(name)
+            // Liste parça parça okunur: binlerce dizi tek seferde belleğe alınmaz.
+            val summary = body.charStream().use { reader ->
+                XtreamJsonStream.forEachObject(reader) { obj ->
+                    val name = obj.optString("name", "").ifEmpty { obj.optString("title", "") }.trim()
+                    if (name.isEmpty()) return@forEachObject
+                    if (rawNameSamples.size < 15) rawNameSamples.add(name)
 
-                val coverBig = obj.optString("cover_big", "").trim()
-                val coverStd = obj.optString("cover", "").trim()
-                val coverUrl = obj.optString("cover_url", "").trim()
-                val cover = when {
-                    coverBig.isNotEmpty() -> coverBig
-                    coverStd.isNotEmpty() -> coverStd
-                    coverUrl.isNotEmpty() -> coverUrl
-                    else -> ""
-                }
+                    val coverBig = obj.optString("cover_big", "").trim()
+                    val coverStd = obj.optString("cover", "").trim()
+                    val coverUrl = obj.optString("cover_url", "").trim()
+                    val cover = when {
+                        coverBig.isNotEmpty() -> coverBig
+                        coverStd.isNotEmpty() -> coverStd
+                        coverUrl.isNotEmpty() -> coverUrl
+                        else -> ""
+                    }
 
-                if (cover.isNotBlank()) {
-                    result[name.lowercase(java.util.Locale.ROOT)] = cover
+                    if (cover.isNotBlank()) {
+                        result[name.lowercase(java.util.Locale.ROOT)] = cover
+                    }
                 }
             }
-            Log.d(TAG, "Xtream toplu dizi listesi: ${jsonArray.length()} dizi bulundu, ${result.size} tanesinde kapak var")
+            if (summary.invalidPreview != null) {
+                Log.w(TAG, "Xtream get_series geçersiz/boş yanıt döndürdü")
+                writeDiag("TOPLU ÇEKİM GEÇERSİZ YANIT\nAPI: ${apiUrl.substringBefore("?")}\nYanıtın ilk 300 karakteri: ${summary.invalidPreview}")
+                return@withContext emptyMap()
+            }
+            Log.d(TAG, "Xtream toplu dizi listesi: ${summary.total} dizi bulundu, ${result.size} tanesinde kapak var")
             writeDiag(
                 "TOPLU ÇEKİM BAŞARILI\nAPI: ${apiUrl.substringBefore("?")}\n" +
-                "Xtream'in döndürdüğü toplam dizi sayısı: ${jsonArray.length()}\n" +
+                "Xtream'in döndürdüğü toplam dizi sayısı: ${summary.total}\n" +
                 "İçlerinden kapağı olan: ${result.size}\n" +
                 "Xtream'in kendi dizi adlarından örnekler (bizim hesapladığımız başlıklarla KARŞILAŞTIRMAK için):\n" +
                 rawNameSamples.joinToString("\n") { "  - $it" }
@@ -382,7 +385,7 @@ object MetadataEnricher {
      */
     private suspend fun fetchCategoryNameMap(host: String, user: String, pass: String, action: String): Map<String, String> {
         return try {
-            val apiUrl = "$host/player_api.php?username=$user&password=$pass&action=$action"
+            val apiUrl = "$host/player_api.php?username=${com.example.util.XtreamUrls.queryValue(user)}&password=${com.example.util.XtreamUrls.queryValue(pass)}&action=$action"
             val request = Request.Builder()
                 .url(apiUrl)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -410,7 +413,7 @@ object MetadataEnricher {
         fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_live_streams_diag", msg)
         try {
             val categoryNames = fetchCategoryNameMap(host, user, pass, "get_live_categories")
-            val apiUrl = "$host/player_api.php?username=$user&password=$pass&action=get_live_streams"
+            val apiUrl = "$host/player_api.php?username=${com.example.util.XtreamUrls.queryValue(user)}&password=${com.example.util.XtreamUrls.queryValue(pass)}&action=get_live_streams"
             val startTime = System.currentTimeMillis()
             val request = Request.Builder()
                 .url(apiUrl)
@@ -423,48 +426,49 @@ object MetadataEnricher {
                 writeDiag("CANLI LİSTESİ BAŞARISIZ\nHTTP kodu: ${response.code}\nSüre: ${elapsedMs}ms")
                 return@withContext emptyList()
             }
-            val responseBody = response.body?.string() ?: return@withContext emptyList()
-            if (responseBody.isBlank() || !responseBody.trim().startsWith("[")) {
-                writeDiag("CANLI LİSTESİ GEÇERSİZ YANIT\nSüre: ${elapsedMs}ms\nİlk 300 karakter: ${responseBody.take(300)}")
-                return@withContext emptyList()
-            }
-            val jsonArray = JSONArray(responseBody)
+            val body = response.body ?: return@withContext emptyList()
             val result = mutableListOf<IPTVItem>()
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.optJSONObject(i) ?: continue
-                val streamId = obj.optInt("stream_id", -1)
-                if (streamId <= 0) continue
-                val name = obj.optString("name", "").trim()
-                if (name.isEmpty()) continue
-                val icon = obj.optString("stream_icon", "").trim()
-                val categoryId = obj.optString("category_id", "")
-                val epgChannelId = obj.optString("epg_channel_id", "").trim()
-                val playUrl = "$host/live/$user/$pass/$streamId.ts"
+            // Liste parça parça okunur: on binlerce kanal tek seferde belleğe alınmaz (eski: tüm metin + JSONArray).
+            val summary = body.charStream().use { reader ->
+                XtreamJsonStream.forEachObject(reader) { obj ->
+                    val streamId = obj.optInt("stream_id", -1)
+                    if (streamId <= 0) return@forEachObject
+                    val name = obj.optString("name", "").trim()
+                    if (name.isEmpty()) return@forEachObject
+                    val icon = obj.optString("stream_icon", "").trim()
+                    val categoryId = obj.optString("category_id", "")
+                    val epgChannelId = obj.optString("epg_channel_id", "").trim()
+                    val playUrl = "$host/live/$user/$pass/$streamId.ts"
 
-                val categoryName = categoryNames[categoryId] ?: "Diğer"
-                val lowerCat = categoryName.lowercase()
-                val lowerName = name.lowercase()
-                val isRadioChannel = lowerCat.contains("radyo") || lowerCat.contains("radio") || lowerCat.contains("radyolar") ||
-                        lowerName.contains("radyo") || lowerName.contains("radio") || lowerName.contains(" fm") || lowerName.endsWith("fm")
+                    val categoryName = categoryNames[categoryId] ?: "Diğer"
+                    val lowerCat = categoryName.lowercase()
+                    val lowerName = name.lowercase()
+                    val isRadioChannel = lowerCat.contains("radyo") || lowerCat.contains("radio") || lowerCat.contains("radyolar") ||
+                            lowerName.contains("radyo") || lowerName.contains("radio") || lowerName.contains(" fm") || lowerName.endsWith("fm")
 
-                result.add(
-                    IPTVItem(
-                        id = streamId,
-                        playlistId = playlistId,
-                        name = name,
-                        cleanedName = name,
-                        logoUrl = icon.ifBlank { null },
-                        streamUrl = playUrl,
-                        category = categoryName,
-                        type = if (isRadioChannel) "RADIO" else "LIVE",
-                        tvgId = epgChannelId.ifBlank { null }
+                    result.add(
+                        IPTVItem(
+                            id = streamId,
+                            playlistId = playlistId,
+                            name = name,
+                            cleanedName = name,
+                            logoUrl = icon.ifBlank { null },
+                            streamUrl = playUrl,
+                            category = categoryName,
+                            type = if (isRadioChannel) "RADIO" else "LIVE",
+                            tvgId = epgChannelId.ifBlank { null }
+                        )
                     )
-                )
+                }
+            }
+            if (summary.invalidPreview != null) {
+                writeDiag("CANLI LİSTESİ GEÇERSİZ YANIT\nSüre: ${elapsedMs}ms\nİlk 300 karakter: ${summary.invalidPreview}")
+                return@withContext emptyList()
             }
             writeDiag(
                 "CANLI LİSTESİ BAŞARILI\nAPI: ${apiUrl.substringBefore("?")}\n" +
                 "Ağ isteği süresi: ${elapsedMs}ms\n" +
-                "Toplam kanal sayısı: ${jsonArray.length()}\n" +
+                "Toplam kanal sayısı: ${summary.total}\n" +
                 "Geçerli üretilen: ${result.size}\n" +
                 "Logosu olan: ${result.count { !it.logoUrl.isNullOrBlank() }}"
             )
@@ -484,7 +488,7 @@ object MetadataEnricher {
         }
         try {
             val categoryNames = fetchCategoryNameMap(creds.baseUrl, creds.user, creds.pass, "get_vod_categories")
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_vod_streams"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_vod_streams"
             val startTime = System.currentTimeMillis()
             val request = Request.Builder()
                 .url(apiUrl)
@@ -497,43 +501,44 @@ object MetadataEnricher {
                 writeDiag("VOD LİSTESİ BAŞARISIZ\nHTTP kodu: ${response.code}\nSüre: ${elapsedMs}ms")
                 return@withContext emptyList()
             }
-            val responseBody = response.body?.string() ?: return@withContext emptyList()
-            if (responseBody.isBlank() || !responseBody.trim().startsWith("[")) {
-                writeDiag("VOD LİSTESİ GEÇERSİZ YANIT\nSüre: ${elapsedMs}ms\nİlk 300 karakter: ${responseBody.take(300)}")
-                return@withContext emptyList()
-            }
-            val jsonArray = JSONArray(responseBody)
+            val body = response.body ?: return@withContext emptyList()
             val result = mutableListOf<IPTVItem>()
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.optJSONObject(i) ?: continue
-                val streamId = obj.optInt("stream_id", -1)
-                if (streamId <= 0) continue
-                val name = obj.optString("name", "").trim()
-                if (name.isEmpty()) continue
-                val icon = obj.optString("stream_icon", "").trim()
-                val containerExt = obj.optString("container_extension", "mp4").ifEmpty { "mp4" }
-                val playUrl = "${creds.baseUrl}/movie/${creds.user}/${creds.pass}/$streamId.$containerExt"
-                val rating = obj.optDouble("rating", 0.0).let { if (it.isNaN()) 0.0 else it }
-                val categoryId = obj.optString("category_id", "")
+            // Liste parça parça okunur: on binlerce film tek seferde belleğe alınmaz (eski: tüm metin + JSONArray).
+            val summary = body.charStream().use { reader ->
+                XtreamJsonStream.forEachObject(reader) { obj ->
+                    val streamId = obj.optInt("stream_id", -1)
+                    if (streamId <= 0) return@forEachObject
+                    val name = obj.optString("name", "").trim()
+                    if (name.isEmpty()) return@forEachObject
+                    val icon = obj.optString("stream_icon", "").trim()
+                    val containerExt = obj.optString("container_extension", "mp4").ifEmpty { "mp4" }
+                    val playUrl = "${creds.baseUrl}/movie/${creds.user}/${creds.pass}/$streamId.$containerExt"
+                    val rating = obj.optDouble("rating", 0.0).let { if (it.isNaN()) 0.0 else it }
+                    val categoryId = obj.optString("category_id", "")
 
-                result.add(
-                    IPTVItem(
-                        id = streamId,
-                        playlistId = anyMovieItem.playlistId,
-                        name = name,
-                        cleanedName = name,
-                        logoUrl = icon.ifBlank { null },
-                        streamUrl = playUrl,
-                        category = categoryNames[categoryId] ?: "Diğer",
-                        type = "MOVIE",
-                        rating = rating
+                    result.add(
+                        IPTVItem(
+                            id = streamId,
+                            playlistId = anyMovieItem.playlistId,
+                            name = name,
+                            cleanedName = name,
+                            logoUrl = icon.ifBlank { null },
+                            streamUrl = playUrl,
+                            category = categoryNames[categoryId] ?: "Diğer",
+                            type = "MOVIE",
+                            rating = rating
+                        )
                     )
-                )
+                }
+            }
+            if (summary.invalidPreview != null) {
+                writeDiag("VOD LİSTESİ GEÇERSİZ YANIT\nSüre: ${elapsedMs}ms\nİlk 300 karakter: ${summary.invalidPreview}")
+                return@withContext emptyList()
             }
             writeDiag(
                 "VOD LİSTESİ BAŞARILI (tam çekim)\nAPI: ${apiUrl.substringBefore("?")}\n" +
                 "Ağ isteği süresi: ${elapsedMs}ms\n" +
-                "Toplam film sayısı: ${jsonArray.length()}\n" +
+                "Toplam film sayısı: ${summary.total}\n" +
                 "Geçerli (id+isim dolu) IPTVItem üretilen: ${result.size}\n" +
                 "Posteri olan: ${result.count { !it.logoUrl.isNullOrBlank() }}"
             )
@@ -541,54 +546,6 @@ object MetadataEnricher {
         } catch (e: Exception) {
             writeDiag("VOD LİSTESİ HATA: ${e.message}")
             emptyList()
-        }
-    }
-
-    suspend fun fetchXtreamVodStreamsDiagnostic(context: android.content.Context, anyMovieItem: IPTVItem): Int = withContext(Dispatchers.IO) {
-        fun writeDiag(msg: String) = com.example.util.DiagnosticLog.write(context, "xtream_vod_streams_diag", msg)
-        val creds = parseXtreamCredentials(anyMovieItem)
-        if (creds == null) {
-            writeDiag("VOD LİSTESİ: Kimlik bilgisi çıkarılamadı.")
-            return@withContext 0
-        }
-        try {
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_vod_streams"
-            val startTime = System.currentTimeMillis()
-            val request = Request.Builder()
-                .url(apiUrl)
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                .get()
-                .build()
-            val response = xtreamClient.newCall(request).execute()
-            val elapsedMs = System.currentTimeMillis() - startTime
-            if (!response.isSuccessful) {
-                writeDiag("VOD LİSTESİ BAŞARISIZ\nHTTP kodu: ${response.code}\nSüre: ${elapsedMs}ms")
-                return@withContext 0
-            }
-            val responseBody = response.body?.string() ?: return@withContext 0
-            if (responseBody.isBlank() || !responseBody.trim().startsWith("[")) {
-                writeDiag("VOD LİSTESİ GEÇERSİZ YANIT\nSüre: ${elapsedMs}ms\nİlk 300 karakter: ${responseBody.take(300)}")
-                return@withContext 0
-            }
-            val jsonArray = JSONArray(responseBody)
-            val withPoster = (0 until jsonArray.length()).count { i ->
-                !jsonArray.optJSONObject(i)?.optString("stream_icon", "").isNullOrBlank()
-            }
-            val sampleNames = (0 until minOf(10, jsonArray.length())).map {
-                jsonArray.optJSONObject(it)?.optString("name", "") ?: ""
-            }
-            writeDiag(
-                "VOD LİSTESİ BAŞARILI\nAPI: ${apiUrl.substringBefore("?")}\n" +
-                "Yanıt boyutu: ${responseBody.length} karakter\n" +
-                "Ağ isteği süresi: ${elapsedMs}ms\n" +
-                "Toplam film sayısı: ${jsonArray.length()}\n" +
-                "Posteri (stream_icon) olan: $withPoster\n" +
-                "İlk 10 örnek isim:\n" + sampleNames.joinToString("\n") { "  - $it" }
-            )
-            jsonArray.length()
-        } catch (e: Exception) {
-            writeDiag("VOD LİSTESİ HATA: ${e.message}")
-            0
         }
     }
 
@@ -611,7 +568,7 @@ object MetadataEnricher {
             return@withContext null
         }
         try {
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_series_info&series_id=$seriesId"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_series_info&series_id=$seriesId"
             val request = Request.Builder()
                 .url(apiUrl)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -631,9 +588,13 @@ object MetadataEnricher {
 
             val seasons = mutableListOf<com.example.data.model.Season>()
             var totalEpisodes = 0
-            val seasonKeys = episodesObj.keys()
-            while (seasonKeys.hasNext()) {
-                val seasonKey = seasonKeys.next()
+            // Bazı sağlayıcılar aynı bölümü iki sezonda listeler (ör. "0" özel bölümler). Aynı kimlik iki kez eklenirse
+            // bölüm listeleri (oynatıcı paneli, TV detay) aynı anahtarı iki kez görüp çöküyordu: bölüm bir kez eklenir,
+            // normal sezonlar "0"dan önce işlenir (sezon sırası aşağıda zaten numaraya göre yeniden dizilir).
+            val seenEpisodeIds = HashSet<Int>()
+            val seasonKeys = episodesObj.keys().asSequence().toList()
+                .sortedBy { key -> key.toIntOrNull()?.takeIf { it != 0 } ?: Int.MAX_VALUE }
+            for (seasonKey in seasonKeys) {
                 val seasonNum = seasonKey.toIntOrNull() ?: continue
                 val episodeArray = episodesObj.optJSONArray(seasonKey) ?: continue
                 val episodes = mutableListOf<com.example.data.model.Episode>()
@@ -641,6 +602,7 @@ object MetadataEnricher {
                     val epObj = episodeArray.optJSONObject(i) ?: continue
                     val epId = epObj.optString("id", "").ifEmpty { epObj.optInt("id", -1).toString() }
                     val epIdInt = epId.toIntOrNull() ?: continue
+                    if (!seenEpisodeIds.add(epIdInt)) continue
                     val epTitle = epObj.optString("title", "Bölüm ${i + 1}")
                     val containerExt = epObj.optString("container_extension", "mp4").ifEmpty { "mp4" }
                     val epNum = com.example.data.model.SeriesParser.resolveXtreamEpisodeNumber(
@@ -720,7 +682,7 @@ object MetadataEnricher {
         val creds = parseXtreamCredentials(anySeriesItem) ?: return@withContext emptyList()
         try {
             val categoryNames = fetchCategoryNameMap(creds.baseUrl, creds.user, creds.pass, "get_series_categories")
-            val apiUrl = "${creds.baseUrl}/player_api.php?username=${creds.user}&password=${creds.pass}&action=get_series"
+            val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_series"
             val request = Request.Builder()
                 .url(apiUrl)
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -729,64 +691,64 @@ object MetadataEnricher {
             val response = xtreamClient.newCall(request).execute()
             if (!response.isSuccessful) return@withContext emptyList()
 
-            val responseBody = response.body?.string() ?: return@withContext emptyList()
-            if (responseBody.isBlank() || !responseBody.trim().startsWith("[")) return@withContext emptyList()
+            val body = response.body ?: return@withContext emptyList()
+            val list = ArrayList<com.example.data.model.XtreamSeriesCatalogEntity>()
+            // Katalog parça parça okunur: binlerce dizi (özet, oyuncular) tek seferde belleğe alınmaz.
+            val summary = body.charStream().use { reader ->
+                XtreamJsonStream.forEachObject(reader) { obj ->
+                    val seriesId = obj.optInt("series_id", 0).let { if (it != 0) it else obj.optInt("id", 0) }
+                    val rawName = obj.optString("name", "").ifEmpty { obj.optString("title", "") }.trim()
+                    if (rawName.isEmpty()) return@forEachObject
 
-            val jsonArray = JSONArray(responseBody)
-            val list = ArrayList<com.example.data.model.XtreamSeriesCatalogEntity>(jsonArray.length())
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.optJSONObject(i) ?: continue
-                val seriesId = obj.optInt("series_id", 0).let { if (it != 0) it else obj.optInt("id", 0) }
-                val rawName = obj.optString("name", "").ifEmpty { obj.optString("title", "") }.trim()
-                if (rawName.isEmpty()) continue
+                    val coverBig = obj.optString("cover_big", "").trim()
+                    val coverStd = obj.optString("cover", "").trim()
+                    val coverUrl = obj.optString("cover_url", "").trim()
+                    val chosenCover = when {
+                        coverBig.isNotEmpty() -> coverBig
+                        coverStd.isNotEmpty() -> coverStd
+                        coverUrl.isNotEmpty() -> coverUrl
+                        else -> ""
+                    }
 
-                val coverBig = obj.optString("cover_big", "").trim()
-                val coverStd = obj.optString("cover", "").trim()
-                val coverUrl = obj.optString("cover_url", "").trim()
-                val chosenCover = when {
-                    coverBig.isNotEmpty() -> coverBig
-                    coverStd.isNotEmpty() -> coverStd
-                    coverUrl.isNotEmpty() -> coverUrl
-                    else -> ""
-                }
+                    val backdropArray = obj.optJSONArray("backdrop_path")
+                    val backdrop = if (backdropArray != null && backdropArray.length() > 0) {
+                        backdropArray.optString(0, "").trim()
+                    } else {
+                        obj.optString("backdrop", "").trim()
+                    }
 
-                val backdropArray = obj.optJSONArray("backdrop_path")
-                val backdrop = if (backdropArray != null && backdropArray.length() > 0) {
-                    backdropArray.optString(0, "").trim()
-                } else {
-                    obj.optString("backdrop", "").trim()
-                }
+                    val plot = obj.optString("plot", "").trim()
+                    val rating = obj.optDouble("rating", 0.0).let { r ->
+                        if (r > 0.0) r else obj.optDouble("rating_5based", 0.0) * 2.0
+                    }
+                    val releaseDate = obj.optString("releaseDate", "").ifEmpty { obj.optString("release_date", "") }.trim()
+                    val genre = obj.optString("genre", "").trim()
+                    val cast = obj.optString("cast", "").trim()
+                    val director = obj.optString("director", "").trim()
+                    val categoryIdRaw = obj.optString("category_id", "").trim()
+                    val categoryId = categoryNames[categoryIdRaw] ?: "Diğer"
 
-                val plot = obj.optString("plot", "").trim()
-                val rating = obj.optDouble("rating", 0.0).let { r ->
-                    if (r > 0.0) r else obj.optDouble("rating_5based", 0.0) * 2.0
-                }
-                val releaseDate = obj.optString("releaseDate", "").ifEmpty { obj.optString("release_date", "") }.trim()
-                val genre = obj.optString("genre", "").trim()
-                val cast = obj.optString("cast", "").trim()
-                val director = obj.optString("director", "").trim()
-                val categoryIdRaw = obj.optString("category_id", "").trim()
-                val categoryId = categoryNames[categoryIdRaw] ?: "Diğer"
+                    val canonicalKey = rawName.lowercase(java.util.Locale.ROOT).trim()
 
-                val canonicalKey = rawName.lowercase(java.util.Locale.ROOT).trim()
-
-                list.add(
-                    com.example.data.model.XtreamSeriesCatalogEntity(
-                        seriesId = if (seriesId != 0) seriesId else (canonicalKey.hashCode() and 0x7FFFFFFF),
-                        name = rawName,
-                        canonicalKey = canonicalKey,
-                        coverUrl = chosenCover,
-                        backdropUrl = backdrop,
-                        plot = plot,
-                        rating = rating,
-                        releaseDate = releaseDate,
-                        genre = genre,
-                        cast = cast,
-                        director = director,
-                        categoryId = categoryId
+                    list.add(
+                        com.example.data.model.XtreamSeriesCatalogEntity(
+                            seriesId = if (seriesId != 0) seriesId else (canonicalKey.hashCode() and 0x7FFFFFFF),
+                            name = rawName,
+                            canonicalKey = canonicalKey,
+                            coverUrl = chosenCover,
+                            backdropUrl = backdrop,
+                            plot = plot,
+                            rating = rating,
+                            releaseDate = releaseDate,
+                            genre = genre,
+                            cast = cast,
+                            director = director,
+                            categoryId = categoryId
+                        )
                     )
-                )
+                }
             }
+            if (summary.invalidPreview != null) return@withContext emptyList()
             if (com.example.util.DiagnosticLog.enabled) try {
                 val distinctCategories = list.map { it.categoryId }.toSet()
                 val digerCount = list.count { it.categoryId == "Diğer" }
@@ -1517,27 +1479,10 @@ object MetadataEnricher {
             @retrofit2.http.Query("year") year: Int? = null
         ): TMDBResponse<TMDBMovieResult>
 
-        // Dizileri (TV Shows) isme göre arar
-        @retrofit2.http.GET("search/tv")
-        suspend fun searchSeries(
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("query") query: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR",
-            @retrofit2.http.Query("first_air_date_year") firstAirDateYear: Int? = null
-        ): TMDBResponse<TMDBSeriesResult>
-
         // Film oyuncu/yönetmen kadrosunu getirir
         @retrofit2.http.GET("movie/{movie_id}/credits")
         suspend fun getMovieCredits(
             @retrofit2.http.Path("movie_id") movieId: Int,
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBCreditsResponse
-
-        // Dizi oyuncu/yönetmen kadrosunu getirir
-        @retrofit2.http.GET("tv/{tv_id}/credits")
-        suspend fun getSeriesCredits(
-            @retrofit2.http.Path("tv_id") tvId: Int,
             @retrofit2.http.Query("api_key") apiKey: String,
             @retrofit2.http.Query("language") language: String = "tr-TR"
         ): TMDBCreditsResponse
@@ -1557,27 +1502,6 @@ object MetadataEnricher {
             @retrofit2.http.Query("api_key") apiKey: String,
             @retrofit2.http.Query("language") language: String = "tr-TR"
         ): TMDBPersonDetailsResponse
-
-        // Trend Filmler
-        @retrofit2.http.GET("trending/movie/day")
-        suspend fun getTrendingMovies(
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBMovieResult>
-
-        // Trend Diziler
-        @retrofit2.http.GET("trending/tv/day")
-        suspend fun getTrendingSeries(
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBSeriesResult>
-
-        // Günlük Trend İçerikler (All)
-        @retrofit2.http.GET("trending/all/day")
-        suspend fun getTrendingAllDay(
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBTrendingResult>
 
         // Multi Arama (Film / Dizi M3U Eşleşmesi İçin)
         @retrofit2.http.GET("search/multi")
@@ -1601,45 +1525,6 @@ object MetadataEnricher {
             @retrofit2.http.Query("language") language: String = "tr-TR"
         ): TMDBResponse<TMDBSeriesResult>
 
-        // En Yüksek Puan Alan Diziler (Top Rated Series)
-        @retrofit2.http.GET("tv/top_rated")
-        suspend fun getTopRatedSeries(
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBSeriesResult>
-
-        // Film Önerileri
-        @retrofit2.http.GET("movie/{movie_id}/recommendations")
-        suspend fun getMovieRecommendations(
-            @retrofit2.http.Path("movie_id") movieId: Int,
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBMovieResult>
-
-        // Film Benzeri İçerikler
-        @retrofit2.http.GET("movie/{movie_id}/similar")
-        suspend fun getSimilarMovies(
-            @retrofit2.http.Path("movie_id") movieId: Int,
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBMovieResult>
-
-        // Dizi Önerileri
-        @retrofit2.http.GET("tv/{tv_id}/recommendations")
-        suspend fun getSeriesRecommendations(
-            @retrofit2.http.Path("tv_id") tvId: Int,
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBSeriesResult>
-
-        // Dizi Benzeri İçerikler
-        @retrofit2.http.GET("tv/{tv_id}/similar")
-        suspend fun getSimilarSeries(
-            @retrofit2.http.Path("tv_id") tvId: Int,
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBResponse<TMDBSeriesResult>
-
         // Film Detayları
         @retrofit2.http.GET("movie/{movie_id}")
         suspend fun getMovieDetails(
@@ -1647,26 +1532,6 @@ object MetadataEnricher {
             @retrofit2.http.Query("api_key") apiKey: String,
             @retrofit2.http.Query("language") language: String = "tr-TR"
         ): TMDBMovieDetailsResponse
-
-        // Bölüm Detayları (GERÇEK, editör onaylı TMDB bölüm özeti — "Önceki Bölümlerde
-        // Neler Oldu?" bülteninin uydurma değil gerçek veriye dayanması için kullanılır)
-        @retrofit2.http.GET("tv/{tv_id}/season/{season_number}/episode/{episode_number}")
-        suspend fun getEpisodeDetails(
-            @retrofit2.http.Path("tv_id") tvId: Int,
-            @retrofit2.http.Path("season_number") seasonNumber: Int,
-            @retrofit2.http.Path("episode_number") episodeNumber: Int,
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBEpisodeDetailsResponse
-
-        // Sezon Detayları (Bölüm Listesi ve Özetleri)
-        @retrofit2.http.GET("tv/{tv_id}/season/{season_number}")
-        suspend fun getSeasonDetails(
-            @retrofit2.http.Path("tv_id") tvId: Int,
-            @retrofit2.http.Path("season_number") seasonNumber: Int,
-            @retrofit2.http.Query("api_key") apiKey: String,
-            @retrofit2.http.Query("language") language: String = "tr-TR"
-        ): TMDBSeasonDetailsResponse
 
         // Dizi Detayları
         @retrofit2.http.GET("tv/{tv_id}")
@@ -1691,36 +1556,6 @@ object MetadataEnricher {
         val tagline: String? = null,
         val runtime: Int? = null,
         val genres: List<TMDBGenre>? = null
-    )
-
-    @com.squareup.moshi.JsonClass(generateAdapter = true)
-    data class TMDBEpisodeDetailsResponse(
-        val id: Int? = null,
-        val name: String? = null,
-        val overview: String? = null,
-        val season_number: Int? = null,
-        val episode_number: Int? = null,
-        val still_path: String? = null
-    )
-
-    @com.squareup.moshi.JsonClass(generateAdapter = true)
-    data class TMDBSeasonDetailsResponse(
-        val id: Int? = null,
-        val name: String? = null,
-        val season_number: Int? = null,
-        val overview: String? = null,
-        val episodes: List<TMDBSeasonEpisode>? = null
-    )
-
-    @com.squareup.moshi.JsonClass(generateAdapter = true)
-    data class TMDBSeasonEpisode(
-        val id: Int? = null,
-        val name: String? = null,
-        val overview: String? = null,
-        val season_number: Int? = null,
-        val episode_number: Int? = null,
-        val still_path: String? = null,
-        val vote_average: Double? = null
     )
 
     @com.squareup.moshi.JsonClass(generateAdapter = true)
@@ -1961,18 +1796,6 @@ object MetadataEnricher {
         } catch (e: Exception) {
             Log.w(TAG, "fetchSeriesPlotSummaryFromTMDB genel hata for '$seriesTitle': ${e.message}")
             null
-        }
-    }
-
-    /**
-     * TMDB API is disabled. Bypasses TMDB completely and redirects safely.
-     */
-    suspend fun enrichWithTMDB(context: android.content.Context, item: IPTVItem, tmdbApiKey: String): EnrichedMetadata? = withContext(Dispatchers.IO) {
-        // TMDB is disabled per stability requirements. Forward to Xtream/Gemini/Offline chain.
-        try {
-            enrichWithXtreamOrFallback(context, item)
-        } catch (_: Throwable) {
-            generateLocalMovieMetadata(item)
         }
     }
 
@@ -2251,64 +2074,6 @@ object MetadataEnricher {
             knownFor = emptyList(),
             imageUrl = null
         )
-    }
-
-    suspend fun getMoodBasedRecommendation(
-        context: android.content.Context,
-        moodQuery: String,
-        availableItems: List<com.example.data.model.IPTVItem>
-    ): Int? = withContext(Dispatchers.IO) {
-        if (moodQuery.isBlank() || availableItems.isEmpty()) return@withContext null
-
-        val candidateItems = availableItems.filter { it.type == "MOVIE" || it.type == "SERIES" }
-            .ifEmpty { availableItems }
-        if (candidateItems.isEmpty()) return@withContext null
-
-        // Pass a subset of candidate items to keep prompt size reasonable
-        val candidatesStr = candidateItems.shuffled().take(50).joinToString("\n") { item ->
-            "ID ${item.id}: ${item.cleanedName} (Kategori: ${item.category}, Konu: ${item.summary})"
-        }
-
-        val prompt = """
-            Kullanıcının ruh hali ve o akşamki izleme arzusu şu şekildedir: "$moodQuery"
-            Lütfen bu ruh halini analiz et ve aşağıdaki kütüphanemizde bulunan yapımlar arasından bu hisse, atmosfere veya yorgunluk/canlılık durumuna EN ÇOK uyan TEK bir yapımı seç.
-            
-            Kütüphanedeki Seçenekler:
-            $candidatesStr
-            
-            Lütfen seçtiğin yapımın sadece ve sadece ID numarasını döndür. Başka hiçbir açıklama, kelime, işaret veya cümle yazma. Sadece tek bir tamsayı döndür.
-            Örnek Çıktı:
-            42
-        """.trimIndent()
-
-        val rawText = callGeminiApi(context, prompt)
-        var matchedId: Int? = null
-
-        if (!rawText.isNullOrBlank()) {
-            val digitMatches = Regex("""\b(\d+)\b""").findAll(rawText).mapNotNull { it.value.toIntOrNull() }.toList()
-            for (id in digitMatches) {
-                if (candidateItems.any { it.id == id }) {
-                    matchedId = id
-                    break
-                }
-            }
-        }
-
-        if (matchedId == null) {
-            val normQuery = moodQuery.lowercase(java.util.Locale.ROOT)
-            val keywords = normQuery.split(" ", ",", ".", "-", "!", "?").filter { it.length >= 3 }
-            
-            val keywordMatch = candidateItems.firstOrNull { item ->
-                val name = item.cleanedName.lowercase(java.util.Locale.ROOT)
-                val cat = item.category.lowercase(java.util.Locale.ROOT)
-                val sum = item.summary.lowercase(java.util.Locale.ROOT)
-                keywords.any { kw -> name.contains(kw) || cat.contains(kw) || sum.contains(kw) }
-            }
-            
-            matchedId = keywordMatch?.id ?: candidateItems.randomOrNull()?.id
-        }
-
-        matchedId
     }
 
     /**

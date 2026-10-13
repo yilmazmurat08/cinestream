@@ -520,6 +520,8 @@ fun LegacyExoPlayerScreen(
     // Yayın hiç başlamazsa (sunucu yanıt vermiyor, bağlantı asılı kaldı) sonsuz "yükleniyor" yerine hata ve
     // "Yeniden dene" gösterilir.
     var reachedReady by remember(player) { mutableStateOf(false) }
+    // Veri beklerken (yükleniyor / donma) dönen daire gösterilir; kullanıcı programın duraklatıldığını sanmasın.
+    var isBuffering by remember(player) { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
     LaunchedEffect(player, streamFailed) {
         if (streamFailed || reachedReady) return@LaunchedEffect
         delay(STREAM_START_TIMEOUT_MS)
@@ -557,6 +559,10 @@ fun LegacyExoPlayerScreen(
         }
     }
 
+    // Canlı yayında üstteki bant: o an yayında olan program (yayın akışından); bilgi yoksa bant boş kalır.
+    // TV modunda bu bilgi zaten alttaki kanal bilgi kartında gösteriliyor.
+    val showLiveNowBand = !tvMode && item.type == "LIVE"
+
     // Track state listener
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -573,6 +579,7 @@ fun LegacyExoPlayerScreen(
                 currentTracks = tracks
             }
             override fun onPlaybackStateChanged(state: Int) {
+                isBuffering = state == Player.STATE_BUFFERING
                 if (state == Player.STATE_READY) {
                     reachedReady = true
                     val dur = player.duration / 1000
@@ -629,6 +636,8 @@ fun LegacyExoPlayerScreen(
                 }
 
                 localRetryCount++
+                // Film/dizi bölümünde hata sonrası yeniden denemede baştan değil kaldığı yerden devam edilir.
+                val resumePositionMs = player.currentPosition.takeIf { it > 0 && player.isCurrentMediaItemSeekable } ?: C.TIME_UNSET
                 val previousMime = player.currentMediaItem?.localConfiguration?.mimeType
                 val urlLower = sanitizedUrl.lowercase()
                 val isVodUrl = urlLower.contains("/movie/") || urlLower.contains("/series/") || item.type == "MOVIE" || item.type == "SERIES"
@@ -702,7 +711,7 @@ fun LegacyExoPlayerScreen(
 
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     try {
-                        player.setMediaItem(retryItem)
+                        if (resumePositionMs != C.TIME_UNSET) player.setMediaItem(retryItem, resumePositionMs) else player.setMediaItem(retryItem)
                         player.prepare()
                         player.playWhenReady = true
                     } catch (e: Exception) {
@@ -1165,6 +1174,11 @@ fun LegacyExoPlayerScreen(
                 }
             )
         
+            com.example.ui.components.BufferingOverlay(
+                visible = isBuffering && !streamFailed && !isInPip,
+                modifier = Modifier.align(Alignment.Center)
+            )
+
             if (com.example.BuildConfig.FREE_WATCH_LIMIT && iptvViewModel != null && !isProUser) {
                 FreeTimeRemainingBadge(
                     remainingSeconds = com.example.ui.IPTVViewModel.FREE_DAILY_WATCH_SECONDS - totalWatchSeconds,
@@ -1321,6 +1335,15 @@ fun LegacyExoPlayerScreen(
                     exit = fadeOut(),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
+                        .then(
+                            if (showLiveNowBand) {
+                                Modifier
+                                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                                    .padding(top = com.example.ui.components.LIVE_NOW_BAND_HEIGHT)
+                            } else {
+                                Modifier
+                            }
+                        )
                         .padding(24.dp)
                 ) {
                     Button(
@@ -1380,6 +1403,8 @@ fun LegacyExoPlayerScreen(
                             .align(Alignment.TopCenter)
                             .fillMaxWidth()
                             .windowInsetsPadding(WindowInsets.safeDrawing)
+                            // Canlıda üstteki yayın bandının altından başlar (bant ile üst çubuk üst üste binmez).
+                            .padding(top = if (showLiveNowBand) com.example.ui.components.LIVE_NOW_BAND_HEIGHT else 0.dp)
                             .padding(
                                 horizontal = layout.playerHorizontalPadding,
                                 vertical = if (layout.isLandscape) 8.dp else 12.dp
@@ -1779,6 +1804,15 @@ fun LegacyExoPlayerScreen(
                         }
                     }
                 }
+            }
+
+            // Canlı yayın bandı: o an yayında olan program; tıklanmaz, dokunuşlar oynatıcıya geçer.
+            if (showLiveNowBand) {
+                com.example.ui.components.LiveNowBandFor(
+                    channel = item,
+                    viewModel = iptvViewModel,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
             }
 
             // 4. Bölümler ve Öneriler Paneli (SideDrawer in Landscape / BottomSheet in Portrait)
@@ -2561,11 +2595,11 @@ fun LegacyExoPlayerScreen(
 
                         currentTracks?.groups?.forEach { group ->
                             if (group.type == C.TRACK_TYPE_AUDIO) {
-                                for (i in 0 until group.length) {
+                                for (i in com.example.player.selectableTrackIndices(group)) {
                                     audioTracks.add(group to i)
                                 }
                             } else if (group.type == C.TRACK_TYPE_TEXT) {
-                                for (i in 0 until group.length) {
+                                for (i in com.example.player.selectableTrackIndices(group)) {
                                     subtitleTracks.add(group to i)
                                 }
                             }

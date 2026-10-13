@@ -444,6 +444,7 @@
     <string name="settings_toast_updated">Oynatma listesi güncellendi.</string>
     <string name="settings_toast_cache_cleared">Uygulama önbelleği başarıyla temizlendi.</string>
     <string name="settings_toast_photo_failed">Fotoğraf yüklenemedi, tekrar deneyin.</string>
+    <string name="settings_toast_photo_picker_unavailable">Bu cihazda fotoğraf seçici bulunmuyor.</string>
     <string name="settings_player">Oynatıcı Ayarları</string>
     <string name="settings_hw_accel">Donanımsal Hızlandırma</string>
     <string name="settings_hw_accel_desc">Donanım çözücüleri kullanarak video performansını artırır.</string>
@@ -458,7 +459,6 @@
     <string name="settings_cache_desc">Biriken resim önbelleklerini ve geçici dosyaları temizler.</string>
     <string name="settings_crash_logs_title">Çökme Günlükleri (Tanılama)</string>
     <string name="settings_crash_logs_desc">Bir çökme olduysa detaylı kaydını buradan görüp kopyalayabilirsin.</string>
-    <string name="settings_about">Hakkında</string>
     <string name="settings_tmdb_notice">Bu ürün TMDB API\'sini kullanmaktadır ancak TMDB tarafından onaylanmamıştır veya sertifikalandırılmamıştır.</string>
     <string name="settings_no_crash_logs">Henüz kayıtlı bir çökme günlüğü yok. Bu iyi bir işaret! Bir çökme olursa burada listelenecek.</string>
     <string name="settings_subtitles">Altyazı Özelleştirme</string>
@@ -570,6 +570,7 @@
     <string name="tv_saved_hint">Kaldırmak için OK\'e basılı tutun</string>
     <string name="tv_removed_from_saved">Kaydedilenlerden kaldırıldı</string>
     <string name="tv_panel_left_hint">Sol: kategoriler</string>
+    <string name="tv_panel_tap_hint">Kategoriler için dokun</string>
     <string name="tv_channel_info">Kanal Bilgisi</string>
     <string name="tv_up_next">Sonra %1$s  %2$s</string>
     <string name="tv_on">Açık</string>
@@ -616,6 +617,19 @@
     <string name="paywall_pro_active_desc">Kendi listelerinde süre sınırı yok. Aboneliğini Google Play\'den yönetebilir veya iptal edebilirsin.</string>
     <string name="paywall_manage">Aboneliği yönet</string>
     <string name="paywall_close">Kapat</string>
+    <string name="paywall_upgrade_note_lifetime_monthly">Ömür boyu tek seferlik ödemedir, hiç yenilenmez. Ama aylık aboneliğin kendiliğinden kapanmaz: aldıktan sonra onu iptal etmelisin. Kalan günler için iade yapılmaz.</string>
+    <string name="paywall_upgrade_note_lifetime_yearly">Ömür boyu tek seferlik ödemedir, hiç yenilenmez. Ama yıllık aboneliğin kendiliğinden kapanmaz: aldıktan sonra onu iptal etmelisin. Kalan günler için iade yapılmaz.</string>
+    <string name="paywall_cancel_sub_warning_monthly">Ömür boyu PRO\'n kalıcıdır, hiç yenilenmez. Ama eski aylık aboneliğin hâlâ açık: iptal etmezsen Google Play her ay ücret almaya devam eder.</string>
+    <string name="paywall_cancel_sub_warning_yearly">Ömür boyu PRO\'n kalıcıdır, hiç yenilenmez. Ama eski yıllık aboneliğin hâlâ açık: iptal etmezsen Google Play her yıl ücret almaya devam eder.</string>
+    <string name="paywall_cancel_monthly_button">Aylık aboneliği iptal et</string>
+    <string name="paywall_cancel_yearly_button">Yıllık aboneliği iptal et</string>
+    <string name="paywall_current_plan">Mevcut paketin: %1$s</string>
+    <string name="paywall_upgrade_title">Paketini yükselt</string>
+    <string name="paywall_upgrade_button">Yükselt · %1$s</string>
+    <string name="paywall_upgrade_note_switch">Aylık aboneliğin yıllıkla değiştirilir; kalan süren yeni pakete eklenir. Ayrıntıları Google Play ödeme ekranında görürsün.</string>
+    <string name="paywall_upgraded">Paketin güncellendi. İyi seyirler!</string>
+    <string name="paywall_lifetime_cancel_reminder">Ömür boyu PRO etkin. Şimdi eski aboneliğini iptal etmeyi unutma.</string>
+    <string name="paywall_pro_lifetime_desc">Ömür boyu PRO: süre sınırı yok, yenileme yok.</string>
     <string name="pro_card_title_active">Süre sınırı yok</string>
     <string name="pro_card_title_free">Abonelik ve ayrıcalıklar</string>
     <string name="pro_badge_active">PRO AKTİF ✅</string>
@@ -646,4 +660,21 @@
     <string name="player_free_time_over">Bugünkü ücretsiz süre doldu · bu içerik bitene kadar izleyebilirsin</string>
     <string name="settings_gemini_key_delete">Anahtarı sil</string>
     <string name="settings_gemini_key_deleted">Yapay zekâ anahtarı bu cihazdan silindi.</string>
+    <!-- Kilitli kategoriler (ebeveyn kilidi) -->
+    <string name="settings_category_locks_title">Kilitli kategoriler</string>
+    <string name="settings_category_locks_desc">Hangi klasörlerin PIN ile açılacağını sen seç.</string>
+    <string name="category_locks_intro">Yetişkin kategorileri varsayılan olarak kilitlidir. İstediğiniz kategoriyi kilitleyebilir veya kilidini kaldırabilirsiniz. Kilitli kategoriler PIN ister; ana sayfa vitrinlerinde ve kanal geçişinde görünmez.</string>
+    <string name="category_locks_tab_live">Canlı TV</string>
+    <string name="category_locks_tab_movies">Filmler</string>
+    <string name="category_locks_tab_series">Diziler</string>
+    <string name="category_locks_tab_count">%1$s · %2$d kilitli</string>
+    <string name="category_locks_only_locked">Yalnızca kilitliler</string>
+    <string name="category_locks_search">Kategori ara</string>
+    <string name="category_locks_items">%d içerik</string>
+    <string name="category_locks_manual">elle ayarlandı</string>
+    <string name="category_locks_empty">Bu listede kategori yok.</string>
+    <string name="category_locks_reset">Elle yapılan ayarları sıfırla</string>
+    <string name="category_locks_pin_subtitle">Kilitli kategorileri değiştirmek için PIN kodunuzu girin.</string>
+    <string name="player_buffering">Yükleniyor…</string>
+    <string name="player_buffering_slow">Bağlantı yavaş, yayın bekleniyor…</string>
 </resources>

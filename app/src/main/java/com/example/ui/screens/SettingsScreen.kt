@@ -100,6 +100,9 @@ fun SettingsScreen(
     val userPhotoUrl by viewModel.userPhotoUrl.collectAsState()
     var showEditProfileDialog by remember { mutableStateOf(false) }
 
+    // Kilitli kategoriler: ekranı açmak PIN ister (güvenli oturum açıksa istemez).
+    val openCategoryLocks = rememberCategoryLocksOpener(viewModel)
+
     var isBufferDropdownExpanded by remember { mutableStateOf(false) }
     var pinInputValue by remember { mutableStateOf("") }
     var apiKeyInputValue by remember { mutableStateOf("") }
@@ -303,6 +306,7 @@ fun SettingsScreen(
 
                         // 4. GÜVENLİK CARD
                         SecurityCard(
+                            onOpenCategoryLocks = openCategoryLocks,
                             parentalLockEnabled = parentalLockEnabled,
                             onLockChange = { viewModel.setParentalLock(it) },
                             pinValue = pinInputValue,
@@ -446,6 +450,7 @@ fun SettingsScreen(
                     )
 
                     SecurityCard(
+                        onOpenCategoryLocks = openCategoryLocks,
                         parentalLockEnabled = parentalLockEnabled,
                         onLockChange = { viewModel.setParentalLock(it) },
                         pinValue = pinInputValue,
@@ -1112,7 +1117,8 @@ fun SecurityCard(
     parentalLockEnabled: Boolean,
     onLockChange: (Boolean) -> Unit,
     pinValue: String,
-    onPinChange: (String) -> Unit
+    onPinChange: (String) -> Unit,
+    onOpenCategoryLocks: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -1227,6 +1233,37 @@ fun SecurityCard(
                                 unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                                 focusedLabelColor = CineOrange
                             )
+                        )
+                    }
+
+                    // Hangi kategorilerin kilitli olacağı (PIN ile açılan ayrı ekran)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 14.dp)
+                            .clickable(onClick = onOpenCategoryLocks)
+                            .testTag("open_category_locks")
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_category_locks_title),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.5.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_category_locks_desc),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = CineOrange,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -2431,14 +2468,20 @@ fun EditProfileDialog(
 
                 OutlinedButton(
                     onClick = {
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
+                        // Cihazda fotoğraf/dosya seçici yoksa (Android TV ve bazı telefonlar) launch()
+                        // ActivityNotFoundException fırlatır; yakalanmazsa uygulama kapanıyordu.
+                        try {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        } catch (e: Exception) {
+                            Toast.makeText(context, context.getString(R.string.settings_toast_photo_picker_unavailable), Toast.LENGTH_LONG).show()
+                        }
                     },
                     enabled = !isCopyingPhoto,
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, CineOrange.copy(alpha = 0.6f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("edit_profile_pick_photo")
                 ) {
                     if (isCopyingPhoto) {
                         CircularProgressIndicator(

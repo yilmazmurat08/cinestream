@@ -24,6 +24,7 @@ import com.example.util.ErrorHandlingManager
 import com.example.util.AppError
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
@@ -38,7 +39,9 @@ data class SpotlightCollection(val title: String, val subtitle: String, val quer
 
 class IPTVViewModel(
     application: Application,
-    private val repository: IPTVRepository
+    private val repository: IPTVRepository,
+    /** Testlerde ayrı bir DataStore ile değiştirilebilir; uygulamada her zaman varsayılan kullanılır. */
+    settingsOverride: com.example.data.repository.SettingsRepository? = null
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -110,7 +113,7 @@ class IPTVViewModel(
     // Featured Movie Repository (12 Hours Random M3U Movie)
 
     // Settings Repository Integration
-    private val settingsRepository = com.example.data.repository.SettingsRepository(application)
+    private val settingsRepository = settingsOverride ?: com.example.data.repository.SettingsRepository(application)
 
     // Exposed Settings flows as StateFlows
     val hardwareAcceleration: StateFlow<Boolean> = settingsRepository.hardwareAccelerationFlow
@@ -136,6 +139,58 @@ class IPTVViewModel(
 
     val parentalPin: StateFlow<String> = settingsRepository.parentalPinFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "0000")
+
+    // Kategori kilitleri: mantık (ör. vitrinlerden süzme) senkron okur, bu yüzden hemen dinlenen akışlardır.
+    private val parentalLockNow: StateFlow<Boolean> = settingsRepository.parentalLockFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    /** Kullanıcının elle kilitlediği/açtığı kategoriler (anahtar: [com.example.util.CategoryLocks.key]). */
+    val parentalCategoryLocks: StateFlow<Map<String, Boolean>> = settingsRepository.parentalCategoryLocksFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** Ayar ekranındaki bir kategori satırı. [name] sağlayıcıdaki ham kategori adıdır. */
+    data class LockableCategory(val type: String, val name: String, val count: Int, val locked: Boolean, val manual: Boolean)
+
+    /** Kategorinin kilitli olması: elle ayar varsa o, yoksa yetişkin otomatik tespiti. (Kilit anahtarından bağımsız.) */
+    fun isCategoryLocked(type: String, category: String): Boolean =
+        com.example.util.CategoryLocks.isLocked(
+            parentalCategoryLocks.value, type, category, com.example.util.AdultContentFilter.isAdult(category)
+        )
+
+    /** Türdeki kategoriler, sayılarıyla ve kilit durumuyla (yalnızca veritabanı sayımı; öğeler belleğe alınmaz). */
+    suspend fun lockableCategories(type: String): List<LockableCategory> = withContext(Dispatchers.IO) {
+        try {
+            val locks = parentalCategoryLocks.value
+            tvCatalog.categoryCounts(type).map { (name, count) ->
+                val manual = locks.containsKey(com.example.util.CategoryLocks.key(type, name))
+                LockableCategory(type, name, count, isCategoryLocked(type, name), manual)
+            }.sortedBy { it.name.lowercase(java.util.Locale.ROOT) }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("IPTVViewModel", "Kategori listesi okunamadı: ${e.message}")
+            emptyList()
+        }
+    }
+
+    /** Kategoriyi kilitler ya da açar (elle ayar). */
+    fun setCategoryLocked(type: String, category: String, locked: Boolean) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setCategoryLock(com.example.util.CategoryLocks.key(type, category), locked)
+        }
+    }
+
+    /** Kategorinin elle ayarını siler: yetişkin otomatik tespitine döner. */
+    fun resetCategoryLock(type: String, category: String) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setCategoryLock(com.example.util.CategoryLocks.key(type, category), null)
+        }
+    }
+
+    /** Tüm elle kategori kilitlerini siler. */
+    fun resetAllCategoryLocks() {
+        viewModelScope.launch(coroutineExceptionHandler) { settingsRepository.clearCategoryLocks() }
+    }
 
     val geminiApiKey: StateFlow<String> = settingsRepository.geminiApiKeyFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -190,21 +245,39 @@ class IPTVViewModel(
         }
 
     // --- TV modu: Filmler/Diziler (veritabanından sayfa sayfa; telefonla aynı kurallar) ---
-    private val tvCatalog by lazy { com.example.data.repository.TvCatalogRepository(AppDatabase.getDatabase(getApplication()).iptvDao()) }
+    /**
+     * TV ekranlarının veritabanı okumaları ekranın kendi coroutine'inde çalışır (genel hata yakalayıcı yoktur):
+     * okuma hatası (ör. TV kutusunda depolama doldu) uygulamayı kapatmaz, boş sonuçla devam edilir.
+     */
+    internal suspend fun <T> tvRead(label: String, fallback: T, block: suspend () -> T): T = try {
+        block()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w("IPTVViewModel", "TV $label failed", e)
+        fallback
+    }
 
-    suspend fun tvCategories(type: String): List<com.example.data.repository.TvCategory> =
+    private val tvCatalog by lazy { com.example.data.repository.TvCatalogRepository(repository.dao) }
+
+    suspend fun tvCategories(type: String): List<com.example.data.repository.TvCategory> = tvRead("categories", emptyList()) {
+        // Kilit durumu (elle ayar > otomatik tespit) kategori satırına yansıtılır; özel bölümler kilitlenemez.
         tvCatalog.categories(type) { if (type == "SERIES") seriesCategoryRank(it) else movieCategoryRank(it) }
+            .map { c -> if (c.special != null) c else c.copy(isAdult = isCategoryLocked(type, c.key)) }
+    }
 
     suspend fun tvSpecial(type: String, section: com.example.data.repository.TvSpecialSection): List<com.example.data.repository.TvPoster> =
-        tvCatalog.special(type, section)
+        tvRead("special", emptyList()) { tvCatalog.special(type, section) }
 
     /** Kategorinin [offset]'ten başlayan sayfası. Dizilerde M3U bölümleri tek seferde gruplanır (sayfa yok). */
     suspend fun tvCategoryPage(type: String, categoryKey: String, offset: Int, limit: Int, covers: Map<String, String>): List<com.example.data.repository.TvPoster> =
-        when {
-            type == "MOVIE" -> tvCatalog.moviePage(categoryKey, offset, limit)
-            tvCatalog.hasSeriesCatalog() -> tvCatalog.catalogPage(categoryKey, offset, limit)
-            offset == 0 -> tvCatalog.seriesInCategory(categoryKey, covers)
-            else -> emptyList()
+        tvRead("category page", emptyList()) {
+            when {
+                type == "MOVIE" -> tvCatalog.moviePage(categoryKey, offset, limit)
+                tvCatalog.hasSeriesCatalog() -> tvCatalog.catalogPage(categoryKey, offset, limit)
+                offset == 0 -> tvCatalog.seriesInCategory(categoryKey, covers)
+                else -> emptyList()
+            }
         }
 
     /** Dizi bölümünün dizisi (Xtream'den canlı çekilmişse o, yoksa yalnızca bu dizinin bölümleri sorgulanır). */
@@ -212,7 +285,7 @@ class IPTVViewModel(
         _liveFetchedShow.value?.let { show ->
             if (show.seasons.any { s -> s.episodes.any { it.item.id == item.id } }) return show
         }
-        return tvCatalog.showForEpisode(item, covers)
+        return tvRead("show for item", null) { tvCatalog.showForEpisode(item, covers) }
     }
 
     /**
@@ -282,12 +355,14 @@ class IPTVViewModel(
     // --- TV modu: Canlı TV ---
 
     /** Canlı TV'ye girişte açılacak kanal: son izlenen canlı kanal, yoksa ilk (yetişkin olmayan) kanal. */
-    suspend fun tvStartChannel(): IPTVItem? = withContext(Dispatchers.IO) {
-        val last = AppDatabase.getDatabase(getApplication()).iptvDao().getAllContinueWatchingOnce()
-            .filter { it.itemType == "LIVE" }
-            .maxByOrNull { it.lastPlayedAt }
-            ?.let { repository.getItemByIdDirect(it.itemId) }
-        last ?: tvCatalog.firstLiveChannel { isAdultContent(it) }
+    suspend fun tvStartChannel(): IPTVItem? = tvRead("start channel", null) {
+        withContext(Dispatchers.IO) {
+            val last = AppDatabase.getDatabase(getApplication()).iptvDao().getAllContinueWatchingOnce()
+                .filter { it.itemType == "LIVE" }
+                .maxByOrNull { it.lastPlayedAt }
+                ?.let { repository.getItemByIdDirect(it.itemId) }
+            last ?: tvCatalog.firstLiveChannel { isAdultContent(it) }
+        }
     }
 
     /** Kanalın EPG'deki şu anki ve sonraki programı (EPG yoksa ikisi de null). */
@@ -364,10 +439,6 @@ class IPTVViewModel(
         return usage.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
     }
 
-    fun isFreeWatchLimitReached(): Boolean =
-        com.example.BuildConfig.FREE_WATCH_LIMIT && !isProUser.value &&
-            watchUsage.value.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
-
     val firstLaunchTime: StateFlow<Long> = settingsRepository.firstLaunchTimeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
@@ -403,17 +474,6 @@ class IPTVViewModel(
 
     private val _paywallReasonMessage = MutableStateFlow<String?>(null)
     val paywallReasonMessage: StateFlow<String?> = _paywallReasonMessage.asStateFlow()
-
-    /**
-     * Returns true if user is PRO OR within the 24-hour trial period from first launch.
-     */
-    fun isAiTrialActive(): Boolean {
-        if (isProUser.value) return true
-        val launch = firstLaunchTime.value
-        if (launch <= 0L) return true
-        val elapsed = System.currentTimeMillis() - launch
-        return elapsed < (24 * 60 * 60 * 1000L)
-    }
 
     fun openPaywall(reason: String? = null) {
         _paywallReasonMessage.value = reason
@@ -557,13 +617,6 @@ class IPTVViewModel(
 
     fun isSafeSessionValid(): Boolean {
         return _isSafeSessionActive.value && (_safeSessionRemainingSeconds.value > 0)
-    }
-
-    fun formatSafeSessionRemainingTime(): String {
-        val totalSec = _safeSessionRemainingSeconds.value
-        val mins = totalSec / 60
-        val secs = totalSec % 60
-        return String.format(java.util.Locale.ROOT, "%02d:%02d", mins, secs)
     }
 
     private val _isValidatingGeminiKey = MutableStateFlow(false)
@@ -723,6 +776,8 @@ class IPTVViewModel(
 
     private val _realEpgPrograms = MutableStateFlow<Map<String, List<EPGProgram>>>(emptyMap())
     val realEpgPrograms: StateFlow<Map<String, List<EPGProgram>>> = _realEpgPrograms.asStateFlow()
+    /** Rehber indirmeleri üst üste binmesin: büyük bir XMLTV aynı anda iki kez belleğe alınmaz. */
+    private val epgLoadMutex = kotlinx.coroutines.sync.Mutex()
 
     val manualEpgUrl: StateFlow<String> = settingsRepository.manualEpgUrlFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -753,27 +808,29 @@ class IPTVViewModel(
                 if (_realEpgPrograms.value.isNotEmpty() && System.currentTimeMillis() - lastFetch < sixHoursMillis) {
                     return@collect
                 }
-                if (manualUrl.isNotBlank()) {
-                    try {
-                        _realEpgPrograms.value = RealEpgProvider.fetchProgramsFromUrl(manualUrl)
-                        settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
-                    } catch (e: Exception) {
-                        android.util.Log.w("IPTVViewModel", "Manuel EPG yüklenemedi, otomatiğe dönülüyor: ${e.message}")
-                        if (!autoUrl.isNullOrBlank()) {
-                            try {
-                                _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
-                                if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
-                            } catch (e2: Exception) {
-                                android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e2.message}")
+                epgLoadMutex.withLock {
+                    if (manualUrl.isNotBlank()) {
+                        try {
+                            _realEpgPrograms.value = RealEpgProvider.fetchProgramsFromUrl(manualUrl)
+                            settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                        } catch (e: Exception) {
+                            android.util.Log.w("IPTVViewModel", "Manuel EPG yüklenemedi, otomatiğe dönülüyor: ${e.message}")
+                            if (!autoUrl.isNullOrBlank()) {
+                                try {
+                                    _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
+                                    if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                                } catch (e2: Exception) {
+                                    android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e2.message}")
+                                }
                             }
                         }
-                    }
-                } else if (!autoUrl.isNullOrBlank()) {
-                    try {
-                        _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
-                        if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
-                    } catch (e: Exception) {
-                        android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e.message}")
+                    } else if (!autoUrl.isNullOrBlank()) {
+                        try {
+                            _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
+                            if (_realEpgPrograms.value.isNotEmpty()) settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                        } catch (e: Exception) {
+                            android.util.Log.w("IPTVViewModel", "Otomatik EPG indirilemedi: ${e.message}")
+                        }
                     }
                 }
             }
@@ -961,25 +1018,59 @@ class IPTVViewModel(
 
     val xtreamSeriesCatalog: StateFlow<List<com.example.data.model.TvShow>> =
         repository.xtreamSeriesCatalogFlow
-            .map { list ->
-                list.map { entity ->
-                    com.example.data.model.TvShow(
-                        id = entity.seriesId,
-                        title = entity.name,
-                        logoUrl = entity.coverUrl.ifEmpty { entity.backdropUrl }.ifEmpty { null },
-                        category = entity.genre.ifEmpty { "Dizi" },
-                        rating = entity.rating,
-                        summary = entity.plot,
-                        cast = entity.cast,
-                        director = entity.director,
-                        isFavorite = false,
-                        seasons = emptyList(),
-                        platformName = entity.categoryId.ifBlank { "Diğer" }
-                    )
-                }
-            }
+            .map { list -> list.map { entity -> catalogShowOf(entity) } }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Xtream kataloğundaki favori diziler (bkz. FavoriteSeriesStore). Bölüm kimliği → dizi kimliği eşlemesi,
+    // dizi canlı çekildiğinde kaydedilir: detay ve oynatıcıdaki favori düğmesi bölümü değil diziyi işaretler.
+    private val favoriteSeriesStore = com.example.data.repository.FavoriteSeriesStore(application)
+    val favoriteSeriesIds: StateFlow<Set<Int>> = favoriteSeriesStore.ids
+    private val episodeToSeries = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+
+    /** Favori listeleri (Listem, ana sayfa, TV Kaydedilenler): veritabanındaki favoriler + favori katalog dizileri. */
+    val favoritesWithSeries: StateFlow<List<IPTVItem>> = combine(favorites, favoriteSeriesIds, xtreamSeriesCatalog) { dbFavorites, ids, catalog ->
+        if (ids.isEmpty()) {
+            dbFavorites
+        } else {
+            catalog.filter { it.id in ids }.map { show ->
+                IPTVItem(
+                    id = show.id, playlistId = 0, name = show.title, cleanedName = show.title, logoUrl = show.logoUrl,
+                    streamUrl = "", category = show.platformName, type = "SERIES", rating = show.rating,
+                    summary = show.summary, cast = show.cast, director = show.director, isFavorite = true
+                )
+            } + dbFavorites
+        }
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Öğe bir Xtream katalog dizisine aitse dizinin kimliği (katalog kartı ya da canlı çekilmiş bir bölüm). */
+    fun catalogSeriesIdOf(item: IPTVItem): Int? {
+        if (item.type != "SERIES") return null
+        if (item.playlistId == 0 && item.id > 0 && item.streamUrl.isBlank()) return item.id
+        if (item.id < 0) return episodeToSeries[item.id]
+        return null
+    }
+
+    /** Favori düğmesinin durumu: katalog dizilerinde dizinin kendisi, diğerlerinde öğenin kendisi. */
+    fun isFavorite(item: IPTVItem, dbFavorites: List<IPTVItem>, seriesIds: Set<Int>): Boolean {
+        val seriesId = catalogSeriesIdOf(item)
+        return if (seriesId != null) seriesId in seriesIds else dbFavorites.any { it.id == item.id } || item.isFavorite
+    }
+
+    private fun catalogShowOf(entity: com.example.data.model.XtreamSeriesCatalogEntity) = com.example.data.model.TvShow(
+        id = entity.seriesId,
+        title = entity.name,
+        logoUrl = entity.coverUrl.ifEmpty { entity.backdropUrl }.ifEmpty { null },
+        category = entity.genre.ifEmpty { "Dizi" },
+        rating = entity.rating,
+        summary = entity.plot,
+        cast = entity.cast,
+        director = entity.director,
+        isFavorite = false,
+        seasons = emptyList(),
+        platformName = entity.categoryId.ifBlank { "Diğer" }
+    )
 
     val seriesCoversMap: StateFlow<Map<String, String>> = combine(
         repository.getAllSeriesCoversFlow(),
@@ -1249,11 +1340,11 @@ class IPTVViewModel(
         },
         _nlpSearchResults
     ) { results, nlpResults ->
-        val filtered = if (nlpResults.isNotEmpty() && _searchQuery.value.isNotEmpty()) {
+        val filtered = (if (nlpResults.isNotEmpty() && _searchQuery.value.isNotEmpty()) {
             nlpResults
         } else {
             results
-        }
+        }).filterNot { hiddenWhileLocked(it) }
         
         val seriesItems = filtered.filter { it.type == "SERIES" }
         val otherItems = filtered.filter { it.type != "SERIES" }
@@ -1348,8 +1439,9 @@ class IPTVViewModel(
                 }
                 loadTMDBDiscoverContent()
                 prefetchSeriesCovers()
+                // Eski listeden kalan dizi kataloğu (Xtream kaynağı artık yoksa) açılmayan kartlar göstermesin.
+                repository.dropSeriesCatalogIfNoXtreamSource()
                 syncXtreamSeriesCatalog()
-                runVodStreamsDiagnostic()
             } catch (oom: OutOfMemoryError) {
                 Log.e("IPTVViewModel", "OutOfMemory during startup. Resetting volatile caches.", oom)
                 com.example.util.StorageOptimizer.emergencyResetCorruptedData(getApplication())
@@ -1493,12 +1585,47 @@ class IPTVViewModel(
 
     /** Kullanıcı uygulamaya geri döndüğünde (arka plandan) Öne Çıkan içerikleri yenilenir. */
     fun onAppReturnedToForeground() {
+        refreshEpgIfStale()
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             // Paylaşılan film listesi zaten bellekte: veritabanını yeniden okumaya gerek yok.
             val items = movieItemsShared.first()
             if (items.isEmpty()) return@launch
             loadFeaturedMovie(items, forceUpdate = true)
             loadFeaturedCarousel(items)
+        }
+    }
+
+    /**
+     * Uygulama arka planda saatlerce/günlerce açık kalınca (özellikle TV kutularında) rehber hiç yenilenmiyordu;
+     * programlar bitince "şimdi" bilgisi boş kalıyordu. Ön plana dönüşte son indirme 6 saatten eskiyse yenilenir.
+     * İndirme başarısız olursa eldeki rehber korunur.
+     */
+    private fun refreshEpgIfStale() {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            val lastFetch = settingsRepository.lastEpgFetchTimeFlow.first()
+            if (System.currentTimeMillis() - lastFetch < 6 * 60 * 60 * 1000L) return@launch
+            // Açılıştaki indirme hâlâ sürüyorsa ikinci kez indirilmez.
+            if (!epgLoadMutex.tryLock()) return@launch
+            try {
+                val manualUrl = settingsRepository.manualEpgUrlFlow.first().trim()
+                val autoUrl = repository.allPlaylistsFlow.first().firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl
+                for (url in listOfNotNull(manualUrl.takeIf { it.isNotBlank() }, autoUrl?.takeIf { it.isNotBlank() }).distinct()) {
+                    val programs = try {
+                        RealEpgProvider.fetchProgramsFromUrl(url)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        android.util.Log.w("IPTVViewModel", "EPG yenilenemedi: ${e.message}")
+                        null
+                    }
+                    if (!programs.isNullOrEmpty()) {
+                        _realEpgPrograms.value = programs
+                        settingsRepository.setLastEpgFetchTime(System.currentTimeMillis())
+                        break
+                    }
+                }
+            } finally {
+                epgLoadMutex.unlock()
+            }
         }
     }
 
@@ -1559,10 +1686,23 @@ class IPTVViewModel(
         iptvItem = this
     )
 
+    /**
+     * Eski sürümler dizi kapağını bulamayınca bölüm numarasıyla dizi bilgisi istiyor ve gelen (başka bir dizinin) kapağını
+     * kaydediyordu. Bu kayıtlar bir kez silinir; kapaklar sağlayıcının dizi listesinden yeniden alınır (kullanıcı verisi değil,
+     * sağlayıcıdan gelen önbellek).
+     */
+    internal suspend fun dropUnverifiedSeriesCoversOnce() {
+        val prefs = getApplication<Application>().getSharedPreferences("poster_sources", android.content.Context.MODE_PRIVATE)
+        if (prefs.getBoolean("series_covers_verified_v1", false)) return
+        repository.clearSeriesCovers()
+        prefs.edit().putBoolean("series_covers_verified_v1", true).apply()
+    }
+
     private fun prefetchSeriesCovers() {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             try {
                 kotlinx.coroutines.delay(2000)
+                dropUnverifiedSeriesCoversOnce()
                 val seriesItems = repository.getItemsByTypeDirect("SERIES")
                 if (seriesItems.isEmpty()) return@launch
 
@@ -1582,7 +1722,7 @@ class IPTVViewModel(
                     ambiguousMovies.forEachIndexed { i, s -> msg.append("  ${i + 1}. $s\n") }
                     com.example.util.DiagnosticLog.write(getApplication<Application>(), "series_grouping_diag", msg.toString())
                 } catch (e: Exception) { }
-                var pending = shows.filter { show ->
+                val pending = shows.filter { show ->
                     val key = show.title.lowercase(java.util.Locale.ROOT).trim()
                     !existingCovers.containsKey(key) && show.logoUrl.isNullOrBlank()
                 }
@@ -1611,37 +1751,11 @@ class IPTVViewModel(
                                 }
                             }
                         }
-                        val matchedKeys = bulkCovers.keys
-                        pending = pending.filter { show ->
-                            !matchedKeys.contains(show.title.lowercase(java.util.Locale.ROOT).trim())
-                        }
-                        Log.d("IPTVViewModel", "Toplu çağrı: ${bulkCovers.size} kapak bulundu, ${pending.size} dizi hâlâ eksik")
+                        Log.d("IPTVViewModel", "Toplu çağrı: ${bulkCovers.size} kapak bulundu")
                     }
                 }
-                if (pending.isEmpty()) return@launch
-
-                for (show in pending) {
-                    val representativeItem = show.seasons.firstOrNull()?.episodes?.firstOrNull()?.item
-                    if (representativeItem == null) continue
-                    val key = show.title.lowercase(java.util.Locale.ROOT).trim()
-                    var resolvedCover: String? = null
-                    try {
-                        val meta = com.example.data.api.MetadataEnricher.fetchXtreamMetadata(getApplication(), representativeItem)
-                        if (meta != null && !meta.logoUrl.isNullOrBlank()) {
-                            resolvedCover = meta.logoUrl
-                        }
-                    } catch (e: Exception) {
-                        Log.w("IPTVViewModel", "prefetchSeriesCovers: ${show.title} Xtream API hatası: ${e.message}")
-                    }
-                    if (!resolvedCover.isNullOrBlank()) {
-                        try {
-                            repository.saveSeriesCover(key, resolvedCover)
-                        } catch (e: Exception) {
-                            Log.w("IPTVViewModel", "prefetchSeriesCovers: ${show.title} kaydetme hatası: ${e.message}")
-                        }
-                    }
-                    kotlinx.coroutines.delay(400)
-                }
+                // Toplu listede bulunamayan diziler için bölüm üzerinden kapak aranmaz: bölüm numarasıyla yapılan istek
+                // başka bir dizinin kapağını getiriyordu. Kapak yoksa dürüst yer tutucu gösterilir.
                 Log.d("IPTVViewModel", "prefetchSeriesCovers: tamamlandı")
             } catch (e: Exception) {
                 Log.w("IPTVViewModel", "prefetchSeriesCovers genel hata: ${e.message}")
@@ -1659,7 +1773,7 @@ class IPTVViewModel(
             try {
                 val prefs = getApplication<Application>().getSharedPreferences("cinestream_sync_prefs", android.content.Context.MODE_PRIVATE)
                 val lastSync = prefs.getLong("last_xtream_series_catalog_sync", 0L)
-                val sixHoursMillis = 2L * 60L * 1000L // GEÇİCİ: aktif test için 2 dakika
+                val sixHoursMillis = 6L * 60L * 60L * 1000L
                 if (System.currentTimeMillis() - lastSync < sixHoursMillis) {
                     Log.d("IPTVViewModel", "syncXtreamSeriesCatalog: son senkronizasyon yakın zamanda oldu, atlanıyor")
                     return@launch
@@ -1683,29 +1797,6 @@ class IPTVViewModel(
                 }
             } catch (e: Exception) {
                 Log.w("IPTVViewModel", "syncXtreamSeriesCatalog hatası: ${e.message}")
-            }
-        }
-    }
-
-    private fun runVodStreamsDiagnostic() {
-        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            try {
-                val prefs = getApplication<Application>().getSharedPreferences("cinestream_sync_prefs", android.content.Context.MODE_PRIVATE)
-                val lastRun = prefs.getLong("last_vod_streams_diag", 0L)
-                val cooldownMillis = 2L * 60L * 1000L // GEÇİCİ: aktif test için 2 dakika
-                if (System.currentTimeMillis() - lastRun < cooldownMillis) return@launch
-
-                kotlinx.coroutines.delay(3000)
-                val movieItems = repository.getItemsByTypeDirect("MOVIE")
-                val representative = movieItems.firstOrNull { it.streamUrl.isNotBlank() } ?: return@launch
-                val newMovies = com.example.data.api.MetadataEnricher.fetchXtreamVodStreamsAsItems(getApplication(), representative)
-                if (newMovies.isNotEmpty()) {
-                    repository.replaceAllMovies(newMovies)
-                    Log.d("IPTVViewModel", "runVodStreamsDiagnostic: ${newMovies.size} film Xtream'den değiştirildi")
-                }
-                prefs.edit().putLong("last_vod_streams_diag", System.currentTimeMillis()).apply()
-            } catch (e: Exception) {
-                Log.w("IPTVViewModel", "runVodStreamsDiagnostic hatası: ${e.message}")
             }
         }
     }
@@ -1816,52 +1907,6 @@ class IPTVViewModel(
                 _nlpSearchResults.value = emptyList()
             } finally {
                 _isAILoading.value = false
-            }
-        }
-    }
-
-    fun performMoodBasedRecommendation(
-        moodQuery: String,
-        onRecommendationFound: (IPTVItem) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        if (moodQuery.isBlank()) return
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
-            _isMoodLoading.value = true
-            try {
-                val pool = (_allItems.value + _trendingList.value + _popularMoviesList.value + _popularSeriesList.value)
-                    .distinctBy { it.id }
-
-                val matchedId = com.example.data.api.MetadataEnricher.getMoodBasedRecommendation(
-                    getApplication(),
-                    moodQuery,
-                    pool
-                )
-                if (matchedId != null) {
-                    val item = pool.find { it.id == matchedId }
-                    if (item != null) {
-                        onRecommendationFound(item)
-                    } else {
-                        val fallbackItem = pool.filter { it.type == "MOVIE" || it.type == "SERIES" }.randomOrNull() ?: pool.firstOrNull()
-                        if (fallbackItem != null) {
-                            onRecommendationFound(fallbackItem)
-                        } else {
-                            onError("Önerilen içerik bulunamadı. Lütfen tekrar deneyin!")
-                        }
-                    }
-                } else {
-                    val fallbackItem = pool.filter { it.type == "MOVIE" || it.type == "SERIES" }.randomOrNull() ?: pool.firstOrNull()
-                    if (fallbackItem != null) {
-                        onRecommendationFound(fallbackItem)
-                    } else {
-                        onError("Ruh halinize tam uyan bir içerik bulamadık. Lütfen farklı kelimeler kullanın!")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("IPTVViewModel", "Error in Mood-Based Recommendation", e)
-                onError("Yapay zeka analiz yaparken bir hata oluştu.")
-            } finally {
-                _isMoodLoading.value = false
             }
         }
     }
@@ -1996,14 +2041,6 @@ class IPTVViewModel(
         }
     }
 
-    fun setUserPhotoUrl(photoUrl: String) {
-        _userPhotoUrl.value = photoUrl
-        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            userPreferencesRepository.setProfileAvatar(photoUrl)
-            settingsRepository.setProfileAvatar(photoUrl)
-        }
-    }
-
     fun updateUserProfile(displayName: String, email: String, photoUrl: String? = null) {
         _userName.value = displayName
         _userEmail.value = email
@@ -2044,10 +2081,6 @@ class IPTVViewModel(
 
     private val _playlistSetupError = MutableStateFlow<String?>(null)
     val playlistSetupError: StateFlow<String?> = _playlistSetupError.asStateFlow()
-
-    fun clearPlaylistSetupError() {
-        _playlistSetupError.value = null
-    }
 
     private val _importProgress = MutableStateFlow<Map<String, Int>>(emptyMap())
     val importProgress: StateFlow<Map<String, Int>> = _importProgress.asStateFlow()
@@ -2251,8 +2284,10 @@ class IPTVViewModel(
     private val _isLoadingLiveShow = MutableStateFlow(false)
     val isLoadingLiveShow: StateFlow<Boolean> = _isLoadingLiveShow.asStateFlow()
 
-    fun openCatalogShow(catalogShow: com.example.data.model.TvShow) {
+    /** [fallbackItem]: dizi sağlayıcıdan çekilemezse eskisi gibi bu öğenin sayfası açılır. */
+    fun openCatalogShow(catalogShow: com.example.data.model.TvShow, fallbackItem: IPTVItem? = null) {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            var opened = false
             try {
                 _isLoadingLiveShow.value = true
                 _liveFetchedShow.value = null
@@ -2275,51 +2310,86 @@ class IPTVViewModel(
                     showCategory = catalogShow.platformName.takeIf { it.isNotBlank() && it != "Diğer" } ?: catalogShow.category
                 )
                 if (fetchedShow != null) {
+                    fetchedShow.seasons.forEach { season -> season.episodes.forEach { episodeToSeries[it.item.id] = fetchedShow.id } }
                     _liveFetchedShow.value = fetchedShow
                     val firstEp = fetchedShow.seasons.firstOrNull()?.episodes?.firstOrNull()
                     if (firstEp != null) {
                         selectItem(firstEp.item)
+                        opened = true
                     }
                 } else {
                     Log.w("IPTVViewModel", "openCatalogShow: '${catalogShow.title}' canlı çekilemedi")
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.w("IPTVViewModel", "openCatalogShow hatası: ${e.message}")
             } finally {
                 _isLoadingLiveShow.value = false
             }
+            if (!opened && fallbackItem != null) showItemDetail(fallbackItem)
         }
     }
 
     // Detail Action
     fun selectItem(item: IPTVItem?) {
-        if (item != null) {
-            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
-                val dbItem = if (item.id != 0) {
-                    repository.getItemByIdDirect(item.id) ?: _allItems.value.firstOrNull { it.id == item.id } ?: item
-                } else {
-                    findMatchedItem(item)
-                }
-                _selectedItem.value = dbItem.withPendingMetadata()
-                if (dbItem.type == "MOVIE" || dbItem.type == "SERIES") {
-                    enrichItemMetadata(dbItem)
-                }
+        // Xtream katalog dizisi (ana sayfa "Popüler Diziler", arama, favoriler, oyuncu filmografisi, asistan): klasördeki
+        // gibi dizinin kendisi açılır. Eskiden adı benzeyen başka bir kayıt açılabiliyor, sayfada farklı poster çıkıyordu.
+        if (item != null && item.id > 0 && catalogSeriesIdOf(item) != null) {
+            viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+                val entity = try { repository.dao.findCatalogShow(item.id, item.name) } catch (e: Exception) { null }
+                if (entity != null) openCatalogShow(catalogShowOf(entity), fallbackItem = item) else showItemDetail(item)
             }
+            return
+        }
+        if (item != null) {
+            showItemDetail(item)
         } else {
             _selectedItem.value = null
         }
     }
 
+    private fun showItemDetail(item: IPTVItem) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
+            val dbItem = when {
+                // Katalog dizisinin numarası veritabanında başka bir kanal/filme ait olabilir: numarayla aranmaz.
+                catalogSeriesIdOf(item) != null -> item
+                item.id != 0 -> repository.getItemByIdDirect(item.id) ?: _allItems.value.firstOrNull { it.id == item.id } ?: item
+                else -> findMatchedItem(item)
+            }
+            _selectedItem.value = dbItem.withPendingMetadata()
+            if (dbItem.type == "MOVIE" || dbItem.type == "SERIES") {
+                enrichItemMetadata(dbItem)
+            }
+        }
+    }
+
+    /** Dizinin sağlayıcı kataloğundaki yatay sahne görseli (detayın üst görseli için); yoksa null. */
+    suspend fun catalogBackdropOf(seriesId: Int, title: String): String? = withContext(Dispatchers.IO) {
+        try {
+            repository.dao.findCatalogShow(seriesId, title)?.backdropUrl?.trim()?.takeIf { it.startsWith("http") }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private val _detailBackdrop = MutableStateFlow<Pair<Int, String>?>(null)
+    /** Açık detayın yatay sahne görseli (öğe kimliğiyle): yalnızca üst görsel için. */
+    val detailBackdrop: StateFlow<Pair<Int, String>?> = _detailBackdrop.asStateFlow()
+
     private fun enrichItemMetadata(item: IPTVItem) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
             try {
                 val meta = com.example.data.api.MetadataEnricher.enrichWithXtreamOrFallback(getApplication(), item)
+                // Yatay sahne görseli yalnızca detayın üst görseli olur; poster olarak kaydedilmez.
+                meta.backdropUrl?.takeIf { it.isNotBlank() }?.let { _detailBackdrop.value = item.id to it }
                 val updatedItem = item.copy(
                     summary = meta.summary.ifBlank { item.summary },
                     cast = meta.cast.ifBlank { item.cast },
                     director = meta.director.ifBlank { item.director },
                     rating = if (meta.rating > 0.0) meta.rating else item.rating,
-                    logoUrl = meta.logoUrl?.ifBlank { null } ?: item.logoUrl,
+                    // Listedeki poster korunur (detayda ve listede aynı görsel); poster yoksa sağlayıcınınki kullanılır.
+                    logoUrl = item.logoUrl?.takeIf { it.isNotBlank() } ?: meta.logoUrl?.ifBlank { null },
                     trailerUrl = meta.trailerUrl?.ifBlank { null } ?: item.trailerUrl,
                     releaseDate = meta.releaseDate.ifBlank { item.releaseDate },
                     genre = meta.genre.ifBlank { item.genre }
@@ -2646,6 +2716,11 @@ class IPTVViewModel(
 
     // Favorite Action
     fun toggleFavorite(item: IPTVItem) {
+        val seriesId = catalogSeriesIdOf(item)
+        if (seriesId != null) {
+            favoriteSeriesStore.toggle(seriesId)
+            return
+        }
         viewModelScope.launch(coroutineExceptionHandler) {
             val updatedVal = !item.isFavorite
             repository.toggleFavorite(item.id, updatedVal)
@@ -2887,29 +2962,23 @@ class IPTVViewModel(
         return cleaned.ifEmpty { name }
     }
 
-    fun sortItems(items: List<IPTVItem>, sortBy: String): List<IPTVItem> {
-        return when (sortBy.uppercase(java.util.Locale.ROOT)) {
-            "NAME_AZ", "TITLE_ASC", "A-Z", "A_Z", "ALPHABETICAL" -> items.sortedWith(naturalOrderItemComparator)
-            "NAME_ZA", "TITLE_DESC", "Z-A", "Z_A" -> items.sortedWith(naturalOrderItemComparator.reversed())
-            "RATING_DESC", "IMDB_HIGH", "RATING_HIGH", "PUAN_AZALAN" -> items.sortedByDescending { it.rating }
-            "RATING_ASC", "IMDB_LOW", "RATING_LOW", "PUAN_ARTAN" -> items.sortedBy { it.rating }
-            "DATE_DESC", "RECENT", "ADDED_DESC", "YENİ", "YENİDEN_ESKİYE" -> items.sortedByDescending { it.id }
-            "YEAR", "YEAR_DESC", "YIL" -> items.sortedByDescending { 
-                it.releaseDate.takeIf { d -> d.length >= 4 }?.substring(0, 4)?.toIntOrNull() ?: 0 
-            }
-            "YEAR_ASC", "YIL_ARTAN" -> items.sortedBy { 
-                it.releaseDate.takeIf { d -> d.length >= 4 }?.substring(0, 4)?.toIntOrNull() ?: Int.MAX_VALUE 
-            }
-            else -> items.sortedWith(naturalOrderItemComparator)
-        }
-    }
+    /** Kilitli kategorideki öğe: ebeveyn kilidi açıkken ve güvenli oturum yokken aramada da görünmez. */
+    private fun hiddenWhileLocked(item: IPTVItem): Boolean =
+        parentalLockNow.value && !_isSafeSessionActive.value && isAdultContent(item)
 
     fun isAdultContent(category: String, name: String = ""): Boolean =
         com.example.util.AdultContentFilter.isAdult(category, name)
 
-    fun isAdultContent(item: IPTVItem): Boolean {
-        return isAdultContent(item.category, item.cleanedName.ifBlank { item.name })
-    }
+    /**
+     * Öğe kısıtlı mı (vitrinlerden süzülür, kanal geçişine girmez). Kategori kullanıcı tarafından kilitlendiyse
+     * ebeveyn kilidi açıkken kısıtlıdır; elle açıldıysa değildir; elle ayar yoksa yetişkin otomatik tespiti geçerlidir.
+     */
+    fun isAdultContent(item: IPTVItem): Boolean =
+        when (parentalCategoryLocks.value[com.example.util.CategoryLocks.key(item.type, item.category)]) {
+            true -> parentalLockNow.value
+            false -> false
+            null -> isAdultContent(item.category, item.cleanedName.ifBlank { item.name })
+        }
 
     /**
      * Oynatıcıdaki kanal listesi ve kanal ileri/geri için kanal halkası (izlenen kanal dahil, liste sırasıyla):
@@ -2919,9 +2988,18 @@ class IPTVViewModel(
     fun channelRingFor(current: IPTVItem, allChannels: List<IPTVItem>): List<IPTVItem> =
         buildChannelRing(current, allChannels) { isAdultContent(it) }
 
-    fun isAdultContent(group: IPTVGroup): Boolean {
+    /** Klasör kilitli mi: elle ayar (kilit açıkken) ya da otomatik tespit. */
+    fun isAdultContent(group: IPTVGroup): Boolean =
+        when (parentalCategoryLocks.value[com.example.util.CategoryLocks.key(group.type, group.name)]) {
+            true -> parentalLockNow.value
+            false -> false
+            null -> isAdultDetected(group)
+        }
+
+    /** Yalnızca otomatik tespit (klasör kartının "yetişkin" görünümü için); elle ayarlardan etkilenmez. */
+    fun isAdultDetected(group: IPTVGroup): Boolean {
         if (isAdultContent(group.name)) return true
-        return group.items.any { isAdultContent(it) }
+        return group.items.any { isAdultContent(it.category, it.cleanedName.ifBlank { it.name }) }
     }
 
     class Factory(private val application: Application) : ViewModelProvider.Factory {

@@ -53,7 +53,7 @@ fun TvSavedScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val favorites by viewModel.favorites.collectAsState()
+    val favorites by viewModel.favoritesWithSeries.collectAsState()
     var tab by rememberSaveable { mutableStateOf("ALL") }
     val firstFocus = remember { FocusRequester() }
     val removedText = stringResource(R.string.tv_removed_from_saved)
@@ -103,7 +103,7 @@ fun TvSavedScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(shown, key = { it.id }) { item ->
+                items(shown, key = { "${it.type}_${it.playlistId}_${it.id}" }) { item ->
                     val longFired = remember { BooleanArray(1) }
                     val open = {
                         if (item.type == "LIVE" || item.type == "LIVE_TV" || item.type == "RADIO") onPlayItem(item) else viewModel.selectItem(item)

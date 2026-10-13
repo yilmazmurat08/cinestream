@@ -121,6 +121,7 @@ fun HomeScreen(
     val movieGroups by viewModel.movieGroups.collectAsState()
     val seriesGroups by viewModel.seriesGroups.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
+    val favoritesRow by viewModel.favoritesWithSeries.collectAsState()
     val continueWatching by viewModel.continueWatching.collectAsState()
     val isProUser by viewModel.isProUser.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -180,6 +181,7 @@ fun HomeScreen(
     val activeFolderGroup by viewModel.activeFolderGroup.collectAsState()
     val selectedItem by viewModel.selectedItem.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
+    val isSafeSessionActiveHome by viewModel.isSafeSessionActive.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     // Handle back button on sub-tabs (e.g. LIVE, MOVIE, SERIES) to return to main ALL tab when no folder is open
@@ -552,11 +554,8 @@ fun HomeScreen(
                                         title = "📺 Popüler Diziler",
                                         displayTitle = stringResource(R.string.home_top10_series),
                                         items = top10Series,
-                                        onItemClick = { item ->
-                                            val matched = viewModel.findMatchedItem(item)
-                                            val targetItem = if (matched.streamUrl.isNotEmpty()) matched else item
-                                            viewModel.selectItem(targetItem)
-                                        },
+                                        // Katalog dizisi: klasördeki gibi dizinin kendisi açılır (adı benzeyen başka kayıt değil).
+                                        onItemClick = { item -> viewModel.selectItem(item) },
                                         onItemLongClick = { },
                                         modifier = Modifier.fillMaxWidth().wrapContentHeight()
                                     )
@@ -990,7 +989,7 @@ fun HomeScreen(
                                 }
 
                                 // 6. Watchlist (İzleme Listem)
-                                if (favorites.isNotEmpty() && (selectedCategory == null || selectedCategory == "Tümü")) {
+                                if (favoritesRow.isNotEmpty() && (selectedCategory == null || selectedCategory == "Tümü")) {
                                     item(key = "watchlist_section") {
                                         Column(modifier = Modifier.padding(vertical = 16.dp)) {
                                             Row(
@@ -1019,7 +1018,7 @@ fun HomeScreen(
                                                     modifier = Modifier.testTag("see_all_watchlist_button")
                                                 ) {
                                                     Text(
-                                                        text = stringResource(R.string.home_see_all_count, favorites.size),
+                                                        text = stringResource(R.string.home_see_all_count, favoritesRow.size),
                                                         color = CineOrange,
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.Bold
@@ -1030,7 +1029,7 @@ fun HomeScreen(
                                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                                 horizontalArrangement = Arrangement.spacedBy(14.dp)
                                             ) {
-                                                itemsIndexed(favorites.filterNotNull(), key = { index, item -> "${item.id}_$index" }) { _, item ->
+                                                itemsIndexed(favoritesRow.filterNotNull(), key = { index, item -> "${item.id}_$index" }) { _, item ->
                                                     MediaCard(
                                                         item = item,
                                                         onClick = { viewModel.selectItem(item) },
@@ -1319,12 +1318,25 @@ fun HomeScreen(
                     val xtreamCatalog by viewModel.xtreamSeriesCatalog.collectAsState()
                     if (xtreamCatalog.isNotEmpty()) {
                         var selectedSeriesCategory by remember { mutableStateOf<String?>(null) }
+                        var pendingSeriesCategory by remember { mutableStateOf<String?>(null) }
                         val grouped = remember(xtreamCatalog) {
                             xtreamCatalog.groupBy { it.platformName.ifBlank { "Diğer" } }
                                 .toSortedMap()
                         }
                         var seriesCategorySearchQuery by remember { mutableStateOf("") }
                         val currentCategory = selectedSeriesCategory
+                        if (pendingSeriesCategory != null) {
+                            com.example.ui.components.ParentalPinDialog(
+                                viewModel = viewModel,
+                                title = stringResource(R.string.folder_pin_title),
+                                subtitle = stringResource(R.string.folder_pin_subtitle),
+                                onDismiss = { pendingSeriesCategory = null },
+                                onSuccess = {
+                                    selectedSeriesCategory = pendingSeriesCategory
+                                    pendingSeriesCategory = null
+                                }
+                            )
+                        }
                         if (currentCategory == null) {
                             val filteredCategoryEntries = remember(grouped, seriesCategorySearchQuery) {
                                 if (seriesCategorySearchQuery.isBlank()) {
@@ -1406,9 +1418,15 @@ fun HomeScreen(
                                             }
                                         )
                                     }
+                                    // Dizi klasörleri de kategori kilidine uyar (elle ayar ya da yetişkin otomatik tespiti).
+                                    val seriesLocked = viewModel.isAdultContent(syntheticGroup)
+                                    val seriesNeedsPin = seriesLocked && parentalLockEnabled && !isSafeSessionActiveHome
                                     FolderCard(
                                         group = syntheticGroup,
-                                        onClick = { selectedSeriesCategory = categoryName },
+                                        isAdult = viewModel.isAdultDetected(syntheticGroup),
+                                        isLocked = seriesNeedsPin,
+                                        isSafeSessionUnlocked = seriesLocked && parentalLockEnabled && isSafeSessionActiveHome,
+                                        onClick = { if (seriesNeedsPin) pendingSeriesCategory = categoryName else selectedSeriesCategory = categoryName },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -1928,53 +1946,6 @@ fun Modifier.shimmerEffect(): Modifier {
             start = Offset(translateAnim - 300f, translateAnim - 300f),
             end = Offset(translateAnim, translateAnim)
         )
-    )
-}
-
-@Composable
-fun ShimmerLiveItem() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(96.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .shimmerEffect()
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(
-            modifier = Modifier
-                .width(60.dp)
-                .height(12.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
-        )
-    }
-}
-
-@Composable
-fun ShimmerCarouselItem() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(280.dp)
-            .padding(horizontal = 24.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .shimmerEffect()
-    )
-}
-
-@Composable
-fun ShimmerSeriesItem() {
-    val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
-    Box(
-        modifier = Modifier
-            .width(layout.cardWidth)
-            .aspectRatio(2f / 3f)
-            .clip(RoundedCornerShape(14.dp))
-            .shimmerEffect()
     )
 }
 

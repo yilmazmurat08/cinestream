@@ -128,6 +128,8 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
     val userEmail by viewModel.userEmail.collectAsState()
     val userPhotoUrl by viewModel.userPhotoUrl.collectAsState()
 
+    val openCategoryLocks = com.example.ui.screens.rememberCategoryLocksOpener(viewModel)
+
     var focused by rememberSaveable { mutableStateOf(TvSetting.PLAYLISTS) }
     var shown by rememberSaveable { mutableStateOf(TvSetting.PLAYLISTS) }
     var inPanel by remember { mutableStateOf(false) }
@@ -320,6 +322,7 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
                         onColorSelect = { viewModel.setSubtitleColor(it) }
                     )
                     TvSetting.SECURITY -> SecurityCard(
+                        onOpenCategoryLocks = openCategoryLocks,
                         parentalLockEnabled = parentalLockEnabled,
                         onLockChange = { viewModel.setParentalLock(it) },
                         pinValue = pinInputValue,

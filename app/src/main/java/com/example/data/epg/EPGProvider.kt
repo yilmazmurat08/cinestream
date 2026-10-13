@@ -24,11 +24,23 @@ object EPGProvider {
         } else {
             emptyList()
         }
-        val currentProg = programs.firstOrNull { it.isLiveNow }
+        // "Şimdi canlı" ve ilerleme rehberin indirildiği ana göre değil, şu ana göre hesaplanır (rehber saatlerce
+        // bellekte kalıyor; eskiden biten program canlı, yayındaki program "başlamadı" görünüyordu).
+        val now = System.currentTimeMillis()
+        val current = programs.map { program ->
+            val live = now >= program.startEpochMillis && now < program.endEpochMillis
+            val progress = when {
+                live -> ((now - program.startEpochMillis).toFloat() /
+                    (program.endEpochMillis - program.startEpochMillis).coerceAtLeast(1L).toFloat()).coerceIn(0f, 1f)
+                now >= program.endEpochMillis -> 1f
+                else -> 0f
+            }
+            program.copy(channelId = channel.id, channelName = channel.cleanedName, isLiveNow = live, progressPercent = progress)
+        }
         return ChannelEPG(
             channel = channel,
-            programs = programs.map { it.copy(channelId = channel.id, channelName = channel.cleanedName) },
-            currentProgram = currentProg?.copy(channelId = channel.id, channelName = channel.cleanedName)
+            programs = current,
+            currentProgram = current.firstOrNull { it.isLiveNow }
         )
     }
 }

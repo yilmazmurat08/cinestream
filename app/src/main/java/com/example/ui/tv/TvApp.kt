@@ -1,6 +1,5 @@
 package com.example.ui.tv
 
-import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -63,6 +62,8 @@ fun TvApp(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    // Dil için LocalContext Activity'den türetilmiş ayrı bir bağlamdır; çıkış için Activity görünümden bulunur.
+    val hostActivity = com.example.ui.components.rememberHostActivity()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var destination by state::destination
     var homeFocus by state::homeFocus
@@ -76,7 +77,7 @@ fun TvApp(
     BackHandler(enabled = !detailOpen && destination == TV_HOME && !searchOpen) {
         val now = System.currentTimeMillis()
         if (now - lastBackMs < 2_000L) {
-            (context as? Activity)?.finish()
+            hostActivity?.finish()
         } else {
             lastBackMs = now
             Toast.makeText(context, exitHint, Toast.LENGTH_SHORT).show()

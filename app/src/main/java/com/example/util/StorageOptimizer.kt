@@ -6,7 +6,6 @@ import coil.Coil
 import com.example.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.BufferedReader
 import java.io.File
 
 /**
@@ -93,42 +92,6 @@ object StorageOptimizer {
             Log.i(TAG, "Safe cache reset completed successfully.")
         } catch (e: Throwable) {
             Log.e(TAG, "Safe cache reset failed", e)
-        }
-    }
-
-    /**
-     * Helper to write large playlist content to app-specific file storage instead of SharedPreferences/DataStore.
-     */
-    suspend fun saveLargePlaylistFile(context: Context, fileName: String, content: String): File? = withContext(Dispatchers.IO) {
-        try {
-            val baseDir = context.getExternalFilesDir("playlists") ?: File(context.filesDir, "playlists")
-            if (!baseDir.exists()) {
-                baseDir.mkdirs()
-            }
-            val targetFile = File(baseDir, fileName)
-            targetFile.writeText(content, Charsets.UTF_8)
-            targetFile
-        } catch (e: Throwable) {
-            Log.e(TAG, "Error saving large playlist file: $fileName", e)
-            null
-        }
-    }
-
-    /**
-     * Helper to read large playlist content from app-specific file storage via a stream block to avoid OOM.
-     */
-    suspend fun <T> readLargePlaylistFileStream(context: Context, fileName: String, block: (BufferedReader) -> T): T? = withContext(Dispatchers.IO) {
-        try {
-            val baseDir = context.getExternalFilesDir("playlists") ?: File(context.filesDir, "playlists")
-            val targetFile = File(baseDir, fileName)
-            if (targetFile.exists()) {
-                targetFile.bufferedReader(Charsets.UTF_8).use { block(it) }
-            } else {
-                null
-            }
-        } catch (e: Throwable) {
-            Log.e(TAG, "Error reading playlist file: $fileName", e)
-            null
         }
     }
 

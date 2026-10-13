@@ -37,39 +37,50 @@ interface IPTVDao {
     suspend fun deletePlaylist(playlistId: Int)
 
     // IPTV Items
+    // Büyük listeler @Transaction ile tek, tutarlı bir anlık görüntüden okunur. Liste 2 MB'lık okuma penceresine
+    // (CursorWindow) sığmazsa Android sorguyu parça parça yeniden çalıştırır; bu sırada başka bir işlem tabloyu
+    // değiştirirse (ör. liste yenilemesi) okuma "Row too big to fit into CursorWindow" hatasıyla çöküyordu.
+    @Transaction
     @Query("SELECT * FROM iptv_items ORDER BY id DESC")
     fun getAllItemsFlow(): Flow<List<IPTVItem>>
 
+    @Transaction
     @Query("SELECT * FROM iptv_items")
     suspend fun getAllItemsDirect(): List<IPTVItem>
 
     @Query("SELECT COUNT(*) FROM iptv_items")
     suspend fun getItemCount(): Int
 
+    @Transaction
     @Query("SELECT * FROM iptv_items WHERE type = :type")
     suspend fun getItemsByTypeDirect(type: String): List<IPTVItem>
 
-    @Query("SELECT * FROM iptv_items WHERE type = 'SERIES' AND cleanedName LIKE '%' || :titlePattern || '%' LIMIT 500")
-    suspend fun findSeriesEpisodesByTitleLike(titlePattern: String): List<IPTVItem>
-
+    @Transaction
     @Query("SELECT * FROM iptv_items WHERE type = :type ORDER BY id DESC")
     fun getItemsByTypeFlow(type: String): Flow<List<IPTVItem>>
 
     @Query("SELECT DISTINCT category FROM iptv_items WHERE category != '' ORDER BY category ASC")
     fun getDistinctCategoriesFlow(): Flow<List<String>>
 
+    @Transaction
     @Query("SELECT * FROM series_covers")
     suspend fun getAllSeriesCovers(): List<com.example.data.model.SeriesCoverEntity>
 
+    @Transaction
     @Query("SELECT * FROM series_covers")
     fun getAllSeriesCoversFlow(): Flow<List<com.example.data.model.SeriesCoverEntity>>
+
+    @Query("DELETE FROM series_covers")
+    suspend fun clearSeriesCovers()
 
     @androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun upsertSeriesCover(cover: com.example.data.model.SeriesCoverEntity)
 
+    @Transaction
     @Query("SELECT * FROM xtream_series_catalog")
     fun getAllXtreamSeriesCatalogFlow(): Flow<List<com.example.data.model.XtreamSeriesCatalogEntity>>
 
+    @Transaction
     @Query("SELECT * FROM xtream_series_catalog")
     suspend fun getAllXtreamSeriesCatalogDirect(): List<com.example.data.model.XtreamSeriesCatalogEntity>
 
@@ -85,11 +96,15 @@ interface IPTVDao {
     @Query("SELECT * FROM xtream_series_catalog WHERE coverUrl != '' ORDER BY (plot != '') DESC, RANDOM() LIMIT :limit")
     suspend fun randomSeriesCatalog(limit: Int): List<XtreamSeriesCatalogEntity>
 
-    @Query("SELECT * FROM xtream_series_catalog WHERE canonicalKey = :key LIMIT 1")
-    suspend fun findXtreamSeriesByCanonicalKey(key: String): com.example.data.model.XtreamSeriesCatalogEntity?
-
     @Query("DELETE FROM xtream_series_catalog")
     suspend fun clearXtreamSeriesCatalog()
+
+    /** Xtream dizi kataloğunu TEK işlemde yeniler: okuyan ekran kataloğu hiçbir an boş ya da yarım görmez. */
+    @Transaction
+    suspend fun replaceXtreamSeriesCatalog(items: List<XtreamSeriesCatalogEntity>) {
+        clearXtreamSeriesCatalog()
+        insertXtreamSeriesCatalog(items)
+    }
 
     @Query("UPDATE iptv_items SET type = :newType WHERE id IN (:ids)")
     suspend fun updateItemsType(ids: List<Int>, newType: String)
@@ -97,9 +112,7 @@ interface IPTVDao {
     @Query("SELECT DISTINCT category FROM iptv_items WHERE type = :type AND category != '' ORDER BY category ASC")
     fun getDistinctCategoriesByTypeFlow(type: String): Flow<List<String>>
 
-    @Query("SELECT * FROM iptv_items WHERE type = :type AND category = :category ORDER BY id DESC")
-    fun getItemsByTypeAndCategoryFlow(type: String, category: String): Flow<List<IPTVItem>>
-
+    @Transaction
     @Query("SELECT * FROM iptv_items WHERE isFavorite = 1")
     fun getFavoriteItemsFlow(): Flow<List<IPTVItem>>
 
@@ -112,14 +125,30 @@ interface IPTVDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItems(items: List<IPTVItem>)
 
-    @Query("DELETE FROM iptv_items WHERE type = 'MOVIE'")
-    suspend fun deleteAllMovies()
-
     @Query("DELETE FROM iptv_items WHERE playlistId = :playlistId AND type = :type")
     suspend fun deleteItemsByPlaylistAndType(playlistId: Int, type: String)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertItem(item: IPTVItem): Long
+    @Query("SELECT id FROM iptv_items WHERE playlistId = :playlistId AND isFavorite = 1")
+    suspend fun favoriteItemIdsOfPlaylist(playlistId: Int): List<Int>
+
+    @Query("SELECT streamUrl FROM iptv_items WHERE playlistId = :playlistId AND isFavorite = 1")
+    suspend fun favoriteStreamUrlsOfPlaylist(playlistId: Int): List<String>
+
+    /**
+     * Bir listenin bir türdeki öğelerini TEK işlemde yeniler (Xtream yenilemesi):
+     * - Okuyan ekranlar tabloyu hiçbir an yarı boş görmez (eskiden "sil" ile "ekle" arasında okunursa uygulama çöküyordu).
+     * - Favoriler korunur: yeni öğe, kimliği ya da yayın adresi eski bir favoriyle eşleşiyorsa favori kalır
+     *   (eskiden her yenilemede favoriler sıfırlanıyordu).
+     */
+    @Transaction
+    suspend fun replaceItemsOfType(playlistId: Int, type: String, items: List<IPTVItem>) {
+        val favoriteIds = favoriteItemIdsOfPlaylist(playlistId).toHashSet()
+        val favoriteUrls = favoriteStreamUrlsOfPlaylist(playlistId).toHashSet()
+        deleteItemsByPlaylistAndType(playlistId, type)
+        insertItems(items.map { item ->
+            if (!item.isFavorite && (item.id in favoriteIds || item.streamUrl in favoriteUrls)) item.copy(isFavorite = true) else item
+        })
+    }
 
     @Query("UPDATE iptv_items SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun updateFavorite(id: Int, isFavorite: Boolean)
@@ -140,6 +169,7 @@ interface IPTVDao {
     suspend fun getItemsCountForPlaylist(playlistId: Int): Int
 
     // Search & Filter
+    @Transaction
     @Query("SELECT * FROM iptv_items WHERE name LIKE :query OR cleanedName LIKE :query OR category LIKE :query")
     fun searchItemsFlow(query: String): Flow<List<IPTVItem>>
 
@@ -171,6 +201,7 @@ interface IPTVDao {
     """)
     suspend fun getEpisodesForShowTitle(showTitlePattern: String, limit: Int = 100): List<IPTVItem>
 
+    @Transaction
     @Query("""
         SELECT * FROM iptv_items
         WHERE type = 'MOVIE' OR type = 'SERIES'
@@ -179,6 +210,7 @@ interface IPTVDao {
     """)
     suspend fun getPopularCatalogPool(limit: Int = 200): List<IPTVItem>
 
+    @Transaction
     @Query("""
         SELECT * FROM iptv_items
         WHERE type = :itemType
@@ -224,9 +256,6 @@ interface IPTVDao {
 
     @Query("SELECT id FROM iptv_items WHERE playlistId != :playlistId")
     suspend fun getExistingItemIdsExcludingPlaylist(playlistId: Int): List<Int>
-
-    @Query("SELECT id FROM iptv_items")
-    suspend fun getAllExistingItemIds(): List<Int>
 
     @Query("""
         UPDATE iptv_items_staging 
@@ -318,9 +347,6 @@ interface IPTVDao {
         return count
     }
 
-    @Query("DELETE FROM continue_watching")
-    suspend fun clearContinueWatching()
-
     @Query("DELETE FROM playlists")
     suspend fun deleteAllPlaylists()
 
@@ -360,9 +386,6 @@ interface IPTVDao {
 
     @Query("DELETE FROM tmdb_cache WHERE updatedAt < :cutoffTime")
     suspend fun deleteExpiredTmdbCache(cutoffTime: Long)
-
-    @Query("DELETE FROM tmdb_cache")
-    suspend fun clearTmdbCache()
 
     // TMDB Person Details Cache
     @Query("SELECT * FROM tmdb_person_cache WHERE name = :name")
@@ -417,6 +440,7 @@ interface IPTVDao {
     suspend fun itemsInCategoryPage(type: String, category: String, limit: Int, offset: Int): List<IPTVItem>
 
     /** Bir kategorideki tüm öğeler (yalnızca dizi bölümlerini diziye gruplamak için; tek kategoriyle sınırlı). */
+    @Transaction
     @Query("SELECT * FROM iptv_items WHERE type = :type AND category = :category")
     suspend fun itemsInCategory(type: String, category: String): List<IPTVItem>
 
@@ -434,6 +458,10 @@ interface IPTVDao {
 
     @Query("SELECT COUNT(*) FROM xtream_series_catalog")
     suspend fun seriesCatalogCount(): Int
+
+    /** Listelerdeki adresleri incelemek için küçük bir örnek (Xtream kaynağı var mı diye bakılır). */
+    @Query("SELECT * FROM iptv_items WHERE streamUrl != '' LIMIT 200")
+    suspend fun sampleItemsWithStream(): List<IPTVItem>
 
     @Query("SELECT categoryId AS name, COUNT(*) AS count FROM xtream_series_catalog GROUP BY categoryId")
     suspend fun seriesCatalogCategoryCounts(): List<CategoryCount>

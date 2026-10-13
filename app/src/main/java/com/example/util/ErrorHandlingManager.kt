@@ -233,26 +233,6 @@ object ErrorHandlingManager {
     }
 
     /**
-     * Safely executes an async network/API call block and returns a NetworkResult.
-     * Automatically parses exceptions into AppError and broadcasts them on errorEvents flow.
-     */
-    suspend fun <T> safeApiCall(
-        broadcastError: Boolean = true,
-        apiCall: suspend () -> T
-    ): NetworkResult<T> {
-        return try {
-            val result = apiCall()
-            NetworkResult.Success(result)
-        } catch (e: Throwable) {
-            val appError = parseThrowable(e)
-            if (broadcastError) {
-                emitError(appError)
-            }
-            NetworkResult.Error(appError)
-        }
-    }
-
-    /**
      * Broadcasts an AppError to subscribers across the app.
      */
     fun emitError(error: AppError) {
@@ -269,10 +249,4 @@ object ErrorHandlingManager {
         return appError
     }
 
-    /**
-     * Returns a human-friendly error string for UI presentation.
-     */
-    fun getDisplayMessage(error: AppError): String {
-        return error.userFriendlyMessage
-    }
 }

@@ -120,12 +120,35 @@ fun DetailScreen(
     var selectedPersonForBio by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     val dynamicPosterUrl = item.logoUrl
-    val dynamicBackdropUrl = item.logoUrl
+    // Üst görsel: sağlayıcının yatay sahne görseli varsa o, yoksa poster. Poster (küçük kapak) listedekiyle aynı kalır.
+    val detailBackdrop by if (viewModel != null) {
+        viewModel.detailBackdrop.collectAsState()
+    } else {
+        remember { mutableStateOf<Pair<Int, String>?>(null) }
+    }
+    val dynamicBackdropUrl = detailBackdrop?.takeIf { it.first == item.id }?.second
+    // Sağlayıcının yatay görseli yoksa TMDB'nin yatay görseli (TV detayındaki aynı önbellekli çağrı) kullanılır.
+    var tmdbBackdropUrl by remember(item.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(item.id) {
+        val title = item.cleanedName.ifBlank { item.name }
+        // Canlı kanal adı bir film adıyla eşleşip ilgisiz bir görsel getirmesin.
+        if (viewModel != null && title.isNotBlank() && item.type != "LIVE") {
+            tmdbBackdropUrl = viewModel.tvTmdbDetails(title, if (item.type == "SERIES") "SERIES" else "MOVIE")?.backdropUrl
+        }
+    }
 
     // Dynamic trailer URL resolution using simulated ViewModel fetcher
     var dynamicTrailerUrl by remember(item) { mutableStateOf(item.trailerUrl) }
     // Netflix tarzı: fragman YouTube'a gitmeden üstteki kapak görselinin yerinde oynar.
     var playingTrailerId by remember(item) { mutableStateOf<String?>(null) }
+    // Kart açılınca fragman kendiliğinden başlar; kullanıcı kapatır, biter ya da hata verirse aynı kartta tekrar başlamaz.
+    var trailerAutoDismissed by remember(item) { mutableStateOf(false) }
+    com.example.ui.components.AutoStartTrailerEffect(
+        videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl),
+        dismissed = trailerAutoDismissed,
+        playing = playingTrailerId != null,
+        onStart = { playingTrailerId = it }
+    )
 
     if (dynamicTrailerUrl.isNullOrEmpty() && viewModel != null) {
         LaunchedEffect(item) {
@@ -309,9 +332,10 @@ fun DetailScreen(
                         com.example.ui.components.InAppTrailerPlayer(
                             videoId = trailerId,
                             showControls = false,
-                            onEnded = { playingTrailerId = null },
+                            onEnded = { playingTrailerId = null; trailerAutoDismissed = true },
                             onError = {
                                 playingTrailerId = null
+                                trailerAutoDismissed = true
                                 android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
                             },
                             // Fragman kapak alanının tamamını kaplar (Netflix tarzı); taşan kenarlar kırpılır.
@@ -319,12 +343,11 @@ fun DetailScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                    SafeAsyncImage(
-                        model = dynamicBackdropUrl ?: dynamicPosterUrl ?: item.logoUrl,
-                        contentDescription = "Cover Image",
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                    com.example.ui.components.HeroCover(
+                        backdropUrl = dynamicBackdropUrl,
+                        posterUrl = dynamicPosterUrl ?: item.logoUrl,
+                        tmdbBackdropUrl = tmdbBackdropUrl,
+                        contentDescription = "Cover Image"
                     )
 
                     // Scrims for better readability and blend
@@ -437,9 +460,9 @@ fun DetailScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
 
-                                // Release Date Pill
-                                val releaseDateText = item.releaseDate.ifBlank { "2026-04-29" }
-                                Row(
+                                // Çıkış tarihi, tür ve oyuncu: bilgi yoksa gösterilmez (eskiden uydurma değer yazılıyordu).
+                                val releaseDateText = item.releaseDate
+                                if (releaseDateText.isNotBlank()) Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
                                         .background(Color(0xFF1E1E24), RoundedCornerShape(18.dp))
@@ -462,8 +485,8 @@ fun DetailScreen(
                                 }
 
                                 // Genre Pill
-                                val genreText = item.genre.ifBlank { if (item.category.isNotBlank()) item.category else "Komedi, Dram" }
-                                Box(
+                                val genreText = item.genre.ifBlank { item.category }
+                                if (genreText.isNotBlank()) Box(
                                     modifier = Modifier
                                         .background(Color(0xFF1E1E24), RoundedCornerShape(18.dp))
                                         .border(0.8.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
@@ -480,8 +503,8 @@ fun DetailScreen(
                                 }
 
                                 // Cast Pill
-                                val castText = item.cast.ifBlank { "Meryl Streep, Anne H..." }
-                                Box(
+                                val castText = item.cast
+                                if (castText.isNotBlank()) Box(
                                     modifier = Modifier
                                         .background(Color(0xFF1E1E24), RoundedCornerShape(18.dp))
                                         .border(0.8.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp))
@@ -546,6 +569,7 @@ fun DetailScreen(
                                     val videoId = com.example.ui.components.extractYouTubeVideoId(rawUrl)
                                     if (playingTrailerId != null) {
                                         playingTrailerId = null
+                                        trailerAutoDismissed = true
                                     } else if (!videoId.isNullOrEmpty()) {
                                         playingTrailerId = videoId
                                     } else {

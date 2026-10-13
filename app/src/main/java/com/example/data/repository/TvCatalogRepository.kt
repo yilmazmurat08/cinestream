@@ -65,6 +65,13 @@ class TvCatalogRepository(private val dao: IPTVDao) {
         specials + rows
     }
 
+    /** Ham kategori adı ve öğe sayısı (kilitli kategoriler ekranı; telefondaki klasörlerle aynı kaynak). */
+    suspend fun categoryCounts(type: String): List<Pair<String, Int>> = withContext(Dispatchers.IO) {
+        val catalog = type == "SERIES" && dao.seriesCatalogCount() > 0
+        val rows = if (catalog) dao.seriesCatalogCategoryCounts() else dao.categoryCounts(type)
+        rows.groupBy { it.name }.map { (name, list) -> name to list.sumOf { it.count } }
+    }
+
     /** Özel bölüm içeriği (küçük sabit liste; yetişkin içerik asla yok). */
     suspend fun special(type: String, section: TvSpecialSection): List<TvPoster> = withContext(Dispatchers.IO) {
         val catalog = type == "SERIES" && dao.seriesCatalogCount() > 0
