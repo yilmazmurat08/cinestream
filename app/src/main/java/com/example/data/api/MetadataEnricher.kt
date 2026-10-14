@@ -439,6 +439,8 @@ object MetadataEnricher {
                     val categoryId = obj.optString("category_id", "")
                     val epgChannelId = obj.optString("epg_channel_id", "").trim()
                     val playUrl = "$host/live/$user/$pass/$streamId.ts"
+                    // Sağlayıcının kanal numarası ("num"); yoksa yanıttaki sıra. Kanallar bu sırayla gösterilir.
+                    val position = obj.optInt("num", 0).takeIf { it > 0 } ?: (result.size + 1)
 
                     val categoryName = categoryNames[categoryId] ?: "Diğer"
                     val lowerCat = categoryName.lowercase()
@@ -456,7 +458,8 @@ object MetadataEnricher {
                             streamUrl = playUrl,
                             category = categoryName,
                             type = if (isRadioChannel) "RADIO" else "LIVE",
-                            tvgId = epgChannelId.ifBlank { null }
+                            tvgId = epgChannelId.ifBlank { null },
+                            sortOrder = position
                         )
                     )
                 }

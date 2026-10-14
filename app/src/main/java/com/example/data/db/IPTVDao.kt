@@ -53,14 +53,14 @@ interface IPTVDao {
     suspend fun clearActivePlaylist()
 
     @Query("""
-        INSERT OR REPLACE INTO iptv_items_parked (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId)
-        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId FROM iptv_items WHERE playlistId = :playlistId
+        INSERT OR REPLACE INTO iptv_items_parked (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId, sortOrder)
+        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId, sortOrder FROM iptv_items WHERE playlistId = :playlistId
     """)
     suspend fun copyItemsToParked(playlistId: Int)
 
     @Query("""
-        INSERT OR REPLACE INTO iptv_items (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId)
-        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId FROM iptv_items_parked WHERE playlistId = :playlistId
+        INSERT OR REPLACE INTO iptv_items (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId, sortOrder)
+        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId, sortOrder FROM iptv_items_parked WHERE playlistId = :playlistId
     """)
     suspend fun copyParkedToItems(playlistId: Int)
 
@@ -170,6 +170,11 @@ interface IPTVDao {
     @Transaction
     @Query("SELECT * FROM iptv_items WHERE type = :type ORDER BY id DESC")
     fun getItemsByTypeFlow(type: String): Flow<List<IPTVItem>>
+
+    /** Listedeki (sağlayıcının) sırasıyla; sıra bilinmeyen eski veride kimliğe göre. */
+    @Transaction
+    @Query("SELECT * FROM iptv_items WHERE type = :type ORDER BY sortOrder ASC, id ASC")
+    fun getItemsByTypeInListOrderFlow(type: String): Flow<List<IPTVItem>>
 
     @Query("SELECT DISTINCT category FROM iptv_items WHERE category != '' ORDER BY category ASC")
     fun getDistinctCategoriesFlow(): Flow<List<String>>
@@ -398,8 +403,8 @@ interface IPTVDao {
     suspend fun updatePlaylistEpgUrl(playlistId: Int, epgUrl: String?)
 
     @Query("""
-        INSERT OR REPLACE INTO iptv_items (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId)
-        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId
+        INSERT OR REPLACE INTO iptv_items (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId, sortOrder)
+        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId, sortOrder
         FROM iptv_items_staging
         WHERE playlistId = :playlistId
     """)

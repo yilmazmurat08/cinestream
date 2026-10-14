@@ -155,6 +155,40 @@ class TvPlayerTest {
     }
 
     @Test
+    fun live_okOpensTheChannelList_focusOnTheWatchedChannel() {
+        TvDevice.overrideForTest = true
+        val db = AppDatabase.getDatabase(app)
+        val channels = listOf(
+            channel(7201, "Ok Kanal Bir", "TvPlayer Ok"),
+            channel(7202, "Ok Kanal İki", "TvPlayer Ok")
+        )
+        runBlocking { db.iptvDao().insertItems(channels) }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        // Kanal değiştirerek gelindi: kontroller ve kanal listesi kapalı.
+        val ui = TvPlayerUiState().apply { launch = TvPlayerUiState.LAUNCH_ZAP }
+        compose.setContent {
+            PlayerScreen(
+                item = channels[1], siblingItems = emptyList(), onBack = {}, onPlayItem = {},
+                onProgressUpdate = { _, _, _ -> }, iptvViewModel = vm, tvMode = true, tvUiState = ui
+            )
+        }
+        for (i in 0 until 30) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper(100, java.util.concurrent.TimeUnit.MILLISECONDS)
+            compose.mainClock.advanceTimeBy(100)
+            Thread.sleep(20)
+        }
+        compose.waitForIdle()
+        assertFalse(ui.panelOpen)
+        assertEquals(0, compose.onAllNodes(hasTestTag("tv_control_bar")).fetchSemanticsNodes().size)
+
+        press(Key.DirectionCenter)
+
+        assertTrue("OK kanal listesini açar", ui.panelOpen)
+        waitForTag("tv_channel_7202")
+        compose.waitUntil(5_000) { runCatching { compose.onNodeWithTag("tv_channel_7202").assertIsFocused() }.isSuccess }
+    }
+
+    @Test
     fun movie_controlsFocusPlay_seekButtonsFocusable_backHides_downShows() {
         TvDevice.overrideForTest = true
         val db = AppDatabase.getDatabase(app)

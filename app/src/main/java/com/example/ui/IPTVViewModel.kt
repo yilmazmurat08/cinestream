@@ -122,7 +122,12 @@ class IPTVViewModel(
         super.onCleared()
     }
 
-    private val liveItemsShared = sharedItemsOf("LIVE")
+    // Canlı kanallar listedeki (sağlayıcının) sırasıyla: telefon ve TV listeleri, oynatıcının kanal paneli ve
+    // CH+/CH− aynı sırayı kullanır. Sırası bilinmeyen eski veride (liste henüz yenilenmedi) ada göre doğal sıra.
+    private val liveItemsShared = repository.getItemsByTypeInListOrder("LIVE")
+        .map { items -> if (items.any { it.sortOrder > 0 }) items else items.sortedWith { a, b -> naturalCompare(a.cleanedName.ifBlank { a.name }, b.cleanedName.ifBlank { b.name }) } }
+        .flowOn(Dispatchers.Default)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
     private val movieItemsShared = sharedItemsOf("MOVIE")
     private val seriesItemsShared = sharedItemsOf("SERIES")
     private val radioItemsShared = sharedItemsOf("RADIO")
@@ -1298,7 +1303,8 @@ class IPTVViewModel(
         .map { items ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
-                    com.example.data.model.IPTVGroup(id = cat, name = cat, type = "LIVE", items = list.sortedWith(naturalOrderItemComparator))
+                    // Kanallar zaten listedeki sırada gelir (bkz. liveItemsShared).
+                    com.example.data.model.IPTVGroup(id = cat, name = cat, type = "LIVE", items = list)
                 }
                 .sortedBy { it.name }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

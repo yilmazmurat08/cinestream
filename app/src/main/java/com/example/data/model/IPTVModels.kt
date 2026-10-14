@@ -49,7 +49,9 @@ data class IPTVItem(
     val episode: Int? = null,
     val releaseDate: String = "",
     val genre: String = "",
-    val tvgId: String? = null
+    val tvgId: String? = null,
+    /** Listedeki yeri (M3U dosyasındaki ya da Xtream'deki sıra, 1'den başlar). 0: eski veri, sıra bilinmiyor. */
+    @ColumnInfo(defaultValue = "0") val sortOrder: Int = 0
 ) : Serializable
 
 @Immutable
@@ -73,7 +75,9 @@ data class IPTVItemStaging(
     val episode: Int? = null,
     val releaseDate: String = "",
     val genre: String = "",
-    val tvgId: String? = null
+    val tvgId: String? = null,
+    /** Listedeki yeri (M3U dosyasındaki ya da Xtream'deki sıra, 1'den başlar). 0: eski veri, sıra bilinmiyor. */
+    @ColumnInfo(defaultValue = "0") val sortOrder: Int = 0
 ) : Serializable
 
 /**
@@ -101,7 +105,9 @@ data class IPTVItemParked(
     val episode: Int? = null,
     val releaseDate: String = "",
     val genre: String = "",
-    val tvgId: String? = null
+    val tvgId: String? = null,
+    /** Listedeki yeri (M3U dosyasındaki ya da Xtream'deki sıra, 1'den başlar). 0: eski veri, sıra bilinmiyor. */
+    @ColumnInfo(defaultValue = "0") val sortOrder: Int = 0
 )
 
 /** Aktif olmayan Xtream listelerinin dizi kataloğu (bkz. [IPTVItemParked]). */

@@ -122,6 +122,10 @@ class IPTVRepository(
     /** Türe göre tüm öğeler (okuma hatasında bkz. [guardedRead]). */
     fun getItemsByType(type: String): Flow<List<IPTVItem>> = iptvDao.getItemsByTypeFlow(type).guardedRead("$type items")
 
+    /** Kanallar listedeki (sağlayıcının) sırasıyla. */
+    fun getItemsByTypeInListOrder(type: String): Flow<List<IPTVItem>> =
+        iptvDao.getItemsByTypeInListOrderFlow(type).guardedRead("$type items in list order")
+
     /** Aşırı büyük alanları kırpar (açılışta ve doğrudan eklemelerden sonra). */
     suspend fun trimOversizedItemFields() {
         try {
@@ -877,6 +881,8 @@ class IPTVRepository(
         val typeCounts = mutableMapOf("LIVE" to 0, "MOVIE" to 0, "SERIES" to 0, "RADIO" to 0)
         var sinceLastReport = 0
         var discoveredEpgUrl: String? = null
+        // Kanallar dosyadaki sırayla gösterilir (sağlayıcının sırası).
+        var position = 0
 
         try {
             var line: String? = reader.readLine()
@@ -899,6 +905,7 @@ class IPTVRepository(
                     currentExtInf = null
                     currentExtGrp = null
                     val stagingItem = parseM3uEntryFastToStaging(extInf, streamUrl, playlistId, otherPlaylistIds, usedIdsInPlaylist)
+                        ?.copy(sortOrder = ++position)
                     if (stagingItem != null) {
                         typeCounts[stagingItem.type] = (typeCounts[stagingItem.type] ?: 0) + 1
                         sinceLastReport++

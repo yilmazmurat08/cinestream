@@ -57,7 +57,7 @@ abstract class AppDatabase : RoomDatabase() {
          * sonrasında migration bulunamazsa Room hata verir, kullanıcının listeleri, favorileri ve
          * izleme geçmişi sessizce silinmez. AppDatabaseMigrationTest bu kuralı denetler.
          */
-        const val DATABASE_VERSION = 11
+        const val DATABASE_VERSION = 12
 
         /** Yayın öncesi geliştirme sürümleri; bu sürümlerdeki veritabanları yeniden oluşturulur. */
         internal val DEV_ONLY_VERSIONS: IntArray = (1..9).toList().toIntArray()
@@ -102,8 +102,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 11 → 12: Kanalların listedeki sırası (`sortOrder`). Kanallar sağlayıcının sırasıyla gösterilir.
+         * Mevcut öğelerde sıra 0 olur (bilinmiyor); liste ilk yenilendiğinde gerçek sıra yazılır. Veri silinmez.
+         */
+        val MIGRATION_11_12: Migration = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `iptv_items` ADD COLUMN `sortOrder` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `iptv_items_staging` ADD COLUMN `sortOrder` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `iptv_items_parked` ADD COLUMN `sortOrder` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         /** 10'dan sonraki şema değişiklikleri için migration'lar; her yeni sürüm buraya bir adım ekler. */
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_10_11)
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_10_11, MIGRATION_11_12)
 
         /** Uygulamanın ve testlerin kullandığı tek migration politikası. */
         fun <T : RoomDatabase> RoomDatabase.Builder<T>.applyMigrationPolicy(): RoomDatabase.Builder<T> =
