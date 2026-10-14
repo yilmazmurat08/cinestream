@@ -677,4 +677,17 @@
     <string name="category_locks_pin_subtitle">Kilitli kategorileri değiştirmek için PIN kodunuzu girin.</string>
     <string name="player_buffering">Yükleniyor…</string>
     <string name="player_buffering_slow">Bağlantı yavaş, yayın bekleniyor…</string>
+
+    <!-- Çoklu liste -->
+    <string name="paywall_reason_more_playlists">Ücretsiz sürümde 1 liste ekleyebilirsin. PRO ile 3 listeye kadar ekle ve aralarında tek dokunuşla geç.</string>
+    <string name="playlist_limit_reached">En fazla %1$d liste ekleyebilirsin. Yeni liste için önce bir listeyi sil.</string>
+    <string name="pro_point_playlists">3 listeye kadar ekle, aralarında tek dokunuşla geç</string>
+    <string name="playlist_switcher_title">Listelerim</string>
+    <string name="playlist_switcher_desc">Liste değiştir</string>
+    <string name="playlist_switcher_active">Açık</string>
+    <string name="playlist_switcher_add">Liste ekle</string>
+    <string name="playlist_switcher_pro">PRO</string>
+    <string name="playlist_switcher_hint">Listeler arasında geçiş anında olur; favorilerin her listede ayrı korunur.</string>
+    <string name="playlist_switching">Liste açılıyor…</string>
+    <string name="playlist_switched_toast">%1$s açıldı</string>
 </resources>

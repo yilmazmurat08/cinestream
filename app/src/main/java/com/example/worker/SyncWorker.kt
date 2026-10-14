@@ -58,7 +58,9 @@ class SyncWorker(
             val database = AppDatabase.getDatabase(context)
             val repository = IPTVRepository(database.iptvDao(), database, context.applicationContext)
 
-            val list: List<com.example.data.model.Playlist> = database.iptvDao().getAllPlaylists()
+            // Yalnızca ekrandaki liste yenilenir; diğer listeler kullanıcı onlara geçince yenilenir (aksi hâlde
+            // yenileme sırasında ekrandaki liste değişirdi).
+            val list: List<com.example.data.model.Playlist> = listOfNotNull(repository.playlistToRefresh())
             if (list.isEmpty()) {
                 Result.success()
             } else {

@@ -90,6 +90,10 @@ fun SettingsScreen(
     val geminiApiKey by viewModel.geminiApiKey.collectAsState()
     val isValidatingGeminiKey by viewModel.isValidatingGeminiKey.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
+    val activePlaylist by viewModel.activePlaylist.collectAsState()
+    val isProUserForPlaylists by viewModel.isProUser.collectAsState()
+    val playlistAddNeedsPro = !isProUserForPlaylists &&
+        playlists.size >= IPTVViewModel.FREE_PLAYLIST_LIMIT && playlists.size < IPTVViewModel.PRO_PLAYLIST_LIMIT
     val isLoading by viewModel.isLoading.collectAsState()
     val manualEpgUrl by viewModel.manualEpgUrl.collectAsState()
 
@@ -191,6 +195,15 @@ fun SettingsScreen(
                         IPTVPlaylistsCard(
                             playlists = playlists,
                             isLoading = isLoading,
+                            activePlaylistId = activePlaylist?.id,
+                            onSelectPlaylist = { p ->
+                                if (p.id != activePlaylist?.id) {
+                                    viewModel.switchPlaylist(p.id)
+                                    Toast.makeText(context, context.getString(R.string.playlist_switched_toast, p.name), Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onRequestAdd = { allowed -> viewModel.requestAddPlaylist(allowed) },
+                            addNeedsPro = playlistAddNeedsPro,
                             onAddM3UPlaylist = { name, url ->
                                 viewModel.loadM3UPlaylistFromUrl(name, url)
                                 Toast.makeText(context, context.getString(R.string.settings_toast_adding_playlist), Toast.LENGTH_SHORT).show()
@@ -358,6 +371,15 @@ fun SettingsScreen(
                     IPTVPlaylistsCard(
                         playlists = playlists,
                         isLoading = isLoading,
+                        activePlaylistId = activePlaylist?.id,
+                        onSelectPlaylist = { p ->
+                            if (p.id != activePlaylist?.id) {
+                                viewModel.switchPlaylist(p.id)
+                                Toast.makeText(context, context.getString(R.string.playlist_switched_toast, p.name), Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onRequestAdd = { allowed -> viewModel.requestAddPlaylist(allowed) },
+                        addNeedsPro = playlistAddNeedsPro,
                         onAddM3UPlaylist = { name, url ->
                             viewModel.loadM3UPlaylistFromUrl(name, url)
                             Toast.makeText(context, context.getString(R.string.settings_toast_adding_playlist), Toast.LENGTH_SHORT).show()
@@ -1281,6 +1303,12 @@ fun IPTVPlaylistsCard(
     onDeletePlaylist: (Int) -> Unit,
     onRefreshPlaylist: (Playlist) -> Unit,
     onEditPlaylist: (Playlist, String, String, Boolean, String?, String?) -> Unit,
+    /** Ekrandaki liste; dokunulan liste ekrana gelir (çoklu liste). */
+    activePlaylistId: Int? = null,
+    onSelectPlaylist: (Playlist) -> Unit = {},
+    /** "Liste ekle": PRO sınırı denetlenir, izin varsa verilen işlem (ekleme penceresi) çalışır. */
+    onRequestAdd: (() -> Unit) -> Unit = { it() },
+    addNeedsPro: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
@@ -1317,10 +1345,12 @@ fun IPTVPlaylistsCard(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                     )
                 } else {
-                    playlists.forEachIndexed { index, playlist ->
+                    val shownActiveId = activePlaylistId ?: playlists.firstOrNull()?.id
+                    playlists.forEach { playlist ->
                         PlaylistItemRow(
                             playlist = playlist,
-                            isSelected = index == 0,
+                            isSelected = playlist.id == shownActiveId,
+                            onSelect = { onSelectPlaylist(playlist) },
                             onRefresh = {
                                 onRefreshPlaylist(playlist)
                             },
@@ -1339,7 +1369,7 @@ fun IPTVPlaylistsCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showAddDialog = true }
+                        .clickable { onRequestAdd { showAddDialog = true } }
                         .padding(horizontal = 20.dp, vertical = 14.dp)
                         .testTag("import_playlist_button"),
                     verticalAlignment = Alignment.CenterVertically
@@ -1355,8 +1385,10 @@ fun IPTVPlaylistsCard(
                         text = stringResource(id = R.string.import_playlist),
                         color = Color.White,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
                     )
+                    if (addNeedsPro) com.example.ui.components.ProChip()
                 }
             }
         }
@@ -1394,13 +1426,16 @@ fun PlaylistItemRow(
     isSelected: Boolean,
     onRefresh: () -> Unit,
     onEdit: (Playlist) -> Unit,
-    onDelete: (Int) -> Unit
+    onDelete: (Int) -> Unit,
+    onSelect: () -> Unit = {}
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onSelect)
+            .testTag("playlist_row_${playlist.id}")
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -2182,6 +2217,7 @@ fun CineStreamProUpgradeCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 ProPointItem(stringResource(R.string.pro_point_unlimited))
+                ProPointItem(stringResource(R.string.pro_point_playlists))
                 ProPointItem(stringResource(R.string.pro_point_devices))
                 ProPointItem(stringResource(R.string.pro_point_account))
             }

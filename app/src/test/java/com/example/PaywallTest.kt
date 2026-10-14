@@ -122,7 +122,8 @@ class PaywallTest {
             }
         }
         compose.onNodeWithTag("paywall_purchase_button").assertDoesNotExist()
-        compose.onNodeWithTag("paywall_manage").assertIsEnabled().performClick()
+        // Pencere kaydırılabilir; düğme ekranın altında kalabilir (kullanıcı da kaydırır).
+        compose.onNodeWithTag("paywall_manage").performScrollTo().assertIsEnabled().performClick()
         assertTrue(managed)
     }
 

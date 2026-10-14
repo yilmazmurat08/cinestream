@@ -1,6 +1,7 @@
 package com.example.data.model
 
 import androidx.compose.runtime.Immutable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -16,7 +17,12 @@ data class Playlist(
     val xtreamUsername: String? = null,
     val xtreamPassword: String? = null,
     val loadedAt: Long = System.currentTimeMillis(),
-    val epgUrl: String? = null
+    val epgUrl: String? = null,
+    /**
+     * Ekranda gösterilen liste. Aynı anda yalnızca bir liste aktiftir: aktif listenin öğeleri `iptv_items`
+     * tablosundadır, diğer listelerinkiler `iptv_items_parked` tablosunda bekler (bkz. IPTVDao.switchActivePlaylist).
+     */
+    @ColumnInfo(defaultValue = "0") val isActive: Boolean = false
 ) : Serializable
 
 @Immutable
@@ -69,6 +75,52 @@ data class IPTVItemStaging(
     val genre: String = "",
     val tvgId: String? = null
 ) : Serializable
+
+/**
+ * Aktif olmayan listelerin öğeleri. Kullanıcı başka listeye geçince öğeler buraya taşınır, geri dönünce aynen
+ * `iptv_items` tablosuna döner (favoriler dahil). Aynı kanal iki listede aynı kimliği taşıyabileceği için
+ * birincil anahtar (playlistId, id) çiftidir.
+ */
+@Entity(tableName = "iptv_items_parked", primaryKeys = ["playlistId", "id"])
+data class IPTVItemParked(
+    val id: Int,
+    val playlistId: Int,
+    val name: String,
+    val cleanedName: String,
+    val logoUrl: String?,
+    val streamUrl: String,
+    val category: String,
+    val type: String,
+    val rating: Double = 0.0,
+    val summary: String = "",
+    val cast: String = "",
+    val director: String = "",
+    val trailerUrl: String? = null,
+    val isFavorite: Boolean = false,
+    val season: Int? = null,
+    val episode: Int? = null,
+    val releaseDate: String = "",
+    val genre: String = "",
+    val tvgId: String? = null
+)
+
+/** Aktif olmayan Xtream listelerinin dizi kataloğu (bkz. [IPTVItemParked]). */
+@Entity(tableName = "xtream_series_catalog_parked", primaryKeys = ["playlistId", "seriesId"])
+data class XtreamSeriesCatalogParked(
+    val playlistId: Int,
+    val seriesId: Int,
+    val name: String,
+    val canonicalKey: String,
+    val coverUrl: String,
+    val backdropUrl: String = "",
+    val plot: String = "",
+    val rating: Double = 0.0,
+    val releaseDate: String = "",
+    val genre: String = "",
+    val cast: String = "",
+    val director: String = "",
+    val categoryId: String = ""
+)
 
 fun generateDeterministicId(name: String, streamUrl: String): Int {
     val input = "${name.trim()}|${streamUrl.trim()}"

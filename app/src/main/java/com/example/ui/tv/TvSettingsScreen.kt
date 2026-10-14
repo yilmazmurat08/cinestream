@@ -121,6 +121,7 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
     val geminiApiKey by viewModel.geminiApiKey.collectAsState()
     val isValidatingGeminiKey by viewModel.isValidatingGeminiKey.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
+    val activePlaylist by viewModel.activePlaylist.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val manualEpgUrl by viewModel.manualEpgUrl.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
@@ -247,6 +248,16 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
                     TvSetting.PLAYLISTS -> IPTVPlaylistsCard(
                         playlists = playlists,
                         isLoading = isLoading,
+                        activePlaylistId = activePlaylist?.id,
+                        onSelectPlaylist = { p ->
+                            if (p.id != activePlaylist?.id) {
+                                viewModel.switchPlaylist(p.id)
+                                Toast.makeText(context, context.getString(R.string.playlist_switched_toast, p.name), Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onRequestAdd = { allowed -> viewModel.requestAddPlaylist(allowed) },
+                        addNeedsPro = !isProUser && playlists.size >= IPTVViewModel.FREE_PLAYLIST_LIMIT &&
+                            playlists.size < IPTVViewModel.PRO_PLAYLIST_LIMIT,
                         onAddM3UPlaylist = { name, url ->
                             viewModel.loadM3UPlaylistFromUrl(name, url)
                             Toast.makeText(context, context.getString(R.string.settings_toast_adding_playlist), Toast.LENGTH_SHORT).show()

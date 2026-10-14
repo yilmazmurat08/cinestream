@@ -36,6 +36,114 @@ interface IPTVDao {
     @Query("DELETE FROM playlists WHERE id = :playlistId")
     suspend fun deletePlaylist(playlistId: Int)
 
+    // --- Çoklu liste: aynı anda tek liste aktiftir ---
+    // Aktif listenin öğeleri iptv_items'ta, diğerlerinin öğeleri iptv_items_parked'ta durur. Böylece ekranların
+    // okuduğu bütün sorgular yalnızca aktif listeyi görür; geçişte satırlar silinmeden tablolar arasında taşınır.
+
+    @Query("SELECT * FROM playlists WHERE isActive = 1 LIMIT 1")
+    fun getActivePlaylistFlow(): Flow<Playlist?>
+
+    @Query("SELECT * FROM playlists WHERE isActive = 1 LIMIT 1")
+    suspend fun getActivePlaylist(): Playlist?
+
+    @Query("UPDATE playlists SET isActive = CASE WHEN id = :playlistId THEN 1 ELSE 0 END")
+    suspend fun markActivePlaylist(playlistId: Int)
+
+    @Query("UPDATE playlists SET isActive = 0")
+    suspend fun clearActivePlaylist()
+
+    @Query("""
+        INSERT OR REPLACE INTO iptv_items_parked (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId)
+        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId FROM iptv_items WHERE playlistId = :playlistId
+    """)
+    suspend fun copyItemsToParked(playlistId: Int)
+
+    @Query("""
+        INSERT OR REPLACE INTO iptv_items (id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId)
+        SELECT id, playlistId, name, cleanedName, logoUrl, streamUrl, category, type, rating, summary, `cast`, director, trailerUrl, isFavorite, season, episode, releaseDate, genre, tvgId FROM iptv_items_parked WHERE playlistId = :playlistId
+    """)
+    suspend fun copyParkedToItems(playlistId: Int)
+
+    @Query("DELETE FROM iptv_items_parked WHERE playlistId = :playlistId")
+    suspend fun deleteParkedItems(playlistId: Int)
+
+    @Query("SELECT COUNT(*) FROM iptv_items_parked WHERE playlistId = :playlistId")
+    suspend fun getParkedItemCount(playlistId: Int): Int
+
+    @Query("SELECT id FROM iptv_items_parked WHERE playlistId != :playlistId")
+    suspend fun getParkedItemIdsExcludingPlaylist(playlistId: Int): List<Int>
+
+    @Query("""
+        INSERT OR REPLACE INTO xtream_series_catalog_parked (playlistId, seriesId, name, canonicalKey, coverUrl, backdropUrl, plot, rating, releaseDate, genre, `cast`, director, categoryId)
+        SELECT :playlistId, seriesId, name, canonicalKey, coverUrl, backdropUrl, plot, rating, releaseDate, genre, `cast`, director, categoryId FROM xtream_series_catalog
+    """)
+    suspend fun copySeriesCatalogToParked(playlistId: Int)
+
+    @Query("""
+        INSERT OR REPLACE INTO xtream_series_catalog (seriesId, name, canonicalKey, coverUrl, backdropUrl, plot, rating, releaseDate, genre, `cast`, director, categoryId)
+        SELECT seriesId, name, canonicalKey, coverUrl, backdropUrl, plot, rating, releaseDate, genre, `cast`, director, categoryId FROM xtream_series_catalog_parked WHERE playlistId = :playlistId
+    """)
+    suspend fun copyParkedToSeriesCatalog(playlistId: Int)
+
+    @Query("DELETE FROM xtream_series_catalog_parked WHERE playlistId = :playlistId")
+    suspend fun deleteParkedSeriesCatalog(playlistId: Int)
+
+    @Query("DELETE FROM iptv_items_parked")
+    suspend fun deleteAllParkedItems()
+
+    @Query("DELETE FROM xtream_series_catalog_parked")
+    suspend fun deleteAllParkedSeriesCatalogs()
+
+    /** Listenin öğelerini ve dizi kataloğunu kenara alır; liste aktif olmaktan çıkar. */
+    @Transaction
+    suspend fun parkPlaylist(playlistId: Int) {
+        deleteParkedItems(playlistId)
+        copyItemsToParked(playlistId)
+        deleteItemsByPlaylist(playlistId)
+        deleteParkedSeriesCatalog(playlistId)
+        copySeriesCatalogToParked(playlistId)
+        clearXtreamSeriesCatalog()
+        clearActivePlaylist()
+    }
+
+    /** Kenardaki öğeleri ve dizi kataloğunu geri getirir; liste aktif olur. */
+    @Transaction
+    suspend fun unparkPlaylist(playlistId: Int) {
+        copyParkedToItems(playlistId)
+        deleteParkedItems(playlistId)
+        copyParkedToSeriesCatalog(playlistId)
+        deleteParkedSeriesCatalog(playlistId)
+        markActivePlaylist(playlistId)
+    }
+
+    /**
+     * Aktif listeyi değiştirir. Tek işlemdir: ekranlar hiçbir an iki listeyi birden ya da yarım bir listeyi görmez.
+     * Favoriler, öğelerle birlikte taşındığı için her listede ayrı ayrı korunur.
+     */
+    @Transaction
+    suspend fun switchActivePlaylist(fromPlaylistId: Int?, toPlaylistId: Int) {
+        if (fromPlaylistId != null && fromPlaylistId != toPlaylistId) parkPlaylist(fromPlaylistId)
+        unparkPlaylist(toPlaylistId)
+    }
+
+    /** Eski veride tek aktif liste kuralını kurar: [activeId] aktif olur, [otherIds] listelerinin öğeleri kenara alınır. */
+    @Transaction
+    suspend fun normalizeActivePlaylist(activeId: Int, otherIds: List<Int>) {
+        otherIds.forEach { other ->
+            deleteParkedItems(other)
+            copyItemsToParked(other)
+            deleteItemsByPlaylist(other)
+        }
+        markActivePlaylist(activeId)
+    }
+
+    /** Kenardaki (aktif olmayan) bir listenin bütün verisini siler. */
+    @Transaction
+    suspend fun deleteParkedPlaylistData(playlistId: Int) {
+        deleteParkedItems(playlistId)
+        deleteParkedSeriesCatalog(playlistId)
+    }
+
     // IPTV Items
     // Büyük listeler @Transaction ile tek, tutarlı bir anlık görüntüden okunur. Liste 2 MB'lık okuma penceresine
     // (CursorWindow) sığmazsa Android sorguyu parça parça yeniden çalıştırır; bu sırada başka bir işlem tabloyu

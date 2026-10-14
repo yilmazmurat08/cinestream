@@ -47,7 +47,20 @@ class IPTVViewModel(
     companion object {
         /** Ücretsiz kullanıcının günlük izleme hakkı (saniye). */
         const val FREE_DAILY_WATCH_SECONDS = 3600L
+        /** Ücretsiz kullanıcı 1 liste ekleyebilir; PRO en fazla 3 liste. Var olan listeler hiçbir zaman kilitlenmez. */
+        const val FREE_PLAYLIST_LIMIT = 1
+        const val PRO_PLAYLIST_LIMIT = 3
+
+        /** Yeni liste eklenebilir mi: [count] mevcut liste sayısı. */
+        fun playlistAddGate(count: Int, isPro: Boolean): PlaylistAddGate = when {
+            count >= PRO_PLAYLIST_LIMIT -> PlaylistAddGate.LIMIT_REACHED
+            count >= FREE_PLAYLIST_LIMIT && !isPro -> PlaylistAddGate.NEEDS_PRO
+            else -> PlaylistAddGate.ALLOWED
+        }
     }
+
+    /** Yeni liste eklenebilir mi? */
+    enum class PlaylistAddGate { ALLOWED, NEEDS_PRO, LIMIT_REACHED }
 
     // Coroutine Exception Handler for robust crash resistance
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
@@ -774,10 +787,88 @@ class IPTVViewModel(
     val playlists: StateFlow<List<Playlist>> = repository.allPlaylistsFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Ekrandaki liste. Aynı anda tek liste görünür; diğerleri kayıpsız kenarda bekler. */
+    val activePlaylist: StateFlow<Playlist?> = repository.activePlaylistFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _isSwitchingPlaylist = MutableStateFlow(false)
+    /** Liste değiştirilirken true (birkaç saniye; ağ gerekmez). */
+    val isSwitchingPlaylist: StateFlow<Boolean> = _isSwitchingPlaylist.asStateFlow()
+
+    /** Yeni liste eklenebilir mi: ücretsizde 1, PRO'da en fazla 3 liste. */
+    fun playlistAddGate(): PlaylistAddGate = playlistAddGate(playlists.value.size, isProUser.value)
+
+    /**
+     * Liste ekleme düğmesi: izin varsa [onAllowed] çağrılır; PRO gerekiyorsa satın alma ekranı nedeniyle açılır;
+     * sınıra ulaşıldıysa kullanıcıya söylenir.
+     */
+    fun requestAddPlaylist(onAllowed: () -> Unit) {
+        when (playlistAddGate()) {
+            PlaylistAddGate.ALLOWED -> onAllowed()
+            PlaylistAddGate.NEEDS_PRO -> openPaywall(
+                com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.paywall_reason_more_playlists)
+            )
+            PlaylistAddGate.LIMIT_REACHED -> ErrorHandlingManager.emitError(
+                AppError.Unknown(
+                    userFriendlyMessage = com.example.util.LocaleHelper.getString(
+                        getApplication(), com.example.R.string.playlist_limit_reached, PRO_PLAYLIST_LIMIT
+                    )
+                )
+            )
+        }
+    }
+
+    /** Yeni liste ekleyen işlemlerde son denetim (düğme dışından gelen çağrılar için). Var olan listeyi yeniden yüklemek serbesttir. */
+    private fun mayAddNewPlaylist(url: String?): Boolean {
+        if (url != null && playlists.value.any { it.url.equals(url.trim(), ignoreCase = true) }) return true
+        if (playlistAddGate() == PlaylistAddGate.ALLOWED) return true
+        requestAddPlaylist {}
+        return false
+    }
+
+    /**
+     * Ekrandaki listeyi değiştirir. Kanallar, filmler, diziler ve favoriler kenardan aynen geri gelir (ağ gerekmez).
+     * Xtream listesinin dizi kataloğu kenarda yoksa arka planda yalnızca katalog indirilir.
+     */
+    fun switchPlaylist(playlistId: Int) {
+        if (activePlaylist.value?.id == playlistId || _isSwitchingPlaylist.value) return
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            _isSwitchingPlaylist.value = true
+            try {
+                val changed = repository.switchToPlaylist(playlistId)
+                if (changed) {
+                    // Eski listeye ait seçimler ve öne çıkan film yeni listede yok.
+                    _selectedCategory.value = null
+                    _activeFolderGroup.value = null
+                    val movies = movieItemsShared.first()
+                    if (movies.isNotEmpty()) loadFeaturedMovie(movies, forceUpdate = true)
+                }
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                Log.e("IPTVViewModel", "switchPlaylist başarısız", e)
+                ErrorHandlingManager.emitThrowable(e)
+            } finally {
+                _isSwitchingPlaylist.value = false
+            }
+            repository.ensureSeriesCatalogForActive(getApplication())
+        }
+    }
+
     private val _realEpgPrograms = MutableStateFlow<Map<String, List<EPGProgram>>>(emptyMap())
     val realEpgPrograms: StateFlow<Map<String, List<EPGProgram>>> = _realEpgPrograms.asStateFlow()
     /** Rehber indirmeleri üst üste binmesin: büyük bir XMLTV aynı anda iki kez belleğe alınmaz. */
     private val epgLoadMutex = kotlinx.coroutines.sync.Mutex()
+
+    /** Bellekteki rehberin hangi otomatik adresten geldiği (liste değişince yeniden indirmek için). */
+    @Volatile private var epgLoadedForAutoUrl: String? = null
+
+    /** Otomatik rehber adresi: ekrandaki listenin adresi; işaretli liste yoksa (eski veri) ilk adresli liste. */
+    private fun autoEpgUrlOf(list: List<Playlist>): String? {
+        val active = list.firstOrNull { it.isActive }
+        return if (active != null) active.epgUrl?.takeIf { it.isNotBlank() }
+        else list.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl
+    }
 
     val manualEpgUrl: StateFlow<String> = settingsRepository.manualEpgUrlFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -792,6 +883,8 @@ class IPTVViewModel(
         // TMDB önbellekleri birikmesin: süresi (30 gün) dolan film bilgileri silinir, oyuncu/yönetmen
         // önbelleği 200 kayıtla sınırlanır. Sadece önbellek silinir; listeler/favoriler/geçmiş etkilenmez.
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            // Eski sürümden gelen işaretsiz veride tek aktif liste kuralı (göç bunu zaten yapar; bu yalnızca güvence).
+            repository.ensureSingleActivePlaylist()
             repository.trimOversizedItemFields()
             repository.trimTmdbCaches(
                 System.currentTimeMillis() - com.example.data.repository.TMDBRepository.CACHE_TTL_MS
@@ -799,15 +892,18 @@ class IPTVViewModel(
         }
         viewModelScope.launch(coroutineExceptionHandler) {
             combine(playlists, settingsRepository.manualEpgUrlFlow) { list, manualUrl ->
-                Pair(manualUrl.trim(), list.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl)
+                Pair(manualUrl.trim(), autoEpgUrlOf(list))
             }.distinctUntilChanged().collect { (manualUrl, autoUrl) ->
                 val lastFetch = settingsRepository.lastEpgFetchTimeFlow.first()
                 val sixHoursMillis = 6 * 60 * 60 * 1000L
                 // Rehber yalnızca bellekte tutuluyor: uygulama yeniden açıldığında (veya liste yenilenip
-                // EPG adresi yeni geldiğinde) bellek boşsa süreye bakmadan indir.
-                if (_realEpgPrograms.value.isNotEmpty() && System.currentTimeMillis() - lastFetch < sixHoursMillis) {
+                // EPG adresi yeni geldiğinde) bellek boşsa süreye bakmadan indir. Başka listeye geçildiyse
+                // (otomatik rehber adresi değiştiyse) eski listenin rehberi kullanılmaz, yenisi indirilir.
+                val sameSource = manualUrl.isNotBlank() || autoUrl == epgLoadedForAutoUrl
+                if (sameSource && _realEpgPrograms.value.isNotEmpty() && System.currentTimeMillis() - lastFetch < sixHoursMillis) {
                     return@collect
                 }
+                epgLoadedForAutoUrl = autoUrl
                 epgLoadMutex.withLock {
                     if (manualUrl.isNotBlank()) {
                         try {
@@ -848,7 +944,7 @@ class IPTVViewModel(
                     onResult?.invoke(true)
                 } catch (e: Exception) {
                     android.util.Log.w("IPTVViewModel", "Manuel EPG indirilemedi veya geçersiz: ${e.message}")
-                    val autoUrl = playlists.value.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl
+                    val autoUrl = autoEpgUrlOf(playlists.value)
                     if (!autoUrl.isNullOrBlank()) {
                         try {
                             _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
@@ -859,7 +955,7 @@ class IPTVViewModel(
                     onResult?.invoke(false)
                 }
             } else {
-                val autoUrl = playlists.value.firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl
+                val autoUrl = autoEpgUrlOf(playlists.value)
                 if (!autoUrl.isNullOrBlank()) {
                     try {
                         _realEpgPrograms.value = RealEpgProvider.getProgramsByChannelId(autoUrl)
@@ -1608,7 +1704,7 @@ class IPTVViewModel(
             if (!epgLoadMutex.tryLock()) return@launch
             try {
                 val manualUrl = settingsRepository.manualEpgUrlFlow.first().trim()
-                val autoUrl = repository.allPlaylistsFlow.first().firstOrNull { !it.epgUrl.isNullOrBlank() }?.epgUrl
+                val autoUrl = autoEpgUrlOf(repository.allPlaylistsFlow.first())
                 for (url in listOfNotNull(manualUrl.takeIf { it.isNotBlank() }, autoUrl?.takeIf { it.isNotBlank() }).distinct()) {
                     val programs = try {
                         RealEpgProvider.fetchProgramsFromUrl(url)
@@ -2127,13 +2223,15 @@ class IPTVViewModel(
                     val xtreamFromM3u = extractXtreamCredsFromUrl(m3uUrl)
                     if (xtreamFromM3u != null) {
                         try {
-                            val count = repository.importXtreamDirectly(
-                                context = getApplication(),
-                                playlistName = "Kişisel M3U8 (Xtream)",
-                                hostRaw = xtreamFromM3u.first,
-                                user = xtreamFromM3u.second,
-                                pass = xtreamFromM3u.third
-                            ) { progress -> _importProgress.value = progress }
+                            val count = repository.addPlaylistAndActivate {
+                                repository.importXtreamDirectly(
+                                    context = getApplication(),
+                                    playlistName = "Kişisel M3U8 (Xtream)",
+                                    hostRaw = xtreamFromM3u.first,
+                                    user = xtreamFromM3u.second,
+                                    pass = xtreamFromM3u.third
+                                ) { progress -> _importProgress.value = progress }
+                            }
                             if (count <= 0) {
                                 errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_xtream_empty))
                             } else {
@@ -2145,8 +2243,10 @@ class IPTVViewModel(
                         }
                     } else {
                         try {
-                            val count = repository.importRemotePlaylist("Kişisel M3U8", m3uUrl) { progress ->
-                                _importProgress.value = progress
+                            val count = repository.addPlaylistAndActivate {
+                                repository.importRemotePlaylist("Kişisel M3U8", m3uUrl) { progress ->
+                                    _importProgress.value = progress
+                                }
                             }
                             if (count <= 0) {
                                 errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_m3u_empty))
@@ -2162,13 +2262,15 @@ class IPTVViewModel(
 
                 if (xcodeHost.isNotBlank() && xcodeUser.isNotBlank() && xcodePass.isNotBlank()) {
                     try {
-                        val count = repository.importXtreamDirectly(
-                            context = getApplication(),
-                            playlistName = "Xcode Listesi",
-                            hostRaw = xcodeHost.trim(),
-                            user = xcodeUser.trim(),
-                            pass = xcodePass.trim()
-                        ) { progress -> _importProgress.value = progress }
+                        val count = repository.addPlaylistAndActivate {
+                            repository.importXtreamDirectly(
+                                context = getApplication(),
+                                playlistName = "Xcode Listesi",
+                                hostRaw = xcodeHost.trim(),
+                                user = xcodeUser.trim(),
+                                pass = xcodePass.trim()
+                            ) { progress -> _importProgress.value = progress }
+                        }
                         if (count <= 0) {
                             errors.add(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.setup_error_xtream_empty))
                         } else {
@@ -2733,37 +2835,46 @@ class IPTVViewModel(
 
     // M3U Loading Action
     fun loadM3UPlaylist(name: String, content: String) {
+        if (!mayAddNewPlaylist(null)) return
         viewModelScope.launch(coroutineExceptionHandler) {
             _isLoading.value = true
-            val playlistId = repository.insertPlaylist(
-                Playlist(name = name, url = "m3u_text_input")
-            ).toInt()
-            repository.parseAndSaveM3U(playlistId, content)
-            _isLoading.value = false
+            try {
+                repository.addPlaylistAndActivate {
+                    val playlistId = repository.insertPlaylist(
+                        Playlist(name = name, url = "m3u_text_input")
+                    ).toInt()
+                    repository.parseAndSaveM3U(playlistId, content)
+                }
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
     // Remote M3U/M3U8 URL Loading Action
     fun loadM3UPlaylistFromUrl(name: String, urlString: String) {
+        if (!mayAddNewPlaylist(urlString)) return
         viewModelScope.launch(coroutineExceptionHandler) {
             _isLoading.value = true
             try {
                 val xtreamFromM3u = extractXtreamCredsFromUrl(urlString)
                 if (xtreamFromM3u != null) {
-                    val count = repository.importXtreamDirectly(
-                        context = getApplication(),
-                        playlistName = name,
-                        hostRaw = xtreamFromM3u.first,
-                        user = xtreamFromM3u.second,
-                        pass = xtreamFromM3u.third
-                    )
+                    val count = repository.addPlaylistAndActivate {
+                        repository.importXtreamDirectly(
+                            context = getApplication(),
+                            playlistName = name,
+                            hostRaw = xtreamFromM3u.first,
+                            user = xtreamFromM3u.second,
+                            pass = xtreamFromM3u.third
+                        )
+                    }
                     if (count <= 0) {
                         ErrorHandlingManager.emitError(
                             AppError.Unknown(userFriendlyMessage = com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.playlist_error_xtream_empty, name))
                         )
                     }
                 } else {
-                    val count = repository.importRemotePlaylist(name, urlString)
+                    val count = repository.addPlaylistAndActivate { repository.importRemotePlaylist(name, urlString) }
                     if (count <= 0) {
                         ErrorHandlingManager.emitError(
                             AppError.Unknown(userFriendlyMessage = com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.playlist_error_m3u_empty, name))
@@ -2781,17 +2892,24 @@ class IPTVViewModel(
     }
 
     fun loadXtreamPlaylist(name: String, serverUrl: String, username: String, password: String) {
+        val hostKey = serverUrl.trim().substringAfter("://").trimEnd('/')
+        val sameAccount = playlists.value.firstOrNull {
+            it.isXtream && it.xtreamUsername == username.trim() && hostKey.isNotEmpty() && it.url.contains(hostKey, ignoreCase = true)
+        }
+        if (!mayAddNewPlaylist(sameAccount?.url)) return
         viewModelScope.launch(coroutineExceptionHandler) {
             _isLoading.value = true
             try {
                 try {
-                    val count = repository.importXtreamDirectly(
-                        context = getApplication(),
-                        playlistName = name,
-                        hostRaw = serverUrl.trim(),
-                        user = username.trim(),
-                        pass = password.trim()
-                    )
+                    val count = repository.addPlaylistAndActivate {
+                        repository.importXtreamDirectly(
+                            context = getApplication(),
+                            playlistName = name,
+                            hostRaw = serverUrl.trim(),
+                            user = username.trim(),
+                            pass = password.trim()
+                        )
+                    }
                     if (count <= 0) {
                         ErrorHandlingManager.emitError(
                             AppError.Unknown(userFriendlyMessage = com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.playlist_error_xtream_empty, name))

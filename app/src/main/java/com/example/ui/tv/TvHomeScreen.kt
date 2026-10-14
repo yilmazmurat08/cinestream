@@ -18,10 +18,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.Bookmark
@@ -108,10 +110,17 @@ fun TvHomeScreen(
     val isProUser by viewModel.isProUser.collectAsState()
     val continueWatching by viewModel.continueWatching.collectAsState()
     val lastWatched = continueWatching.firstOrNull()
+    val playlists by viewModel.playlists.collectAsState()
+    val activePlaylist by viewModel.activePlaylist.collectAsState()
+    val isSwitchingPlaylist by viewModel.isSwitchingPlaylist.collectAsState()
+    var showPlaylistSwitcher by remember { mutableStateOf(false) }
+    val shownPlaylist = activePlaylist ?: playlists.firstOrNull()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val cardFocus = remember { TvSection.cards.associateWith { FocusRequester() } }
     val askFocus = remember { FocusRequester() }
     val proFocus = remember { FocusRequester() }
+    val playlistFocus = remember { FocusRequester() }
     val starFocus = remember { FocusRequester() }
     val searchFocus = remember { FocusRequester() }
     val continueFocus = remember { FocusRequester() }
@@ -175,6 +184,30 @@ fun TvHomeScreen(
             )
             Spacer(Modifier.weight(1f))
             val topDown = Modifier.focusProperties { down = askFocus }
+            if (shownPlaylist != null) {
+                TvGlassButton(
+                    onClick = { showPlaylistSwitcher = true },
+                    shape = TvTheme.PillShape,
+                    focusRequester = playlistFocus,
+                    onFocused = { onFocus(TvSection.TOP_BAR) },
+                    modifier = topDown.height(44.dp).widthIn(max = 320.dp).testTag("tv_top_playlist")
+                ) { f ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 18.dp)) {
+                        Icon(Icons.Filled.PlaylistPlay, stringResource(R.string.playlist_switcher_desc),
+                            tint = if (f) TvTheme.FocusGlow else TvTheme.TextPrimary, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = if (isSwitchingPlaylist) stringResource(R.string.playlist_switching) else shownPlaylist.name,
+                            color = TvTheme.TextPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Spacer(Modifier.width(14.dp))
+            }
             TvGlassButton(
                 onClick = { viewModel.openPaywall() },
                 shape = TvTheme.PillShape,
@@ -253,6 +286,28 @@ fun TvHomeScreen(
                 )
             }
         }
+    }
+
+    if (showPlaylistSwitcher) {
+        TvPlaylistSwitcherDialog(
+            playlists = playlists,
+            activeId = shownPlaylist?.id,
+            addNeedsPro = !isProUser && playlists.size >= IPTVViewModel.FREE_PLAYLIST_LIMIT &&
+                playlists.size < IPTVViewModel.PRO_PLAYLIST_LIMIT,
+            onSelect = { playlist ->
+                showPlaylistSwitcher = false
+                if (playlist.id != activePlaylist?.id) {
+                    viewModel.switchPlaylist(playlist.id)
+                    android.widget.Toast.makeText(context, context.getString(R.string.playlist_switched_toast, playlist.name), android.widget.Toast.LENGTH_SHORT).show()
+                }
+            },
+            onAdd = {
+                showPlaylistSwitcher = false
+                // Ekleme TV ayarlarındaki Listeler bölümünde yapılır (telefonla gir dahil).
+                viewModel.requestAddPlaylist { onOpenSection(TvSection.SETTINGS) }
+            },
+            onDismiss = { showPlaylistSwitcher = false }
+        )
     }
 }
 

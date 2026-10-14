@@ -109,6 +109,9 @@ class IPTVRepository(
     }
 
     val allPlaylistsFlow: Flow<List<Playlist>> = iptvDao.getAllPlaylistsFlow().guardedRead("playlists")
+
+    /** Ekranda gösterilen liste (aynı anda tek liste aktiftir). */
+    val activePlaylistFlow: Flow<Playlist?> = iptvDao.getActivePlaylistFlow().guardedRead("active playlist")
     val allItemsFlow: Flow<List<IPTVItem>> = iptvDao.getAllItemsFlow().guardedRead("all items")
     val favoriteItemsFlow: Flow<List<IPTVItem>> = iptvDao.getFavoriteItemsFlow().guardedRead("favorites")
     val continueWatchingFlow: Flow<List<ContinueWatching>> = iptvDao.getContinueWatchingFlow().guardedRead("continue watching")
@@ -284,7 +287,8 @@ class IPTVRepository(
     }
 
     suspend fun fetchFromNetwork(): List<IPTVItem> = withContext(Dispatchers.IO) {
-        val userPlaylists = iptvDao.getAllPlaylists()
+        // Yalnızca ekrandaki liste yenilenir; diğer listeler kullanıcı onlara geçince yenilenir.
+        val userPlaylists = listOfNotNull(playlistToRefresh())
         if (userPlaylists.isNotEmpty()) {
             var firstException: Exception? = null
             for (playlist in userPlaylists) {
@@ -371,6 +375,7 @@ class IPTVRepository(
         if (existing != null && (!existing.isXtream || existing.xtreamUsername != user || existing.epgUrl != xtreamEpgUrl)) {
             iptvDao.updatePlaylist(existing.copy(isXtream = true, xtreamUsername = user, xtreamPassword = pass, epgUrl = xtreamEpgUrl))
         }
+        makeActiveForWrite(playlistId)
 
         val credCarrier = IPTVItem(
             id = 0, playlistId = playlistId, name = "", cleanedName = "",
@@ -516,11 +521,127 @@ class IPTVRepository(
     }
 
     suspend fun insertPlaylist(playlist: Playlist): Long = iptvDao.insertPlaylist(playlist)
+
+    /**
+     * Listeyi siler. Ekrandaki liste silinirse en son yüklenen diğer liste kaldığı yerden (favorileriyle) açılır;
+     * kenardaki bir liste silinirse ekrandaki liste hiç etkilenmez.
+     */
     suspend fun deletePlaylist(playlistId: Int) {
-        iptvDao.deleteItemsByPlaylist(playlistId)
+        val active = iptvDao.getActivePlaylist()
         iptvDao.clearStagingItems(playlistId)
-        iptvDao.deletePlaylist(playlistId)
-        dropSeriesCatalogIfNoXtreamSource()
+        iptvDao.deleteParkedPlaylistData(playlistId)
+        if (active == null || active.id == playlistId) {
+            iptvDao.deleteItemsByPlaylist(playlistId)
+            iptvDao.deletePlaylist(playlistId)
+            if (active != null) {
+                // Dizi kataloğu silinen (aktif) listeye aitti.
+                iptvDao.clearXtreamSeriesCatalog()
+                iptvDao.getAllPlaylists().firstOrNull()?.let { next -> iptvDao.switchActivePlaylist(null, next.id) }
+            }
+            dropSeriesCatalogIfNoXtreamSource()
+        } else {
+            iptvDao.deletePlaylist(playlistId)
+        }
+    }
+
+    // --- Çoklu liste ---
+
+    /** Ekrandaki liste; işaretli liste yoksa (eski sürümden gelen veri) en son yüklenen liste. */
+    suspend fun playlistToRefresh(): Playlist? = iptvDao.getActivePlaylist() ?: iptvDao.getAllPlaylists().firstOrNull()
+
+    /**
+     * Bir listeye öğe yazılmadan önce çağrılır: başka bir liste ekrandaysa kenara alınır, bu listenin kenardaki
+     * verisi (varsa) geri gelir ve liste aktif olur. Böylece iki listenin öğeleri hiçbir zaman karışmaz.
+     */
+    private suspend fun makeActiveForWrite(playlistId: Int) {
+        val active = iptvDao.getActivePlaylist()
+        if (active?.id == playlistId) return
+        iptvDao.switchActivePlaylist(active?.id, playlistId)
+    }
+
+    /**
+     * Aktif listeyi değiştirir (tek dokunuşla geçiş). Ağ gerekmez: kenardaki öğeler aynen geri gelir.
+     * @return liste değiştiyse true.
+     */
+    suspend fun switchToPlaylist(playlistId: Int): Boolean = withContext(Dispatchers.IO) {
+        val active = iptvDao.getActivePlaylist()
+        if (active?.id == playlistId) return@withContext false
+        if (iptvDao.getPlaylistById(playlistId) == null) return@withContext false
+        iptvDao.switchActivePlaylist(active?.id, playlistId)
+        true
+    }
+
+    /**
+     * Eski sürümden gelen ya da işaretsiz kalmış veride tek aktif liste kuralını sağlar: aktif liste yoksa en son
+     * yüklenen liste aktif olur, diğer listelerin öğeleri kenara alınır (silinmez).
+     */
+    suspend fun ensureSingleActivePlaylist() = withContext(Dispatchers.IO) {
+        if (iptvDao.getActivePlaylist() != null) return@withContext
+        val all = iptvDao.getAllPlaylists() // en son yüklenen başta
+        if (all.isEmpty()) return@withContext
+        // Ekranda kanalı olan listeler; kanalı olmayan liste için taşınacak bir şey yoktur.
+        val withItems = all.filter { iptvDao.getItemsCountForPlaylist(it.id) > 0 }
+        val active = withItems.firstOrNull() ?: all.first()
+        iptvDao.normalizeActivePlaylist(active.id, withItems.filter { it.id != active.id }.map { it.id })
+    }
+
+    /**
+     * Yeni liste ekler ve ekrana getirir. Ekleme başarısız olursa (hata ya da boş liste) yarım kalan yeni liste
+     * silinir ve önceki liste olduğu gibi geri gelir.
+     */
+    suspend fun addPlaylistAndActivate(import: suspend () -> Int): Int = withContext(Dispatchers.IO) {
+        val previous = iptvDao.getActivePlaylist()
+        val before = iptvDao.getAllPlaylists().map { it.id }.toSet()
+        val count = try {
+            import()
+        } catch (e: Exception) {
+            withContext(kotlinx.coroutines.NonCancellable) { restoreAfterFailedAdd(previous, before) }
+            throw e
+        }
+        if (count <= 0) restoreAfterFailedAdd(previous, before)
+        count
+    }
+
+    private suspend fun restoreAfterFailedAdd(previous: Playlist?, before: Set<Int>) {
+        try {
+            iptvDao.getAllPlaylists().filter { it.id !in before }.forEach { failed ->
+                val activeNow = iptvDao.getActivePlaylist()
+                iptvDao.clearStagingItems(failed.id)
+                iptvDao.deleteParkedPlaylistData(failed.id)
+                iptvDao.deleteItemsByPlaylist(failed.id)
+                if (activeNow?.id == failed.id) iptvDao.clearXtreamSeriesCatalog()
+                iptvDao.deletePlaylist(failed.id)
+            }
+            if (previous != null && iptvDao.getPlaylistById(previous.id) != null) {
+                val activeNow = iptvDao.getActivePlaylist()
+                if (activeNow?.id != previous.id) iptvDao.switchActivePlaylist(activeNow?.id, previous.id)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "restoreAfterFailedAdd: ${e.message}")
+        }
+    }
+
+    /**
+     * Xtream listesine geçildiğinde dizi kataloğu kenarda yoksa (ör. eski sürümden gelen liste) yalnızca katalog
+     * indirilir; kanallar ve filmler yeniden indirilmez.
+     */
+    suspend fun ensureSeriesCatalogForActive(context: android.content.Context) = withContext(Dispatchers.IO) {
+        try {
+            val active = iptvDao.getActivePlaylist() ?: return@withContext
+            if (iptvDao.seriesCatalogCount() > 0) return@withContext
+            val (host, user, pass) = xtreamCredentialsOf(active) ?: return@withContext
+            val credCarrier = IPTVItem(
+                id = 0, playlistId = active.id, name = "", cleanedName = "",
+                logoUrl = null, category = "",
+                streamUrl = "$host/movie/$user/$pass/1", type = "MOVIE"
+            )
+            val catalog = com.example.data.api.MetadataEnricher.fetchFullXtreamSeriesCatalog(context, credCarrier)
+            // İndirme sürerken kullanıcı başka listeye geçtiyse katalog o listeye yazılmaz.
+            if (catalog.isNotEmpty() && iptvDao.getActivePlaylist()?.id == active.id) iptvDao.replaceXtreamSeriesCatalog(catalog)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Log.w(TAG, "ensureSeriesCatalogForActive: ${e.message}")
+        }
     }
 
     /**
@@ -545,6 +666,12 @@ class IPTVRepository(
             iptvDao.deleteAllPlaylists()
         } catch (e: Exception) {
             Log.e(TAG, "clearPlaylists: deleteAllPlaylists başarısız oldu", e)
+        }
+        try {
+            iptvDao.deleteAllParkedItems()
+            iptvDao.deleteAllParkedSeriesCatalogs()
+        } catch (e: Exception) {
+            Log.e(TAG, "clearPlaylists: kenardaki listeler silinemedi", e)
         }
         try {
             iptvDao.deleteAllIPTVItems()
@@ -732,6 +859,7 @@ class IPTVRepository(
         reader: BufferedReader,
         onProgress: (Map<String, Int>) -> Unit = {}
     ): Int = withContext(Dispatchers.IO) {
+        makeActiveForWrite(playlistId)
         iptvDao.clearStagingItems(playlistId)
 
         val otherPlaylistIds = iptvDao.getExistingItemIdsExcludingPlaylist(playlistId).toHashSet()

@@ -678,4 +678,17 @@
     <string name="category_locks_pin_subtitle">Enter your PIN to change locked categories.</string>
     <string name="player_buffering">Loading…</string>
     <string name="player_buffering_slow">Connection is slow, waiting for the stream…</string>
+
+    <!-- Çoklu liste -->
+    <string name="paywall_reason_more_playlists">The free version lets you add 1 playlist. With PRO, add up to 3 playlists and switch between them with one tap.</string>
+    <string name="playlist_limit_reached">You can add up to %1$d playlists. Delete one to add a new playlist.</string>
+    <string name="pro_point_playlists">Add up to 3 playlists and switch between them with one tap</string>
+    <string name="playlist_switcher_title">My playlists</string>
+    <string name="playlist_switcher_desc">Switch playlist</string>
+    <string name="playlist_switcher_active">Open</string>
+    <string name="playlist_switcher_add">Add playlist</string>
+    <string name="playlist_switcher_pro">PRO</string>
+    <string name="playlist_switcher_hint">Switching is instant; your favourites are kept separately for each playlist.</string>
+    <string name="playlist_switching">Opening playlist…</string>
+    <string name="playlist_switched_toast">%1$s opened</string>
 </resources>
