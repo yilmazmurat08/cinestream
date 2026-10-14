@@ -40,12 +40,20 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
 2. **PRO'da 7 günlük ücretsiz deneme.** Deneme Play Console'da abonelik teklifi olarak tanımlanır.
 3. **TV'de yayın akışı tablosu:** kanallar satır, saatler sütun. Herkese açık.
 4. **Hızlı kanal değiştirme:** numarayla kanal açma ve önceki kanala dönme. Herkese açık.
-5. **İlk PRO turu:** Bugün PRO yalnızca günlük 60 dakikalık sınırı kaldırıyor; bu zayıf. Ücretsiz özellikler PRO'ya taşınmaz. Eklenecek PRO özellikleri:
+5. **PRO 1. güncelleme** (kullanıcı kararı, 14 Ekim 2026). Bugün PRO yalnızca günlük 60 dakikalık sınırı kaldırıyor; bu zayıf. Ücretsiz özellikler PRO'ya taşınmaz.
+   - **Çoklu liste:** 1 liste ücretsiz, 2. ve 3. liste PRO. Listeler arasında tek dokunuşla geçilir; seçici ana ekranın üstünde ve TV'de durur. Veritabanında `playlists` tablosu zaten var. Mevcut kullanıcının tek listesi aynen kalır. Kullanıcı bunu test bitmeden yapmak da isteyebilir.
    - **Catch-up:** kaçırılan yayını izleme. Xtream `tv_archive` alanı kullanılır; yalnızca arşivi olan kanallarda görünür.
    - **Kesintisiz izleme:** Yayın donunca aynı kanalın yedek sürümüne (HD/FHD/yedek) otomatik geçilir.
+   - **Otomatik sonraki bölüm:** 10 saniyelik sayaçla. **Ücretsiz.**
+6. **PRO 2. güncelleme:**
    - **TV'de canlı kanal önizleme:** Listede gezerken seçili kanal küçük pencerede oynar.
    - **Kendi kanal grupları:** grup oluşturma, kanalları sıralama, kategorileri gizleme.
-   - Paywall metni bu özelliklere göre yeniden yazılır.
+   - **Jenerik atlama:** Dizide giriş bir kez işaretlenir, sonraki bölümlerde "Jeneriği geç" düğmesi çıkar.
+   - Paywall metni PRO özelliklerine göre yeniden yazılır.
+
+Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarılabilir):
+- Kaldığın yerden devam et.
+- Otomatik liste güncelleme.
 
 Sonraya kalanlar:
 - Canlı yayını durdurma ve geri sarma.
