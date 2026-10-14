@@ -68,11 +68,8 @@ import com.example.data.model.IPTVItem
 import com.example.data.model.SeriesParser
 import com.example.data.model.toBrowsableItem
 import com.example.ui.IPTVViewModel
-import com.example.ui.components.PlaylistAddDialog
 import com.example.ui.components.CategoryAdaptiveIcon
 import com.example.ui.theme.*
-import com.example.ui.components.PlaylistSwitcherChip
-import com.example.ui.components.PlaylistSwitcherSheet
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateFloat
@@ -127,11 +124,6 @@ fun HomeScreen(
     val continueWatching by viewModel.continueWatching.collectAsState()
     val isProUser by viewModel.isProUser.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val playlists by viewModel.playlists.collectAsState()
-    val activePlaylist by viewModel.activePlaylist.collectAsState()
-    val isSwitchingPlaylist by viewModel.isSwitchingPlaylist.collectAsState()
-    var showPlaylistSwitcher by remember { mutableStateOf(false) }
-    var showAddPlaylistFromSwitcher by remember { mutableStateOf(false) }
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val nlpSearchResults by viewModel.nlpSearchResults.collectAsState()
@@ -181,7 +173,6 @@ fun HomeScreen(
         nextEpisodes = result
     }
 
-    var showPlaylistDialog by remember { mutableStateOf(false) }
     var isSearchPopupOpen by remember { mutableStateOf(false) }
     var isVoiceOverlayOpen by remember { mutableStateOf(false) }
     val selectedTypeFilter by viewModel.selectedTypeFilter.collectAsState()
@@ -271,10 +262,7 @@ fun HomeScreen(
                 onProClick = { viewModel.openPaywall() },
                 onSearchClick = { isSearchPopupOpen = true },
                 onChatClick = onNavigateToChat,
-                onCalendarClick = onNavigateToSeriesCalendar,
-                activePlaylistName = (activePlaylist ?: playlists.firstOrNull())?.name,
-                isSwitchingPlaylist = isSwitchingPlaylist,
-                onPlaylistClick = { showPlaylistSwitcher = true }
+                onCalendarClick = onNavigateToSeriesCalendar
             )
         },
         bottomBar = {
@@ -1560,56 +1548,6 @@ fun HomeScreen(
                 // Bottom padding for edge-to-edge comfort (Requirement 2: Universal Responsive UI)
                 Spacer(modifier = Modifier.height(88.dp))
             }
-
-        // Listelerim: listeler arasında tek dokunuşla geçiş
-        if (showPlaylistSwitcher) {
-            PlaylistSwitcherSheet(
-                playlists = playlists,
-                activeId = (activePlaylist ?: playlists.firstOrNull())?.id,
-                addNeedsPro = viewModel.playlistAddGate() == IPTVViewModel.PlaylistAddGate.NEEDS_PRO,
-                onSelect = { playlist ->
-                    showPlaylistSwitcher = false
-                    if (playlist.id != activePlaylist?.id) {
-                        viewModel.switchPlaylist(playlist.id)
-                        android.widget.Toast.makeText(context, context.getString(R.string.playlist_switched_toast, playlist.name), android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onAdd = {
-                    showPlaylistSwitcher = false
-                    viewModel.requestAddPlaylist { showAddPlaylistFromSwitcher = true }
-                },
-                onDismiss = { showPlaylistSwitcher = false }
-            )
-        }
-        if (showAddPlaylistFromSwitcher) {
-            AddPlaylistDialog(
-                onDismiss = { showAddPlaylistFromSwitcher = false },
-                onAddM3U = { name, url ->
-                    showAddPlaylistFromSwitcher = false
-                    viewModel.loadM3UPlaylistFromUrl(name, url)
-                },
-                onAddXtream = { name, serverUrl, username, password ->
-                    showAddPlaylistFromSwitcher = false
-                    viewModel.loadXtreamPlaylist(name, serverUrl, username, password)
-                }
-            )
-        }
-
-        // Playlist add popup dialog
-        if (showPlaylistDialog) {
-            PlaylistAddDialog(
-                onDismiss = { showPlaylistDialog = false },
-                onM3UAdded = { name, content ->
-                    viewModel.loadM3UPlaylist(name, content)
-                },
-                onM3UUrlAdded = { name, url ->
-                    viewModel.loadM3UPlaylistFromUrl(name, url)
-                }
-            )
-        }
-
-
-
 
         // Search Popup Dialog
         val isAILoading by viewModel.isAILoading.collectAsState()
@@ -2938,10 +2876,6 @@ fun CineStreamTopBar(
     onSearchClick: () -> Unit,
     onChatClick: () -> Unit = {},
     onCalendarClick: () -> Unit = {},
-    /** Ekrandaki listenin adı; liste yoksa seçici gösterilmez. */
-    activePlaylistName: String? = null,
-    isSwitchingPlaylist: Boolean = false,
-    onPlaylistClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
@@ -3071,26 +3005,6 @@ fun CineStreamTopBar(
                             contentDescription = "Arama",
                             tint = Color.White,
                             modifier = Modifier.size(15.dp)
-                        )
-                    }
-                }
-            }
-            if (activePlaylistName != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = layout.horizontalContentPadding, end = layout.horizontalContentPadding, bottom = 6.dp)
-                ) {
-                    PlaylistSwitcherChip(activeName = activePlaylistName, onClick = onPlaylistClick)
-                    if (isSwitchingPlaylist) {
-                        Spacer(modifier = Modifier.width(10.dp))
-                        CircularProgressIndicator(color = CineOrange, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.playlist_switching),
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 12.sp
                         )
                     }
                 }

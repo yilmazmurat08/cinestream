@@ -24,11 +24,8 @@
     <!-- Additional required string keys for full localization -->
     <string name="playlists_title">Oynatma Listeleri</string>
     <string name="import_playlist">Oynatma Listesi İçe Aktar</string>
-    <string name="edit_playlist">Listeyi Düzenle</string>
     <string name="edit_m3u_playlist">M3U Listesini Düzenle</string>
     <string name="edit_xtream_playlist">Xtream Listesini Düzenle</string>
-    <string name="refresh_playlist">Listeyi Yenile</string>
-    <string name="delete_playlist">Listeyi Sil</string>
     <string name="m3u_link">M3U Link</string>
     <string name="xtream_codes">Xtream Codes</string>
     <string name="server_url">Server URL</string>
@@ -371,13 +368,6 @@
     <string name="series_season_episode">%1$d. Sezon • %2$d. Bölüm</string>
     <string name="series_recap_unavailable">Önceki bölümlerin spoiler-suz özeti şu anda hazırlanamıyor.</string>
     <string name="series_recap_before">%1$s - S%2$sE%3$s Öncesi</string>
-    <string name="playlist_add_title">İçerik Ekle</string>
-    <string name="playlist_add_name">Oynatma Listesi Adı</string>
-    <string name="playlist_add_m3u_content">M3U Çalma Listesi İçeriği</string>
-    <string name="playlist_add_user">Kullanıcı</string>
-    <string name="playlist_add_password">Şifre</string>
-    <string name="playlist_add_cancel">Vazgeç</string>
-    <string name="playlist_add_load">Yükle</string>
     <string name="login_type_live">📡 Canlı Yayın</string>
     <string name="login_type_movie">🎬 Filmler</string>
     <string name="login_type_series">📺 Diziler</string>
@@ -469,14 +459,10 @@
     <string name="settings_pin_protection_desc">Yetişkin veya kilitli içeriklere erişimde 4 haneli PIN ister.</string>
     <string name="settings_pin_code">4 Haneli PIN Kodu</string>
     <string name="settings_pin_code_desc">Kilitli içerikleri açmak için kullanılacak kod.</string>
-    <string name="settings_no_playlists">Henüz eklenmiş bir liste yok. Aşağıdaki butonla M3U veya Xtream girişini ekleyebilirsin.</string>
     <string name="settings_edit">Düzenle</string>
     <string name="settings_edit_profile">Profil Bilgilerini Düzenle</string>
     <string name="settings_select_desc">Seç</string>
     <string name="settings_close_desc">Kapat</string>
-    <string name="settings_add_desc">Ekle</string>
-    <string name="settings_selected_desc">Seçili</string>
-    <string name="settings_menu_desc">Menü</string>
     <string name="settings_profile_photo_desc">Profil Fotoğrafı</string>
     <string name="settings_default_profile_desc">Varsayılan Profil</string>
     <string name="settings_edit_desc">Düzenle</string>
@@ -682,12 +668,19 @@
     <string name="paywall_reason_more_playlists">Ücretsiz sürümde 1 liste ekleyebilirsin. PRO ile 3 listeye kadar ekle ve aralarında tek dokunuşla geç.</string>
     <string name="playlist_limit_reached">En fazla %1$d liste ekleyebilirsin. Yeni liste için önce bir listeyi sil.</string>
     <string name="pro_point_playlists">3 listeye kadar ekle, aralarında tek dokunuşla geç</string>
-    <string name="playlist_switcher_title">Listelerim</string>
-    <string name="playlist_switcher_desc">Liste değiştir</string>
-    <string name="playlist_switcher_active">Açık</string>
-    <string name="playlist_switcher_add">Liste ekle</string>
-    <string name="playlist_switcher_pro">PRO</string>
-    <string name="playlist_switcher_hint">Listeler arasında geçiş anında olur; favorilerin her listede ayrı korunur.</string>
-    <string name="playlist_switching">Liste açılıyor…</string>
     <string name="playlist_switched_toast">%1$s açıldı</string>
+    <string name="playlist_manager_title">Liste Yönetimi</string>
+    <string name="playlist_manager_subtitle_free">1. liste ücretsiz. 2. ve 3. liste PRO ile açılır.</string>
+    <string name="playlist_manager_subtitle_pro">PRO: 3 listeye kadar ekleyebilirsin.</string>
+    <string name="playlist_manager_hint">Açık liste ekranda görünür; diğerleri kayıpsız bekler. Favoriler her listede ayrı tutulur.</string>
+    <string name="playlist_slot_label">%1$d. liste</string>
+    <string name="playlist_slot_active">Açık</string>
+    <string name="playlist_slot_open">Aç</string>
+    <string name="playlist_slot_refresh">Yenile</string>
+    <string name="playlist_slot_edit">Düzenle</string>
+    <string name="playlist_slot_delete">Sil</string>
+    <string name="playlist_slot_empty">Liste ekle</string>
+    <string name="playlist_slot_locked">PRO ile aç</string>
+    <string name="playlist_delete_confirm_title">Liste silinsin mi?</string>
+    <string name="playlist_delete_confirm_message">\"%1$s\" listesi ve bu listedeki favoriler bu cihazdan silinir.</string>
 </resources>
