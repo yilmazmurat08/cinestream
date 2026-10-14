@@ -7,7 +7,8 @@ Mağaza adı: **CineStream IPTV Player**. Paket adı: `com.cinestream.iptv`.
 
 - Kodlamaya yeni başlıyor. Her zaman **Türkçe**, kısa ve sade yaz.
 - Kararları kullanıcı verir. Önerini nedeniyle birlikte söyle.
-- Test cihazı (TV): **Xiaomi Mi TV Stick** (Full HD, Android TV 9 / API 28, **1 GB RAM**), onvo televizyonda. Düşük bellek ve büyük kanal listeleri ayrıca test edilmeli. Telefon modeli henüz bilinmiyor.
+- Test cihazı (TV): **Xiaomi Mi TV Stick** (Full HD, Android TV 9 / API 28, **1 GB RAM**), onvo televizyonda. Düşük bellek ve büyük kanal listeleri ayrıca test edilmeli.
+- Test cihazı (telefon): **realme C55** (realme UI, Android 13/14, 6,72" 1080×2400, ekranda kamera deliği). realme UI arka plandaki uygulamaları sıkı kapatır: arka planda oynatma, resim içinde resim ve otomatik liste güncelleme ayrıca test edilmeli.
 
 ## Kurallar (kullanıcının kendi kuralları)
 
