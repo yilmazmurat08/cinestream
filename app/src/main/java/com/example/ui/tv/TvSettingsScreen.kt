@@ -69,7 +69,6 @@ import com.example.ui.screens.CineStreamProUpgradeCard
 import com.example.ui.screens.DataAndMemoryCard
 import com.example.ui.screens.EditProfileDialog
 import com.example.ui.screens.GeminiApiKeyCard
-import com.example.ui.screens.IPTVPlaylistsCard
 import com.example.ui.screens.LanguageSettingsCard
 import com.example.ui.screens.ManualEpgCard
 import com.example.ui.screens.PlayerSettingsCard
@@ -244,31 +243,7 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
                 when (shown) {
                     TvSetting.PROFILE, TvSetting.PRO -> CineStreamProUpgradeCard(isProUser = isProUser, onOpenPaywall = { viewModel.openPaywall() })
-                    TvSetting.PLAYLISTS -> IPTVPlaylistsCard(
-                        playlists = playlists,
-                        isLoading = isLoading,
-                        onAddM3UPlaylist = { name, url ->
-                            viewModel.loadM3UPlaylistFromUrl(name, url)
-                            Toast.makeText(context, context.getString(R.string.settings_toast_adding_playlist), Toast.LENGTH_SHORT).show()
-                        },
-                        onAddXtreamPlaylist = { name, serverUrl, username, password ->
-                            viewModel.loadXtreamPlaylist(name, serverUrl, username, password)
-                            Toast.makeText(context, context.getString(R.string.settings_toast_adding_xtream), Toast.LENGTH_SHORT).show()
-                        },
-                        onDeletePlaylist = { id ->
-                            viewModel.deletePlaylist(id)
-                            Toast.makeText(context, context.getString(R.string.settings_toast_deleted), Toast.LENGTH_SHORT).show()
-                        },
-                        onRefreshPlaylist = { playlist ->
-                            viewModel.refreshSinglePlaylist(playlist) {
-                                Toast.makeText(context, context.getString(R.string.settings_toast_refreshed), Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onEditPlaylist = { playlist, newName, newUrl, isXtream, username, password ->
-                            viewModel.updatePlaylistDetails(playlist, newName, newUrl, isXtream, username, password)
-                            Toast.makeText(context, context.getString(R.string.settings_toast_updated), Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    TvSetting.PLAYLISTS -> com.example.ui.screens.PlaylistManagerModule(viewModel = viewModel)
                     TvSetting.EPG -> ManualEpgCard(
                         currentEpgUrl = manualEpgUrl,
                         onSaveEpgUrl = { url ->

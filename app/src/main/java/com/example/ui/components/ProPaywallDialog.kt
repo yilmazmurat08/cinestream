@@ -298,6 +298,7 @@ internal fun PaywallContent(
                 ) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         ProFeatureRow(stringResource(R.string.pro_point_unlimited))
+                        ProFeatureRow(stringResource(R.string.pro_point_playlists))
                         ProFeatureRow(stringResource(R.string.pro_point_devices))
                         ProFeatureRow(stringResource(R.string.pro_point_account))
                     }

@@ -12,6 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.ContinueWatching
 import com.example.data.model.IPTVItem
 import com.example.data.model.IPTVItemStaging
+import com.example.data.model.IPTVItemParked
+import com.example.data.model.XtreamSeriesCatalogParked
 import com.example.data.model.PersonDetailsEntity
 import com.example.data.model.Playlist
 import com.example.data.model.SearchHistory
@@ -31,7 +33,9 @@ import com.example.data.model.tmdb.TmdbCacheEntity
         AiRecommendationHistory::class,
         TmdbCacheEntity::class,
         SeriesCoverEntity::class,
-        XtreamSeriesCatalogEntity::class
+        XtreamSeriesCatalogEntity::class,
+        IPTVItemParked::class,
+        XtreamSeriesCatalogParked::class
     ],
     version = AppDatabase.DATABASE_VERSION,
     exportSchema = true
@@ -45,7 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
         private const val DB_NAME = "cinestream_database"
 
         /**
-         * Yayındaki ilk şema sürümü. Şema dosyası app/schemas/ altında dışa aktarılır.
+         * Güncel şema sürümü (yayındaki ilk sürüm 10). Şema dosyaları app/schemas/ altında dışa aktarılır.
          *
          * KURAL: Bundan sonraki her şema değişikliğinde DATABASE_VERSION bir artırılır ve
          * [MIGRATIONS] listesine bir Migration eklenir. Yıkıcı geçiş (tabloları silip yeniden
@@ -53,13 +57,53 @@ abstract class AppDatabase : RoomDatabase() {
          * sonrasında migration bulunamazsa Room hata verir, kullanıcının listeleri, favorileri ve
          * izleme geçmişi sessizce silinmez. AppDatabaseMigrationTest bu kuralı denetler.
          */
-        const val DATABASE_VERSION = 10
+        const val DATABASE_VERSION = 11
 
         /** Yayın öncesi geliştirme sürümleri; bu sürümlerdeki veritabanları yeniden oluşturulur. */
         internal val DEV_ONLY_VERSIONS: IntArray = (1..9).toList().toIntArray()
 
-        /** 10'dan sonraki şema değişiklikleri için migration'lar (ör. Migration(10, 11)). */
-        val MIGRATIONS: Array<Migration> = arrayOf()
+        /**
+         * 10 → 11: Çoklu liste. Aynı anda tek liste ekranda görünür.
+         * - `playlists.isActive` eklenir; en son yüklenen liste aktif olur (eskiden ayarlarda ilk sıradaki liste).
+         * - Aktif olmayan listelerin öğeleri `iptv_items_parked` tablosuna taşınır (silinmez, favoriler dahil korunur).
+         * - Hiçbir listeye ait olmayan öğeler olduğu yerde kalır.
+         */
+        val MIGRATION_10_11: Migration = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `playlists` ADD COLUMN `isActive` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `iptv_items_parked` (`id` INTEGER NOT NULL, `playlistId` INTEGER NOT NULL, " +
+                        "`name` TEXT NOT NULL, `cleanedName` TEXT NOT NULL, `logoUrl` TEXT, `streamUrl` TEXT NOT NULL, " +
+                        "`category` TEXT NOT NULL, `type` TEXT NOT NULL, `rating` REAL NOT NULL, `summary` TEXT NOT NULL, " +
+                        "`cast` TEXT NOT NULL, `director` TEXT NOT NULL, `trailerUrl` TEXT, `isFavorite` INTEGER NOT NULL, " +
+                        "`season` INTEGER, `episode` INTEGER, `releaseDate` TEXT NOT NULL, `genre` TEXT NOT NULL, `tvgId` TEXT, " +
+                        "PRIMARY KEY(`playlistId`, `id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `xtream_series_catalog_parked` (`playlistId` INTEGER NOT NULL, " +
+                        "`seriesId` INTEGER NOT NULL, `name` TEXT NOT NULL, `canonicalKey` TEXT NOT NULL, `coverUrl` TEXT NOT NULL, " +
+                        "`backdropUrl` TEXT NOT NULL, `plot` TEXT NOT NULL, `rating` REAL NOT NULL, `releaseDate` TEXT NOT NULL, " +
+                        "`genre` TEXT NOT NULL, `cast` TEXT NOT NULL, `director` TEXT NOT NULL, `categoryId` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`playlistId`, `seriesId`))"
+                )
+                db.execSQL(
+                    "UPDATE `playlists` SET `isActive` = 1 WHERE `id` = " +
+                        "(SELECT `id` FROM `playlists` ORDER BY `loadedAt` DESC, `id` DESC LIMIT 1)"
+                )
+                db.execSQL(
+                    "INSERT OR REPLACE INTO `iptv_items_parked` (`id`, `playlistId`, `name`, `cleanedName`, `logoUrl`, `streamUrl`, " +
+                        "`category`, `type`, `rating`, `summary`, `cast`, `director`, `trailerUrl`, `isFavorite`, `season`, `episode`, " +
+                        "`releaseDate`, `genre`, `tvgId`) SELECT `id`, `playlistId`, `name`, `cleanedName`, `logoUrl`, `streamUrl`, " +
+                        "`category`, `type`, `rating`, `summary`, `cast`, `director`, `trailerUrl`, `isFavorite`, `season`, `episode`, " +
+                        "`releaseDate`, `genre`, `tvgId` FROM `iptv_items` " +
+                        "WHERE `playlistId` IN (SELECT `id` FROM `playlists` WHERE `isActive` = 0)"
+                )
+                db.execSQL("DELETE FROM `iptv_items` WHERE `playlistId` IN (SELECT `id` FROM `playlists` WHERE `isActive` = 0)")
+            }
+        }
+
+        /** 10'dan sonraki şema değişiklikleri için migration'lar; her yeni sürüm buraya bir adım ekler. */
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_10_11)
 
         /** Uygulamanın ve testlerin kullandığı tek migration politikası. */
         fun <T : RoomDatabase> RoomDatabase.Builder<T>.applyMigrationPolicy(): RoomDatabase.Builder<T> =

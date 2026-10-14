@@ -68,7 +68,6 @@ import com.example.data.model.IPTVItem
 import com.example.data.model.SeriesParser
 import com.example.data.model.toBrowsableItem
 import com.example.ui.IPTVViewModel
-import com.example.ui.components.PlaylistAddDialog
 import com.example.ui.components.CategoryAdaptiveIcon
 import com.example.ui.theme.*
 import kotlinx.coroutines.launch
@@ -174,7 +173,6 @@ fun HomeScreen(
         nextEpisodes = result
     }
 
-    var showPlaylistDialog by remember { mutableStateOf(false) }
     var isSearchPopupOpen by remember { mutableStateOf(false) }
     var isVoiceOverlayOpen by remember { mutableStateOf(false) }
     val selectedTypeFilter by viewModel.selectedTypeFilter.collectAsState()
@@ -1550,22 +1548,6 @@ fun HomeScreen(
                 // Bottom padding for edge-to-edge comfort (Requirement 2: Universal Responsive UI)
                 Spacer(modifier = Modifier.height(88.dp))
             }
-
-        // Playlist add popup dialog
-        if (showPlaylistDialog) {
-            PlaylistAddDialog(
-                onDismiss = { showPlaylistDialog = false },
-                onM3UAdded = { name, content ->
-                    viewModel.loadM3UPlaylist(name, content)
-                },
-                onM3UUrlAdded = { name, url ->
-                    viewModel.loadM3UPlaylistFromUrl(name, url)
-                }
-            )
-        }
-
-
-
 
         // Search Popup Dialog
         val isAILoading by viewModel.isAILoading.collectAsState()
