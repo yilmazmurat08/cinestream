@@ -161,6 +161,8 @@ dependencies {
   implementation("com.google.zxing:core:3.5.3")
   implementation(libs.converter.moshi)
   implementation(libs.billing.ktx)
+  // Play Billing ve Play Review eski fragment 1.1.0 getiriyor; Play Console uyarısı için güncel sürüm kullanılır.
+  implementation(libs.androidx.fragment)
   implementation(libs.play.review)
   implementation(libs.play.review.ktx)
   implementation(libs.kotlinx.coroutines.android)
