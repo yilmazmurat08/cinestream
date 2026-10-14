@@ -519,7 +519,17 @@
     <string name="tv_resume">Resume</string>
     <string name="tv_next_movie_tag">What should you watch next?</string>
     <string name="tv_now_playing">Now: %1$s</string>
-    <string name="tv_exit_hint">Press Back again to exit</string>
+    <string name="tv_exit_title">Leaving already?</string>
+    <string-array name="tv_exit_messages">
+        <item>The popcorn isn\'t finished yet!</item>
+        <item>So soon? There\'s so much more to watch.</item>
+        <item>One more episode? No one will know 😉</item>
+        <item>The channels will miss you…</item>
+        <item>The couch just got comfy. Stay a little longer.</item>
+    </string-array>
+    <string name="tv_exit_continue">Continue where you left off</string>
+    <string name="tv_exit_stay">Stay</string>
+    <string name="tv_exit_leave">Exit</string>
     <string name="tv_season_episode">Season %1$d · Episode %2$d</string>
     <string name="tv_ai_presets">Quick questions</string>
     <string name="tv_ai_q1">What should I watch tonight?</string>

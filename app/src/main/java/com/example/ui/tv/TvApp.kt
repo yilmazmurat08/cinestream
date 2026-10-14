@@ -1,6 +1,5 @@
 package com.example.ui.tv
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -8,13 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
@@ -49,8 +45,8 @@ fun rememberTvAppState(): TvAppState = rememberSaveable(saver = TvAppState.Saver
 
 /**
  * TV modunun kök ekranı. Telefon arayüzünden ayrıdır; aynı ViewModel, veri ve oynatıcıyı kullanır.
- * Ana sayfadan açılan bölümlerden Geri ile ana sayfaya, açılan kartın üzerine dönülür. Ana sayfada Geri'ye
- * iki kez basınca (2 sn içinde) uygulamadan çıkılır.
+ * Ana sayfadan açılan bölümlerden Geri ile ana sayfaya, açılan kartın üzerine dönülür. Ana sayfada Geri,
+ * çıkış onay kartını açar ([TvExitDialog]); yanlışlıkla çıkılmaz.
  */
 @Composable
 fun TvApp(
@@ -61,28 +57,18 @@ fun TvApp(
     onOpenAssistant: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     // Dil için LocalContext Activity'den türetilmiş ayrı bir bağlamdır; çıkış için Activity görünümden bulunur.
     val hostActivity = com.example.ui.components.rememberHostActivity()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var destination by state::destination
     var homeFocus by state::homeFocus
-    var lastBackMs by remember { mutableLongStateOf(0L) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
-    val exitHint = stringResource(R.string.tv_exit_hint)
+    var exitOpen by rememberSaveable { mutableStateOf(false) }
     // Detay paneli açıkken Geri önce paneli kapatır (MainActivity'deki işleyici).
     val detailOpen = viewModel.selectedItem.collectAsState().value != null
 
     BackHandler(enabled = !detailOpen && destination != TV_HOME) { destination = TV_HOME }
-    BackHandler(enabled = !detailOpen && destination == TV_HOME && !searchOpen) {
-        val now = System.currentTimeMillis()
-        if (now - lastBackMs < 2_000L) {
-            hostActivity?.finish()
-        } else {
-            lastBackMs = now
-            Toast.makeText(context, exitHint, Toast.LENGTH_SHORT).show()
-        }
-    }
+    BackHandler(enabled = !detailOpen && destination == TV_HOME && !searchOpen) { exitOpen = true }
 
     Box(
         modifier = modifier
@@ -124,6 +110,22 @@ fun TvApp(
             TvSection.SERIES -> TvBrowseScreen(viewModel = viewModel, type = "SERIES", state = state)
             TvSection.SAVED -> TvSavedScreen(viewModel = viewModel, onPlayItem = onPlayItem)
             else -> TvSettingsScreen(viewModel = viewModel)
+        }
+
+        if (exitOpen) {
+            val continueItem = viewModel.continueWatching.collectAsState().value.firstOrNull()
+            TvExitDialog(
+                continueItem = continueItem,
+                onStay = { exitOpen = false },
+                onContinue = { item ->
+                    exitOpen = false
+                    onPlayContinue(item)
+                },
+                onExit = {
+                    exitOpen = false
+                    hostActivity?.finish()
+                }
+            )
         }
 
         if (searchOpen) {

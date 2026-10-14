@@ -518,7 +518,17 @@
     <string name="tv_resume">Devam et</string>
     <string name="tv_next_movie_tag">Sıradaki film ne olsun?</string>
     <string name="tv_now_playing">Şimdi: %1$s</string>
-    <string name="tv_exit_hint">Çıkmak için tekrar Geri\'ye basın</string>
+    <string name="tv_exit_title">Gidiyor musun?</string>
+    <string-array name="tv_exit_messages">
+        <item>Patlamış mısır daha bitmedi!</item>
+        <item>Bu kadar erken mi? Daha izlenecek çok şey var.</item>
+        <item>Bir bölüm daha? Kimse bilmez 😉</item>
+        <item>Kanallar seni özleyecek…</item>
+        <item>Koltuk tam ısınmıştı, biraz daha kal.</item>
+    </string-array>
+    <string name="tv_exit_continue">Kaldığın yerden devam et</string>
+    <string name="tv_exit_stay">Kal</string>
+    <string name="tv_exit_leave">Çık</string>
     <string name="tv_season_episode">Sezon %1$d · Bölüm %2$d</string>
     <string name="tv_ai_presets">Hazır sorular</string>
     <string name="tv_ai_q1">Bu akşam ne izlesem?</string>
