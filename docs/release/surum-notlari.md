@@ -1,16 +1,16 @@
-# Sürüm notları — 1.1.5 (16)
+# Sürüm notları — 1.1.6 (17)
 
 Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
 
 ```
 <tr-TR>
-• Yeni: Canlı yayın izlerken ekranın üstünde o an yayında olan program görünür.
-• Telefonda TV modu: canlı yayın panelinde kategori listesi dokunarak açılır, tüm kategoriler izlenebilir.
+• Yeni: Birden fazla liste! Ayarlar → Liste Yönetimi'nden tüm listelerini tek yerden yönet, listeler arasında tek dokunuşla geç. 1 liste ücretsiz, 2. ve 3. liste PRO.
+• TV: Geri tuşuna yanlışlıkla basınca uygulama kapanmaz. Çıkış onay kartı ve "Kaldığın yerden devam et" kısayolu eklendi.
 • Kararlılık iyileştirmeleri.
 </tr-TR>
 <en-US>
-• New: while watching live TV, the programme on air now is shown at the top of the screen.
-• TV mode on phones: tap to open the category list in the live TV panel and watch any category.
+• New: Multiple playlists! Manage all your playlists in one place under Settings → Playlist Manager and switch between them with one tap. 1 playlist is free, the 2nd and 3rd are PRO.
+• TV: Pressing Back by mistake no longer closes the app. Added an exit confirmation card with a "Continue where you left off" shortcut.
 • Stability improvements.
 </en-US>
 ```
