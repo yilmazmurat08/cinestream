@@ -683,4 +683,5 @@
     <string name="playlist_slot_locked">PRO ile aç</string>
     <string name="playlist_delete_confirm_title">Liste silinsin mi?</string>
     <string name="playlist_delete_confirm_message">\"%1$s\" listesi ve bu listedeki favoriler bu cihazdan silinir.</string>
+    <string name="playlist_slot_locked_filled">Bu liste PRO ile açılır. Silinmez, kenarda bekler.</string>
 </resources>

@@ -121,9 +121,13 @@ interface IPTVDao {
      * Favoriler, öğelerle birlikte taşındığı için her listede ayrı ayrı korunur.
      */
     @Transaction
-    suspend fun switchActivePlaylist(fromPlaylistId: Int?, toPlaylistId: Int) {
-        if (fromPlaylistId != null && fromPlaylistId != toPlaylistId) parkPlaylist(fromPlaylistId)
+    suspend fun switchActivePlaylist(toPlaylistId: Int): Boolean {
+        // Açık liste işlemin içinde okunur: aynı anda iki geçiş gelse de biri bitmeden öteki başlamaz, veri karışmaz.
+        val active = getActivePlaylist()
+        if (active?.id == toPlaylistId) return false
+        if (active != null) parkPlaylist(active.id)
         unparkPlaylist(toPlaylistId)
+        return true
     }
 
     /** Eski veride tek aktif liste kuralını kurar: [activeId] aktif olur, [otherIds] listelerinin öğeleri kenara alınır. */

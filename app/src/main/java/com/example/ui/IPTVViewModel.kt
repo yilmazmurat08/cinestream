@@ -51,6 +51,15 @@ class IPTVViewModel(
         const val FREE_PLAYLIST_LIMIT = 1
         const val PRO_PLAYLIST_LIMIT = 3
 
+        /**
+         * Yuva kilitli mi: 1. yuva (ilk eklenen liste) ücretsizdir; 2. ve 3. yuva her durumda PRO ister.
+         * Kilitli listeler silinmez, yalnızca açılamaz (PRO alınınca olduğu gibi açılır).
+         */
+        fun isSlotLocked(slotIndex: Int, isPro: Boolean): Boolean = !isPro && slotIndex >= FREE_PLAYLIST_LIMIT
+
+        /** Ücretsiz kullanıcının açabildiği liste: ilk eklenen (en küçük kimlik). */
+        fun freePlaylistId(playlists: List<Playlist>): Int? = playlists.minByOrNull { it.id }?.id
+
         /** Yeni liste eklenebilir mi: [count] mevcut liste sayısı. */
         fun playlistAddGate(count: Int, isPro: Boolean): PlaylistAddGate = when {
             count >= PRO_PLAYLIST_LIMIT -> PlaylistAddGate.LIMIT_REACHED
@@ -827,12 +836,44 @@ class IPTVViewModel(
     }
 
     /**
+     * Ücretsiz kullanıcıda ekranda yalnızca 1. liste durabilir. PRO'su biten (ya da ilk kurulumda iki liste giren)
+     * ücretsiz kullanıcının ekranındaki liste 2. ya da 3. yuvadaysa 1. listeye dönülür. Hiçbir liste silinmez.
+     * PRO durumu, listeler ya da açık liste değiştikçe yeniden denetlenir.
+     */
+    private fun enforceFreePlaylistRule() {
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            combine(
+                settingsRepository.isProUserFlow, repository.allPlaylistsFlow, repository.activePlaylistFlow, repository.addsInProgress
+            ) { pro, all, active, adding ->
+                listOf(pro, freePlaylistId(all), active?.id, adding)
+            }.distinctUntilChanged().collect { (pro, freeId, activeId, adding) ->
+                if (pro == false && adding == 0 && freeId != null && activeId != null && activeId != freeId && !_isSwitchingPlaylist.value) {
+                    try {
+                        repository.switchToPlaylist(freeId as Int)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        Log.w("IPTVViewModel", "Ücretsiz liste kuralı uygulanamadı: ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Ekrandaki listeyi değiştirir. Kanallar, filmler, diziler ve favoriler kenardan aynen geri gelir (ağ gerekmez).
      * Xtream listesinin dizi kataloğu kenarda yoksa arka planda yalnızca katalog indirilir.
      */
     fun switchPlaylist(playlistId: Int) {
         if (activePlaylist.value?.id == playlistId || _isSwitchingPlaylist.value) return
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            // 2. ve 3. liste PRO ister: ücretsiz kullanıcı yalnızca 1. listeyi açabilir.
+            val all = repository.allPlaylistsFlow.first()
+            if (!settingsRepository.isProUserFlow.first() && playlistId != freePlaylistId(all)) {
+                withContext(Dispatchers.Main) {
+                    openPaywall(com.example.util.LocaleHelper.getString(getApplication(), com.example.R.string.paywall_reason_more_playlists))
+                }
+                return@launch
+            }
             _isSwitchingPlaylist.value = true
             try {
                 val changed = repository.switchToPlaylist(playlistId)
@@ -885,6 +926,7 @@ class IPTVViewModel(
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             // Eski sürümden gelen işaretsiz veride tek aktif liste kuralı (göç bunu zaten yapar; bu yalnızca güvence).
             repository.ensureSingleActivePlaylist()
+            enforceFreePlaylistRule()
             repository.trimOversizedItemFields()
             repository.trimTmdbCaches(
                 System.currentTimeMillis() - com.example.data.repository.TMDBRepository.CACHE_TTL_MS

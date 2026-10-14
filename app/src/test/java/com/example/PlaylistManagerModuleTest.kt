@@ -6,6 +6,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
@@ -84,7 +86,12 @@ class PlaylistManagerModuleTest {
     ).fetchSemanticsNodes().isNotEmpty()
 
     private fun show(vm: IPTVViewModel) {
-        compose.setContent { PlaylistManagerModule(viewModel = vm) }
+        // Ayarlar ekranı gibi kaydırılabilir.
+        compose.setContent {
+            androidx.compose.foundation.layout.Column(
+                androidx.compose.ui.Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())
+            ) { PlaylistManagerModule(viewModel = vm) }
+        }
     }
 
     @Test
@@ -101,24 +108,31 @@ class PlaylistManagerModuleTest {
         assertTrue(hasNode("playlist_locked_2"))
         assertTrue(hasNode("playlist_locked_3"))
 
-        compose.onNodeWithTag("playlist_locked_2").performClick()
+        compose.onNodeWithTag("playlist_locked_2").performScrollTo().performClick()
         waitUntil { vm.showPaywallDialog.value }
         assertTrue(vm.paywallReasonMessage.value!!.contains("PRO"))
     }
 
     @Test
-    fun openOnAnotherSlot_switchesTheList() {
+    fun freeUser_secondListIsLocked_cannotBeOpened_proButtonOpensThePaywall() {
         val ev = addM3u("Ev", "TRT 1")
-        addM3u("İş", "beIN 1") // açık liste: İş
+        addM3u("İş", "beIN 1") // ücretsiz kullanıcı: 2. liste kilitli
         val vm = IPTVViewModel(app, repo)
+        vm.setProUser(false)
         show(vm)
-        waitUntil { hasNode("playlist_open_1") }
-
-        // Yuvalar eklenme sırasındadır: 1. yuva "Ev", 2. yuva "İş" (açık).
-        assertTrue(slotShows(2, "İş"))
-        assertTrue(slotShows(2, "Açık"))
-        compose.onNodeWithTag("playlist_open_1").performClick()
+        // Kilitli liste ekranda kalamaz: 1. listeye dönülür.
         waitUntil { runBlocking { db.iptvDao().getActivePlaylist()?.id } == ev }
+        waitUntil { hasNode("playlist_pro_2") }
+
+        assertTrue(slotShows(1, "Açık"))
+        assertTrue(slotShows(2, "İş"))
+        assertTrue("kilitli listede Aç düğmesi olmaz", !hasNode("playlist_open_2"))
+        assertTrue("kilitli listede Yenile olmaz", !hasNode("playlist_refresh_2"))
+        assertTrue("kilitli liste silinebilir", hasNode("playlist_delete_2"))
+        assertTrue(hasNode("playlist_locked_3"))
+
+        compose.onNodeWithTag("playlist_pro_2").performScrollTo().performClick()
+        waitUntil { vm.showPaywallDialog.value }
         assertEquals(listOf("TRT 1"), runBlocking { db.iptvDao().getAllItemsDirect().map { it.name } })
     }
 
@@ -130,7 +144,7 @@ class PlaylistManagerModuleTest {
         show(vm)
         waitUntil { hasNode("playlist_delete_2") }
 
-        compose.onNodeWithTag("playlist_delete_2").performClick()
+        compose.onNodeWithTag("playlist_delete_2").performScrollTo().performClick()
         waitUntil { hasNode("playlist_delete_confirm") }
         assertEquals("onaydan önce silinmez", 2, runBlocking { db.iptvDao().getAllPlaylists().size })
         compose.onNodeWithTag("playlist_delete_confirm").performClick()
@@ -221,21 +235,31 @@ class MultiPlaylistViewModelTest {
         assertEquals(IPTVViewModel.PlaylistAddGate.ALLOWED, gate(2, true))
         assertEquals(IPTVViewModel.PlaylistAddGate.LIMIT_REACHED, gate(3, true))
         assertEquals(IPTVViewModel.PlaylistAddGate.LIMIT_REACHED, gate(3, false))
+
+        // 1. yuva her zaman ücretsiz; 2. ve 3. yuva ücretsizde kilitli, PRO'da açık.
+        assertFalse(IPTVViewModel.isSlotLocked(0, isPro = false))
+        assertTrue(IPTVViewModel.isSlotLocked(1, isPro = false))
+        assertTrue(IPTVViewModel.isSlotLocked(2, isPro = false))
+        assertFalse(IPTVViewModel.isSlotLocked(1, isPro = true))
+        assertFalse(IPTVViewModel.isSlotLocked(2, isPro = true))
+        assertEquals(3, IPTVViewModel.freePlaylistId(listOf(Playlist(id = 7, name = "b", url = "b"), Playlist(id = 3, name = "a", url = "a"))))
     }
 
     @Test
-    fun switchPlaylist_changesWhatIsOnScreen() {
+    fun freeUser_lockedListNeverStaysOnScreen_andCannotBeOpened() {
         val ev = addM3u("Ev", "TRT 1")
-        addM3u("İş", "beIN 1")
-        waitUntil { vm.activePlaylist.value?.name == "İş" }
-
-        vm.switchPlaylist(ev)
-        waitUntil { vm.activePlaylist.value?.id == ev && !vm.isSwitchingPlaylist.value }
+        val is_ = addM3u("İş", "beIN 1") // ekleme bitince 2. liste açık kalır; ücretsiz kullanıcıda 1. listeye dönülür
+        waitUntil { vm.activePlaylist.value?.id == ev }
         assertEquals(listOf("TRT 1"), runBlocking { db.iptvDao().getAllItemsDirect().map { it.name } })
+        assertEquals("kilitli liste silinmez", 1, runBlocking { db.iptvDao().getParkedItemCount(is_) })
+
+        vm.switchPlaylist(is_)
+        waitUntil { vm.showPaywallDialog.value }
+        assertEquals(ev, runBlocking { db.iptvDao().getActivePlaylist()?.id })
     }
 }
 
-/** TV Ayarları → Listeler: modül kumandayla kullanılır; OK ile panele girilir, "Aç" düğmesine inilir, OK ile liste açılır. */
+/** TV Ayarları → Listeler: modül kumandayla kullanılır; ücretsiz kullanıcıda 2. liste kilitli, "PRO ile aç" OK ile satın alma ekranını açar. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "tr-w960dp-h540dp-land-television")
 class TvPlaylistManagerTest {
@@ -269,7 +293,7 @@ class TvPlaylistManagerTest {
         runCatching { compose.onNodeWithTag(tag).assertIsFocused() }.isSuccess
 
     @Test
-    fun remote_reachesOpenButton_andSwitchesTheList() {
+    fun remote_reachesProButtonOfLockedList_andOpensThePaywall() {
         val ev = runBlocking {
             repo.addPlaylistAndActivate {
                 val id = repo.insertPlaylist(Playlist(name = "Ev", url = "m3u_text_input")).toInt()
@@ -282,31 +306,29 @@ class TvPlaylistManagerTest {
             db.iptvDao().getAllPlaylists().first { it.name == "Ev" }.id
         }
         val vm = IPTVViewModel(app, repo)
+        vm.setProUser(false)
         compose.setContent { TvSettingsScreen(viewModel = vm) }
         val end = System.currentTimeMillis() + 8_000
         while (System.currentTimeMillis() < end &&
-            compose.onAllNodes(hasTestTag("playlist_open_1")).fetchSemanticsNodes().isEmpty()) {
+            compose.onAllNodes(hasTestTag("playlist_pro_2")).fetchSemanticsNodes().isEmpty()) {
             org.robolectric.shadows.ShadowLooper.idleMainLooper(); Thread.sleep(20)
         }
         compose.waitForIdle()
         compose.onNodeWithTag("tv_setting_PLAYLISTS").assertIsFocused()
 
-        // OK: panele gir; aşağı inerek 1. yuvanın "Aç" düğmesine ulaş.
+        // OK: panele gir; aşağı inerek 2. yuvanın "PRO ile aç" düğmesine ulaş, OK ile satın alma ekranı açılır.
         press(androidx.compose.ui.input.key.Key.DirectionCenter)
-        for (i in 0 until 8) {
-            if (isFocused("playlist_open_1")) break
+        for (i in 0 until 10) {
+            if (isFocused("playlist_pro_2")) break
             press(androidx.compose.ui.input.key.Key.DirectionDown)
         }
-        compose.onNodeWithTag("playlist_open_1").assertIsFocused()
+        compose.onNodeWithTag("playlist_pro_2").assertIsFocused()
         press(androidx.compose.ui.input.key.Key.DirectionCenter)
-
-        var active: Int? = null
         for (i in 0 until 100) {
-            org.robolectric.shadows.ShadowLooper.idleMainLooper()
-            active = runBlocking { db.iptvDao().getActivePlaylist()?.id }
-            if (active == ev) break
-            Thread.sleep(50)
+            if (vm.showPaywallDialog.value) break
+            org.robolectric.shadows.ShadowLooper.idleMainLooper(); Thread.sleep(20)
         }
-        assertEquals(ev, active)
+        assertTrue(vm.showPaywallDialog.value)
+        assertEquals("ücretsiz kullanıcıda 1. liste açık kalır", ev, runBlocking { db.iptvDao().getActivePlaylist()?.id })
     }
 }

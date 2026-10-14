@@ -13,6 +13,8 @@ import com.example.data.model.IPTVItem
 import com.example.data.model.Playlist
 import com.example.data.model.XtreamSeriesCatalogEntity
 import com.example.data.repository.IPTVRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -122,6 +124,24 @@ class MultiPlaylistTest {
         assertEquals(1, dao.seriesCatalogCount())
         repo.switchToPlaylist(m3uOnly)
         assertEquals(0, dao.seriesCatalogCount())
+    }
+
+    @Test
+    fun manySwitchesAtTheSameTime_neverMixOrLoseChannels() = runBlocking {
+        // Ör. kullanıcı "Aç"a basarken ücretsiz liste kuralı da aynı anda 1. listeye dönmek isterse.
+        val ev = addM3u("Ev", "TRT 1", "ATV")
+        val is_ = addM3u("İş", "beIN 1")
+        repeat(5) { round ->
+            (1..20).map { i ->
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).async {
+                    repo.switchToPlaylist(if ((i + round) % 3 == 0) is_ else ev)
+                }
+            }.awaitAll()
+            val active = dao.getActivePlaylist()!!.id
+            val expected = if (active == ev) listOf("ATV", "TRT 1") else listOf("beIN 1")
+            assertEquals("ekranda yalnızca açık liste olur", expected, visibleNames())
+            assertEquals(3, dao.getAllItemsDirect().size + dao.getParkedItemCount(ev) + dao.getParkedItemCount(is_))
+        }
     }
 
     @Test

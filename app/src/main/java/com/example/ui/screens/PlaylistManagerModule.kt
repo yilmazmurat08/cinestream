@@ -57,8 +57,8 @@ import com.example.ui.theme.CineOrange
 /**
  * Liste Yönetimi: uygulamadaki bütün liste işlemleri burada, tek yerde (telefon ve TV Ayarları).
  * Üç yuva vardır: 1. yuva ücretsiz, 2. ve 3. yuva PRO. Her dolu yuvada aç (ekrana getir), yenile, düzenle, sil;
- * boş yuvada liste ekle; PRO olmayan kullanıcıda 2. ve 3. yuva "PRO ile aç" olarak görünür.
- * Daha önce eklenmiş listeler hiçbir zaman kilitlenmez (yuva sayısını aşsalar bile gösterilir).
+ * boş yuvada liste ekle. PRO olmayan kullanıcıda 2. ve 3. yuva kilitlidir: boşsa "PRO ile aç", doluysa liste
+ * silinmeden bekler (düzenlenebilir, silinebilir ama açılamaz).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -101,6 +101,7 @@ fun PlaylistManagerModule(viewModel: IPTVViewModel, modifier: Modifier = Modifie
                         number = index + 1,
                         playlist = playlist,
                         isActive = playlist.id == activeId,
+                        locked = IPTVViewModel.isSlotLocked(index, isProUser),
                         isSwitching = isSwitching && playlist.id != activeId,
                         busy = isLoading,
                         onOpen = {
@@ -112,6 +113,7 @@ fun PlaylistManagerModule(viewModel: IPTVViewModel, modifier: Modifier = Modifie
                                 Toast.makeText(context, context.getString(R.string.settings_toast_refreshed), Toast.LENGTH_SHORT).show()
                             }
                         },
+                        onUnlock = { viewModel.openPaywall(context.getString(R.string.paywall_reason_more_playlists)) },
                         onEdit = { editing = playlist },
                         onDelete = { deleting = playlist }
                     )
@@ -188,10 +190,12 @@ private fun FilledSlot(
     number: Int,
     playlist: Playlist,
     isActive: Boolean,
+    locked: Boolean,
     isSwitching: Boolean,
     busy: Boolean,
     onOpen: () -> Unit,
     onRefresh: () -> Unit,
+    onUnlock: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -210,7 +214,11 @@ private fun FilledSlot(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
-                if (isActive) {
+                if (locked) {
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = CineOrange, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("PRO", color = CineOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                } else if (isActive) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = CineOrange, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text(stringResource(R.string.playlist_slot_active), color = CineOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -219,7 +227,7 @@ private fun FilledSlot(
             Spacer(Modifier.height(6.dp))
             Text(
                 text = playlist.name,
-                color = Color.White,
+                color = if (locked) Color.White.copy(alpha = 0.6f) else Color.White,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -231,12 +239,20 @@ private fun FilledSlot(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
             )
+            if (locked) {
+                Spacer(Modifier.height(6.dp))
+                Text(stringResource(R.string.playlist_slot_locked_filled), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+            }
             Spacer(Modifier.height(12.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!isActive) {
-                    SlotButton(Icons.Default.PlayArrow, stringResource(R.string.playlist_slot_open), "playlist_open_$number", primary = true, onClick = onOpen)
+                if (locked) {
+                    SlotButton(Icons.Default.Lock, stringResource(R.string.playlist_slot_locked), "playlist_pro_$number", primary = true, onClick = onUnlock)
+                } else {
+                    if (!isActive) {
+                        SlotButton(Icons.Default.PlayArrow, stringResource(R.string.playlist_slot_open), "playlist_open_$number", primary = true, onClick = onOpen)
+                    }
+                    SlotButton(Icons.Default.Refresh, stringResource(R.string.playlist_slot_refresh), "playlist_refresh_$number", enabled = !busy, onClick = onRefresh)
                 }
-                SlotButton(Icons.Default.Refresh, stringResource(R.string.playlist_slot_refresh), "playlist_refresh_$number", enabled = !busy, onClick = onRefresh)
                 SlotButton(Icons.Default.Edit, stringResource(R.string.playlist_slot_edit), "playlist_edit_$number", onClick = onEdit)
                 SlotButton(Icons.Default.Delete, stringResource(R.string.playlist_slot_delete), "playlist_delete_$number", danger = true, onClick = onDelete)
                 if (isSwitching) {

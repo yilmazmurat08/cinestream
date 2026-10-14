@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
@@ -86,6 +87,8 @@ class IPTVRepository(
         /** Okuma akışında geçici veritabanı hatasında en fazla deneme sayısı (bkz. guardedRead). */
         private const val MAX_READ_RETRIES = 5L
         private val syncMutex = Mutex()
+        /** Uygulama genelinde ortak: arka plan güncelleyicisi gibi başka depo nesneleri de aynı sayacı görür. */
+        private val _addsInProgress = kotlinx.coroutines.flow.MutableStateFlow(0)
         val ambiguousMovieClassificationSamples = java.util.Collections.synchronizedList(mutableListOf<String>())
     }
 
@@ -536,7 +539,7 @@ class IPTVRepository(
             if (active != null) {
                 // Dizi kataloğu silinen (aktif) listeye aitti.
                 iptvDao.clearXtreamSeriesCatalog()
-                iptvDao.getAllPlaylists().firstOrNull()?.let { next -> iptvDao.switchActivePlaylist(null, next.id) }
+                iptvDao.getAllPlaylists().firstOrNull()?.let { next -> iptvDao.switchActivePlaylist(next.id) }
             }
             dropSeriesCatalogIfNoXtreamSource()
         } else {
@@ -554,9 +557,7 @@ class IPTVRepository(
      * verisi (varsa) geri gelir ve liste aktif olur. Böylece iki listenin öğeleri hiçbir zaman karışmaz.
      */
     private suspend fun makeActiveForWrite(playlistId: Int) {
-        val active = iptvDao.getActivePlaylist()
-        if (active?.id == playlistId) return
-        iptvDao.switchActivePlaylist(active?.id, playlistId)
+        iptvDao.switchActivePlaylist(playlistId)
     }
 
     /**
@@ -564,11 +565,8 @@ class IPTVRepository(
      * @return liste değiştiyse true.
      */
     suspend fun switchToPlaylist(playlistId: Int): Boolean = withContext(Dispatchers.IO) {
-        val active = iptvDao.getActivePlaylist()
-        if (active?.id == playlistId) return@withContext false
         if (iptvDao.getPlaylistById(playlistId) == null) return@withContext false
-        iptvDao.switchActivePlaylist(active?.id, playlistId)
-        true
+        iptvDao.switchActivePlaylist(playlistId)
     }
 
     /**
@@ -590,17 +588,25 @@ class IPTVRepository(
      * silinir ve önceki liste olduğu gibi geri gelir.
      */
     suspend fun addPlaylistAndActivate(import: suspend () -> Int): Int = withContext(Dispatchers.IO) {
-        val previous = iptvDao.getActivePlaylist()
-        val before = iptvDao.getAllPlaylists().map { it.id }.toSet()
-        val count = try {
-            import()
-        } catch (e: Exception) {
-            withContext(kotlinx.coroutines.NonCancellable) { restoreAfterFailedAdd(previous, before) }
-            throw e
+        _addsInProgress.update { it + 1 }
+        try {
+            val previous = iptvDao.getActivePlaylist()
+            val before = iptvDao.getAllPlaylists().map { it.id }.toSet()
+            val count = try {
+                import()
+            } catch (e: Exception) {
+                withContext(kotlinx.coroutines.NonCancellable) { restoreAfterFailedAdd(previous, before) }
+                throw e
+            }
+            if (count <= 0) restoreAfterFailedAdd(previous, before)
+            count
+        } finally {
+            _addsInProgress.update { it - 1 }
         }
-        if (count <= 0) restoreAfterFailedAdd(previous, before)
-        count
     }
+
+    /** Süren liste ekleme sayısı: ekleme sürerken açık liste değiştirilmez (yazılan öğeler karışmasın). */
+    val addsInProgress: kotlinx.coroutines.flow.StateFlow<Int> = _addsInProgress
 
     private suspend fun restoreAfterFailedAdd(previous: Playlist?, before: Set<Int>) {
         try {
@@ -613,8 +619,7 @@ class IPTVRepository(
                 iptvDao.deletePlaylist(failed.id)
             }
             if (previous != null && iptvDao.getPlaylistById(previous.id) != null) {
-                val activeNow = iptvDao.getActivePlaylist()
-                if (activeNow?.id != previous.id) iptvDao.switchActivePlaylist(activeNow?.id, previous.id)
+                iptvDao.switchActivePlaylist(previous.id)
             }
         } catch (e: Exception) {
             Log.w(TAG, "restoreAfterFailedAdd: ${e.message}")
