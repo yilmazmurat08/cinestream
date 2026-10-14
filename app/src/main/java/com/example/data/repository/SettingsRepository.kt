@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import coil.imageLoader
@@ -45,6 +46,8 @@ class SettingsRepository(
         val TOTAL_WATCH_SECONDS = longPreferencesKey("total_watch_seconds")
         // Ücretsiz izleme süresi günlüktür: sayaç hangi güne ait olduğunu da tutar (yyyy-MM-dd, cihaz saat dilimi).
         val WATCH_DAY = stringPreferencesKey("watch_day")
+        // Günün hesaplandığı saat dilimi ilk kullanımda sabitlenir: saat dilimini değiştirmek süreyi yenilemez.
+        val WATCH_ZONE = stringPreferencesKey("watch_zone")
         val FIRST_LAUNCH_TIME = longPreferencesKey("first_launch_time")
         val COMPLETED_PLAYBACK_SESSIONS = intPreferencesKey("completed_playback_sessions")
         val HAS_TRIGGERED_IN_APP_REVIEW = booleanPreferencesKey("has_triggered_in_app_review")
@@ -366,10 +369,26 @@ class SettingsRepository(
         }
     }
 
+    /**
+     * Ücretsiz izleme süresinin günü. Saat internetten alınır ([com.example.util.TrustedClock]), saat dilimi ilk
+     * kullanımda sabitlenir; telefonun saati geri alınsa da gün geri gitmez (bkz. [WatchUsage.noEarlierThan]).
+     */
+    suspend fun watchDayNow(): String {
+        val prefs = store.data.catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.first()
+        val zone = prefs[WATCH_ZONE]?.let { runCatching { java.time.ZoneId.of(it) }.getOrNull() }
+            ?: java.time.ZoneId.systemDefault().also { pinned ->
+                runCatching { store.edit { it[WATCH_ZONE] = pinned.id } }
+            }
+        val today = WatchUsage.dayKey(com.example.util.TrustedClock.now(context), zone)
+        return WatchUsage.noEarlierThan(today, prefs[WATCH_DAY])
+    }
+
     suspend fun addWatchSeconds(secondsToAdd: Long): Long {
         if (secondsToAdd <= 0L) return 0L
         var updatedSeconds = 0L
-        val today = WatchUsage.today()
+        val today = watchDayNow()
         store.edit { preferences ->
             // Yeni günde sayaç sıfırdan başlar.
             val current = if (preferences[WATCH_DAY] == today) preferences[TOTAL_WATCH_SECONDS] ?: 0L else 0L
@@ -427,7 +446,20 @@ data class WatchUsage(val day: String?, val seconds: Long) {
     fun secondsOn(dayKey: String): Long = if (day == dayKey) seconds else 0L
 
     companion object {
-        fun today(now: Long = System.currentTimeMillis()): String =
-            java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()
+        fun today(now: Long = System.currentTimeMillis()): String = dayKey(now, java.time.ZoneId.systemDefault())
+
+        fun dayKey(now: Long, zone: java.time.ZoneId): String =
+            java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString()
+
+        /**
+         * Saat geri alınınca gün geri gitmez: kayıtlı gün bugünden en fazla 2 gün ilerideyse kayıtlı gün geçerlidir
+         * (o günün süresi sayılmaya devam eder). Daha büyük farkta (ör. cihaz saati sıfırlandı) bugün kullanılır.
+         */
+        fun noEarlierThan(today: String, storedDay: String?): String {
+            if (storedDay == null) return today
+            val t = runCatching { java.time.LocalDate.parse(today) }.getOrNull() ?: return today
+            val s = runCatching { java.time.LocalDate.parse(storedDay) }.getOrNull() ?: return today
+            return if (s.isAfter(t) && java.time.temporal.ChronoUnit.DAYS.between(t, s) <= 2) storedDay else today
+        }
     }
 }
