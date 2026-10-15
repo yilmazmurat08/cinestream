@@ -4,6 +4,8 @@
 # İmza anahtarı depoda DEĞİLDİR; çalışma ortamının gizli değişkenlerinden okunur:
 #   CINESTREAM_KEYSTORE_BASE64    .jks dosyasının base64 hâli
 #   CINESTREAM_KEYSTORE_PASSWORD  anahtar şifresi (anahtar deposu ve anahtar için aynı)
+#   CINESTREAM_PLAY_LICENSE_KEY   Play lisans anahtarı (Play Console → Gelir elde etme ayarları → Lisanslama;
+#                                 herkese açık anahtar). Satın alma imzası doğrulaması için; yoksa paket üretilmez.
 # Anahtar geçici bir dosyaya açılır, derlemeden sonra silinir. Yanlış anahtarla imzalamayı önlemek için
 # sertifika parmak izi Play'e ilk yüklenen yükleme anahtarıyla karşılaştırılır.
 #
@@ -15,6 +17,17 @@ EXPECTED_SHA256="B2:3C:DE:7D:86:34:FD:77:A3:FB:20:78:03:1D:A9:D9:BC:DC:CD:40:C9:
 
 if [[ -z "${CINESTREAM_KEYSTORE_BASE64:-}" || -z "${CINESTREAM_KEYSTORE_PASSWORD:-}" ]]; then
   echo "HATA: CINESTREAM_KEYSTORE_BASE64 ve CINESTREAM_KEYSTORE_PASSWORD ortam değişkenleri tanımlı değil." >&2
+  exit 1
+fi
+
+if [[ -z "${CINESTREAM_PLAY_LICENSE_KEY:-}" ]]; then
+  echo "HATA: CINESTREAM_PLAY_LICENSE_KEY tanımlı değil (satın alma imzası doğrulanamaz)." >&2
+  exit 1
+fi
+# Anahtar gerçekten bir RSA herkese açık anahtarı mı? (Yanlış anahtar, ödeme yapan kullanıcının PRO'sunu kapatırdı.)
+if ! printf '%s' "$CINESTREAM_PLAY_LICENSE_KEY" | tr -d ' \n\r' | base64 -d 2>/dev/null \
+    | openssl pkey -pubin -inform DER -noout -text 2>/dev/null | grep -q "Public-Key: (2048 bit)"; then
+  echo "HATA: CINESTREAM_PLAY_LICENSE_KEY geçerli bir 2048 bit RSA anahtarı değil." >&2
   exit 1
 fi
 

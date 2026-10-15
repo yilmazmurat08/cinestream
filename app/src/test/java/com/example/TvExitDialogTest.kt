@@ -38,7 +38,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w960dp-h540dp-land-television")
-class TvExitDialogTest {
+open class TvExitDialogTest {
 
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()

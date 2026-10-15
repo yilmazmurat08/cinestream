@@ -14,13 +14,23 @@ android {
     applicationId = "com.cinestream.iptv"
     minSdk = 26
     targetSdk = 36
-    versionCode = 16
-    versionName = "1.1.5"
+    versionCode = 17
+    versionName = "1.1.6"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     // 60 dakikalık ücretsiz izleme sınırı: mağaza (release) sürümünde açık, test sürümlerinde kapalı.
     buildConfigField("boolean", "FREE_WATCH_LIMIT", "true")
+    // Günlük ücretsiz izleme süresi (saniye): mağazada 60 dakika.
+    buildConfigField("long", "FREE_DAILY_WATCH_SECONDS", "3600L")
+
+    // Play lisans anahtarı (herkese açık anahtar; satın alma imzasını doğrulamak için). Depoda tutulmaz, derleme
+    // anında ortam değişkeninden okunur. Boşsa uygulama imza denetimi yapmaz (test sürümleri).
+    val playLicenseKey = (System.getenv("CINESTREAM_PLAY_LICENSE_KEY") ?: "").replace(Regex("\\s"), "")
+    require(playLicenseKey.all { it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' }) {
+      "CINESTREAM_PLAY_LICENSE_KEY geçersiz karakter içeriyor"
+    }
+    buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
   }
 
   signingConfigs {
@@ -57,6 +67,15 @@ android {
       signingConfig = signingConfigs.getByName("debug")
       matchingFallbacks += listOf("release")
       buildConfigField("boolean", "FREE_WATCH_LIMIT", "false")
+    }
+    // Süre sınırı testi: qa ile aynı ama ücretsiz süre açık ve yalnızca 2 dakika (süre dolması, saat hilesi,
+    // canlı yayının durması hızlıca denenir). Mağaza sürümü etkilenmez (60 dakika).
+    // Derleme: ./gradlew assembleQaLimit  → app/build/outputs/apk/qaLimit/app-qaLimit.apk
+    create("qaLimit") {
+      initWith(getByName("qa"))
+      matchingFallbacks += listOf("qa", "release")
+      buildConfigField("boolean", "FREE_WATCH_LIMIT", "true")
+      buildConfigField("long", "FREE_DAILY_WATCH_SECONDS", "120L")
     }
   }
   compileOptions {
@@ -161,6 +180,8 @@ dependencies {
   implementation("com.google.zxing:core:3.5.3")
   implementation(libs.converter.moshi)
   implementation(libs.billing.ktx)
+  // Play Billing ve Play Review eski fragment 1.1.0 getiriyor; Play Console uyarısı için güncel sürüm kullanılır.
+  implementation(libs.androidx.fragment)
   implementation(libs.play.review)
   implementation(libs.play.review.ktx)
   implementation(libs.kotlinx.coroutines.android)

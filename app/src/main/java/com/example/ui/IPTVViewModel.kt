@@ -46,7 +46,11 @@ class IPTVViewModel(
 
     companion object {
         /** Ücretsiz kullanıcının günlük izleme hakkı (saniye). */
-        const val FREE_DAILY_WATCH_SECONDS = 3600L
+        val FREE_DAILY_WATCH_SECONDS: Long = com.example.BuildConfig.FREE_DAILY_WATCH_SECONDS
+        /** Testler için: günlük sınırı (debug derlemesinde kapalıdır) açıp kapatır; null ise derleme ayarı. */
+        @androidx.annotation.VisibleForTesting
+        internal var freeWatchLimitOverride: Boolean? = null
+        internal val freeWatchLimitEnabled: Boolean get() = freeWatchLimitOverride ?: com.example.BuildConfig.FREE_WATCH_LIMIT
         /** Ücretsiz kullanıcı 1 liste ekleyebilir; PRO en fazla 3 liste. Var olan listeler hiçbir zaman kilitlenmez. */
         const val FREE_PLAYLIST_LIMIT = 1
         const val PRO_PLAYLIST_LIMIT = 3
@@ -122,7 +126,12 @@ class IPTVViewModel(
         super.onCleared()
     }
 
-    private val liveItemsShared = sharedItemsOf("LIVE")
+    // Canlı kanallar listedeki (sağlayıcının) sırasıyla: telefon ve TV listeleri, oynatıcının kanal paneli ve
+    // CH+/CH− aynı sırayı kullanır. Sırası bilinmeyen eski veride (liste henüz yenilenmedi) ada göre doğal sıra.
+    private val liveItemsShared = repository.getItemsByTypeInListOrder("LIVE")
+        .map { items -> if (items.any { it.sortOrder > 0 }) items else items.sortedWith { a, b -> naturalCompare(a.cleanedName.ifBlank { a.name }, b.cleanedName.ifBlank { b.name }) } }
+        .flowOn(Dispatchers.Default)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
     private val movieItemsShared = sharedItemsOf("MOVIE")
     private val seriesItemsShared = sharedItemsOf("SERIES")
     private val radioItemsShared = sharedItemsOf("RADIO")
@@ -446,7 +455,7 @@ class IPTVViewModel(
         watchUsage,
         kotlinx.coroutines.flow.flow {
             while (true) {
-                emit(com.example.data.repository.WatchUsage.today())
+                emit(settingsRepository.watchDayNow())
                 kotlinx.coroutines.delay(60_000)
             }
         }.distinctUntilChanged()
@@ -456,9 +465,15 @@ class IPTVViewModel(
     /** Ücretsiz kullanıcının bugünkü izleme hakkı doldu mu (anlık, gün değişimini hemen dikkate alır)? */
     /** Yeni içerik başlatılırken: DataStore'daki güncel kullanım okunarak (soğuk açılışta da doğru) kontrol eder. */
     suspend fun isFreeWatchLimitReachedNow(): Boolean {
-        if (!com.example.BuildConfig.FREE_WATCH_LIMIT || isProUser.value) return false
+        if (!freeWatchLimitEnabled) return false
+        // PRO bilgisi kayıttan okunur: açılışta ekrandaki değer henüz yüklenmemiş (false) olabilir, ödeme yapan
+        // kullanıcı yanlışlıkla engellenmesin.
+        val pro = kotlinx.coroutines.withTimeoutOrNull(2_000) { settingsRepository.isProUserFlow.first() } ?: isProUser.value
+        if (pro) return false
+        // Gün, internetten alınan saatle hesaplanır (telefonun saatini değiştirmek süreyi yenilemez).
+        com.example.util.TrustedClock.ensureSynced(getApplication())
         val usage = kotlinx.coroutines.withTimeoutOrNull(2_000) { settingsRepository.watchUsageFlow.first() } ?: watchUsage.value
-        return usage.secondsOn(com.example.data.repository.WatchUsage.today()) >= FREE_DAILY_WATCH_SECONDS
+        return usage.secondsOn(settingsRepository.watchDayNow()) >= FREE_DAILY_WATCH_SECONDS
     }
 
     val firstLaunchTime: StateFlow<Long> = settingsRepository.firstLaunchTimeFlow
@@ -505,6 +520,20 @@ class IPTVViewModel(
     fun closePaywall() {
         _showPaywallDialog.value = false
         _paywallReasonMessage.value = null
+    }
+
+    /**
+     * Play'in kesin cevabı kayıtlı PRO durumuyla karşılaştırılır (ekrandaki değer henüz yüklenmemiş olabilir):
+     * iade/iptal edilen PRO kapanır, satın alınan PRO açılır.
+     */
+    internal fun syncProFromPlay(isPro: Boolean) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            val stored = settingsRepository.isProUserFlow.first()
+            if (stored != isPro) {
+                settingsRepository.setProUser(isPro)
+                if (isPro) closePaywall()
+            }
+        }
     }
 
     fun setProUser(isPro: Boolean) {
@@ -916,8 +945,12 @@ class IPTVViewModel(
 
     init {
         // PRO durumu Google Play'deki geçerli satın alımlardan okunur (abonelik iptal/süre dolumu dahil).
-        com.example.util.SubscriptionManager.init(application) { isPro ->
-            if (isPro != isProUser.value) setProUser(isPro)
+        com.example.util.SubscriptionManager.init(application) { isPro -> syncProFromPlay(isPro) }
+        // Ücretsiz süre için internet saati önceden alınır (ilk yayın açılırken beklenmesin).
+        if (com.example.BuildConfig.FREE_WATCH_LIMIT) {
+            viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+                com.example.util.TrustedClock.ensureSynced(application)
+            }
         }
         // Eski sürümlerin 12 saatlik "öne çıkan film" kaydını sil (artık her girişte yeniden seçiliyor).
         com.example.data.repository.FeaturedMovieRepository.clearLegacyCache(application)
@@ -1298,7 +1331,8 @@ class IPTVViewModel(
         .map { items ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
-                    com.example.data.model.IPTVGroup(id = cat, name = cat, type = "LIVE", items = list.sortedWith(naturalOrderItemComparator))
+                    // Kanallar zaten listedeki sırada gelir (bkz. liveItemsShared).
+                    com.example.data.model.IPTVGroup(id = cat, name = cat, type = "LIVE", items = list)
                 }
                 .sortedBy { it.name }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

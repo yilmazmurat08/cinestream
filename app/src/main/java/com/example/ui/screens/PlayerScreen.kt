@@ -101,6 +101,12 @@ enum class AspectRatioMode(val labelRes: Int) {
     SIXTEEN_NINE(R.string.player_aspect_16_9)
 }
 
+/**
+ * Günlük ücretsiz süre izlerken dolarsa durdurulan içerik: canlı yayın (sonu yok). Film ve dizi bölümü sonuna kadar
+ * oynar; sıradaki içerik açılırken süre kontrolü yapılır.
+ */
+internal fun stopsWhenDailyLimitEndsWhileWatching(type: String): Boolean = type == "LIVE" || type == "LIVE_TV"
+
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(
@@ -252,14 +258,18 @@ fun LegacyExoPlayerScreen(
     val totalWatchSeconds by (iptvViewModel?.totalWatchSeconds?.collectAsState() ?: remember { mutableStateOf(0L) })
     var hasRecordedSession by remember(item.id) { mutableStateOf(false) }
 
-    // Check watch limit effect
-    // Günlük ücretsiz süre yalnızca yeni bir içerik başlatılırken kontrol edilir: süre izlerken dolarsa
-    // oynayan içerik kesilmez (gece yarısından sonra süre yeniden başlar).
+    // Günlük ücretsiz süre doldu: oynatıcı kapanır ve PRO penceresi ana ekranda açılır. Oynatıcıda kalınmaz;
+    // böylece "Yeniden dene" ya da uygulamaya geri dönüş yayını süre kontrolü olmadan yeniden başlatamaz.
+    val latestOnBack by rememberUpdatedState(onBack)
+    fun stopForDailyLimit() {
+        try { player.stop() } catch (_: Exception) { }
+        iptvViewModel?.openPaywall(context.getString(R.string.paywall_reason_daily_limit))
+        latestOnBack()
+    }
+    // Yeni içerik başlatılırken kontrol edilir. İzlerken süre dolarsa: canlı yayın durur (aşağıdaki döngü),
+    // film ve dizi bölümü sonuna kadar oynar; sıradaki içerik açılırken bu kontrol devreye girer.
     LaunchedEffect(item.id) {
-        if (iptvViewModel?.isFreeWatchLimitReachedNow() == true) {
-            player.stop()
-            iptvViewModel.openPaywall(context.getString(R.string.paywall_reason_daily_limit))
-        }
+        if (iptvViewModel?.isFreeWatchLimitReachedNow() == true) stopForDailyLimit()
     }
 
     // Sibling track navigation
@@ -487,6 +497,11 @@ fun LegacyExoPlayerScreen(
                     iptvViewModel?.addWatchSeconds(pendingWatchSeconds)
                     pendingWatchSeconds = 0L
                     lastWatchFlush = System.currentTimeMillis()
+                    // Canlı yayın sonsuzdur: süre izlerken dolarsa yayın kibarca durur (film/dizi sonuna kadar oynar).
+                    if (stopsWhenDailyLimitEndsWhileWatching(item.type) && iptvViewModel?.isFreeWatchLimitReachedNow() == true) {
+                        stopForDailyLimit()
+                        break
+                    }
                 }
                 currentTracks = player.currentTracks
 

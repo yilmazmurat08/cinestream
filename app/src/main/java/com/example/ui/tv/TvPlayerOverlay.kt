@@ -107,8 +107,8 @@ class TvPlayerUiState {
 internal fun channelNumber(ring: List<IPTVItem>, item: IPTVItem): Int = ring.indexOfFirst { it.id == item.id } + 1
 
 /**
- * Kontroller gizliyken kumanda: Canlı'da Yukarı/CH+ sonraki, Aşağı/CH− önceki kanal, Sol kanal paneli, OK
- * kontroller (odak oynat/duraklat), rakamlar kanala atlar. Filmde OK oynat/duraklat + kontroller, Sol/Sağ ±10 sn,
+ * Kontroller gizliyken kumanda: Canlı'da Yukarı/CH+ sonraki, Aşağı/CH− önceki kanal, OK ve Sol kanal listesi
+ * (paneli), Sağ kontroller (odak oynat/duraklat), rakamlar kanala atlar. Filmde OK oynat/duraklat + kontroller, Sol/Sağ ±10 sn,
  * Aşağı kontroller. Medya tuşları, kanal tuşları ve ses tuşları her zaman çalışır.
  */
 fun Modifier.tvModePlayerKeys(
@@ -171,7 +171,8 @@ fun Modifier.tvModePlayerKeys(
     // OK işlemi tuş bırakılınca (tuş tekrarında art arda tetiklenmesin); yönler basılınca.
     if (isOk) {
         if (event.type == KeyEventType.KeyUp) {
-            if (isLive) onShowControls() else { onPlayPause(); onShowControls() }
+            // Canlıda OK kanal listesini açar (kontroller Sağ ile).
+            if (isLive) onOpenPanel() else { onPlayPause(); onShowControls() }
         }
         return@onPreviewKeyEvent true
     }
