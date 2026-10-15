@@ -46,7 +46,7 @@ class IPTVViewModel(
 
     companion object {
         /** Ücretsiz kullanıcının günlük izleme hakkı (saniye). */
-        const val FREE_DAILY_WATCH_SECONDS = 3600L
+        val FREE_DAILY_WATCH_SECONDS: Long = com.example.BuildConfig.FREE_DAILY_WATCH_SECONDS
         /** Testler için: günlük sınırı (debug derlemesinde kapalıdır) açıp kapatır; null ise derleme ayarı. */
         @androidx.annotation.VisibleForTesting
         internal var freeWatchLimitOverride: Boolean? = null
