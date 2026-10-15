@@ -327,6 +327,7 @@
     <string name="home_top10_movies">🔥 Bugün Trend Filmler</string>
     <string name="home_top10_series">📺 Popüler Diziler</string>
     <string name="home_top10_channels">🔴 Popüler Kanallar</string>
+    <string name="home_top10_cinema_channels">🎬 Sinema ve Dizi Kanalları</string>
     <string name="home_ai_results">AI Önerileri: \"%1$s\"</string>
     <string name="home_search_results">Arama Sonuçları: \"%1$s\"</string>
     <string name="home_ai_results_hint">Yapay zeka, sorgunu yorumlayarak kütüphanenden en uygun içerikleri seçti — bunlar birebir kelime eşleşmesi değil.</string>

@@ -217,11 +217,14 @@ fun HomeScreen(
         popularSeriesRow(xtreamSeriesCatalogForTop10, popularSeriesIds) { viewModel.isAdultContent(it) }
     }
 
-    val top10Live = remember(liveChannels) {
-        liveChannels.asSequence()
-            .filterNot { viewModel.isAdultContent(it) }
-            .take(10).toList()
+    // Popüler kanallar: sinema ve dizi kanalları, farklı klasörlerden karışık; seçki her gün değişir.
+    val showcaseDay = remember { localEpochDay(System.currentTimeMillis()) }
+    val liveShowcase = com.example.ui.components.rememberComputedOffMain(
+        liveChannels, showcaseDay, workSize = liveChannels.size, fallback = LiveShowcase(emptyList(), false)
+    ) {
+        liveShowcaseRow(liveChannels, showcaseDay) { viewModel.isAdultContent(it) }
     }
+    val top10Live = liveShowcase.items
 
     val currentTheme = LocalAppTheme.current
     val themeBg = MaterialTheme.colorScheme.background
@@ -566,7 +569,9 @@ fun HomeScreen(
                                 item(key = "top10_live") {
                                     com.example.ui.components.RankedTop10Section(
                                         title = "🔴 Popüler Kanallar",
-                                        displayTitle = stringResource(R.string.home_top10_channels),
+                                        displayTitle = stringResource(
+                                            if (liveShowcase.cinemaFocused) R.string.home_top10_cinema_channels else R.string.home_top10_channels
+                                        ),
                                         items = top10Live,
                                         onItemClick = { item ->
                                             val matched = viewModel.findMatchedItem(item)
@@ -2237,6 +2242,86 @@ fun RadioGlassCard(
 // =========================================================================
 // YENİ DİNAMİK VE KEŞİF WİDGET COMPONENT'LERİ
 // =========================================================================
+
+
+/** Ana sayfadaki canlı kanal seçkisi; [cinemaFocused] seçkinin sinema ve dizi kanallarından oluştuğunu söyler. */
+internal data class LiveShowcase(val items: List<IPTVItem>, val cinemaFocused: Boolean)
+
+private val CINEMA_SERIES_WORDS = listOf("sinema", "cinema", "cine", "film", "movie", "dizi", "series", "yesilcam", "box office")
+private val NOT_CINEMA_WORDS = listOf("cizgi", "cocuk", "kids", "cartoon", "spor", "sport")
+private val CHANNEL_QUALITY_WORDS = setOf("hd", "fhd", "uhd", "sd", "4k", "hevc", "h265", "raw", "yedek", "backup")
+
+private fun foldTurkish(text: String): String =
+    text.lowercase(java.util.Locale.forLanguageTag("tr"))
+        .replace('ş', 's').replace('ç', 'c').replace('ğ', 'g').replace('ı', 'i').replace('ö', 'o').replace('ü', 'u')
+
+/** Kanal adı ya da klasörü sinema/dizi kanalı olduğunu söylüyor mu (çizgi film, çocuk ve spor hariç). */
+internal fun isCinemaOrSeriesChannel(item: IPTVItem): Boolean {
+    val text = foldTurkish("${item.category} ${item.cleanedName.ifBlank { item.name }}")
+    return CINEMA_SERIES_WORDS.any { it in text } && NOT_CINEMA_WORDS.none { it in text }
+}
+
+/** Aynı kanalın kalite sürümlerini (HD: Sinema TV, Sinema TV FHD) tek kanal sayar. */
+private fun channelBaseName(item: IPTVItem): String {
+    var name = foldTurkish(item.cleanedName.ifBlank { item.name })
+    val colon = name.indexOf(':')
+    if (colon in 1..4) name = name.substring(colon + 1)
+    return name.split(' ', '-', '|', '_', '(', ')', '[', ']')
+        .filter { it.isNotBlank() && it !in CHANNEL_QUALITY_WORDS }
+        .joinToString(" ")
+}
+
+/** Bugünün (yerel saatle) gün numarası; seçki gün içinde sabit kalır, ertesi gün değişir. */
+internal fun localEpochDay(nowMillis: Long): Long =
+    (nowMillis + java.util.TimeZone.getDefault().getOffset(nowMillis)) / 86_400_000L
+
+/**
+ * Ana sayfadaki "Popüler Kanallar": sinema ve dizi kanalları, klasörler arasında sırayla (hep aynı klasörden değil),
+ * her klasörün içinden günün seçkisi. Aynı kanalın kalite sürümleri bir kez görünür. Bu tür kanal yetmezse kalan yer
+ * diğer kanallardan, yine klasörler karıştırılarak dolar.
+ */
+internal fun liveShowcaseRow(
+    channels: List<IPTVItem>,
+    day: Long,
+    size: Int = 10,
+    isAdult: (IPTVItem) -> Boolean
+): LiveShowcase {
+    val random = java.util.Random(day)
+    val (cinema, others) = channels.filterNot(isAdult).partition(::isCinemaOrSeriesChannel)
+    val seen = HashSet<String>()
+    val picked = spreadAcrossFolders(cinema, random, size, seen)
+    val rest = if (picked.size < size) spreadAcrossFolders(others, random, size - picked.size, seen) else emptyList()
+    return LiveShowcase(picked + rest, cinemaFocused = picked.size >= 3)
+}
+
+private fun spreadAcrossFolders(
+    channels: List<IPTVItem>,
+    random: java.util.Random,
+    limit: Int,
+    seen: MutableSet<String>
+): List<IPTVItem> {
+    if (limit <= 0 || channels.isEmpty()) return emptyList()
+    val folders = channels.groupBy { it.category }.values
+        .map { it.shuffled(random).toMutableList() }
+        .shuffled(random)
+    val out = ArrayList<IPTVItem>(limit)
+    var added = true
+    while (out.size < limit && added) {
+        added = false
+        for (folder in folders) {
+            while (folder.isNotEmpty()) {
+                val channel = folder.removeAt(folder.lastIndex)
+                if (seen.add(channelBaseName(channel))) {
+                    out += channel
+                    added = true
+                    break
+                }
+            }
+            if (out.size == limit) break
+        }
+    }
+    return out
+}
 
 /**
  * Ana sayfadaki "Bugün Trend Filmler": önce TMDB'de bugün popüler olup listede bulunan filmler (popülerlik sırasıyla,

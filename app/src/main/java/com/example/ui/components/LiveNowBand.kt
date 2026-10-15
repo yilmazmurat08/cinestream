@@ -2,18 +2,15 @@ package com.example.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,17 +28,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.model.EPGProgram
 import com.example.data.model.IPTVItem
 import com.example.ui.theme.AccentNeonPurple
-import com.example.ui.theme.DeepPurpleBg
 import kotlinx.coroutines.delay
-
-/** Bandın yüksekliği (sistem çubuğu payı hariç); oynatıcının üst çubuğu bu kadar aşağıdan başlar. */
-val LIVE_NOW_BAND_HEIGHT = 32.dp
 
 /** Kanalın yayın akışında [now] anında yayında olan program (yoksa null). */
 fun currentProgramOf(channel: IPTVItem, programsByChannel: Map<String, List<EPGProgram>>, now: Long): EPGProgram? {
@@ -51,11 +44,17 @@ fun currentProgramOf(channel: IPTVItem, programsByChannel: Map<String, List<EPGP
 }
 
 /**
- * Bandı kanalın yayın akışından besler. 30 saniyede bir yeniden bakar: program bitince sıradaki gelir.
- * Saat yalnızca bu küçük parçayı yeniler, oynatıcı ekranının tamamını değil.
+ * Bilgiyi kanalın yayın akışından besler. 30 saniyede bir yeniden bakar: program bitince sıradaki gelir.
+ * Saat yalnızca bu küçük parçayı yeniler, oynatıcı ekranının tamamını değil. Akışta bilgi yoksa [fallback] gösterilir.
  */
 @Composable
-fun LiveNowBandFor(channel: IPTVItem, viewModel: com.example.ui.IPTVViewModel?, modifier: Modifier = Modifier) {
+fun LiveNowInfoFor(
+    channel: IPTVItem,
+    viewModel: com.example.ui.IPTVViewModel?,
+    fontSize: TextUnit,
+    modifier: Modifier = Modifier,
+    fallback: @Composable () -> Unit = {}
+) {
     val programs = viewModel?.realEpgPrograms?.collectAsState()?.value.orEmpty()
     var clock by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -67,52 +66,62 @@ fun LiveNowBandFor(channel: IPTVItem, viewModel: com.example.ui.IPTVViewModel?, 
     val program = remember(channel.id, channel.tvgId, programs, clock) {
         currentProgramOf(channel, programs, System.currentTimeMillis())
     }
-    LiveNowBand(program, modifier)
+    if (program == null) fallback() else LiveNowInfo(program, clock, fontSize, modifier)
 }
 
-/** Canlı yayında oynatıcının üstündeki bant: o an yayında olan program. Bilgi yoksa bant boş kalır; tıklanmaz. */
+/**
+ * Canlı yayında oynatıcının üst çubuğunda, kanal adının altındaki satır: o an yayında olan program, saatleri ve
+ * ince bir ilerleme çizgisi. Denetimlerle birlikte görünür ve kaybolur; tıklanmaz.
+ */
 @Composable
-fun LiveNowBand(program: EPGProgram?, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(DeepPurpleBg.copy(alpha = 0.75f))
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
-            .height(LIVE_NOW_BAND_HEIGHT)
-            .padding(horizontal = 16.dp)
-            .testTag("live_now_band"),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        if (program != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .clip(CircleShape)
-                        .background(AccentNeonPurple)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+fun LiveNowInfo(program: EPGProgram, now: Long, fontSize: TextUnit, modifier: Modifier = Modifier) {
+    val span = program.endEpochMillis - program.startEpochMillis
+    val progress = if (span > 0) ((now - program.startEpochMillis).toFloat() / span).coerceIn(0f, 1f) else 0f
+    Column(modifier = modifier.testTag("live_now_info")) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(AccentNeonPurple)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.tv_now_playing, program.title),
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = fontSize,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .testTag("live_now_title")
+            )
+            if (program.startTimeFormatted.isNotBlank() && program.endTimeFormatted.isNotBlank()) {
                 Text(
-                    text = stringResource(R.string.tv_now_playing, program.title),
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .testTag("live_now_title")
+                    text = "  ·  ${program.startTimeFormatted} – ${program.endTimeFormatted}",
+                    color = Color.White.copy(alpha = 0.55f),
+                    fontSize = fontSize,
+                    maxLines = 1
                 )
-                if (program.startTimeFormatted.isNotBlank() && program.endTimeFormatted.isNotBlank()) {
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "${program.startTimeFormatted} – ${program.endTimeFormatted}",
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
-                        maxLines = 1
-                    )
-                }
             }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .width(120.dp)
+                .height(2.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.18f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(progress)
+                    .background(AccentNeonPurple)
+                    .testTag("live_now_progress")
+            )
         }
     }
 }

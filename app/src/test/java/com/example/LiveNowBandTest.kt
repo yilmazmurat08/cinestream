@@ -2,12 +2,16 @@ package com.example
 
 import android.app.Application
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -22,7 +26,7 @@ import com.example.data.model.Playlist
 import com.example.data.repository.IPTVRepository
 import com.example.data.repository.SettingsRepository
 import com.example.ui.IPTVViewModel
-import com.example.ui.components.LiveNowBand
+import com.example.ui.components.LiveNowInfo
 import com.example.ui.components.currentProgramOf
 import com.example.ui.screens.PlayerScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -50,8 +54,9 @@ import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 /**
- * Telefonda canlı yayın oynatıcısının üstünde o an yayında olan programı gösteren bant. Yayın bilgisi yoksa bant
- * boş kalır; tıklanmaz, pencere açmaz. Film/dizide ve TV modunda (bilgi orada alttaki kartta) gösterilmez.
+ * Telefonda canlı yayın oynatıcısının üst çubuğunda, kanal adının altında o an yayında olan program. Ayrı, sürekli
+ * duran bir bant yoktur: bilgi denetimlerle birlikte görünür ve kaybolur. Yayın bilgisi yoksa kategori yazılır;
+ * tıklanmaz. Film/dizide ve TV modunda (bilgi orada alttaki kartta) gösterilmez.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "tr-w800dp-h360dp-land")
@@ -100,17 +105,15 @@ class LiveNowBandTest {
     }
 
     @Test
-    fun band_showsTheProgram_orStaysEmpty_andIsNotClickable() {
-        var program by mutableStateOf<EPGProgram?>(prog("Akşam Haberleri", 0, 1))
-        compose.setContent { MyApplicationTheme { LiveNowBand(program) } }
-        compose.onNodeWithTag("live_now_band").assertExists().assertHasNoClickAction()
+    fun info_showsTheProgramTimesAndProgress_andIsNotClickable() {
+        compose.setContent {
+            MyApplicationTheme { LiveNowInfo(prog("Akşam Haberleri", 0, 1_000), now = 250, fontSize = 12.sp) }
+        }
+        compose.onNodeWithTag("live_now_info").assertExists().assertHasNoClickAction()
         compose.onNodeWithTag("live_now_title").assertTextEquals("Şimdi: Akşam Haberleri")
-        compose.onNodeWithText("20:00 – 21:30").assertExists()
-
-        program = null
-        compose.waitForIdle()
-        compose.onNodeWithTag("live_now_band").assertExists()
-        compose.onNodeWithTag("live_now_title").assertDoesNotExist()
+        compose.onNodeWithText("20:00 – 21:30", substring = true).assertExists()
+        // İlerleme çizgisi programın dörtte birinde (120 dp'lik çizginin 30 dp'si).
+        compose.onNodeWithTag("live_now_progress").assertWidthIsEqualTo(30.dp)
     }
 
     private fun xmltvTime(epochMs: Long): String =
@@ -162,38 +165,53 @@ class LiveNowBandTest {
     }
 
     @Test
-    fun phonePlayer_liveChannel_showsWhatIsAiringNowAtTheTop() {
+    fun phonePlayer_liveChannel_showsWhatIsAiringNow_onlyWithTheControls() {
         val server = showPlayer(channel("trt1"), epgTitle = "Akşam Haberleri")
         try {
-            assertEquals(true, waitFor { compose.onAllNodes(hasTestTag("live_now_title")).fetchSemanticsNodes().isNotEmpty() })
+            assertEquals(true, waitFor {
+                if (compose.onAllNodes(hasTestTag("live_now_title")).fetchSemanticsNodes().isEmpty()) {
+                    // Denetimler gizlendiyse bir dokunuşla geri gelir.
+                    compose.onRoot().performTouchInput { click(center) }
+                }
+                compose.onAllNodes(hasTestTag("live_now_title")).fetchSemanticsNodes().isNotEmpty()
+            })
             compose.onNodeWithTag("live_now_title").assertTextEquals("Şimdi: Akşam Haberleri")
-            compose.onNodeWithTag("live_now_band").assertHasNoClickAction()
+            compose.onNodeWithTag("live_now_info").assertHasNoClickAction()
+            // Ekranda sürekli duran bir bant yok: denetimler kaybolunca bilgi de kaybolur.
+            compose.mainClock.advanceTimeBy(6_000)
+            ShadowLooper.idleMainLooper(100, TimeUnit.MILLISECONDS)
+            compose.mainClock.advanceTimeBy(1_000)
+            compose.onNodeWithTag("live_now_info").assertDoesNotExist()
         } finally {
             server.shutdown()
         }
     }
 
     @Test
-    fun phonePlayer_liveChannelWithoutGuide_keepsAnEmptyBand() {
+    fun phonePlayer_liveChannelWithoutGuide_showsTheCategory() {
         val server = showPlayer(channel("trt1"), epgTitle = null)
         try {
-            assertEquals(true, waitFor { compose.onAllNodes(hasTestTag("live_now_band")).fetchSemanticsNodes().isNotEmpty() })
             waitFor { server.requestCount > 0 }
             compose.mainClock.advanceTimeBy(500)
-            compose.onNodeWithTag("live_now_band").assertExists()
-            compose.onNodeWithTag("live_now_title").assertDoesNotExist()
+            assertEquals(true, waitFor {
+                if (compose.onAllNodes(hasText("Ulusal")).fetchSemanticsNodes().isEmpty()) {
+                    compose.onRoot().performTouchInput { click(center) }
+                }
+                compose.onAllNodes(hasText("Ulusal")).fetchSemanticsNodes().isNotEmpty()
+            })
+            compose.onNodeWithTag("live_now_info").assertDoesNotExist()
         } finally {
             server.shutdown()
         }
     }
 
     @Test
-    fun phonePlayer_movie_hasNoBand() {
+    fun phonePlayer_movie_hasNoLiveInfo() {
         val server = showPlayer(channel("trt1", type = "MOVIE"), epgTitle = "Akşam Haberleri")
         try {
             waitFor { server.requestCount > 0 }
             compose.mainClock.advanceTimeBy(500)
-            compose.onNodeWithTag("live_now_band").assertDoesNotExist()
+            compose.onNodeWithTag("live_now_info").assertDoesNotExist()
         } finally {
             server.shutdown()
         }

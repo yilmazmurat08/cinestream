@@ -328,6 +328,7 @@
     <string name="home_top10_movies">🔥 Trending Movies Today</string>
     <string name="home_top10_series">📺 Popular Series</string>
     <string name="home_top10_channels">🔴 Popular Channels</string>
+    <string name="home_top10_cinema_channels">🎬 Movie &amp; Series Channels</string>
     <string name="home_ai_results">AI Picks: \"%1$s\"</string>
     <string name="home_search_results">Search Results: \"%1$s\"</string>
     <string name="home_ai_results_hint">The AI interpreted your query and picked the best matches from your library — these are not exact keyword matches.</string>

@@ -10,6 +10,8 @@ import com.example.data.model.XtreamSeriesCatalogEntity
 import com.example.data.repository.IPTVRepository
 import com.example.data.repository.TvCatalogRepository
 import com.example.ui.IPTVViewModel
+import com.example.ui.screens.liveShowcaseRow
+import com.example.ui.screens.localEpochDay
 import com.example.ui.screens.popularMoviesRow
 import com.example.ui.screens.popularSeriesRow
 import com.example.util.RatingScale
@@ -196,5 +198,56 @@ class HomeRowsTest {
             .filter { it.playlistId == 0 && it.streamUrl.isEmpty() }
             .map { it.id }
         assertEquals(listOf(101, 102), found)
+    }
+
+    private fun channel(id: Int, name: String, category: String) = IPTVItem(id = id, playlistId = 1, name = name,
+        cleanedName = name, logoUrl = null, streamUrl = "http://10.255.255.1/live/$id.ts", category = category, type = "LIVE")
+
+    @Test
+    fun liveShowcase_isCinemaAndSeriesChannels_fromManyFolders_changingDaily() {
+        // Sağlayıcı sırası: ilk klasör haber kanallarıyla dolu (eskiden bölüm hep bunlardı).
+        val news = (1..30).map { channel(it, "Haber $it", "Ulusal Haber") }
+        val cinema = listOf(
+            channel(101, "HD: Sinema TV", "Sinema"), channel(102, "FHD: Sinema TV", "Sinema"),
+            channel(103, "Sinema Aksiyon", "Sinema"), channel(104, "Yeşilçam TV", "Sinema"),
+            channel(111, "FilmBox Premium", "FİLM KANALLARI"), channel(112, "Movie Smart", "FİLM KANALLARI"),
+            channel(113, "beIN Movies Action", "FİLM KANALLARI"), channel(121, "TV+ Dizi", "Dizi Kanalları"),
+            channel(122, "Dizi Max", "Dizi Kanalları"), channel(123, "Kanal D Dizi", "Dizi Kanalları"),
+            channel(124, "Star Dizi", "Dizi Kanalları"), channel(131, "Cine5", "Ulusal")
+        )
+        val notCinema = listOf(channel(201, "Minika", "Çizgi Film"), channel(202, "Cartoon Network", "Çocuk"),
+            channel(203, "Sinema XXX", "Yetişkin"))
+        val all = news + cinema + notCinema
+        val adult: (IPTVItem) -> Boolean = { it.category == "Yetişkin" }
+
+        val today = liveShowcaseRow(all, day = 20_000, isAdult = adult)
+        assertTrue(today.cinemaFocused)
+        assertEquals(10, today.items.size)
+        assertTrue("yalnızca sinema ve dizi kanalları", today.items.all { it.id in 101..131 })
+        assertTrue("aynı kanalın HD ve FHD'si birlikte çıkmaz", !(today.items.any { it.id == 101 } && today.items.any { it.id == 102 }))
+        assertTrue("ilk dört kanal farklı klasörlerden", today.items.take(4).map { it.category }.distinct().size == 4)
+        assertEquals("aynı gün aynı seçki", today.items.map { it.id }, liveShowcaseRow(all, day = 20_000, isAdult = adult).items.map { it.id })
+        val days = (20_001..20_005).map { d -> liveShowcaseRow(all, day = d.toLong(), isAdult = adult).items.map { it.id } }
+        assertTrue("seçki günden güne değişir", days.any { it != today.items.map { i -> i.id } })
+
+        // Sinema/dizi kanalı olmayan listede bölüm yine dolar, ama farklı klasörlerden.
+        val plain = news + (1..5).map { channel(300 + it, "Müzik $it", "Müzik") }
+        val fallback = liveShowcaseRow(plain, day = 20_000, isAdult = { false })
+        assertTrue(!fallback.cinemaFocused)
+        assertEquals(10, fallback.items.size)
+        assertEquals(setOf("Ulusal Haber", "Müzik"), fallback.items.take(2).map { it.category }.toSet())
+    }
+
+    @Test
+    fun localEpochDay_changesAtLocalMidnight() {
+        val tz = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Istanbul"))
+            // 15 Ekim 2026 23:30 ve 16 Ekim 00:30 (İstanbul) farklı günler.
+            val before = java.time.ZonedDateTime.of(2026, 10, 15, 23, 30, 0, 0, java.time.ZoneId.of("Europe/Istanbul")).toInstant().toEpochMilli()
+            assertEquals(1L, localEpochDay(before + 3_600_000) - localEpochDay(before))
+        } finally {
+            java.util.TimeZone.setDefault(tz)
+        }
     }
 }
