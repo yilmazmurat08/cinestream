@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "tr-w360dp-h780dp-port")
-class PhoneSmokeTest {
+open class PhoneSmokeTest {
 
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()

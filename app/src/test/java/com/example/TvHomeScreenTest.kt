@@ -32,7 +32,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w960dp-h540dp-land-television")
-class TvHomeScreenTest {
+open class TvHomeScreenTest {
 
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
