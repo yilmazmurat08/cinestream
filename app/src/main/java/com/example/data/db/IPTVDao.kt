@@ -561,10 +561,14 @@ interface IPTVDao {
     @Query("SELECT * FROM iptv_items WHERE type = :type AND category = :category")
     suspend fun itemsInCategory(type: String, category: String): List<IPTVItem>
 
-    @Query("SELECT * FROM iptv_items WHERE type = :type ORDER BY rating DESC LIMIT :limit")
+    // 10 ve üstü puanlar geçersiz sayılır (bkz. RatingScale); eski kayıtlı veride sahte puanlar olabilir.
+    @Query("SELECT * FROM iptv_items WHERE type = :type AND rating < 10 ORDER BY rating DESC LIMIT :limit")
     suspend fun topRatedByType(type: String, limit: Int): List<IPTVItem>
 
-    @Query("SELECT * FROM iptv_items WHERE type = :type AND rating >= :minRating ORDER BY rating DESC LIMIT :limit")
+    @Query("SELECT * FROM iptv_items WHERE id IN (:ids)")
+    suspend fun itemsByIds(ids: List<Int>): List<IPTVItem>
+
+    @Query("SELECT * FROM iptv_items WHERE type = :type AND rating >= :minRating AND rating < 10 ORDER BY rating DESC LIMIT :limit")
     suspend fun ratedAtLeast(type: String, minRating: Double, limit: Int): List<IPTVItem>
 
     @Query("SELECT * FROM iptv_items WHERE type = 'LIVE' AND streamUrl != '' ORDER BY category, rowid LIMIT :limit")
@@ -589,10 +593,13 @@ interface IPTVDao {
     @Query("SELECT * FROM xtream_series_catalog WHERE seriesId = :seriesId OR name = :name LIMIT 1")
     suspend fun findCatalogShow(seriesId: Int, name: String): XtreamSeriesCatalogEntity?
 
-    @Query("SELECT * FROM xtream_series_catalog ORDER BY rating DESC LIMIT :limit")
+    @Query("SELECT * FROM xtream_series_catalog WHERE rating < 10 ORDER BY rating DESC LIMIT :limit")
     suspend fun topRatedSeriesCatalog(limit: Int): List<XtreamSeriesCatalogEntity>
 
-    @Query("SELECT * FROM xtream_series_catalog WHERE rating >= :minRating ORDER BY rating DESC LIMIT :limit")
+    @Query("SELECT * FROM xtream_series_catalog WHERE seriesId IN (:ids)")
+    suspend fun seriesCatalogByIds(ids: List<Int>): List<XtreamSeriesCatalogEntity>
+
+    @Query("SELECT * FROM xtream_series_catalog WHERE rating >= :minRating AND rating < 10 ORDER BY rating DESC LIMIT :limit")
     suspend fun seriesCatalogRatedAtLeast(minRating: Double, limit: Int): List<XtreamSeriesCatalogEntity>
 
     /** Kişi filmografisi eşleştirmesi için aday süzme (başlık/oyuncu LIKE koşulları sorguyla kurulur). */

@@ -200,12 +200,13 @@ fun HomeScreen(
 
     // Ana sayfa vitrin listelerine yetişkin içerik hiçbir şekilde girmez (ilk 10 uygun öğe bulunana kadar süzülür).
     // On binlerce filmi sıralamak ana iş parçacığını meşgul etmesin diye arka planda hesaplanır.
+    val popularMovieIds by viewModel.popularMoviesInLibraryIds.collectAsState()
+    // Bugün Trend Filmler: önce TMDB'de bugün popüler olup listede bulunan filmler (her gün değişir), kalan yer en
+    // yüksek puanlılarla dolar.
     val top10Movies = com.example.ui.components.rememberComputedOffMain(
-        movies, workSize = movies.size, fallback = emptyList<IPTVItem>()
+        movies, popularMovieIds, workSize = movies.size, fallback = emptyList<IPTVItem>()
     ) {
-        movies.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
-            .filterNot { viewModel.isAdultContent(it) }
-            .take(10).toList()
+        popularMoviesRow(movies, popularMovieIds) { viewModel.isAdultContent(it) }
     }
 
     val xtreamSeriesCatalogForTop10 by viewModel.xtreamSeriesCatalog.collectAsState()
@@ -2236,6 +2237,26 @@ fun RadioGlassCard(
 // =========================================================================
 // YENİ DİNAMİK VE KEŞİF WİDGET COMPONENT'LERİ
 // =========================================================================
+
+/**
+ * Ana sayfadaki "Bugün Trend Filmler": önce TMDB'de bugün popüler olup listede bulunan filmler (popülerlik sırasıyla,
+ * her gün değişir; aynı filmin farklı kaliteleri tek kez), kalan yer en yüksek (geçerli) puanlı filmlerle dolar.
+ * En fazla 10, yetişkin içerik yok.
+ */
+internal fun popularMoviesRow(
+    movies: List<IPTVItem>,
+    popularIds: List<Int>,
+    isAdult: (IPTVItem) -> Boolean
+): List<IPTVItem> {
+    val byId = movies.associateBy { it.id }
+    val popular = popularIds.asSequence().mapNotNull { byId[it] }
+        .distinctBy { it.cleanedName.ifBlank { it.name }.lowercase(java.util.Locale.ROOT).trim() }
+    val topRated = movies.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
+    return (popular + topRated)
+        .distinctBy { it.id }
+        .filterNot(isAdult)
+        .take(10).toList()
+}
 
 /**
  * Ana sayfadaki "Popüler Diziler": önce TMDB'de bugün popüler olup katalogda bulunan diziler (popülerlik sırasıyla,

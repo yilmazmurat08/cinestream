@@ -73,13 +73,24 @@ class TvCatalogRepository(private val dao: IPTVDao) {
     }
 
     /** Özel bölüm içeriği (küçük sabit liste; yetişkin içerik asla yok). */
-    suspend fun special(type: String, section: TvSpecialSection): List<TvPoster> = withContext(Dispatchers.IO) {
+    /**
+     * [popularIds]: TMDB'de bugün popüler olup kütüphanede bulunanlar (telefondaki ana sayfa satırlarıyla aynı);
+     * Top 10 önce bunları, kalan yeri en yüksek puanlıları gösterir.
+     */
+    suspend fun special(type: String, section: TvSpecialSection, popularIds: List<Int> = emptyList()): List<TvPoster> = withContext(Dispatchers.IO) {
         val catalog = type == "SERIES" && dao.seriesCatalogCount() > 0
+        val popular = popularIds.take(40)
         when (section) {
             TvSpecialSection.TOP10 -> if (catalog) {
-                dao.topRatedSeriesCatalog(40).asSequence().filterNot { adult(it) }.take(10).map { catalogPoster(it) }.toList()
+                val byId = if (popular.isEmpty()) emptyMap() else dao.seriesCatalogByIds(popular).associateBy { it.seriesId }
+                (popular.asSequence().mapNotNull { byId[it] } + dao.topRatedSeriesCatalog(40).asSequence())
+                    .distinctBy { it.seriesId }.filterNot { adult(it) }.take(10).map { catalogPoster(it) }.toList()
             } else {
-                dao.topRatedByType(type, 40).asSequence().filterNot { adult(it) }.take(10).map { itemPoster(it) }.toList()
+                val byId = if (popular.isEmpty() || type != "MOVIE") emptyMap() else dao.itemsByIds(popular).associateBy { it.id }
+                val popularItems = popular.asSequence().mapNotNull { byId[it] }
+                    .distinctBy { it.cleanedName.ifBlank { it.name }.lowercase(java.util.Locale.ROOT).trim() }
+                (popularItems + dao.topRatedByType(type, 40).asSequence())
+                    .distinctBy { it.id }.filterNot { adult(it) }.take(10).map { itemPoster(it) }.toList()
             }
             TvSpecialSection.TOP_RATED -> if (catalog) {
                 val high = dao.seriesCatalogRatedAtLeast(8.0, 120).filterNot { adult(it) }

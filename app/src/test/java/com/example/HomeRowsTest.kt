@@ -10,6 +10,7 @@ import com.example.data.model.XtreamSeriesCatalogEntity
 import com.example.data.repository.IPTVRepository
 import com.example.data.repository.TvCatalogRepository
 import com.example.ui.IPTVViewModel
+import com.example.ui.screens.popularMoviesRow
 import com.example.ui.screens.popularSeriesRow
 import com.example.util.RatingScale
 import kotlinx.coroutines.cancel
@@ -126,6 +127,55 @@ class HomeRowsTest {
         // Ertesi gün popülerler değişince sıra da değişir.
         val tomorrow = popularSeriesRow(catalog, popularIds = listOf(5, 2)) { false }.map { it.name }
         assertEquals(listOf("Dün Popüler", "Yüksek Puanlı B", "Yüksek Puanlı A"), tomorrow.take(3))
+    }
+
+    private fun film(id: Int, name: String, rating: Double) = IPTVItem(id = id, playlistId = 1, name = name, cleanedName = name,
+        logoUrl = null, streamUrl = "http://10.255.255.1/m/$id.mp4", category = "Film", type = "MOVIE", rating = rating)
+
+    @Test
+    fun trendMoviesRow_startsWithTodaysPopular_thenTopRated() {
+        val movies = listOf(
+            film(1, "Yüksek Puanlı A", 9.2), film(2, "Yüksek Puanlı B", 8.8), film(3, "Bugün Popüler", 6.9),
+            film(4, "Bugün Popüler", 6.9), film(5, "Sahte Puanlı", 10.0), film(6, "Dün Popüler", 7.0)
+        )
+        // Aynı filmin iki kalitesi (3 ve 4) tek kez görünür.
+        val today = popularMoviesRow(movies, popularIds = listOf(3, 4)) { false }
+        assertEquals(listOf(3, 1, 2), today.take(3).map { it.id })
+        assertTrue("sahte 10 puanlı film en üste çıkmaz", today.indexOfFirst { it.id == 5 } > 2)
+        // Ertesi gün popülerler değişince sıra da değişir.
+        val tomorrow = popularMoviesRow(movies, popularIds = listOf(6)) { false }
+        assertEquals(listOf(6, 1, 2), tomorrow.take(3).map { it.id })
+    }
+
+    @Test
+    fun tmdbPopularMovies_areFoundInTheLibrary() {
+        runBlocking {
+            db.iptvDao().insertItems(listOf(film(201, "TR: Oppenheimer (2023) 4K", 8.3), film(202, "Başka Film", 6.0)))
+        }
+        val candidates = listOf(
+            com.example.data.api.GeminiAiService.TitleCandidate("Oppenheimer", "Oppenheimer", 2023, false),
+            com.example.data.api.GeminiAiService.TitleCandidate("Kütüphanede Yok", "Not In Library", 2025, false)
+        )
+        val found = runBlocking { TvCatalogRepository(db.iptvDao()).findTitles(candidates, limit = 40) }
+            .filter { it.type == "MOVIE" && it.streamUrl.isNotEmpty() }
+            .map { it.id }
+        assertEquals(listOf(201), found)
+    }
+
+    @Test
+    fun tvTop10_startsWithTodaysPopular_andTvTopRatedSkipsFakeRatings() {
+        runBlocking {
+            db.iptvDao().insertItems(listOf(
+                film(301, "Yüksek Puanlı", 9.0), film(302, "Bugün Popüler", 6.8), film(303, "Sahte On", 10.0),
+                film(304, "Sahte Oniki", 12.0), film(305, "İyi", 8.2)
+            ))
+        }
+        val tv = TvCatalogRepository(db.iptvDao())
+        val top10 = runBlocking { tv.special("MOVIE", com.example.data.repository.TvSpecialSection.TOP10, popularIds = listOf(302)) }
+        assertEquals(listOf(302, 301, 305), top10.take(3).map { it.item.id })
+        assertTrue("sahte puanlılar Top 10'a girmez", top10.none { it.item.id in setOf(303, 304) })
+        val topRated = runBlocking { tv.special("MOVIE", com.example.data.repository.TvSpecialSection.TOP_RATED) }
+        assertEquals(listOf(301, 305), topRated.map { it.item.id })
     }
 
     @Test

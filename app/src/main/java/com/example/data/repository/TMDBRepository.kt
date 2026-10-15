@@ -602,6 +602,25 @@ class TMDBRepository(
         }
     }
 
+    /** TMDB'de bugün popüler filmler: kütüphanede eşini bulmak için Türkçe ad, orijinal ad ve yıl. */
+    suspend fun getPopularMovieCandidates(tmdbApiKey: String = ""): List<com.example.data.api.GeminiAiService.TitleCandidate> =
+        withContext(Dispatchers.IO) {
+            try {
+                tmdbService.getPopularMovies(getApiKey(tmdbApiKey), "tr-TR").results.mapNotNull { m ->
+                    val title = (m.title ?: m.name)?.trim().orEmpty()
+                    if (title.isEmpty()) return@mapNotNull null
+                    com.example.data.api.GeminiAiService.TitleCandidate(
+                        title = title,
+                        originalTitle = (m.originalTitle ?: m.originalName)?.trim().orEmpty().ifEmpty { title },
+                        year = (m.releaseDate ?: m.firstAirDate)?.take(4)?.toIntOrNull(),
+                        isSeries = false
+                    )
+                }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+
     /** TMDB'de bugün popüler diziler: kütüphanede eşini bulmak için Türkçe ad, orijinal ad ve yıl. */
     suspend fun getPopularSeriesCandidates(tmdbApiKey: String = ""): List<com.example.data.api.GeminiAiService.TitleCandidate> =
         withContext(Dispatchers.IO) {

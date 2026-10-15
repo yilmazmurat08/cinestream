@@ -298,7 +298,14 @@ class IPTVViewModel(
     }
 
     suspend fun tvSpecial(type: String, section: com.example.data.repository.TvSpecialSection): List<com.example.data.repository.TvPoster> =
-        tvRead("special", emptyList()) { tvCatalog.special(type, section) }
+        tvRead("special", emptyList()) {
+            val popular = when (type) {
+                "MOVIE" -> _popularMoviesInLibraryIds.value
+                "SERIES" -> _popularSeriesInLibraryIds.value
+                else -> emptyList()
+            }
+            tvCatalog.special(type, section, popular)
+        }
 
     /** Kategorinin [offset]'ten başlayan sayfası. Dizilerde M3U bölümleri tek seferde gruplanır (sayfa yok). */
     suspend fun tvCategoryPage(type: String, categoryKey: String, offset: Int, limit: Int, covers: Map<String, String>): List<com.example.data.repository.TvPoster> =
@@ -1077,6 +1084,10 @@ class IPTVViewModel(
 
     /** TMDB'de bugün popüler olup kullanıcının dizi kataloğunda bulunan dizilerin kimlikleri (popülerlik sırasıyla). */
     private val _popularSeriesInLibraryIds = MutableStateFlow<List<Int>>(emptyList())
+
+    /** TMDB'de bugün popüler olup kullanıcının film listesinde bulunan filmlerin kimlikleri (popülerlik sırasıyla). */
+    private val _popularMoviesInLibraryIds = MutableStateFlow<List<Int>>(emptyList())
+    val popularMoviesInLibraryIds: StateFlow<List<Int>> = _popularMoviesInLibraryIds.asStateFlow()
     val popularSeriesInLibraryIds: StateFlow<List<Int>> = _popularSeriesInLibraryIds.asStateFlow()
 
     private val _topRatedSeriesList = MutableStateFlow<List<IPTVItem>>(emptyList())
@@ -2052,6 +2063,18 @@ class IPTVViewModel(
                     }
                 } catch (e: Exception) {
                     Log.w("IPTVViewModel", "Popüler dizi eşleştirme başarısız: ${e.message}")
+                }
+                // Ana sayfadaki "Bugün Trend Filmler": TMDB'nin bugünkü popüler filmlerinden kütüphanede olanlar.
+                try {
+                    val candidates = tmdbRepository.getPopularMovieCandidates(key)
+                    if (candidates.isNotEmpty()) {
+                        _popularMoviesInLibraryIds.value = tvCatalog.findTitles(candidates, limit = 40)
+                            .filter { it.type == "MOVIE" && it.streamUrl.isNotEmpty() }
+                            .map { it.id }
+                            .distinct()
+                    }
+                } catch (e: Exception) {
+                    Log.w("IPTVViewModel", "Popüler film eşleştirme başarısız: ${e.message}")
                 }
 
                 val topRatedSeries = tmdbRepository.getTopRatedSeriesList(key)
