@@ -21,6 +21,14 @@ android {
 
     // 60 dakikalık ücretsiz izleme sınırı: mağaza (release) sürümünde açık, test sürümlerinde kapalı.
     buildConfigField("boolean", "FREE_WATCH_LIMIT", "true")
+
+    // Play lisans anahtarı (herkese açık anahtar; satın alma imzasını doğrulamak için). Depoda tutulmaz, derleme
+    // anında ortam değişkeninden okunur. Boşsa uygulama imza denetimi yapmaz (test sürümleri).
+    val playLicenseKey = (System.getenv("CINESTREAM_PLAY_LICENSE_KEY") ?: "").replace(Regex("\\s"), "")
+    require(playLicenseKey.all { it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' }) {
+      "CINESTREAM_PLAY_LICENSE_KEY geçersiz karakter içeriyor"
+    }
+    buildConfigField("String", "PLAY_LICENSE_KEY", "\"$playLicenseKey\"")
   }
 
   signingConfigs {

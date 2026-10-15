@@ -153,6 +153,16 @@ object SubscriptionManager {
     }
 
     /** Geçerli satın alımları Play'den okur; sonuç kesinse PRO durumunu bildirir. */
+    /** Play lisans anahtarı (derleme anında verilir). Yoksa (test sürümleri) imza denetimi yapılmaz. */
+    private val licenseKey by lazy { PurchaseVerifier.publicKeyOrNull(com.example.BuildConfig.PLAY_LICENSE_KEY) }
+
+    /** Satın alım Google imzalı mı? Sahte satın alma araçlarının uydurduğu satın alımlar PRO açmaz. */
+    private fun Purchase.isGenuine(): Boolean = isGenuinePurchase(licenseKey, this)
+
+    /** Anahtar yoksa (test sürümü) her satın alım geçerli sayılır; varsa Google imzası şarttır. */
+    internal fun isGenuinePurchase(key: java.security.PublicKey?, purchase: Purchase): Boolean =
+        key == null || PurchaseVerifier.isSignedByGoogle(key, purchase.originalJson, purchase.signature)
+
     private fun queryOwned() {
         val c = client ?: return
         val collected = mutableListOf<Purchase>()
@@ -174,7 +184,7 @@ object SubscriptionManager {
         for (type in listOf(BillingClient.ProductType.SUBS, BillingClient.ProductType.INAPP)) {
             runCatching {
                 c.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(type).build()) { result, purchases ->
-                    if (result.responseCode == BillingClient.BillingResponseCode.OK) collected += purchases else failed = true
+                    if (result.responseCode == BillingClient.BillingResponseCode.OK) collected += purchases.filter { it.isGenuine() } else failed = true
                     done()
                 }
             }.onFailure {
@@ -271,7 +281,7 @@ object SubscriptionManager {
             pendingReplacement = null
             when (result.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
-                    val ours = purchases.orEmpty().filter { p -> p.products.any { it in ALL_PRODUCTS } }
+                    val ours = purchases.orEmpty().filter { p -> p.products.any { it in ALL_PRODUCTS } && p.isGenuine() }
                     val completed = ours.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
                     completed.filter { !it.isAcknowledged }.forEach { acknowledge(it) }
                     if (completed.isNotEmpty()) {
