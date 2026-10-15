@@ -602,6 +602,25 @@ class TMDBRepository(
         }
     }
 
+    /** TMDB'de bugün popüler diziler: kütüphanede eşini bulmak için Türkçe ad, orijinal ad ve yıl. */
+    suspend fun getPopularSeriesCandidates(tmdbApiKey: String = ""): List<com.example.data.api.GeminiAiService.TitleCandidate> =
+        withContext(Dispatchers.IO) {
+            try {
+                tmdbService.getPopularSeries(getApiKey(tmdbApiKey), "tr-TR").results.mapNotNull { m ->
+                    val title = (m.name ?: m.title)?.trim().orEmpty()
+                    if (title.isEmpty()) return@mapNotNull null
+                    com.example.data.api.GeminiAiService.TitleCandidate(
+                        title = title,
+                        originalTitle = (m.originalName ?: m.originalTitle)?.trim().orEmpty().ifEmpty { title },
+                        year = (m.firstAirDate ?: m.releaseDate)?.take(4)?.toIntOrNull(),
+                        isSeries = true
+                    )
+                }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+
     suspend fun getTopRatedSeriesList(tmdbApiKey: String = ""): List<IPTVItem> = withContext(Dispatchers.IO) {
         getPopularSeriesList(tmdbApiKey)
     }

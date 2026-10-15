@@ -1075,6 +1075,10 @@ class IPTVViewModel(
     private val _popularSeriesList = MutableStateFlow<List<IPTVItem>>(emptyList())
     val popularSeriesList: StateFlow<List<IPTVItem>> = _popularSeriesList.asStateFlow()
 
+    /** TMDB'de bugün popüler olup kullanıcının dizi kataloğunda bulunan dizilerin kimlikleri (popülerlik sırasıyla). */
+    private val _popularSeriesInLibraryIds = MutableStateFlow<List<Int>>(emptyList())
+    val popularSeriesInLibraryIds: StateFlow<List<Int>> = _popularSeriesInLibraryIds.asStateFlow()
+
     private val _topRatedSeriesList = MutableStateFlow<List<IPTVItem>>(emptyList())
     val topRatedSeriesList: StateFlow<List<IPTVItem>> = _topRatedSeriesList.asStateFlow()
 
@@ -1166,10 +1170,15 @@ class IPTVViewModel(
     val legendItems: StateFlow<List<IPTVItem>> = combine(movies, series) { m, s -> m + s }
         .debounce(400)
         .map { pool ->
-            val filtered = pool.filterNot { isAdultContent(it) }
+            // Puanlar 0–10 ölçeğinde doğrulanır (kayıtlı eski veride 10 ve üstü sahte puanlar olabilir).
+            val filtered = pool.asSequence().filterNot { isAdultContent(it) }
+                .mapNotNull { item ->
+                    val r = com.example.util.RatingScale.normalize(item.rating)
+                    if (r >= 7.5) (if (r == item.rating) item else item.copy(rating = r)) else null
+                }.toList()
             val highRated = filtered.filter { it.rating >= 8.0 }
             if (highRated.isNotEmpty()) highRated.sortedByDescending { it.rating }
-            else filtered.filter { it.rating >= 7.5 }.sortedByDescending { it.rating }
+            else filtered.sortedByDescending { it.rating }
         }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -2031,6 +2040,19 @@ class IPTVViewModel(
 
                 val popularSeries = tmdbRepository.getPopularSeriesList(key)
                 _popularSeriesList.value = (if (popularSeries.isNotEmpty()) popularSeries else geminiPicks.filter { it.type == "SERIES" }).filterNot { isAdultContent(it) }
+
+                // Ana sayfadaki "Popüler Diziler": TMDB'nin bugünkü popüler dizilerinden kütüphanede olanlar.
+                try {
+                    val candidates = tmdbRepository.getPopularSeriesCandidates(key)
+                    if (candidates.isNotEmpty()) {
+                        _popularSeriesInLibraryIds.value = tvCatalog.findTitles(candidates, limit = 40)
+                            .filter { it.playlistId == 0 && it.streamUrl.isEmpty() } // yalnızca katalog dizileri
+                            .map { it.id }
+                            .distinct()
+                    }
+                } catch (e: Exception) {
+                    Log.w("IPTVViewModel", "Popüler dizi eşleştirme başarısız: ${e.message}")
+                }
 
                 val topRatedSeries = tmdbRepository.getTopRatedSeriesList(key)
                 _topRatedSeriesList.value = if (topRatedSeries.isNotEmpty()) topRatedSeries else geminiPicks.filter { it.type == "SERIES" }

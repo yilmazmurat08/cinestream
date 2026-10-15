@@ -203,17 +203,17 @@ fun HomeScreen(
     val top10Movies = com.example.ui.components.rememberComputedOffMain(
         movies, workSize = movies.size, fallback = emptyList<IPTVItem>()
     ) {
-        movies.sortedByDescending { it.rating }.asSequence()
+        movies.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
             .filterNot { viewModel.isAdultContent(it) }
             .take(10).toList()
     }
 
     val xtreamSeriesCatalogForTop10 by viewModel.xtreamSeriesCatalog.collectAsState()
-    val top10Series = remember(xtreamSeriesCatalogForTop10) {
-        xtreamSeriesCatalogForTop10.sortedByDescending { it.rating }.asSequence()
-            .map { it.toBrowsableItem() }
-            .filterNot { viewModel.isAdultContent(it) }
-            .take(10).toList()
+    val popularSeriesIds by viewModel.popularSeriesInLibraryIds.collectAsState()
+    // Popüler Diziler: önce TMDB'de bugün popüler olup katalogda bulunanlar (her gün değişir), kalan yer en yüksek
+    // puanlılarla dolar.
+    val top10Series = remember(xtreamSeriesCatalogForTop10, popularSeriesIds) {
+        popularSeriesRow(xtreamSeriesCatalogForTop10, popularSeriesIds) { viewModel.isAdultContent(it) }
     }
 
     val top10Live = remember(liveChannels) {
@@ -2236,6 +2236,25 @@ fun RadioGlassCard(
 // =========================================================================
 // YENİ DİNAMİK VE KEŞİF WİDGET COMPONENT'LERİ
 // =========================================================================
+
+/**
+ * Ana sayfadaki "Popüler Diziler": önce TMDB'de bugün popüler olup katalogda bulunan diziler (popülerlik sırasıyla,
+ * her gün değişir), kalan yer en yüksek (geçerli) puanlı dizilerle dolar. En fazla 10, yetişkin içerik yok.
+ */
+internal fun popularSeriesRow(
+    catalog: List<com.example.data.model.TvShow>,
+    popularIds: List<Int>,
+    isAdult: (IPTVItem) -> Boolean
+): List<IPTVItem> {
+    val byId = catalog.associateBy { it.id }
+    val popular = popularIds.asSequence().mapNotNull { byId[it] }
+    val topRated = catalog.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
+    return (popular + topRated)
+        .distinctBy { it.id }
+        .map { it.toBrowsableItem() }
+        .filterNot(isAdult)
+        .take(10).toList()
+}
 
 @Composable
 fun LegendsSection(

@@ -242,11 +242,9 @@ object MetadataEnricher {
                 return@withContext null
             }
 
-            val ratingStr = info.optString("rating", "").ifEmpty { info.optString("rating_5based", "") }
-            var ratingVal = ratingStr.toDoubleOrNull() ?: info.optDouble("rating", 0.0)
-            if (ratingVal > 0.0 && ratingVal <= 5.0 && info.has("rating_5based")) {
-                ratingVal *= 2.0
-            }
+            // 10 üzerinden puan: rating_5based × 2 (güvenilir); yoksa rating. 10 üzerinden 5 ve altındaki bir puan
+            // eskiden ikiyle çarpılıyordu (4,6 → 9,2), "IMDb 8+" sahte puanlarla doluyordu.
+            val ratingVal = com.example.util.RatingScale.fromXtream(info.optString("rating", ""), info.optString("rating_5based", ""))
 
             val releaseDate = info.optString("releasedate", "").ifEmpty {
                 info.optString("release_date", "").ifEmpty {
@@ -516,7 +514,7 @@ object MetadataEnricher {
                     val icon = obj.optString("stream_icon", "").trim()
                     val containerExt = obj.optString("container_extension", "mp4").ifEmpty { "mp4" }
                     val playUrl = "${creds.baseUrl}/movie/${creds.user}/${creds.pass}/$streamId.$containerExt"
-                    val rating = obj.optDouble("rating", 0.0).let { if (it.isNaN()) 0.0 else it }
+                    val rating = com.example.util.RatingScale.fromXtream(obj.optString("rating", ""), obj.optString("rating_5based", ""))
                     val categoryId = obj.optString("category_id", "")
 
                     result.add(
@@ -721,9 +719,7 @@ object MetadataEnricher {
                     }
 
                     val plot = obj.optString("plot", "").trim()
-                    val rating = obj.optDouble("rating", 0.0).let { r ->
-                        if (r > 0.0) r else obj.optDouble("rating_5based", 0.0) * 2.0
-                    }
+                    val rating = com.example.util.RatingScale.fromXtream(obj.optString("rating", ""), obj.optString("rating_5based", ""))
                     val releaseDate = obj.optString("releaseDate", "").ifEmpty { obj.optString("release_date", "") }.trim()
                     val genre = obj.optString("genre", "").trim()
                     val cast = obj.optString("cast", "").trim()
@@ -945,7 +941,8 @@ object MetadataEnricher {
                 summary = "",
                 cast = jsonOutput.optString("cast", item.cast).ifEmpty { generateLocalMovieMetadata(item).cast },
                 director = jsonOutput.optString("director", item.director).ifEmpty { generateLocalMovieMetadata(item).director },
-                rating = jsonOutput.optDouble("rating", item.rating).let { if (it <= 0.0) 8.2 else it },
+                // Puan bilinmiyorsa uydurulmaz (eskiden 8.2 yazılıyordu).
+                rating = com.example.util.RatingScale.normalize(jsonOutput.optDouble("rating", item.rating)),
                 logoUrl = null,
                 trailerUrl = jsonOutput.optString("trailerUrl", "").ifEmpty { null }
             )
