@@ -279,6 +279,7 @@
     <string name="search_popup_placeholder">Search movies, series, channels or with AI...</string>
     <string name="search_desc">Search</string>
     <string name="search_ai_hint">Use ✨ for an AI search by mood or theme (e.g. \"scary\", \"for the weekend\")</string>
+    <string name="search_ai_desc">Search with AI</string>
     <string name="search_type_prompt">Type the name of what you are looking for...</string>
     <string name="search_no_results">No results found</string>
     <string name="player_seek_back_10">10 Sec Back</string>

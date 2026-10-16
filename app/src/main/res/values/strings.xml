@@ -278,6 +278,7 @@
     <string name="search_popup_placeholder">Film, dizi, kanal veya AI ile arayın...</string>
     <string name="search_desc">Arama</string>
     <string name="search_ai_hint">✨ ile ruh haline/temaya göre yapay zeka araması yapabilirsin (ör. \"korkutucu\", \"hafta sonu için\")</string>
+    <string name="search_ai_desc">Yapay zekâ ile ara</string>
     <string name="search_type_prompt">Aramak istediğiniz içeriğin adını yazın...</string>
     <string name="search_no_results">Sonuç bulunamadı</string>
     <string name="player_seek_back_10">10 Sn Geri</string>
