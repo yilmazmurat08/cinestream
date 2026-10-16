@@ -64,8 +64,18 @@ Sonraya kalanlar:
 - İzlerken açılan mini kanal listesi.
 - Profiller ve cihazlar arası eşitleme.
 
-**Spor modülü:** Yazıldı ve test edildi ama bu depoda değil. Yayından sonra ek özellik olarak eklenecek. Tüm kaynak kod ve ayrıntılı not (`kaynak/HAFIZA.md`) şu sayfada:
+**Spor modülü:** Yazıldı ve test edildi ama bu depoda değil. Yayından sonra **PRO özellik** olarak eklenecek (kullanıcı kararı, 16 Ekim 2026). Tüm kaynak kod ve ayrıntılı not (`kaynak/HAFIZA.md`) şu sayfada:
 https://claude.ai/artifact/3v9FABLB6e6763tUZwYTPd
+
+**Özellik havuzu (16 Ekim 2026, kullanıcı kararı; sırası henüz belli değil):**
+Yayındaki uygulama bozulmasın diye ayrı dalda, ayrı modül olarak ve açma/kapama anahtarıyla yapılır; kullanıcı test edip onaylayınca birleştirilir. Önce yukarıdaki yol haritası önerilir.
+- **Oyunlar (PRO).** Hepsi kullanıcının kendi listesinden beslenir; TV'de kumandayla oynanır.
+  1. *Kaydırma oyunu:* Ekranda film ya da dizi posteri; üzerinde tür, konu, IMDb puanı (TMDB'den). Sola kaydırma: geç. Sağa kaydırma: Listeme (favori) ekle. TV'de sol/sağ tuşları.
+  2. *Çark:* Listedeki kategorilerden (korku, savaş vb.) oluşan çark; ortadaki "Çevir" ile rastgele döner ve durur. Denk gelen kategoriden 3 rastgele film posteri çıkar; seçilenin kartı açılır, istemezse çark yeniden çevrilir.
+  3. *Dizi bilgi yarışması (yapay zekâ):* Listeden bir dizi seçilir; posteri solda bulanık durur. Dizi hakkında soru ve iki cevap şıkkı. Doğru cevap: dizi kartı açılır. Yanlış: yeni soru. Üç yanlışta hoş bir mesajla dizi klasörlerine gidilir. Sorular dizinin gerçek bilgilerinden (yıl, oyuncu, tür, konu) üretilir, yapay zekâ yalnızca cümleye çevirir; sürpriz bozan soru yok.
+- **Spor (PRO).** Yukarıdaki Spor modülü.
+- **Yeni alt bar (telefon).** Ana Sayfa, Filmler, Diziler, **Canlı TV kalır**, en sağda kullanıcının profil resmi (resim yoksa insan figürü). Bar **saydam/buzlu** görünümde (kullanıcının örnek görseli: koyu, yarı saydam, ince açık çerçeveli, seçili sekme hafif vurgulu). Profil düğmesi barın üstünde açılan buzlu menü açar: Ayarlar, Profil (Ayarlar'daki profil buraya taşınır), Oyunlar, Spor, Listem.
+- **Başlık yazı stili.** Bölüm başlıkları eğik, şık bir yazı tipiyle (ör. "Kaldığın yerden devam et"); üstünde küçük, harf aralıklı altın renkli etiket ("DEVAM ET"), altında gri açıklama. Türkçe harfleri destekleyen ücretsiz (OFL) yazı tipi. Başka uygulamaların adı, logosu, görseli kopyalanmaz.
 
 Bilerek yapılmayacaklar:
 - Uygulamaya hazır kanal listesi ya da içerik koymak. Play'den kaldırılma riski var.
