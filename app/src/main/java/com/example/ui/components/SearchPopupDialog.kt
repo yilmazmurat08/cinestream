@@ -193,7 +193,8 @@ fun SearchPopupDialog(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(searchResults, key = { it.id }) { item ->
+                        // Katalog dizisinin numarası bir kanalın numarasıyla aynı olabilir: anahtar türü de içerir.
+                        items(searchResults, key = { "${it.type}_${it.playlistId}_${it.id}" }) { item ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

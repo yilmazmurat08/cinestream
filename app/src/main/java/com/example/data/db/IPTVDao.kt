@@ -290,6 +290,10 @@ interface IPTVDao {
     @Query("SELECT * FROM iptv_items WHERE name LIKE :query OR cleanedName LIKE :query OR category LIKE :query")
     fun searchItemsFlow(query: String): Flow<List<IPTVItem>>
 
+    /** Arama: Xtream dizi kataloğu (diziler iptv_items'ta değil, bu tabloda durur). */
+    @Query("SELECT * FROM xtream_series_catalog WHERE name LIKE :query OR canonicalKey LIKE :query LIMIT :limit")
+    fun searchSeriesCatalogFlow(query: String, limit: Int = 200): Flow<List<XtreamSeriesCatalogEntity>>
+
     @Query("""
         SELECT * FROM iptv_items
         WHERE cleanedName LIKE :query

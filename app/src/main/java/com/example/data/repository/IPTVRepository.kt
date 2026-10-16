@@ -440,6 +440,9 @@ class IPTVRepository(
     suspend fun getItemByIdDirect(id: Int): IPTVItem? = iptvDao.getItemById(id)
     fun searchItems(query: String): Flow<List<IPTVItem>> = iptvDao.searchItemsFlow("%$query%").guardedRead("search")
 
+    fun searchSeriesCatalog(query: String): Flow<List<com.example.data.model.XtreamSeriesCatalogEntity>> =
+        iptvDao.searchSeriesCatalogFlow("%$query%").guardedRead("search_series_catalog")
+
     suspend fun searchCollectionItems(query: String, limit: Int = 20): List<IPTVItem> {
         val wildcard = "%${query.trim()}%"
         // Eşleşme yoksa artık alakasız "en yüksek puanlı filmler" listesine sessizce

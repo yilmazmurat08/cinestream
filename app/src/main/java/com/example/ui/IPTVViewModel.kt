@@ -1527,8 +1527,16 @@ class IPTVViewModel(
     // Search Results combined with Grouped Series logic and NLP Search
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val searchResults: StateFlow<List<IPTVItem>> = combine(
-        _searchQuery.flatMapLatest { query ->
-            if (query.isEmpty()) flowOf(emptyList()) else repository.searchItems(query)
+        _searchQuery.flatMapLatest { raw ->
+            val query = raw.trim()
+            if (query.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                // Xtream dizileri ayrı katalog tablosunda; eskiden aramaya hiç girmiyordu.
+                combine(repository.searchItems(query), repository.searchSeriesCatalog(query)) { items, catalog ->
+                    items + catalog.map { catalogShowOf(it).toBrowsableItem() }
+                }
+            }
         },
         _nlpSearchResults
     ) { results, nlpResults ->
@@ -1556,8 +1564,11 @@ class IPTVViewModel(
             )
         }
         
-        otherItems + groupedSeries
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        val combined = otherItems + groupedSeries
+        if (nlpResults.isNotEmpty()) combined
+        else com.example.util.SearchRanking.rank(_searchQuery.value, combined.distinctBy { Triple(it.type, it.playlistId, it.id) })
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         // Collect & initialize user profile from persistent DataStore
