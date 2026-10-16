@@ -275,7 +275,7 @@
     <string name="pin_incomplete">Lütfen 4 haneli PIN kodunu eksiksiz girin.</string>
     <string name="pin_hide">PIN Gizle</string>
     <string name="pin_show">PIN Göster</string>
-    <string name="search_popup_placeholder">Film, dizi, kanal veya AI ile arayın...</string>
+    <string name="search_popup_placeholder">Ara</string>
     <string name="search_desc">Arama</string>
     <string name="search_ai_hint">✨ ile ruh haline/temaya göre yapay zeka araması yapabilirsin (ör. \"korkutucu\", \"hafta sonu için\")</string>
     <string name="search_ai_desc">Yapay zekâ ile ara</string>
