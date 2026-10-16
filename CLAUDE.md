@@ -47,6 +47,16 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
    - **Catch-up:** kaçırılan yayını izleme. Xtream `tv_archive` alanı kullanılır; yalnızca arşivi olan kanallarda görünür.
    - **Kesintisiz izleme:** Yayın donunca aynı kanalın yedek sürümüne (HD/FHD/yedek) otomatik geçilir.
    - **Otomatik sonraki bölüm:** 10 saniyelik sayaçla. **Ücretsiz.**
+   - **Arka planda çalma (PRO, 16 Ekim 2026 kararı; özellik havuzundan):** radyo ve podcast için.
+     - Ayarlar'da iki anahtar: "Kulaklıkla çalmaya devam et" ve "Ekran kapalıyken çalmaya devam et". Ücretsizde kilitli, dokununca PRO ekranı.
+     - Kilit ekranı ve bildirimde kontroller (oynat/durdur, önceki/sonraki kanal); kulaklık ve Bluetooth tuşları çalışır (Media3 MediaSession).
+     - Arka plana geçince yalnızca ses çalar (görüntü kapanır, pil/veri tasarrufu); dönünce görüntü geri gelir.
+     - Kulaklık modu: kulaklık çıkınca ses hoparlörden devam etmez, durur.
+     - Ücretsiz günlük 60 dakika sınırı arka planda da sayılır (açık kalmasın).
+     - realme için ayarın yanında "Pil kısıtlamasını kaldır" yönlendirmesi.
+     - Play Console'da ön plan hizmeti (mediaPlayback) beyan formu gerekebilir; kullanıcıya adım adım anlatılır.
+     - TV: ana ekrana dönünce radyo çalmaya devam eder.
+     - Bugün: video oynatıcı arka planda durur (`PlayerScreen` ON_STOP); radyo (`RadioPlayerManager`) arka planda korunmuyor. `PlaybackForegroundService` ve FOREGROUND_SERVICE_MEDIA_PLAYBACK izni zaten var.
 6. **PRO 2. güncelleme:**
    - **TV'de canlı kanal önizleme:** Listede gezerken seçili kanal küçük pencerede oynar.
    - **Kendi kanal grupları:** grup oluşturma, kanalları sıralama, kategorileri gizleme.
