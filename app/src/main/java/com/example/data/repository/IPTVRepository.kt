@@ -438,10 +438,11 @@ class IPTVRepository(
 
     fun getItemById(id: Int): Flow<IPTVItem?> = iptvDao.getItemByIdFlow(id).guardedRead("item $id")
     suspend fun getItemByIdDirect(id: Int): IPTVItem? = iptvDao.getItemById(id)
-    fun searchItems(query: String): Flow<List<IPTVItem>> = iptvDao.searchItemsFlow("%$query%").guardedRead("search")
+    fun searchItems(query: String): Flow<List<IPTVItem>> =
+        iptvDao.searchItemsFlow(com.example.util.SearchRanking.sqlPattern(query)).guardedRead("search")
 
     fun searchSeriesCatalog(query: String): Flow<List<com.example.data.model.XtreamSeriesCatalogEntity>> =
-        iptvDao.searchSeriesCatalogFlow("%$query%").guardedRead("search_series_catalog")
+        iptvDao.searchSeriesCatalogFlow(com.example.util.SearchRanking.sqlPattern(query)).guardedRead("search_series_catalog")
 
     suspend fun searchCollectionItems(query: String, limit: Int = 20): List<IPTVItem> {
         val wildcard = "%${query.trim()}%"

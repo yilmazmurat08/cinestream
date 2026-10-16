@@ -1527,14 +1527,19 @@ class IPTVViewModel(
     // Search Results combined with Grouped Series logic and NLP Search
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val searchResults: StateFlow<List<IPTVItem>> = combine(
-        _searchQuery.flatMapLatest { raw ->
+        // Her harfte büyük listede sorgu çalışmasın (1 GB TV kutusu): yazma bitince aranır.
+        _searchQuery.debounce { if (it.isBlank()) 0L else 250L }.flatMapLatest { raw ->
             val query = raw.trim()
             if (query.isEmpty()) {
                 flowOf(emptyList())
             } else {
                 // Xtream dizileri ayrı katalog tablosunda; eskiden aramaya hiç girmiyordu.
                 combine(repository.searchItems(query), repository.searchSeriesCatalog(query)) { items, catalog ->
-                    items + catalog.map { catalogShowOf(it).toBrowsableItem() }
+                    // Klasör adı (ör. "Apple TV") gösterilir; kilitli/yetişkin klasör denetimi de bu adla yapılır.
+                    items + catalog.map { entity ->
+                        val show = catalogShowOf(entity)
+                        show.toBrowsableItem().copy(category = show.platformName)
+                    }
                 }
             }
         },
@@ -2483,9 +2488,11 @@ class IPTVViewModel(
     }
 
     fun findMatchedItem(item: IPTVItem): IPTVItem {
+        // Katalog dizisinin numarası başka bir kanala/filme ait olabilir: arama sonucundaki dizi yerine o açılıyordu.
+        if (item.type == "SERIES" && item.playlistId == 0 && item.id > 0 && item.streamUrl.isBlank()) return item
         val all = _allItems.value
         if (item.id != 0 && item.id > 0) {
-            val byId = all.firstOrNull { it.id == item.id }
+            val byId = all.firstOrNull { it.id == item.id && it.type == item.type }
             if (byId != null) return byId
         }
         val title = item.cleanedName.ifBlank { item.name }.trim()

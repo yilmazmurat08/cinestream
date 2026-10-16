@@ -46,6 +46,12 @@ class SearchTest {
 
     private fun search(vm: IPTVViewModel, query: String): List<IPTVItem> {
         vm.updateSearchQuery(query)
+        // Arama yazma bitince (250 ms) başlar: o süre geçmeden gelen sonuç bir önceki aramanındır.
+        val start = System.currentTimeMillis()
+        while (System.currentTimeMillis() - start < 600) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper(50, java.util.concurrent.TimeUnit.MILLISECONDS)
+            Thread.sleep(20)
+        }
         val end = System.currentTimeMillis() + 8_000
         var last = emptyList<IPTVItem>()
         while (System.currentTimeMillis() < end) {
@@ -94,5 +100,45 @@ class SearchTest {
         assertEquals(listOf(6), SearchRanking.rank("service", items).map { it.id })
         // Türkçe harfler ve büyük harf fark etmez.
         assertEquals(listOf(7), SearchRanking.rank("kizilcik serbeti", listOf(named(7, "KIZILCIK ŞERBETİ"))).map { it.id })
+    }
+
+    @Test
+    fun turkishLettersCaseAndPunctuation_doNotHideResults() {
+        runBlocking {
+            db.iptvDao().insertItems(listOf(
+                item(8001, "KIZILCIK ŞERBETİ", "MOVIE", "Yerli"),
+                item(8002, "Spider-Man: No Way Home", "MOVIE", "Aksiyon"),
+                item(8003, "Gülümse", "MOVIE", "Korku")
+            ))
+            db.iptvDao().insertXtreamSeriesCatalog(listOf(series(8101, "Yalı Çapkını")))
+        }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        scope.launch { vm.searchResults.collect {} }
+        assertEquals(listOf(8001), search(vm, "kızılcık").map { it.id })
+        assertEquals(listOf(8001), search(vm, "serbeti").map { it.id })
+        assertEquals(listOf(8002), search(vm, "spider man").map { it.id })
+        assertEquals(listOf(8003), search(vm, "GULUMSE").map { it.id })
+        assertEquals(listOf(8101), search(vm, "yali capkini").map { it.id })
+    }
+
+    @Test
+    fun openingASeriesResult_opensTheSeries_notAChannelWithTheSameNumber() {
+        runBlocking {
+            db.iptvDao().insertItems(listOf(item(9001, "TRT 1", "LIVE", "Ulusal")))
+            db.iptvDao().insertXtreamSeriesCatalog(listOf(series(9001, "La Brea")))
+        }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        scope.launch { vm.searchResults.collect {} }
+        scope.launch { vm.allItems.collect {} }
+        val end = System.currentTimeMillis() + 8_000
+        while (vm.allItems.value.isEmpty() && System.currentTimeMillis() < end) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper(50, java.util.concurrent.TimeUnit.MILLISECONDS)
+            Thread.sleep(20)
+        }
+        assertEquals("kanal belleğe yüklenmeli", 1, vm.allItems.value.size)
+        val result = search(vm, "la brea").single()
+        val opened = vm.findMatchedItem(result)
+        assertEquals("SERIES", opened.type)
+        assertEquals("La Brea", opened.name)
     }
 }

@@ -28,6 +28,32 @@ class EpisodeOrderAndOrientationTest {
         assertEquals(1, SeriesParser.resolveXtreamEpisodeNumber("0", "abc", "Bölüm", 1, index = 0))
     }
 
+    private fun src(top: String?, title: String, index: Int) = SeriesParser.XtreamEpisodeNumberSource(top, null, title, index)
+
+    @Test
+    fun xtreamSeason_trustsTheEpisodeTagInTheTitle_whenTheFieldIsJustTheOrder() {
+        // Sağlayıcıda 2. bölüm yok; episode_num eklenme sırası: 3. bölüm "2" yazılmış (La Brea'daki durum).
+        val season = listOf(
+            src("1", "La Brea - S01E01 - The Fall", 0),
+            src("2", "La Brea - S01E03 - The Way Back", 1),
+            src("3", "La Brea - S01E04 - Weapon", 2)
+        )
+        assertEquals(listOf(1, 3, 4), SeriesParser.resolveXtreamSeasonEpisodeNumbers(season, 1))
+    }
+
+    @Test
+    fun xtreamSeason_keepsTheField_whenTitleTagsAreMissingOrUnreliable() {
+        // Etiket yok: alan kullanılır.
+        assertEquals(listOf(5, 6), SeriesParser.resolveXtreamSeasonEpisodeNumbers(listOf(src("5", "Bölüm", 0), src("6", "Bölüm", 1)), 1))
+        // Bütün bölümlerin adında aynı etiket (sağlayıcı hatası): alan kullanılır.
+        assertEquals(listOf(1, 2, 3), SeriesParser.resolveXtreamSeasonEpisodeNumbers(
+            listOf(src("1", "Dizi S01E01", 0), src("2", "Dizi S01E01", 1), src("3", "Dizi S01E01", 2)), 1))
+        // Etiket başka sezona ait: alan kullanılır.
+        assertEquals(listOf(7), SeriesParser.resolveXtreamSeasonEpisodeNumbers(listOf(src("7", "Dizi - S01E02", 0)), 2))
+        // Alan da etiket de yok: sıradaki yeri.
+        assertEquals(listOf(1, 2), SeriesParser.resolveXtreamSeasonEpisodeNumbers(listOf(src(null, "x", 0), src("", "y", 1)), 1))
+    }
+
     @Test
     fun player_followsSensorUnlessForced() {
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_FULL_USER, playerRequestedOrientation(null))

@@ -115,6 +115,32 @@ object SeriesParser {
         return index + 1
     }
 
+    /** Xtream bölümünün numara kaynakları (bkz. [resolveXtreamSeasonEpisodeNumbers]). */
+    data class XtreamEpisodeNumberSource(val topLevel: String?, val infoLevel: String?, val title: String, val index: Int)
+
+    /**
+     * Bir sezondaki bütün bölümlerin numaraları. Bazı sağlayıcılarda "episode_num" alanı gerçek numara değil, bölümün
+     * eklenme sırasıdır (ör. 2. bölüm eksikse 3. bölüm "2" yazılır); bölümün adındaki "S01E03" ise dosyanın kendisinden
+     * gelir. Adlardaki etiketler bu sezona aitse ve birbirinden farklıysa (güvenilirse) onlar kullanılır; değilse
+     * (etiket yok ya da hepsi aynı) her bölüm için [resolveXtreamEpisodeNumber].
+     */
+    fun resolveXtreamSeasonEpisodeNumbers(entries: List<XtreamEpisodeNumberSource>, seasonNumber: Int): List<Int> {
+        val tags = entries.map { titleEpisodeNumber(it.title, seasonNumber) }
+        val present = tags.filterNotNull()
+        val tagsTrusted = present.isNotEmpty() && present.size == present.toSet().size
+        return entries.mapIndexed { i, e ->
+            tags[i]?.takeIf { tagsTrusted }
+                ?: resolveXtreamEpisodeNumber(e.topLevel, e.infoLevel, e.title, seasonNumber, e.index)
+        }
+    }
+
+    private fun titleEpisodeNumber(title: String, seasonNumber: Int): Int? {
+        val m = EPISODE_TAG_NUMBERS.find(title) ?: return null
+        val season = (m.groupValues[1].ifEmpty { m.groupValues[3] }).toIntOrNull()
+        val episode = (m.groupValues[2].ifEmpty { m.groupValues[4] }).toIntOrNull()
+        return episode?.takeIf { season == seasonNumber && it > 0 }
+    }
+
     private val EPISODE_TAG_NUMBERS = Regex("""(?i)\bS(\d{1,2})\s*E(\d{1,3})\b|\b(\d{1,2})x(\d{1,3})\b""")
 
     fun parseEpisodeInfo(rawName: String): ParsedEpisodeInfo? {

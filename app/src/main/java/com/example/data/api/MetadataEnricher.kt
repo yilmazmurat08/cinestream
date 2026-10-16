@@ -599,20 +599,31 @@ object MetadataEnricher {
                 val seasonNum = seasonKey.toIntOrNull() ?: continue
                 val episodeArray = episodesObj.optJSONArray(seasonKey) ?: continue
                 val episodes = mutableListOf<com.example.data.model.Episode>()
+                // Önce sezonun bütün bölümleri okunur: numara, sezondaki diğer bölümlerle birlikte belirlenir.
+                val raw = ArrayList<Triple<Int, org.json.JSONObject, Int>>()
                 for (i in 0 until episodeArray.length()) {
                     val epObj = episodeArray.optJSONObject(i) ?: continue
                     val epId = epObj.optString("id", "").ifEmpty { epObj.optInt("id", -1).toString() }
                     val epIdInt = epId.toIntOrNull() ?: continue
                     if (!seenEpisodeIds.add(epIdInt)) continue
+                    raw += Triple(i, epObj, epIdInt)
+                }
+                val numbers = com.example.data.model.SeriesParser.resolveXtreamSeasonEpisodeNumbers(
+                    raw.map { (i, epObj, _) ->
+                        com.example.data.model.SeriesParser.XtreamEpisodeNumberSource(
+                            topLevel = epObj.optString("episode_num", ""),
+                            infoLevel = epObj.optJSONObject("info")?.optString("episode_num", ""),
+                            title = epObj.optString("title", ""),
+                            index = i
+                        )
+                    },
+                    seasonNum
+                )
+                for ((n, entry) in raw.withIndex()) {
+                    val (i, epObj, epIdInt) = entry
                     val epTitle = epObj.optString("title", "Bölüm ${i + 1}")
                     val containerExt = epObj.optString("container_extension", "mp4").ifEmpty { "mp4" }
-                    val epNum = com.example.data.model.SeriesParser.resolveXtreamEpisodeNumber(
-                        topLevel = epObj.optString("episode_num", ""),
-                        infoLevel = epObj.optJSONObject("info")?.optString("episode_num", ""),
-                        title = epTitle,
-                        seasonNumber = seasonNum,
-                        index = i
-                    )
+                    val epNum = numbers[n]
                     val playUrl = "${creds.baseUrl}/series/${creds.user}/${creds.pass}/$epIdInt.$containerExt"
                     val epCover = epObj.optJSONObject("info")?.optString("movie_image", "") ?: ""
                     val syntheticId = -epIdInt

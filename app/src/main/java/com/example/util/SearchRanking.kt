@@ -62,6 +62,28 @@ object SearchRanking {
         return fold(name)
     }
 
+    /** Türkçe karşılığı olan harfler: veritabanında her biri tek karakter joker ("_") olur (bkz. [sqlPattern]). */
+    private const val TURKISH_PAIRS = "ıİiIşŞsSçÇcCğĞgGöÖoOüÜuU"
+
+    /**
+     * Veritabanı ön süzgeci için LIKE kalıbı. SQLite büyük/küçük harfi yalnızca İngilizce harflerde eşler: "şerbet"
+     * araması "ŞERBET"i, "kizilcik" "KIZILCIK"ı bulmuyordu. Türkçe karşılığı olan harfler tek karakter joker, kelime
+     * araları ve işaretler ("la.brea", "spider-man") herhangi bir şey olur. Kalıp fazlasını getirir; kesin eşleşme ve
+     * sıralama [rank] ile yapılır.
+     */
+    fun sqlPattern(query: String): String {
+        val out = StringBuilder("%")
+        for (ch in query.trim()) {
+            when {
+                !ch.isLetterOrDigit() -> if (out.last() != '%') out.append('%')
+                ch in TURKISH_PAIRS || ch.code > 127 -> out.append('_')
+                else -> out.append(ch)
+            }
+        }
+        if (out.last() != '%') out.append('%')
+        return out.toString()
+    }
+
     fun fold(text: String): String =
         text.lowercase(Locale.forLanguageTag("tr"))
             .replace('ş', 's').replace('ç', 'c').replace('ğ', 'g').replace('ı', 'i').replace('ö', 'o').replace('ü', 'u')
