@@ -79,6 +79,7 @@ https://claude.ai/artifact/3v9FABLB6e6763tUZwYTPd
 
 **Özellik havuzu (16 Ekim 2026, kullanıcı kararı; sırası henüz belli değil):**
 Yayındaki uygulama bozulmasın diye ayrı dalda, ayrı modül olarak ve açma/kapama anahtarıyla yapılır; kullanıcı test edip onaylayınca birleştirilir. Önce yukarıdaki yol haritası önerilir.
+**Onaylı görsel taslaklar (16 Ekim 2026, kullanıcı "gayet güzel" dedi; yapılırken bunlara uyulur):** https://claude.ai/artifact/9x5LwnPhPkWVzWcXSTZZnk — kaynak dosyalar `docs/tasarim/ozellik-taslaklari/` (Main: alt bar + profil menüsü + başlık stili; Kaydirma; Cark; Yarisma; ArkaPlan). Renkler: zemin #0E071A, vurgu #D946EF, altın etiket #D4A853, buzlu bar rgba(42,40,56,0.62) + 1 px rgba(255,255,255,0.16) çerçeve. Yazı: başlık DM Serif Display eğik, gövde Manrope (ikisi de OFL). Posterler taslakta yer tutucu; uygulamada kullanıcının listesinden gelir. TV görünümleri henüz çizilmedi.
 - **Oyunlar (PRO).** Hepsi kullanıcının kendi listesinden beslenir; TV'de kumandayla oynanır.
   1. *Kaydırma oyunu:* Ekranda film ya da dizi posteri; üzerinde tür, konu, IMDb puanı (TMDB'den). Sola kaydırma: geç. Sağa kaydırma: Listeme (favori) ekle. TV'de sol/sağ tuşları.
   2. *Çark:* Listedeki kategorilerden (korku, savaş vb.) oluşan çark; ortadaki "Çevir" ile rastgele döner ve durur. Denk gelen kategoriden 3 rastgele film posteri çıkar; seçilenin kartı açılır, istemezse çark yeniden çevrilir.

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Kategori çarkı</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#E9A8F5}a:hover{color:#F5D0FB}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0E071A; color: #F4F1F8; font-family: Manrope, sans-serif; display: flex; flex-direction: column">
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 20px 20px 4px">
+<button aria-label="Geri" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #F4F1F8; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</button>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="color: #D4A853; font-size: 11px; font-weight: 700; letter-spacing: 3px">OYUN · PRO</div>
+<div style="font-family: 'DM Serif Display', serif; font-style: italic; font-size: 24px">Çarkı çevir</div>
+</div>
+</div>
+<div style="padding: 6px 20px 0; color: #A79FB5; font-size: 14px">Kategoriler senin listenden gelir. Çark nerede durursa oradan 3 film seçeriz.</div>
+
+<div style="position: relative; width: 320px; height: 320px; margin: 30px auto 0">
+<div style="position: absolute; left: 50%; top: -14px; margin-left: -13px; width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 26px solid #D4A853; z-index: 2; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5))"></div>
+<div style="position: absolute; inset: 0; border-radius: 50%; border: 6px solid #2A1C3D; box-shadow: 0 0 0 2px rgba(212,168,83,0.55), 0 20px 50px rgba(0,0,0,0.6); overflow: hidden; transform: rotate({{rotation}}deg); transition: transform 3.2s cubic-bezier(0.17, 0.67, 0.21, 1); background: conic-gradient(#5B2A7A 0deg 45deg, #2B1A44 45deg 90deg, #7A2A62 90deg 135deg, #2B1A44 135deg 180deg, #5B2A7A 180deg 225deg, #2B1A44 225deg 270deg, #7A2A62 270deg 315deg, #2B1A44 315deg 360deg)">
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(22.5deg) translateY(-104px)">Korku</div>
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(67.5deg) translateY(-104px)">Savaş</div>
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(112.5deg) translateY(-104px)">Aksiyon</div>
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(157.5deg) translateY(-104px)">Komedi</div>
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(202.5deg) translateY(-104px)">Bilim Kurgu</div>
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(247.5deg) translateY(-104px)">Dram</div>
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(292.5deg) translateY(-104px)">Animasyon</div>
+<div style="position: absolute; left: 50%; top: 50%; width: 110px; height: 20px; margin-left: -55px; margin-top: -10px; text-align: center; font-size: 13px; font-weight: 700; transform: rotate(337.5deg) translateY(-104px)">Gerilim</div>
+</div>
+<button onClick="{{spin}}" style="position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin-left: -48px; margin-top: -48px; border-radius: 48px; border: 3px solid #D4A853; background: #D946EF; color: #FFFFFF; font-size: 17px; font-weight: 800; letter-spacing: 1px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 3">{{spinLabel}}</button>
+</div>
+
+<sc-if value="{{hasResult}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 30px 20px 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 8px">
+<div style="font-family: 'DM Serif Display', serif; font-style: italic; font-size: 24px">{{result}}</div>
+<div style="color: #A79FB5; font-size: 13px">listenden 3 film · birini seç</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<button style="height: 168px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: linear-gradient(160deg, #3B1E55, #140B22); color: #CFC8DA; font-size: 11px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; padding: 10px; text-align: left; gap: 2px">[Poster]<span style="font-size: 13px; font-weight: 700; color: #F4F1F8">{{result}} filmi 1</span></button>
+<button style="height: 168px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: linear-gradient(160deg, #23324A, #0F0C18); color: #CFC8DA; font-size: 11px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; padding: 10px; text-align: left; gap: 2px">[Poster]<span style="font-size: 13px; font-weight: 700; color: #F4F1F8">{{result}} filmi 2</span></button>
+<button style="height: 168px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: linear-gradient(160deg, #4A2A1E, #140B12); color: #CFC8DA; font-size: 11px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; padding: 10px; text-align: left; gap: 2px">[Poster]<span style="font-size: 13px; font-weight: 700; color: #F4F1F8">{{result}} filmi 3</span></button>
+</div>
+<div style="color: #8E879C; font-size: 12px">Posterine dokununca film kartı açılır. Beğenmezsen çarkı yeniden çevir.</div>
+</div>
+</sc-if>
+<sc-if value="{{noResult}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 40px 20px 0; text-align: center; color: #8E879C; font-size: 14px">Ortadaki düğmeye bas, çark dönsün.</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { rotation: 0, result: null, spinning: false };
+this.cats = ['Korku', 'Savaş', 'Aksiyon', 'Komedi', 'Bilim Kurgu', 'Dram', 'Animasyon', 'Gerilim'];
+}
+renderVals() {
+const s = this.state;
+return {
+rotation: s.rotation,
+result: s.result,
+hasResult: !!s.result && !s.spinning,
+noResult: !s.result && !s.spinning,
+spinLabel: s.spinning ? '...' : (s.result ? 'TEKRAR' : 'ÇEVİR'),
+spin: () => {
+if (this.state.spinning) return;
+const r = this.state.rotation + 1440 + Math.floor(Math.random() * 360);
+const atTop = ((360 - (r % 360)) % 360);
+const result = this.cats[Math.floor(atTop / 45)];
+this.setState({ rotation: r, spinning: true });
+clearTimeout(this.t);
+this.t = setTimeout(() => this.setState({ spinning: false, result: result }), 3300);
+}
+};
+}
+componentWillUnmount() { clearTimeout(this.t); }
+}
+</script>
+</body>
+</html>

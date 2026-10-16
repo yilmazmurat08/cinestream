@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Dizi bilgi yarışması</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#E9A8F5}a:hover{color:#F5D0FB}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0E071A; color: #F4F1F8; font-family: Manrope, sans-serif; display: flex; flex-direction: column">
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 20px 20px 4px">
+<button aria-label="Geri" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #F4F1F8; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</button>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="color: #D4A853; font-size: 11px; font-weight: 700; letter-spacing: 3px">OYUN · PRO · YAPAY ZEKÂ</div>
+<div style="font-family: 'DM Serif Display', serif; font-style: italic; font-size: 24px">Diziyi bil, kartı aç</div>
+</div>
+</div>
+
+<div style="display: flex; gap: 16px; padding: 24px 20px 0; align-items: flex-start">
+<div style="width: 132px; height: 198px; flex-shrink: 0; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); position: relative; background: #1A1028">
+<div style="position: absolute; inset: -20px; background: linear-gradient(160deg, #6A4A2A 0%, #3A2A1A 40%, #140B12 100%); filter: blur({{blur}}px); transition: filter 0.6s ease"></div>
+<div style="position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font-weight: 800; font-size: 18px; filter: blur({{blur}}px); transition: filter 0.6s ease">LA BREA</div>
+<div style="position: absolute; top: 10px; left: 10px; font-size: 10px; color: rgba(255,255,255,0.6)">[Poster]</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 4px">
+<div style="display: flex; gap: 6px" aria-label="Kalan hak">
+<div style="width: 26px; height: 6px; border-radius: 3px; background: {{life1}}"></div>
+<div style="width: 26px; height: 6px; border-radius: 3px; background: {{life2}}"></div>
+<div style="width: 26px; height: 6px; border-radius: 3px; background: {{life3}}"></div>
+</div>
+<div style="color: #A79FB5; font-size: 12px; font-weight: 600">{{progressText}}</div>
+<div style="font-size: 18px; font-weight: 700; line-height: 1.35">{{question.text}}</div>
+</div>
+</div>
+
+<sc-if value="{{playing}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 20px 0">
+<button onClick="{{answerA}}" style="min-height: 60px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: #F4F1F8; font-size: 16px; font-weight: 600; text-align: left; padding: 0 20px; display: flex; align-items: center; gap: 14px">
+<span style="width: 30px; height: 30px; border-radius: 15px; background: rgba(217,70,239,0.2); color: #E9A8F5; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px">A</span>{{question.a}}
+</button>
+<button onClick="{{answerB}}" style="min-height: 60px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: #F4F1F8; font-size: 16px; font-weight: 600; text-align: left; padding: 0 20px; display: flex; align-items: center; gap: 14px">
+<span style="width: 30px; height: 30px; border-radius: 15px; background: rgba(217,70,239,0.2); color: #E9A8F5; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px">B</span>{{question.b}}
+</button>
+<sc-if value="{{showWrong}}" hint-placeholder-val="{{ false }}">
+<div style="color: #FCA5A5; font-size: 14px; padding: 4px 4px 0">Olmadı, ama bir hakkın daha var. İşte yeni soru.</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{won}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 30px 20px 0; padding: 22px; border-radius: 22px; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.35); display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'DM Serif Display', serif; font-style: italic; font-size: 26px">Bildin!</div>
+<div style="color: #CFC8DA; font-size: 15px">Gizli dizi: <strong>La Brea</strong>. Kartı açıp hemen izlemeye başlayabilirsin.</div>
+<button style="height: 52px; border-radius: 26px; border: none; background: #D946EF; color: #FFFFFF; font-size: 16px; font-weight: 700; margin-top: 6px">Dizi kartını aç</button>
+</div>
+</sc-if>
+
+<sc-if value="{{lost}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 30px 20px 0; padding: 22px; border-radius: 22px; background: rgba(212,168,83,0.08); border: 1px solid rgba(212,168,83,0.35); display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'DM Serif Display', serif; font-style: italic; font-size: 26px">Bu sefer olmadı</div>
+<div style="color: #CFC8DA; font-size: 15px">Önemli değil, keşfetmek de güzel. Seni dizi klasörlerine götürüyoruz; aradığın dizi belki orada seni bekliyor.</div>
+<button style="height: 52px; border-radius: 26px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.08); color: #F4F1F8; font-size: 16px; font-weight: 700; margin-top: 6px">Dizi klasörlerine git</button>
+</div>
+</sc-if>
+
+<div style="flex-grow: 1"></div>
+<button onClick="{{restart}}" style="margin: 0 20px 26px; height: 48px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.14); background: none; color: #C9C3D3; font-size: 14px; font-weight: 600">Yeniden başlat (taslak)</button>
+<div style="padding: 0 20px 22px; color: #8E879C; font-size: 12px; line-height: 1.5">Sorular dizinin gerçek bilgilerinden (yıl, oyuncu, tür, konu) üretilir; yapay zekâ yalnızca cümleye çevirir. Sürpriz bozan soru sorulmaz.</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { q: 0, wrong: 0, outcome: null, justWrong: false };
+this.questions = [
+{ text: 'Bu dizide insanlar hangi şehrin ortasında açılan dev bir çukura düşer?', a: 'Los Angeles', b: 'New York', correct: 'a' },
+{ text: 'Dizi ilk kez hangi yıl yayınlandı?', a: '2017', b: '2021', correct: 'b' },
+{ text: 'Dizinin türü nedir?', a: 'Bilim kurgu · Dram', b: 'Romantik komedi', correct: 'a' }
+];
+}
+renderVals() {
+const s = this.state;
+const question = this.questions[s.q % this.questions.length];
+const answer = (choice) => {
+if (this.state.outcome) return;
+if (choice === question.correct) {
+this.setState({ outcome: 'win', justWrong: false });
+} else if (this.state.wrong + 1 >= 3) {
+this.setState({ wrong: 3, outcome: 'lose', justWrong: false });
+} else {
+this.setState({ wrong: this.state.wrong + 1, q: this.state.q + 1, justWrong: true });
+}
+};
+const lifeColor = (n) => (s.wrong >= n ? 'rgba(255,255,255,0.15)' : '#D946EF');
+return {
+question: question,
+blur: s.outcome === 'win' ? 0 : 14,
+playing: !s.outcome,
+won: s.outcome === 'win',
+lost: s.outcome === 'lose',
+showWrong: s.justWrong,
+progressText: 'Soru ' + (s.q + 1) + ' · ' + (3 - s.wrong) + ' hakkın var',
+life1: lifeColor(3),
+life2: lifeColor(2),
+life3: lifeColor(1),
+answerA: () => answer('a'),
+answerB: () => answer('b'),
+restart: () => this.setState({ q: 0, wrong: 0, outcome: null, justWrong: false })
+};
+}
+}
+</script>
+</body>
+</html>
