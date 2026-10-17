@@ -1,5 +1,7 @@
 package com.example.ui.tv
 
+import com.example.util.displayRating
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -214,7 +216,9 @@ fun TvDetailScreen(
     }
     val backdrop = tmdb?.backdropUrl?.takeIf { it.isNotBlank() }
     val poster = show?.logoUrl ?: item.logoUrl ?: tmdb?.posterUrl
-    val rating = (show?.rating ?: 0.0).takeIf { it > 0.0 } ?: item.rating.takeIf { it > 0.0 }
+    // Puan yalnızca TMDB'den: kayıtlı TMDB puanı, yoksa bu detay için çekilen TMDB bilgisi (sağlayıcının puanı değil).
+    val rating = item.displayRating().takeIf { it > 0.0 }
+        ?: tmdb?.rating?.let { com.example.util.RatingScale.normalize(it) }?.takeIf { it > 0.0 }
     val year = yearOf(item.releaseDate) ?: yearOf(tmdb?.releaseDate)
     val genre = item.genre.takeIf { it.isNotBlank() } ?: tmdb?.genres?.take(3)?.joinToString(", ")?.takeIf { it.isNotBlank() }
 

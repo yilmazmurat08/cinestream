@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.util.displayRating
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -495,7 +497,7 @@ fun SimilarMoviesSection(
                                 }
 
                                 // Rating Badge
-                                if (recItem.rating > 0.0) {
+                                if (recItem.displayRating() > 0.0) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier
@@ -513,7 +515,7 @@ fun SimilarMoviesSection(
                                         )
                                         Spacer(modifier = Modifier.width(3.dp))
                                         Text(
-                                            text = String.format(java.util.Locale.US, "%.1f", recItem.rating),
+                                            text = String.format(java.util.Locale.US, "%.1f", recItem.displayRating()),
                                             color = Color.White,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold

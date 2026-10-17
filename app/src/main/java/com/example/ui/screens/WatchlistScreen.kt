@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.util.displayRating
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -379,7 +381,7 @@ fun WatchlistScreen(
                                 }
 
                                 // Rating Badge (Top Left)
-                                if (item.rating > 0.0) {
+                                if (item.displayRating() > 0.0) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier
@@ -397,7 +399,7 @@ fun WatchlistScreen(
                                         )
                                         Spacer(modifier = Modifier.width(3.dp))
                                         Text(
-                                            text = String.format(java.util.Locale.US, "%.1f", item.rating),
+                                            text = String.format(java.util.Locale.US, "%.1f", item.displayRating()),
                                             color = Color.White,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold

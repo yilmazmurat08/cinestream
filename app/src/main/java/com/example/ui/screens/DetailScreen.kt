@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.util.displayRating
+
 import android.net.Uri
 import android.os.Build
 import androidx.compose.animation.*
@@ -426,8 +428,8 @@ fun DetailScreen(
                                     contentScale = ContentScale.Crop
                                 )
 
-                                if (item.rating > 0.0) {
-                                    val formattedRating = String.format(java.util.Locale.US, "%.1f", item.rating)
+                                if (item.displayRating() > 0.0) {
+                                    val formattedRating = String.format(java.util.Locale.US, "%.1f", item.displayRating())
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.TopStart)

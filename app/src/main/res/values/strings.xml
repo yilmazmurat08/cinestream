@@ -91,8 +91,8 @@
     <string name="home_radio_music_header">Modern Radyo &amp; Müzik</string>
     <string name="home_radio_playing_message">📻 Radyonuz açık, müziğin keyfini çıkarın...</string>
     <string name="home_radio_badge">RADYO</string>
-    <string name="home_top_rated_title">⭐ IMDb Top 8.0+</string>
-    <string name="home_top_rated_subtitle">En yüksek puanlı başyapıtlar</string>
+    <string name="home_top_rated_title">⭐ En Yüksek Puanlılar</string>
+    <string name="home_top_rated_subtitle">TMDB puanı 8 ve üzeri</string>
     <string name="home_next_episode_badge">SIRADAKİ BÖLÜM</string>
     <string name="home_watch_button">İzle</string>
     <string name="home_no_genre_content">Bu türde içerik bulunamadı.</string>

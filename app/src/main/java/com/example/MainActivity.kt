@@ -172,9 +172,12 @@ class MainActivity : ComponentActivity() {
             // dokunulmaz. İzlerken oynatıcı kendi yönünü (yatay/dikey) ayrıca yönetir ve çıkınca buna geri döner.
             LaunchedEffect(orientationViewMode) { applyAppOrientation(orientationViewMode) }
 
+            // Kartlardaki puanların tek kaynağı: TMDB (bkz. TmdbRatings).
+            val tmdbRatings by viewModel.tmdbRatings.collectAsState()
             androidx.compose.runtime.CompositionLocalProvider(
                 androidx.compose.ui.platform.LocalContext provides localizedContext,
-                androidx.activity.compose.LocalActivityResultRegistryOwner provides this@MainActivity
+                androidx.activity.compose.LocalActivityResultRegistryOwner provides this@MainActivity,
+                com.example.util.LocalTmdbRatings provides tmdbRatings
             ) {
                 key(appLanguage) {
                     MyApplicationTheme(appTheme = appTheme) {

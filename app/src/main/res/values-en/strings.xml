@@ -86,8 +86,8 @@
     <string name="home_radio_music_header">Modern Radio &amp; Music</string>
     <string name="home_radio_playing_message">📻 Your radio is on, enjoy the music...</string>
     <string name="home_radio_badge">RADIO</string>
-    <string name="home_top_rated_title">⭐ IMDb Top 8.0+</string>
-    <string name="home_top_rated_subtitle">The highest-rated masterpieces</string>
+    <string name="home_top_rated_title">⭐ Top Rated</string>
+    <string name="home_top_rated_subtitle">TMDB rating 8 and above</string>
     <string name="home_next_episode_badge">NEXT EPISODE</string>
     <string name="home_watch_button">Watch</string>
     <string name="home_no_genre_content">No content found in this genre.</string>

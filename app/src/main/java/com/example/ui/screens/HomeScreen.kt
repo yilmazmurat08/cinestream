@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.util.displayRating
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -203,18 +205,19 @@ fun HomeScreen(
     val popularMovieIds by viewModel.popularMoviesInLibraryIds.collectAsState()
     // Bugün Trend Filmler: önce TMDB'de bugün popüler olup listede bulunan filmler (her gün değişir), kalan yer en
     // yüksek puanlılarla dolar.
+    val topRatedIds by viewModel.topRatedInLibraryIds.collectAsState()
     val top10Movies = com.example.ui.components.rememberComputedOffMain(
-        movies, popularMovieIds, workSize = movies.size, fallback = emptyList<IPTVItem>()
+        movies, popularMovieIds, topRatedIds, workSize = movies.size, fallback = emptyList<IPTVItem>()
     ) {
-        popularMoviesRow(movies, popularMovieIds) { viewModel.isAdultContent(it) }
+        popularMoviesRow(movies, popularMovieIds, topRatedIds["MOVIE"].orEmpty()) { viewModel.isAdultContent(it) }
     }
 
     val xtreamSeriesCatalogForTop10 by viewModel.xtreamSeriesCatalog.collectAsState()
     val popularSeriesIds by viewModel.popularSeriesInLibraryIds.collectAsState()
     // Popüler Diziler: önce TMDB'de bugün popüler olup katalogda bulunanlar (her gün değişir), kalan yer en yüksek
     // puanlılarla dolar.
-    val top10Series = remember(xtreamSeriesCatalogForTop10, popularSeriesIds) {
-        popularSeriesRow(xtreamSeriesCatalogForTop10, popularSeriesIds) { viewModel.isAdultContent(it) }
+    val top10Series = remember(xtreamSeriesCatalogForTop10, popularSeriesIds, topRatedIds) {
+        popularSeriesRow(xtreamSeriesCatalogForTop10, popularSeriesIds, topRatedIds["SERIES"].orEmpty()) { viewModel.isAdultContent(it) }
     }
 
     // Popüler kanallar: sinema ve dizi kanalları, farklı klasörlerden karışık; seçki her gün değişir.
@@ -1659,7 +1662,8 @@ fun MediaCard(
                     .align(Alignment.BottomStart)
                     .padding(8.dp)
             ) {
-                if (item.type != "LIVE" && item.rating > 0) {
+                val shownRating = item.displayRating()
+                if (item.type != "LIVE" && shownRating > 0) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
@@ -1667,7 +1671,7 @@ fun MediaCard(
                             .padding(horizontal = 4.dp, vertical = 1.dp)
                     ) {
                         Text(
-                            text = "★ ${item.rating}",
+                            text = "★ " + String.format(java.util.Locale.US, "%.1f", shownRating),
                             color = Color.Yellow,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
@@ -2338,19 +2342,27 @@ private fun spreadAcrossFolders(
 
 /**
  * Ana sayfadaki "Bugün Trend Filmler": önce TMDB'de bugün popüler olup listede bulunan filmler (popülerlik sırasıyla,
- * her gün değişir; aynı filmin farklı kaliteleri tek kez), kalan yer en yüksek (geçerli) puanlı filmlerle dolar.
+ * her gün değişir; aynı filmin farklı kaliteleri tek kez), kalan yer TMDB'nin en yüksek puanlılarından listede
+ * olanlarla dolar. TMDB'ye ulaşılamadıysa (ikisi de boş) sağlayıcının puan sırası yedek olarak kullanılır.
  * En fazla 10, yetişkin içerik yok.
  */
 internal fun popularMoviesRow(
     movies: List<IPTVItem>,
     popularIds: List<Int>,
+    topRatedIds: List<Int> = emptyList(),
     isAdult: (IPTVItem) -> Boolean
 ): List<IPTVItem> {
     val byId = movies.associateBy { it.id }
+    val sameTitle: (IPTVItem) -> String = { it.cleanedName.ifBlank { it.name }.lowercase(java.util.Locale.ROOT).trim() }
     val popular = popularIds.asSequence().mapNotNull { byId[it] }
-        .distinctBy { it.cleanedName.ifBlank { it.name }.lowercase(java.util.Locale.ROOT).trim() }
-    val topRated = movies.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
-    return (popular + topRated)
+    val tmdbTop = topRatedIds.asSequence().mapNotNull { byId[it] }
+    val fallback = if (popularIds.isEmpty() && topRatedIds.isEmpty()) {
+        movies.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
+    } else {
+        emptySequence()
+    }
+    return (popular + tmdbTop + fallback)
+        .distinctBy(sameTitle)
         .distinctBy { it.id }
         .filterNot(isAdult)
         .take(10).toList()
@@ -2358,17 +2370,24 @@ internal fun popularMoviesRow(
 
 /**
  * Ana sayfadaki "Popüler Diziler": önce TMDB'de bugün popüler olup katalogda bulunan diziler (popülerlik sırasıyla,
- * her gün değişir), kalan yer en yüksek (geçerli) puanlı dizilerle dolar. En fazla 10, yetişkin içerik yok.
+ * her gün değişir), kalan yer TMDB'nin en yüksek puanlı dizilerinden katalogda olanlarla dolar. TMDB'ye
+ * ulaşılamadıysa sağlayıcının puan sırası yedek olarak kullanılır. En fazla 10, yetişkin içerik yok.
  */
 internal fun popularSeriesRow(
     catalog: List<com.example.data.model.TvShow>,
     popularIds: List<Int>,
+    topRatedIds: List<Int> = emptyList(),
     isAdult: (IPTVItem) -> Boolean
 ): List<IPTVItem> {
     val byId = catalog.associateBy { it.id }
     val popular = popularIds.asSequence().mapNotNull { byId[it] }
-    val topRated = catalog.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
-    return (popular + topRated)
+    val tmdbTop = topRatedIds.asSequence().mapNotNull { byId[it] }
+    val fallback = if (popularIds.isEmpty() && topRatedIds.isEmpty()) {
+        catalog.sortedByDescending { com.example.util.RatingScale.normalize(it.rating) }.asSequence()
+    } else {
+        emptySequence()
+    }
+    return (popular + tmdbTop + fallback)
         .distinctBy { it.id }
         .map { it.toBrowsableItem() }
         .filterNot(isAdult)
@@ -2507,8 +2526,9 @@ fun LegendCard(
                     )
             )
 
-            // Top Gold Badge
-            Surface(
+            // Top Gold Badge (yalnızca TMDB puanı varsa; eskiden puan yoksa uydurma "8.5" yazıyordu)
+            val legendRating = item.displayRating()
+            if (legendRating > 0) Surface(
                 color = Color(0xFFFFD700),
                 shape = RoundedCornerShape(bottomEnd = 12.dp),
                 modifier = Modifier.align(Alignment.TopStart)
@@ -2525,7 +2545,7 @@ fun LegendCard(
                     )
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(
-                        text = if (item.rating > 0) String.format(java.util.Locale.US, "%.1f", item.rating) else "8.5",
+                        text = String.format(java.util.Locale.US, "%.1f", legendRating),
                         color = Color.Black,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
@@ -2947,8 +2967,9 @@ fun DuelContenderCard(
                     contentScale = ContentScale.Crop
                 )
 
-                // Rating Tag
-                Surface(
+                // Rating Tag (yalnızca TMDB puanı varsa; eskiden puan yoksa uydurma "8.2" yazıyordu)
+                val tagRating = item.displayRating()
+                if (tagRating > 0) Surface(
                     color = Color.Black.copy(alpha = 0.75f),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
@@ -2956,7 +2977,7 @@ fun DuelContenderCard(
                         .align(Alignment.TopEnd)
                 ) {
                     Text(
-                        text = "⭐ ${if (item.rating > 0) String.format(java.util.Locale.US, "%.1f", item.rating) else "8.2"}",
+                        text = "⭐ " + String.format(java.util.Locale.US, "%.1f", tagRating),
                         color = Color(0xFFFFD700),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,

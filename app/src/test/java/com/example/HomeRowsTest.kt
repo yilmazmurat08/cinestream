@@ -92,24 +92,22 @@ class HomeRowsTest {
     }
 
     @Test
-    fun imdb8Row_showsOnlyRealHighRatings_evenForOldStoredData() {
-        // Güncellemeden önce kaydedilmiş, sahte puanlı veri.
+    fun topRatedRow_neverUsesProviderRatings() {
+        // Sağlayıcının (sahte ya da şişirilmiş) puanları "En Yüksek Puanlılar" satırına girmez: satır yalnızca
+        // TMDB'nin en yüksek puanlılarından kütüphanede olanlarla dolar (TMDB'ye ulaşılamadıysa satır görünmez).
         fun movie(id: Int, name: String, rating: Double) = IPTVItem(id = id, playlistId = 1, name = name, cleanedName = name,
             logoUrl = null, streamUrl = "http://10.255.255.1/m/$id.mp4", category = "Aksiyon", type = "MOVIE", rating = rating)
         runBlocking {
-            db.iptvDao().insertItems(listOf(
-                movie(1, "Sahte On", 10.0), movie(2, "Sahte Oniki", 12.0), movie(3, "Başyapıt", 9.1),
-                movie(4, "Güzel", 8.4), movie(5, "Vasat", 4.6)
-            ))
+            db.iptvDao().insertItems(listOf(movie(1, "Sahte Dokuz", 9.6), movie(2, "Başyapıt", 9.1), movie(3, "Güzel", 8.4)))
         }
         val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
         scope.launch { vm.legendItems.collect {} }
-        val end = System.currentTimeMillis() + 8_000
-        while (vm.legendItems.value.isEmpty() && System.currentTimeMillis() < end) {
+        val end = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < end) {
             org.robolectric.shadows.ShadowLooper.idleMainLooper(50, java.util.concurrent.TimeUnit.MILLISECONDS)
             Thread.sleep(20)
         }
-        assertEquals(listOf("Başyapıt" to 9.1, "Güzel" to 8.4), vm.legendItems.value.map { it.name to it.rating })
+        assertEquals(emptyList<IPTVItem>(), vm.legendItems.value)
     }
 
     private fun show(id: Int, title: String, rating: Double) =
@@ -117,36 +115,39 @@ class HomeRowsTest {
             director = "", isFavorite = false, seasons = emptyList())
 
     @Test
-    fun popularSeriesRow_startsWithTodaysPopular_thenTopRated() {
+    fun popularSeriesRow_startsWithTodaysPopular_thenTmdbTopRated() {
         val catalog = listOf(
-            show(1, "Yüksek Puanlı A", 9.4), show(2, "Yüksek Puanlı B", 9.0), show(3, "Bugün Popüler", 7.1),
+            show(1, "TMDB Zirvesi A", 9.4), show(2, "TMDB Zirvesi B", 9.0), show(3, "Bugün Popüler", 7.1),
             show(4, "Sahte Puanlı", 10.0), show(5, "Dün Popüler", 6.5)
         )
-        // Bugün TMDB'de popüler olan ve katalogda bulunan: 3 (5 dündü).
-        val today = popularSeriesRow(catalog, popularIds = listOf(3)) { false }.map { it.name }
-        assertEquals(listOf("Bugün Popüler", "Yüksek Puanlı A", "Yüksek Puanlı B"), today.take(3))
-        assertTrue("sahte 10 puanlı dizi en üste çıkmaz", today.indexOf("Sahte Puanlı") > today.indexOf("Yüksek Puanlı B"))
+        // Bugün TMDB'de popüler olan: 3; boş yerler TMDB'nin en yüksek puanlılarından (2, 1) dolar.
+        val today = popularSeriesRow(catalog, popularIds = listOf(3), topRatedIds = listOf(2, 1)) { false }.map { it.name }
+        assertEquals(listOf("Bugün Popüler", "TMDB Zirvesi B", "TMDB Zirvesi A"), today)
+        assertTrue("sağlayıcının sahte puanı satıra girmez", "Sahte Puanlı" !in today)
         // Ertesi gün popülerler değişince sıra da değişir.
-        val tomorrow = popularSeriesRow(catalog, popularIds = listOf(5, 2)) { false }.map { it.name }
-        assertEquals(listOf("Dün Popüler", "Yüksek Puanlı B", "Yüksek Puanlı A"), tomorrow.take(3))
+        val tomorrow = popularSeriesRow(catalog, popularIds = listOf(5), topRatedIds = listOf(2, 1)) { false }.map { it.name }
+        assertEquals(listOf("Dün Popüler", "TMDB Zirvesi B", "TMDB Zirvesi A"), tomorrow)
+        // TMDB'ye hiç ulaşılamadıysa satır boş kalmaz (sağlayıcı sırası yedek).
+        assertEquals(5, popularSeriesRow(catalog, popularIds = emptyList(), topRatedIds = emptyList()) { false }.size)
     }
 
     private fun film(id: Int, name: String, rating: Double) = IPTVItem(id = id, playlistId = 1, name = name, cleanedName = name,
         logoUrl = null, streamUrl = "http://10.255.255.1/m/$id.mp4", category = "Film", type = "MOVIE", rating = rating)
 
     @Test
-    fun trendMoviesRow_startsWithTodaysPopular_thenTopRated() {
+    fun trendMoviesRow_startsWithTodaysPopular_thenTmdbTopRated() {
         val movies = listOf(
-            film(1, "Yüksek Puanlı A", 9.2), film(2, "Yüksek Puanlı B", 8.8), film(3, "Bugün Popüler", 6.9),
+            film(1, "TMDB Zirvesi A", 9.2), film(2, "TMDB Zirvesi B", 8.8), film(3, "Bugün Popüler", 6.9),
             film(4, "Bugün Popüler", 6.9), film(5, "Sahte Puanlı", 10.0), film(6, "Dün Popüler", 7.0)
         )
-        // Aynı filmin iki kalitesi (3 ve 4) tek kez görünür.
-        val today = popularMoviesRow(movies, popularIds = listOf(3, 4)) { false }
-        assertEquals(listOf(3, 1, 2), today.take(3).map { it.id })
-        assertTrue("sahte 10 puanlı film en üste çıkmaz", today.indexOfFirst { it.id == 5 } > 2)
-        // Ertesi gün popülerler değişince sıra da değişir.
-        val tomorrow = popularMoviesRow(movies, popularIds = listOf(6)) { false }
-        assertEquals(listOf(6, 1, 2), tomorrow.take(3).map { it.id })
+        // Aynı filmin iki kalitesi (3 ve 4) tek kez görünür; boş yerler TMDB'nin en yüksek puanlılarıyla dolar.
+        val today = popularMoviesRow(movies, popularIds = listOf(3, 4), topRatedIds = listOf(1, 2)) { false }
+        assertEquals(listOf(3, 1, 2), today.map { it.id })
+        assertTrue("sağlayıcının sahte puanı satıra girmez", today.none { it.id == 5 })
+        val tomorrow = popularMoviesRow(movies, popularIds = listOf(6), topRatedIds = listOf(1, 2)) { false }
+        assertEquals(listOf(6, 1, 2), tomorrow.map { it.id })
+        // TMDB'ye hiç ulaşılamadıysa satır boş kalmaz (sağlayıcı sırası yedek).
+        assertTrue(popularMoviesRow(movies, emptyList(), emptyList()) { false }.isNotEmpty())
     }
 
     @Test
@@ -165,19 +166,24 @@ class HomeRowsTest {
     }
 
     @Test
-    fun tvTop10_startsWithTodaysPopular_andTvTopRatedSkipsFakeRatings() {
+    fun tvTop10AndTopRated_useTmdbLists_withProviderFallbackOnlyOffline() {
         runBlocking {
             db.iptvDao().insertItems(listOf(
-                film(301, "Yüksek Puanlı", 9.0), film(302, "Bugün Popüler", 6.8), film(303, "Sahte On", 10.0),
-                film(304, "Sahte Oniki", 12.0), film(305, "İyi", 8.2)
+                film(301, "TMDB Zirvesi", 9.0), film(302, "Bugün Popüler", 6.8), film(303, "Sahte On", 10.0),
+                film(304, "Sahte Dokuz", 9.6), film(305, "İyi", 8.2)
             ))
         }
         val tv = TvCatalogRepository(db.iptvDao())
-        val top10 = runBlocking { tv.special("MOVIE", com.example.data.repository.TvSpecialSection.TOP10, popularIds = listOf(302)) }
-        assertEquals(listOf(302, 301, 305), top10.take(3).map { it.item.id })
-        assertTrue("sahte puanlılar Top 10'a girmez", top10.none { it.item.id in setOf(303, 304) })
-        val topRated = runBlocking { tv.special("MOVIE", com.example.data.repository.TvSpecialSection.TOP_RATED) }
-        assertEquals(listOf(301, 305), topRated.map { it.item.id })
+        val section = com.example.data.repository.TvSpecialSection.TOP10
+        val top10 = runBlocking { tv.special("MOVIE", section, popularIds = listOf(302), topRatedIds = listOf(301, 305)) }
+        assertEquals(listOf(302, 301, 305), top10.map { it.item.id })
+        val topRated = runBlocking {
+            tv.special("MOVIE", com.example.data.repository.TvSpecialSection.TOP_RATED, topRatedIds = listOf(305, 301))
+        }
+        assertEquals("TMDB sırası", listOf(305, 301), topRated.map { it.item.id })
+        // TMDB'ye ulaşılamadıysa (liste yok): sağlayıcı puanı, 10 ve üstü sahteler hariç.
+        val offline = runBlocking { tv.special("MOVIE", com.example.data.repository.TvSpecialSection.TOP_RATED) }
+        assertTrue(offline.none { it.item.id == 303 })
     }
 
     @Test
@@ -249,5 +255,36 @@ class HomeRowsTest {
         } finally {
             java.util.TimeZone.setDefault(tz)
         }
+    }
+
+    @Test
+    fun tmdbRatings_areMatchedToTheLibrary_andStored() {
+        runBlocking {
+            db.iptvDao().insertItems(listOf(film(401, "TR: The Dark Knight (2008) 4K", 9.6), film(402, "Başka Film", 6.0)))
+        }
+        val rated = listOf(
+            com.example.data.repository.TMDBRepository.RatedTitle(
+                com.example.data.api.GeminiAiService.TitleCandidate("Kara Şövalye", "The Dark Knight", 2008, false), 8.5),
+            com.example.data.repository.TMDBRepository.RatedTitle(
+                com.example.data.api.GeminiAiService.TitleCandidate("Kütüphanede Yok", "Not In Library", 2025, false), 8.9)
+        )
+        val found = runBlocking { TvCatalogRepository(db.iptvDao()).findRatedTitles(rated) }
+        assertEquals(listOf(401 to 8.5), found.map { it.first.id to it.second })
+
+        val key = com.example.util.TmdbRatings.key(found.single().first)
+        com.example.util.TmdbRatings.save(app, mapOf(key to 8.5))
+        assertEquals(8.5, com.example.util.TmdbRatings.load(app)[key]!!, 0.001)
+    }
+
+    @Test
+    fun ratingKeys_keepCatalogSeriesApartFromChannels() {
+        val channel = IPTVItem(id = 7, playlistId = 1, name = "K", cleanedName = "K", logoUrl = null, streamUrl = "http://h/7.ts",
+            category = "", type = "LIVE")
+        val catalogShow = IPTVItem(id = 7, playlistId = 0, name = "D", cleanedName = "D", logoUrl = null, streamUrl = "",
+            category = "", type = "SERIES")
+        assertTrue(com.example.util.TmdbRatings.key(channel) != com.example.util.TmdbRatings.key(catalogShow))
+        val fromTmdb = catalogShow.copy(id = -55)
+        assertTrue(com.example.util.TmdbRatings.isFromTmdb(fromTmdb))
+        assertTrue(!com.example.util.TmdbRatings.isFromTmdb(channel))
     }
 }

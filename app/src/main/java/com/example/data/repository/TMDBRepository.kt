@@ -602,43 +602,59 @@ class TMDBRepository(
         }
     }
 
-    /** TMDB'de bugün popüler filmler: kütüphanede eşini bulmak için Türkçe ad, orijinal ad ve yıl. */
-    suspend fun getPopularMovieCandidates(tmdbApiKey: String = ""): List<com.example.data.api.GeminiAiService.TitleCandidate> =
-        withContext(Dispatchers.IO) {
+    /** TMDB listesindeki bir yapım: kütüphanede eşini bulmak için ad/yıl ve TMDB puanı (0–10, 0 = bilinmiyor). */
+    data class RatedTitle(val candidate: com.example.data.api.GeminiAiService.TitleCandidate, val rating: Double)
+
+    private fun List<com.example.data.model.tmdb.TmdbMediaItem>.toRatedTitles(isSeries: Boolean): List<RatedTitle> = mapNotNull { m ->
+        val title = (if (isSeries) m.name ?: m.title else m.title ?: m.name)?.trim().orEmpty()
+        if (title.isEmpty()) return@mapNotNull null
+        RatedTitle(
+            com.example.data.api.GeminiAiService.TitleCandidate(
+                title = title,
+                originalTitle = (if (isSeries) m.originalName ?: m.originalTitle else m.originalTitle ?: m.originalName)
+                    ?.trim().orEmpty().ifEmpty { title },
+                year = (if (isSeries) m.firstAirDate ?: m.releaseDate else m.releaseDate ?: m.firstAirDate)?.take(4)?.toIntOrNull(),
+                isSeries = isSeries
+            ),
+            com.example.util.RatingScale.normalize(m.voteAverage ?: 0.0)
+        )
+    }
+
+    /** TMDB'de bugün popüler filmler ya da diziler (puanlarıyla). */
+    suspend fun getPopularRated(isSeries: Boolean, tmdbApiKey: String = ""): List<RatedTitle> = withContext(Dispatchers.IO) {
+        try {
+            val key = getApiKey(tmdbApiKey)
+            val results = if (isSeries) tmdbService.getPopularSeries(key, "tr-TR").results else tmdbService.getPopularMovies(key, "tr-TR").results
+            results.toRatedTitles(isSeries)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    /** TMDB'nin en yüksek puanlı filmleri ya da dizileri ([pages] sayfa, sayfa başına 20). */
+    suspend fun getTopRatedRated(isSeries: Boolean, pages: Int = 5, tmdbApiKey: String = ""): List<RatedTitle> = withContext(Dispatchers.IO) {
+        val key = getApiKey(tmdbApiKey)
+        val out = ArrayList<RatedTitle>()
+        for (page in 1..pages) {
             try {
-                tmdbService.getPopularMovies(getApiKey(tmdbApiKey), "tr-TR").results.mapNotNull { m ->
-                    val title = (m.title ?: m.name)?.trim().orEmpty()
-                    if (title.isEmpty()) return@mapNotNull null
-                    com.example.data.api.GeminiAiService.TitleCandidate(
-                        title = title,
-                        originalTitle = (m.originalTitle ?: m.originalName)?.trim().orEmpty().ifEmpty { title },
-                        year = (m.releaseDate ?: m.firstAirDate)?.take(4)?.toIntOrNull(),
-                        isSeries = false
-                    )
-                }
+                val results = if (isSeries) tmdbService.getTopRatedSeries(key, "tr-TR", page).results
+                else tmdbService.getTopRatedMovies(key, "tr-TR", page).results
+                if (results.isEmpty()) break
+                out += results.toRatedTitles(isSeries)
             } catch (e: Exception) {
-                emptyList()
+                break
             }
         }
+        out
+    }
+
+    /** TMDB'de bugün popüler filmler: kütüphanede eşini bulmak için Türkçe ad, orijinal ad ve yıl. */
+    suspend fun getPopularMovieCandidates(tmdbApiKey: String = ""): List<com.example.data.api.GeminiAiService.TitleCandidate> =
+        getPopularRated(isSeries = false, tmdbApiKey).map { it.candidate }
 
     /** TMDB'de bugün popüler diziler: kütüphanede eşini bulmak için Türkçe ad, orijinal ad ve yıl. */
     suspend fun getPopularSeriesCandidates(tmdbApiKey: String = ""): List<com.example.data.api.GeminiAiService.TitleCandidate> =
-        withContext(Dispatchers.IO) {
-            try {
-                tmdbService.getPopularSeries(getApiKey(tmdbApiKey), "tr-TR").results.mapNotNull { m ->
-                    val title = (m.name ?: m.title)?.trim().orEmpty()
-                    if (title.isEmpty()) return@mapNotNull null
-                    com.example.data.api.GeminiAiService.TitleCandidate(
-                        title = title,
-                        originalTitle = (m.originalName ?: m.originalTitle)?.trim().orEmpty().ifEmpty { title },
-                        year = (m.firstAirDate ?: m.releaseDate)?.take(4)?.toIntOrNull(),
-                        isSeries = true
-                    )
-                }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
+        getPopularRated(isSeries = true, tmdbApiKey).map { it.candidate }
 
     suspend fun getTopRatedSeriesList(tmdbApiKey: String = ""): List<IPTVItem> = withContext(Dispatchers.IO) {
         getPopularSeriesList(tmdbApiKey)

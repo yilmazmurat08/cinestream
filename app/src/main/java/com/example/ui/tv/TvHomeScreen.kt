@@ -1,5 +1,7 @@
 package com.example.ui.tv
 
+import com.example.util.displayRating
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -500,8 +502,10 @@ private fun TvHeroLayer(content: ShelfContent, showTag: Boolean) {
                 lineHeight = 38.sp,
                 style = TextStyle(shadow = shadow)
             )
+            // Puan yalnızca TMDB'den (sağlayıcının puanı gösterilmez).
+            val shelfRating = content.item?.displayRating()?.takeIf { it > 0.0 }
             val meta = listOfNotNull(
-                content.rating?.let { "★ " + String.format(java.util.Locale.getDefault(), "%.1f", it) },
+                shelfRating?.let { "★ " + String.format(java.util.Locale.getDefault(), "%.1f", it) },
                 content.year,
                 content.genre
             )

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.util.displayRating
+
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -562,8 +564,8 @@ fun SeriesDetailScreen(
                                     contentScale = ContentScale.Crop
                                 )
 
-                                if (tvShow.rating > 0.0) {
-                                    val formattedRating = String.format(java.util.Locale.US, "%.1f", tvShow.rating)
+                                if (item.displayRating() > 0.0) {
+                                    val formattedRating = String.format(java.util.Locale.US, "%.1f", item.displayRating())
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.TopStart)
@@ -676,9 +678,9 @@ fun SeriesDetailScreen(
                                 text = "${seasons.size} Sezon",
                                 icon = Icons.Default.Tv
                             )
-                            if (tvShow.rating > 0) {
+                            if (item.displayRating() > 0) {
                                 InfoCapsule(
-                                    text = "${tvShow.rating} IMDb",
+                                    text = String.format(java.util.Locale.US, "%.1f", item.displayRating()),
                                     icon = Icons.Default.Star,
                                     iconTint = Color(0xFFFFB300)
                                 )

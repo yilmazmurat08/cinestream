@@ -1,4 +1,6 @@
 package com.example.ui.components
+
+import com.example.util.displayRating
 import androidx.compose.ui.res.stringResource
 import com.example.R
 
@@ -174,7 +176,7 @@ fun RankedCard(
                     )
 
                     // Optional Rating Badge
-                    if (item.rating > 0.0) {
+                    if (item.displayRating() > 0.0) {
                         Surface(
                             color = Color.Black.copy(alpha = 0.75f),
                             shape = RoundedCornerShape(bottomStart = 8.dp),
@@ -192,7 +194,7 @@ fun RankedCard(
                                 )
                                 Spacer(modifier = Modifier.width(3.dp))
                                 Text(
-                                    text = String.format("%.1f", item.rating),
+                                    text = String.format("%.1f", item.displayRating()),
                                     color = Color.White,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold

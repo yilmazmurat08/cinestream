@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.util.displayRating
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
@@ -54,8 +55,10 @@ fun MediaCard(
     val currentTheme = LocalAppTheme.current
 
     // Performans: Formatlama işlemini remember ile sarmalayarak Recomposition yükünü hafifletiyoruz
-    val formattedRating = remember(item.rating) {
-        String.format("%.1f", item.rating)
+    // Puan yalnızca TMDB'den (bkz. TmdbRatings); bilinmiyorsa gösterilmez.
+    val rating = item.displayRating()
+    val formattedRating = remember(rating) {
+        String.format("%.1f", rating)
     }
 
     Card(
@@ -103,7 +106,7 @@ fun MediaCard(
                     .align(Alignment.BottomStart)
                     .padding(8.dp)
             ) {
-                if (item.type != "LIVE" && item.rating > 0) {
+                if (item.type != "LIVE" && rating > 0) {
                     Box(
                         modifier = Modifier
                             .background(CineGold, RoundedCornerShape(4.dp))

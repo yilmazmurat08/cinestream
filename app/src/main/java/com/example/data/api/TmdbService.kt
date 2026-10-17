@@ -108,6 +108,20 @@ interface TmdbService {
         @Query("language") language: String = "tr-TR"
     ): TmdbSearchResponse<TmdbMediaItem>
 
+    @GET("movie/top_rated")
+    suspend fun getTopRatedMovies(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "tr-TR",
+        @Query("page") page: Int = 1
+    ): TmdbSearchResponse<TmdbMediaItem>
+
+    @GET("tv/top_rated")
+    suspend fun getTopRatedSeries(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "tr-TR",
+        @Query("page") page: Int = 1
+    ): TmdbSearchResponse<TmdbMediaItem>
+
     @GET("search/person")
     suspend fun searchPerson(
         @Query("query") query: String,

@@ -77,22 +77,42 @@ class TvCatalogRepository(private val dao: IPTVDao) {
      * [popularIds]: TMDB'de bugün popüler olup kütüphanede bulunanlar (telefondaki ana sayfa satırlarıyla aynı);
      * Top 10 önce bunları, kalan yeri en yüksek puanlıları gösterir.
      */
-    suspend fun special(type: String, section: TvSpecialSection, popularIds: List<Int> = emptyList()): List<TvPoster> = withContext(Dispatchers.IO) {
+    suspend fun special(
+        type: String,
+        section: TvSpecialSection,
+        popularIds: List<Int> = emptyList(),
+        topRatedIds: List<Int> = emptyList()
+    ): List<TvPoster> = withContext(Dispatchers.IO) {
         val catalog = type == "SERIES" && dao.seriesCatalogCount() > 0
         val popular = popularIds.take(40)
         when (section) {
+            // Top 10: önce TMDB'de bugün popüler, sonra TMDB'nin en yüksek puanlıları (telefondaki satırla aynı);
+            // TMDB'ye ulaşılamadıysa sağlayıcının puan sırası yedek.
             TvSpecialSection.TOP10 -> if (catalog) {
-                val byId = if (popular.isEmpty()) emptyMap() else dao.seriesCatalogByIds(popular).associateBy { it.seriesId }
-                (popular.asSequence().mapNotNull { byId[it] } + dao.topRatedSeriesCatalog(40).asSequence())
+                val ids = (popular + topRatedIds).distinct()
+                val byId = if (ids.isEmpty()) emptyMap() else dao.seriesCatalogByIds(ids).associateBy { it.seriesId }
+                val fallback = if (ids.isEmpty()) dao.topRatedSeriesCatalog(40).asSequence() else emptySequence()
+                (ids.asSequence().mapNotNull { byId[it] } + fallback)
                     .distinctBy { it.seriesId }.filterNot { adult(it) }.take(10).map { catalogPoster(it) }.toList()
             } else {
-                val byId = if (popular.isEmpty() || type != "MOVIE") emptyMap() else dao.itemsByIds(popular).associateBy { it.id }
-                val popularItems = popular.asSequence().mapNotNull { byId[it] }
+                val ids = if (type == "MOVIE") (popular + topRatedIds).distinct() else emptyList()
+                val byId = if (ids.isEmpty()) emptyMap() else dao.itemsByIds(ids).associateBy { it.id }
+                val fallback = if (ids.isEmpty()) dao.topRatedByType(type, 40).asSequence() else emptySequence()
+                (ids.asSequence().mapNotNull { byId[it] } + fallback)
                     .distinctBy { it.cleanedName.ifBlank { it.name }.lowercase(java.util.Locale.ROOT).trim() }
-                (popularItems + dao.topRatedByType(type, 40).asSequence())
-                    .distinctBy { it.id }.filterNot { adult(it) }.take(10).map { itemPoster(it) }.toList()
+                    .filterNot { adult(it) }.take(10).map { itemPoster(it) }.toList()
             }
-            TvSpecialSection.TOP_RATED -> if (catalog) {
+            // En yüksek puanlılar: TMDB'nin 8+ listesinden kütüphanede olanlar (telefondaki satırla aynı). TMDB'ye
+            // ulaşılamadıysa (liste boş) eski yol: sağlayıcının puanları.
+            TvSpecialSection.TOP_RATED -> if (topRatedIds.isNotEmpty()) {
+                if (catalog) {
+                    val byId = dao.seriesCatalogByIds(topRatedIds).associateBy { it.seriesId }
+                    topRatedIds.mapNotNull { byId[it] }.filterNot { adult(it) }.map { catalogPoster(it) }
+                } else {
+                    val byId = dao.itemsByIds(topRatedIds).associateBy { it.id }
+                    topRatedIds.mapNotNull { byId[it] }.filter { it.type == type }.filterNot { adult(it) }.map { itemPoster(it) }
+                }
+            } else if (catalog) {
                 val high = dao.seriesCatalogRatedAtLeast(8.0, 120).filterNot { adult(it) }
                 (high.ifEmpty { dao.seriesCatalogRatedAtLeast(7.5, 120).filterNot { adult(it) } }).map { catalogPoster(it) }
             } else if (type == "SERIES") {
@@ -231,6 +251,31 @@ class TvCatalogRepository(private val dao: IPTVDao) {
             PersonWorksMatcher.match(lookup, pool, excludeItemId = -1).inLibrary
                 .map { it.item }
                 .filterNot { adult(it) }
+                .take(limit)
+        }
+
+    /**
+     * [findTitles] gibi, ama her bulunan yapımı TMDB puanıyla döner (aynı eşleştirme; kütüphanedeki her yapım bir kez,
+     * TMDB listesindeki sırayla).
+     */
+    suspend fun findRatedTitles(rated: List<TMDBRepository.RatedTitle>, limit: Int = 200): List<Pair<IPTVItem, Double>> =
+        withContext(Dispatchers.Default) {
+            if (rated.isEmpty()) return@withContext emptyList()
+            val credits = rated.mapIndexed { index, r ->
+                val c = r.candidate
+                com.example.data.model.tmdb.PersonCredit(
+                    tmdbId = index + 1, mediaType = if (c.isSeries) "tv" else "movie", title = c.title,
+                    originalTitle = c.originalTitle, year = c.year, posterUrl = null, popularity = (rated.size - index).toDouble()
+                )
+            }
+            val lookup = PersonCreditsLookup(personId = 0, name = "", profileUrl = null, credits = credits)
+            PersonWorksMatcher.match(lookup, creditsPool(lookup), excludeItemId = -1).inLibrary
+                .mapNotNull { m ->
+                    val r = m.credit?.let { rated.getOrNull(it.tmdbId - 1) } ?: return@mapNotNull null
+                    m.item to r.rating
+                }
+                .filterNot { adult(it.first) }
+                .distinctBy { com.example.util.TmdbRatings.key(it.first) }
                 .take(limit)
         }
 

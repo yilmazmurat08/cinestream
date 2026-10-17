@@ -311,8 +311,17 @@ class IPTVViewModel(
                 "SERIES" -> _popularSeriesInLibraryIds.value
                 else -> emptyList()
             }
-            tvCatalog.special(type, section, popular)
+            tvCatalog.special(type, section, popular, _topRatedInLibraryIds.value[type].orEmpty()).withTmdbRatings()
         }
+
+    /** TV posterlerinde de yalnızca TMDB puanı gösterilir (bilinmiyorsa 0: puan yazılmaz). */
+    private fun List<com.example.data.repository.TvPoster>.withTmdbRatings(): List<com.example.data.repository.TvPoster> {
+        val ratings = _tmdbRatings.value
+        return map { p ->
+            val r = ratings[com.example.util.TmdbRatings.key(p.item)] ?: 0.0
+            if (r == p.rating) p else p.copy(rating = r)
+        }
+    }
 
     /** Kategorinin [offset]'ten başlayan sayfası. Dizilerde M3U bölümleri tek seferde gruplanır (sayfa yok). */
     suspend fun tvCategoryPage(type: String, categoryKey: String, offset: Int, limit: Int, covers: Map<String, String>): List<com.example.data.repository.TvPoster> =
@@ -322,7 +331,7 @@ class IPTVViewModel(
                 tvCatalog.hasSeriesCatalog() -> tvCatalog.catalogPage(categoryKey, offset, limit)
                 offset == 0 -> tvCatalog.seriesInCategory(categoryKey, covers)
                 else -> emptyList()
-            }
+            }.withTmdbRatings()
         }
 
     /** Dizi bölümünün dizisi (Xtream'den canlı çekilmişse o, yoksa yalnızca bu dizinin bölümleri sorgulanır). */
@@ -339,13 +348,13 @@ class IPTVViewModel(
      */
     suspend fun tvSimilar(item: IPTVItem, show: com.example.data.model.TvShow?, covers: Map<String, String>): List<com.example.data.repository.TvPoster> =
         try {
-            if (item.type == "SERIES") {
+            (if (item.type == "SERIES") {
                 tvCatalog.otherShowsInFolder(show, item, covers)
             } else {
                 getSimilarItemsFlow(item).first()
                     .filter { it.type == "MOVIE" && it.id != item.id }
                     .map { com.example.data.repository.TvPoster("MOVIE_${it.id}", it.cleanedName.ifBlank { it.name }, it.logoUrl, it.rating, it) }
-            }
+            }).withTmdbRatings()
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -1095,6 +1104,32 @@ class IPTVViewModel(
     /** TMDB'de bugün popüler olup kullanıcının film listesinde bulunan filmlerin kimlikleri (popülerlik sırasıyla). */
     private val _popularMoviesInLibraryIds = MutableStateFlow<List<Int>>(emptyList())
     val popularMoviesInLibraryIds: StateFlow<List<Int>> = _popularMoviesInLibraryIds.asStateFlow()
+
+    // TMDB puanları (bkz. TmdbRatings): kartlarda yalnızca bunlar gösterilir. Telefonda saklananlar açılışta yüklenir.
+    private val _tmdbRatings = MutableStateFlow<Map<String, Double>>(emptyMap())
+    val tmdbRatings: StateFlow<Map<String, Double>> = _tmdbRatings.asStateFlow()
+    // TMDB'nin en yüksek puanlı (8+) film ve dizilerinden kütüphanede olanlar; puanları TMDB'den.
+    private val _topRatedInLibrary = MutableStateFlow<List<IPTVItem>>(emptyList())
+    private val _topRatedInLibraryIds = MutableStateFlow<Map<String, List<Int>>>(emptyMap())
+    /** TMDB'nin en yüksek puanlılarından kütüphanede olanlar: tür → kimlikler (satırların boş yerlerini doldurur). */
+    val topRatedInLibraryIds: StateFlow<Map<String, List<Int>>> = _topRatedInLibraryIds.asStateFlow()
+
+    private fun addTmdbRatings(ratings: Map<String, Double>) {
+        val valid = ratings.filterValues { it > 0.0 }
+        if (valid.isEmpty()) return
+        _tmdbRatings.update { it + valid }
+        com.example.util.TmdbRatings.save(getApplication(), valid)
+    }
+
+    /** TMDB puanı (doğrulanmışsa), değilse 0. */
+    fun tmdbRatingOf(item: IPTVItem): Double = _tmdbRatings.value[com.example.util.TmdbRatings.key(item)] ?: 0.0
+
+    init {
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            val stored = com.example.util.TmdbRatings.load(getApplication())
+            if (stored.isNotEmpty()) _tmdbRatings.update { stored + it }
+        }
+    }
     val popularSeriesInLibraryIds: StateFlow<List<Int>> = _popularSeriesInLibraryIds.asStateFlow()
 
     private val _topRatedSeriesList = MutableStateFlow<List<IPTVItem>>(emptyList())
@@ -1185,19 +1220,13 @@ class IPTVViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val legendItems: StateFlow<List<IPTVItem>> = combine(movies, series) { m, s -> m + s }
-        .debounce(400)
-        .map { pool ->
-            // Puanlar 0–10 ölçeğinde doğrulanır (kayıtlı eski veride 10 ve üstü sahte puanlar olabilir).
-            val filtered = pool.asSequence().filterNot { isAdultContent(it) }
-                .mapNotNull { item ->
-                    val r = com.example.util.RatingScale.normalize(item.rating)
-                    if (r >= 7.5) (if (r == item.rating) item else item.copy(rating = r)) else null
-                }.toList()
-            val highRated = filtered.filter { it.rating >= 8.0 }
-            if (highRated.isNotEmpty()) highRated.sortedByDescending { it.rating }
-            else filtered.sortedByDescending { it.rating }
-        }
+    /**
+     * "En Yüksek Puanlılar": TMDB'nin en yüksek puanlı (8+) film ve dizilerinden kütüphanede olanlar, TMDB puanıyla.
+     * Sağlayıcının puanları kullanılmaz (çoğu uydurma ya da şişirilmiş). TMDB'ye ulaşılamazsa satır görünmez.
+     */
+    val legendItems: StateFlow<List<IPTVItem>> = combine(_topRatedInLibrary, parentalLockNow, parentalCategoryLocks) { top, _, _ ->
+        top.filterNot { isAdultContent(it) }
+    }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -2069,30 +2098,7 @@ class IPTVViewModel(
                 val popularSeries = tmdbRepository.getPopularSeriesList(key)
                 _popularSeriesList.value = (if (popularSeries.isNotEmpty()) popularSeries else geminiPicks.filter { it.type == "SERIES" }).filterNot { isAdultContent(it) }
 
-                // Ana sayfadaki "Popüler Diziler": TMDB'nin bugünkü popüler dizilerinden kütüphanede olanlar.
-                try {
-                    val candidates = tmdbRepository.getPopularSeriesCandidates(key)
-                    if (candidates.isNotEmpty()) {
-                        _popularSeriesInLibraryIds.value = tvCatalog.findTitles(candidates, limit = 40)
-                            .filter { it.playlistId == 0 && it.streamUrl.isEmpty() } // yalnızca katalog dizileri
-                            .map { it.id }
-                            .distinct()
-                    }
-                } catch (e: Exception) {
-                    Log.w("IPTVViewModel", "Popüler dizi eşleştirme başarısız: ${e.message}")
-                }
-                // Ana sayfadaki "Bugün Trend Filmler": TMDB'nin bugünkü popüler filmlerinden kütüphanede olanlar.
-                try {
-                    val candidates = tmdbRepository.getPopularMovieCandidates(key)
-                    if (candidates.isNotEmpty()) {
-                        _popularMoviesInLibraryIds.value = tvCatalog.findTitles(candidates, limit = 40)
-                            .filter { it.type == "MOVIE" && it.streamUrl.isNotEmpty() }
-                            .map { it.id }
-                            .distinct()
-                    }
-                } catch (e: Exception) {
-                    Log.w("IPTVViewModel", "Popüler film eşleştirme başarısız: ${e.message}")
-                }
+                loadTmdbRatedRows(key)
 
                 val topRatedSeries = tmdbRepository.getTopRatedSeriesList(key)
                 _topRatedSeriesList.value = if (topRatedSeries.isNotEmpty()) topRatedSeries else geminiPicks.filter { it.type == "SERIES" }
@@ -2530,6 +2536,8 @@ class IPTVViewModel(
     fun openCatalogShow(catalogShow: com.example.data.model.TvShow, fallbackItem: IPTVItem? = null) {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             var opened = false
+            // Dizinin puanı TMDB'den (kartta sağlayıcının puanı gösterilmez).
+            launch { resolveTmdbRating(fallbackItem?.takeIf { catalogSeriesIdOf(it) == catalogShow.id } ?: catalogShow.toBrowsableItem()) }
             try {
                 _isLoadingLiveShow.value = true
                 _liveFetchedShow.value = null
@@ -2622,6 +2630,8 @@ class IPTVViewModel(
     private fun enrichItemMetadata(item: IPTVItem) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO + coroutineExceptionHandler) {
             try {
+                // Kartta gösterilecek puan TMDB'den (sağlayıcının ya da yapay zekânın puanı gösterilmez).
+                launch { resolveTmdbRating(item) }
                 val meta = com.example.data.api.MetadataEnricher.enrichWithXtreamOrFallback(getApplication(), item)
                 // Yatay sahne görseli yalnızca detayın üst görseli olur; poster olarak kaydedilmez.
                 meta.backdropUrl?.takeIf { it.isNotBlank() }?.let { _detailBackdrop.value = item.id to it }
@@ -3166,6 +3176,66 @@ class IPTVViewModel(
             throw e
         } catch (e: Exception) {
             Log.w("IPTVViewModel", "Otomatik liste güncellemesi başarısız: ${e.message}")
+        }
+    }
+
+    /**
+     * TMDB'nin popüler ve en yüksek puanlı film/dizileri kütüphaneyle eşleştirilir: "Bugün Trend Filmler",
+     * "Popüler Diziler" ve "En Yüksek Puanlılar" satırları ile eşleşen her yapımın TMDB puanı buradan gelir.
+     */
+    private suspend fun loadTmdbRatedRows(key: String) {
+        val isCatalogShow: (IPTVItem) -> Boolean = { it.playlistId == 0 && it.streamUrl.isEmpty() }
+        val isMovie: (IPTVItem) -> Boolean = { it.type == "MOVIE" && it.streamUrl.isNotEmpty() }
+        val ratings = HashMap<String, Double>()
+        suspend fun matched(rated: List<com.example.data.repository.TMDBRepository.RatedTitle>, keep: (IPTVItem) -> Boolean) =
+            try {
+                tvCatalog.findRatedTitles(rated).filter { keep(it.first) }
+                    .onEach { (item, r) -> if (r > 0.0) ratings[com.example.util.TmdbRatings.key(item)] = r }
+            } catch (e: Exception) {
+                Log.w("IPTVViewModel", "TMDB eşleştirme başarısız: ${e.message}")
+                emptyList()
+            }
+        // Popüler: ana sayfadaki "Popüler Diziler" ve "Bugün Trend Filmler" (her gün değişir).
+        val popularSeries = matched(tmdbRepository.getPopularRated(isSeries = true, key), isCatalogShow)
+        if (popularSeries.isNotEmpty()) _popularSeriesInLibraryIds.value = popularSeries.map { it.first.id }.distinct().take(40)
+        val popularMovies = matched(tmdbRepository.getPopularRated(isSeries = false, key), isMovie)
+        if (popularMovies.isNotEmpty()) _popularMoviesInLibraryIds.value = popularMovies.map { it.first.id }.distinct().take(40)
+        // En yüksek puanlılar (TMDB 8+).
+        val topMovies = matched(tmdbRepository.getTopRatedRated(isSeries = false, tmdbApiKey = key), isMovie)
+        val topSeries = matched(tmdbRepository.getTopRatedRated(isSeries = true, tmdbApiKey = key), isCatalogShow)
+        addTmdbRatings(ratings)
+        val top = (topMovies + topSeries).filter { it.second >= 8.0 }
+            .distinctBy { it.first.cleanedName.ifBlank { it.first.name }.lowercase(java.util.Locale.ROOT).trim() }
+            .sortedByDescending { it.second }
+        if (top.isNotEmpty()) {
+            _topRatedInLibrary.value = top.map { (item, r) -> item.copy(rating = r) }
+            _topRatedInLibraryIds.value = mapOf(
+                "MOVIE" to top.filter { it.first.type == "MOVIE" }.map { it.first.id },
+                "SERIES" to top.filter { isCatalogShow(it.first) }.map { it.first.id }
+            )
+        }
+    }
+
+    /**
+     * Açılan detayın TMDB puanı (yıl bilgisiyle eşleştirilir, sonuç 30 gün saklanır). Bulunamazsa puan gösterilmez;
+     * sağlayıcının ya da yapay zekânın tahmini puanı kullanılmaz.
+     */
+    private suspend fun resolveTmdbRating(item: IPTVItem) {
+        val ratingKey = com.example.util.TmdbRatings.key(item)
+        if ((_tmdbRatings.value[ratingKey] ?: 0.0) > 0.0) return
+        if (item.type != "MOVIE" && item.type != "SERIES") return
+        try {
+            val title = if (item.type == "SERIES") {
+                com.example.data.model.SeriesParser.episodeInfoOf(item)?.showTitle ?: item.cleanedName.ifBlank { item.name }
+            } else {
+                item.cleanedName.ifBlank { item.name }
+            }
+            val year = item.releaseDate.take(4).takeIf { it.length == 4 && it.all(Char::isDigit) }
+            val rating = tmdbRepository.getTmdbFullData(title, year, isMovie = item.type == "MOVIE")?.voteAverage ?: 0.0
+            val normalized = com.example.util.RatingScale.normalize(rating)
+            if (normalized > 0.0) addTmdbRatings(mapOf(ratingKey to normalized))
+        } catch (e: Exception) {
+            Log.w("IPTVViewModel", "TMDB puanı alınamadı: ${e.message}")
         }
     }
 
