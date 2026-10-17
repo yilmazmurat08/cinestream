@@ -558,6 +558,16 @@ class IPTVRepository(
     // --- Çoklu liste ---
 
     /** Ekrandaki liste; işaretli liste yoksa (eski sürümden gelen veri) en son yüklenen liste. */
+    /**
+     * Otomatik güncelleme: yalnızca ekrandaki liste yenilenir. Başarılıysa listenin kimliği döner; indirme
+     * başarısızsa hata fırlatır (son güncelleme zamanı kaydedilmez, sonraki açılışta yeniden denenir).
+     */
+    suspend fun autoRefreshActivePlaylist(): Int? = withContext(Dispatchers.IO) {
+        val playlist = playlistToRefresh() ?: return@withContext null
+        syncPlaylist(playlist)
+        playlist.id
+    }
+
     suspend fun playlistToRefresh(): Playlist? = iptvDao.getActivePlaylist() ?: iptvDao.getAllPlaylists().firstOrNull()
 
     /**

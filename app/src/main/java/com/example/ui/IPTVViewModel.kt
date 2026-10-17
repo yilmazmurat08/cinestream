@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.app.Application
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -54,6 +55,12 @@ class IPTVViewModel(
         /** Ücretsiz kullanıcı 1 liste ekleyebilir; PRO en fazla 3 liste. Var olan listeler hiçbir zaman kilitlenmez. */
         const val FREE_PLAYLIST_LIMIT = 1
         const val PRO_PLAYLIST_LIMIT = 3
+
+        /** Otomatik liste güncellemesinin son zamanı (liste başına) bu dosyada tutulur. */
+        internal const val AUTO_REFRESH_PREFS = "auto_refresh"
+        /** Testler için: açılıştan sonra güncellemeden önceki bekleme. */
+        @androidx.annotation.VisibleForTesting
+        internal var autoRefreshStartupDelayMs: Long = com.example.util.AutoRefreshPolicy.STARTUP_DELAY_MS
 
         /**
          * Yuva kilitli mi: 1. yuva (ilk eklenen liste) ücretsizdir; 2. ve 3. yuva her durumda PRO ister.
@@ -1632,13 +1639,7 @@ class IPTVViewModel(
                     _isLoading.value = false
                     val autoRefresh = settingsRepository.autoRefreshListFlow.firstOrNull() ?: true
                     if (autoRefresh) {
-                        launch(Dispatchers.IO) {
-                            try {
-                                repository.fetchFromNetwork()
-                            } catch (e: Exception) {
-                                Log.w("IPTVViewModel", "Background silent fetchFromNetwork failed: ${e.message}")
-                            }
-                        }
+                        launch(Dispatchers.IO) { autoRefreshIfDue() }
                     }
                 } else {
                     // DB is empty -> initial fetch from network
@@ -3144,6 +3145,27 @@ class IPTVViewModel(
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    /**
+     * Otomatik liste güncellemesi (bkz. AutoRefreshPolicy): ekrandaki liste en fazla günde bir kez, açılıştan biraz
+     * sonra ve video/radyo çalmıyorken yenilenir. Zaman yalnızca başarılı güncellemede kaydedilir.
+     */
+    private suspend fun autoRefreshIfDue() {
+        try {
+            val prefs = getApplication<Application>().getSharedPreferences(AUTO_REFRESH_PREFS, android.content.Context.MODE_PRIVATE)
+            val playlistId = repository.playlistToRefresh()?.id ?: return
+            val key = "last_auto_refresh_$playlistId"
+            if (!com.example.util.AutoRefreshPolicy.isDue(prefs.getLong(key, 0L), System.currentTimeMillis())) return
+            kotlinx.coroutines.delay(autoRefreshStartupDelayMs)
+            com.example.util.AutoRefreshPolicy.awaitNoPlayback()
+            val refreshedId = repository.autoRefreshActivePlaylist() ?: return
+            prefs.edit { putLong("last_auto_refresh_$refreshedId", System.currentTimeMillis()) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("IPTVViewModel", "Otomatik liste güncellemesi başarısız: ${e.message}")
         }
     }
 

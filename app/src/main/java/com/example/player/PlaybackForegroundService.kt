@@ -28,6 +28,9 @@ class PlaybackForegroundService : Service() {
          * kısa bir beklemeden sonra durdurulur.
          */
         private val owners = HashSet<Int>()
+
+        /** Servisi kullanan bir oynatıcı var mı (ör. otomatik liste güncellemesi oynatma sırasında başlamaz). */
+        val isInUse: Boolean get() = synchronized(owners) { owners.isNotEmpty() }
         private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
         private var pendingStop: Runnable? = null
 

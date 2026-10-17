@@ -208,6 +208,9 @@ fun LegacyExoPlayerScreen(
     var isPlaying by remember { mutableStateOf(true) }
     var currentPos by remember { mutableStateOf(0L) }
     var totalDuration by remember { mutableStateOf(100L) }
+    // Yayının süresi öğrenildi mi? Öğrenilemezse (sunucu dosya uzunluğunu bildirmiyor) çubuk dolu ve kalan
+    // süre "-00:00" görünüyordu; artık çubuk boş ve kilitli kalır, kalan süre "--:--" yazar.
+    var durationKnown by remember(item.id) { mutableStateOf(false) }
 
     // Aspect Ratio & Layout Resize
     var currentAspectRatioMode by remember { mutableStateOf(AspectRatioMode.FILL) }
@@ -488,6 +491,7 @@ fun LegacyExoPlayerScreen(
                 val dur = player.duration / 1000
                 if (dur > 0) {
                     totalDuration = dur
+                    durationKnown = true
                 }
                 isPlaying = player.isPlaying
                 if (isPlaying && !isProUser) {
@@ -600,6 +604,7 @@ fun LegacyExoPlayerScreen(
                     val dur = player.duration / 1000
                     if (dur > 0) {
                         totalDuration = dur
+                        durationKnown = true
                     }
                     localRetryCount = 0 // Reset retry count when stream becomes READY
                 } else if (state == Player.STATE_ENDED) {
@@ -1619,9 +1624,10 @@ fun LegacyExoPlayerScreen(
 
                         // B. İlerleme Çubuğu (Slider + Zaman Bilgileri)
                         if (item.type != "LIVE" && item.type != "RADIO") {
-                            val maxVal = totalDuration.toFloat().coerceAtLeast(1f)
+                            val maxVal = if (durationKnown) totalDuration.toFloat().coerceAtLeast(1f) else 1f
                             Slider(
-                                value = currentPos.toFloat().coerceIn(0f, maxVal),
+                                value = if (durationKnown) currentPos.toFloat().coerceIn(0f, maxVal) else 0f,
+                                enabled = durationKnown,
                                 onValueChange = { targetPos ->
                                     currentPos = targetPos.toLong()
                                     player.seekTo((targetPos * 1000).toLong())
@@ -1631,11 +1637,14 @@ fun LegacyExoPlayerScreen(
                                 colors = SliderDefaults.colors(
                                     thumbColor = NeonPink,
                                     activeTrackColor = NeonPink,
-                                    inactiveTrackColor = Color.White.copy(alpha = 0.2f)
+                                    inactiveTrackColor = Color.White.copy(alpha = 0.2f),
+                                    disabledThumbColor = Color.Transparent,
+                                    disabledInactiveTrackColor = Color.White.copy(alpha = 0.2f)
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(22.dp)
+                                    .testTag("player_seek_bar")
                             )
                             Row(
                                 modifier = Modifier
@@ -1652,7 +1661,7 @@ fun LegacyExoPlayerScreen(
                                 )
                                 val remainingSec = (totalDuration - currentPos).coerceAtLeast(0L)
                                 Text(
-                                    text = "-${formatTime(remainingSec)}",
+                                    text = if (durationKnown) "-${formatTime(remainingSec)}" else "--:--",
                                     color = MutedText,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium
