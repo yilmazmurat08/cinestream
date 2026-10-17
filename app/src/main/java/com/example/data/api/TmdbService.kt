@@ -58,6 +58,15 @@ interface TmdbService {
         @Query("api_key") apiKey: String
     ): TmdbCreditsResponse
 
+    /** Fragmanlar: önce Türkçe, sonra İngilizce ve dilsiz videolar. */
+    @GET("movie/{id}/videos")
+    suspend fun getMovieVideos(
+        @Path("id") id: Int,
+        @Query("language") language: String = "tr-TR",
+        @Query("include_video_language") includeVideoLanguage: String = "tr,en,null",
+        @Query("api_key") apiKey: String
+    ): com.example.data.model.tmdb.TmdbVideosResponse
+
     // ============================
     // DİZİ (TV) ENDPOINT'LERİ
     // ============================
@@ -84,6 +93,14 @@ interface TmdbService {
         @Query("language") language: String = "tr-TR",
         @Query("api_key") apiKey: String
     ): TmdbTvDetails
+
+    @GET("tv/{id}/videos")
+    suspend fun getTvVideos(
+        @Path("id") id: Int,
+        @Query("language") language: String = "tr-TR",
+        @Query("include_video_language") includeVideoLanguage: String = "tr,en,null",
+        @Query("api_key") apiKey: String
+    ): com.example.data.model.tmdb.TmdbVideosResponse
 
     // ============================
     // FALLBACK / MULTI / POPULAR

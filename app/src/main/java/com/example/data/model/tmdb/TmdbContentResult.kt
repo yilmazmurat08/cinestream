@@ -153,3 +153,18 @@ data class TmdbCrewItem(
     val department: String? = null,
     @Json(name = "profile_path") val profilePath: String? = null
 )
+
+/** TMDb `movie/{id}/videos` ve `tv/{id}/videos` yanıtı (fragmanlar). */
+@JsonClass(generateAdapter = true)
+data class TmdbVideosResponse(
+    val results: List<TmdbVideo> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbVideo(
+    val key: String = "",
+    val site: String = "",
+    val type: String = "",
+    val official: Boolean = false,
+    @Json(name = "iso_639_1") val language: String? = null
+)

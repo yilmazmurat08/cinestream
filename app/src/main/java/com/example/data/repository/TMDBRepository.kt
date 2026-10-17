@@ -578,6 +578,32 @@ class TMDBRepository(
         result?.toMediaDetails(if (isMovie) "MOVIE" else "SERIES")
     }
 
+    /**
+     * Yapımın TMDB'deki resmî YouTube fragmanı. Yapım, mevcut eşleştirmeyle ([getTmdbFullData], önbellekli) bulunur;
+     * yalnızca fragman listesi ayrıca istenir (afiş ve diğer bilgilere dokunulmaz).
+     */
+    suspend fun findTrailer(title: String, year: String?, isMovie: Boolean): com.example.util.TrailerLookup = withContext(Dispatchers.IO) {
+        val apiKey = getApiKey()
+        if (apiKey.isBlank()) return@withContext com.example.util.TrailerLookup.Failed
+        val match = getTmdbFullData(title, year, isMovie)
+        val tmdbId = match?.tmdbId?.takeIf { it > 0 } ?: return@withContext com.example.util.TrailerLookup.NotFound
+        try {
+            val videos = if (isMovie) {
+                tmdbService.getMovieVideos(id = tmdbId, apiKey = apiKey)
+            } else {
+                tmdbService.getTvVideos(id = tmdbId, apiKey = apiKey)
+            }
+            com.example.util.TrailerFinder.pickTrailerKey(videos.results)
+                ?.let { com.example.util.TrailerLookup.Found(it) }
+                ?: com.example.util.TrailerLookup.NotFound
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (e: Exception) {
+            Log.w(TAG, "TMDB fragman alınamadı ($tmdbId): ${e.message}")
+            com.example.util.TrailerLookup.Failed
+        }
+    }
+
     suspend fun getTrendingMoviesAndSeries(tmdbApiKey: String = ""): List<IPTVItem> = withContext(Dispatchers.IO) {
         getPopularMoviesList(tmdbApiKey) + getPopularSeriesList(tmdbApiKey)
     }

@@ -3275,9 +3275,18 @@ class IPTVViewModel(
         }
     }
 
-    suspend fun fetchTrailerVideoId(movieTitle: String): String? {
+    private val trailerFinder by lazy {
+        com.example.util.TrailerFinder(
+            context = getApplication(),
+            tmdb = { title, year, isMovie -> tmdbRepository.findTrailer(title, year, isMovie) },
+            youtube = { title, year -> com.example.data.api.MetadataEnricher.searchYoutubeTrailer(getApplication(), title, year) }
+        )
+    }
+
+    /** Linkte fragman yoksa: önce TMDB'deki resmî fragman, yoksa YouTube araması; sonuç cihazda saklanır. */
+    suspend fun fetchTrailerVideoId(movieTitle: String, year: String? = null, isMovie: Boolean = true): String? {
         return try {
-            com.example.data.api.MetadataEnricher.fetchYoutubeTrailerId(getApplication(), movieTitle)
+            trailerFinder.find(movieTitle, year, isMovie)
         } catch (e: Throwable) {
             Log.w("IPTVViewModel", "fetchTrailerVideoId safe catch: ${e.message}")
             null

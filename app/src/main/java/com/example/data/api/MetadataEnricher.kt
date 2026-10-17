@@ -2164,12 +2164,12 @@ object MetadataEnricher {
     }
 
     /**
-     * Verilen film/dizi adı için YouTube Data API v3 üzerinden gerçek bir fragman videosu arar.
-     * API anahtarı yoksa veya sonuç bulunamazsa null döner (asla ilgisiz bir filmin
-     * fragmanını yerine koymaz).
+     * Verilen film/dizi adı (ve varsa yılı) için YouTube Data API v3 üzerinden fragman arar; TMDB'de fragman
+     * yoksa yedek olarak kullanılır ([com.example.util.TrailerFinder]). Kota/ağ hatası [TrailerLookup.Failed],
+     * sonuç yoksa [TrailerLookup.NotFound] döner (asla ilgisiz bir filmin fragmanını yerine koymaz).
      */
-    suspend fun fetchYoutubeTrailerId(context: android.content.Context, title: String): String? = withContext(Dispatchers.IO) {
-        if (title.isBlank()) return@withContext null
+    suspend fun searchYoutubeTrailer(context: android.content.Context, title: String, year: String?): com.example.util.TrailerLookup = withContext(Dispatchers.IO) {
+        if (title.isBlank()) return@withContext com.example.util.TrailerLookup.NotFound
         val savedKey = context.dataStore.data.firstOrNull()?.get(stringPreferencesKey("youtube_api_key"))
         val embeddedKey = resolveEmbeddedYoutubeKey()
         val apiKey = when {
@@ -2179,26 +2179,26 @@ object MetadataEnricher {
         }
         if (apiKey.isEmpty() || apiKey == "placeholder") {
             Log.w(TAG, "YouTube API Key is missing or placeholder; trailer search skipped.")
-            return@withContext null
+            return@withContext com.example.util.TrailerLookup.Failed
         }
         try {
-            val query = java.net.URLEncoder.encode("$title resmi fragman trailer", "UTF-8")
+            val withYear = listOfNotNull(title, year?.takeIf { it.isNotBlank() }).joinToString(" ")
+            val query = java.net.URLEncoder.encode("$withYear resmi fragman trailer", "UTF-8")
             val url = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&type=video&videoEmbeddable=true&q=$query&key=$apiKey"
             val request = Request.Builder().url(url).get().build()
-            val response = clientByTimeout.newCall(request).execute()
-            if (!response.isSuccessful) {
-                Log.w(TAG, "YouTube search failed: ${response.code}")
-                return@withContext null
+            clientByTimeout.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "YouTube search failed: ${response.code}")
+                    return@withContext com.example.util.TrailerLookup.Failed
+                }
+                val body = response.body?.string() ?: return@withContext com.example.util.TrailerLookup.Failed
+                val items = JSONObject(body).optJSONArray("items")
+                val videoId = items?.takeIf { it.length() > 0 }?.getJSONObject(0)?.optJSONObject("id")?.optString("videoId")
+                if (videoId.isNullOrBlank()) com.example.util.TrailerLookup.NotFound else com.example.util.TrailerLookup.Found(videoId)
             }
-            val body = response.body?.string() ?: return@withContext null
-            val json = JSONObject(body)
-            val items = json.optJSONArray("items")
-            if (items == null || items.length() == 0) return@withContext null
-            val videoId = items.getJSONObject(0).optJSONObject("id")?.optString("videoId")
-            videoId?.takeIf { it.isNotBlank() }
         } catch (e: Exception) {
             Log.w(TAG, "fetchYoutubeTrailerId error for '$title'", e)
-            null
+            com.example.util.TrailerLookup.Failed
         }
     }
 

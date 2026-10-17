@@ -178,7 +178,7 @@ fun TvDetailScreen(
     }
     LaunchedEffect(title) {
         if (trailerUrl == null) {
-            val id = runCatching { viewModel.fetchTrailerVideoId(title) }.getOrNull()
+            val id = runCatching { viewModel.fetchTrailerVideoId(title, yearOf(item.releaseDate), isMovie = !isSeries) }.getOrNull()
             if (!id.isNullOrBlank()) trailerUrl = "https://www.youtube.com/watch?v=$id"
         }
     }

@@ -153,7 +153,7 @@ fun SeriesDetailScreen(
     if (dynamicTrailerUrl.isNullOrEmpty() && viewModel != null) {
         LaunchedEffect(item) {
             try {
-                val videoId = viewModel.fetchTrailerVideoId(item.cleanedName)
+                val videoId = viewModel.fetchTrailerVideoId(item.cleanedName, item.releaseDate, isMovie = false)
                 if (!videoId.isNullOrBlank()) {
                     dynamicTrailerUrl = "https://www.youtube.com/watch?v=$videoId"
                 }
