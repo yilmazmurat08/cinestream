@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
+import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.db.AppDatabase
 import com.example.data.model.IPTVItem
@@ -22,6 +23,7 @@ import com.example.ui.tv.TvAppState
 import com.example.ui.tv.TvBrowseScreen
 import com.example.ui.tv.TvDetailScreen
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -42,6 +44,14 @@ class TvBrowseDetailTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    // Kendi veritabanı: uygulamanın ortak veritabanını kullanan önceki testlerin arka plan işleri bu testin ilk
+    // çizimine karışıyordu (tüm testler birlikte çalışınca ara sıra "performMeasureAndLayout called during measure
+    // layout"). Ayrı bir bellek içi veritabanıyla test yalnızca kendi verisini görür.
+    private val db = Room.inMemoryDatabaseBuilder(app, AppDatabase::class.java).allowMainThreadQueries().build()
+
+    @After
+    fun tearDown() = db.close()
 
     private fun press(key: Key) {
         @OptIn(ExperimentalTestApi::class)
@@ -69,7 +79,6 @@ class TvBrowseDetailTest {
 
     @Test
     fun categoryToGrid_andLeftFromFirstColumnReturnsToCategory_okOpensDetail() {
-        val db = AppDatabase.getDatabase(app)
         runBlocking {
             db.iptvDao().insertItems((1..8).map { movie(9000 + it, "Tv Test Film $it", "TvTest Kategori") } +
                 // Seçili kategori listenin ekran dışında kalan kısmında olsun (liste oraya kaydırılıp odak verilmeli)
@@ -97,7 +106,6 @@ class TvBrowseDetailTest {
 
     @Test
     fun detail_focusStartsOnPlay_personPageBackRestoresSamePerson() {
-        val db = AppDatabase.getDatabase(app)
         val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
         val item = movie(9100, "Tv Detay Filmi", "TvDetay", cast = "Ada Oyuncu, Bora Oyuncu", director = "Can Yönetmen")
         var played: IPTVItem? = null

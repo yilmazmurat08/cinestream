@@ -4,15 +4,19 @@ Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
 
 ```
 <tr-TR>
-• Yeni: Birden fazla liste! Ayarlar → Liste Yönetimi'nden tüm listelerini tek yerden yönet, listeler arasında tek dokunuşla geç. 1 liste ücretsiz, 2. ve 3. liste PRO.
-• Kanallar artık sağlayıcının sırasıyla listeleniyor.
-• TV: Canlı yayında OK tuşu kanal listesini açar. Geri tuşuna yanlışlıkla basınca uygulama kapanmaz; çıkış onay kartı eklendi.
-• Kararlılık ve güvenlik iyileştirmeleri.
+• Yeni: Birden fazla liste! Ayarlar → Liste Yönetimi'nden tüm listelerini tek yerden yönet. 1 liste ücretsiz, 2. ve 3. liste PRO.
+• Arama yenilendi: diziler de bulunuyor, Türkçe harfler fark etmiyor, en yakın sonuç en üstte.
+• Ana sayfa: günün popüler film ve dizileri, gerçek IMDb puanları, sinema ve dizi kanalları.
+• Kanallar sağlayıcının sırasıyla listeleniyor; dizi bölüm numaraları düzeltildi.
+• TV: OK tuşu kanal listesini açar, çıkışta onay kartı.
+• Kararlılık iyileştirmeleri.
 </tr-TR>
 <en-US>
-• New: Multiple playlists! Manage all your playlists in one place under Settings → Playlist Manager and switch between them with one tap. 1 playlist is free, the 2nd and 3rd are PRO.
-• Channels are now listed in your provider's order.
-• TV: OK opens the channel list during live TV. Pressing Back by mistake no longer closes the app; added an exit confirmation card.
-• Stability and security improvements.
+• New: Multiple playlists! Manage them all under Settings → Playlist Manager. 1 playlist is free, the 2nd and 3rd are PRO.
+• Better search: finds series too, ignores Turkish accents, best match first.
+• Home: today's popular movies and series, real IMDb ratings, movie and series channels.
+• Channels follow your provider's order; episode numbers fixed.
+• TV: OK opens the channel list, exit confirmation card.
+• Stability improvements.
 </en-US>
 ```
