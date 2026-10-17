@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -185,7 +186,11 @@ fun TvDetailScreen(
         // Dizilerde benzerler, dizi bilgisi yüklenince (yukarıda) aynı klasördeki dizilerden hesaplanır.
         if (!isSeries) similar = viewModel.tvSimilar(item, null, covers)
     }
-    LaunchedEffect(item.id) { requestFocusWhenReady(playFocus) }
+    val scrollState = rememberScrollState()
+    LaunchedEffect(item.id) {
+        scrollState.scrollTo(0)
+        requestFocusWhenReady(playFocus)
+    }
 
     val people = remember(item, tmdb, extraCast, extraDirector) { buildPeople(item, tmdb, extraCast, extraDirector) }
     // Oyuncu/yönetmen bilgisi hiç yoksa telefondaki gibi yapay zekadan istenir.
@@ -267,11 +272,16 @@ fun TvDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(start = 48.dp, top = 40.dp, bottom = 48.dp)
         ) {
-            Column(Modifier.fillMaxWidth(if (trailerId != null) 0.34f else 0.55f)) {
-                Text(title, color = TvTheme.TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 38.sp)
+            Column(Modifier.fillMaxWidth(if (trailerId != null) 0.34f else 0.55f).testTag("tv_detail_header")) {
+                // Fragman oynarken sütun daralır: ad kesilmesin diye biraz küçülür ve üç satıra kadar sığar.
+                Text(
+                    title, color = TvTheme.TextPrimary, fontSize = if (trailerId != null) 28.sp else 34.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 3, overflow = TextOverflow.Ellipsis, lineHeight = if (trailerId != null) 32.sp else 38.sp,
+                    modifier = Modifier.testTag("tv_detail_title")
+                )
                 val meta = listOfNotNull(
                     rating?.let { "★ " + String.format(java.util.Locale.getDefault(), "%.1f", it) },
                     year,
@@ -289,8 +299,15 @@ fun TvDetailScreen(
             }
             Spacer(Modifier.height(22.dp))
 
-            // Düğmeler: İzle (ilk odak), Fragman, Favori, AI
-            LazyRow(modifier = Modifier.offset(x = (-12).dp), horizontalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 6.dp, bottom = 6.dp)) {
+            // Düğmeler: İzle (ilk odak), Fragman, Favori, AI. Odak bu satırdayken sayfa en üstte durur; yapımın
+            // adı ve bilgileri hep görünür (fragman başlayıp bitince ya da odak değişince sayfa kendiliğinden kaymaz).
+            LazyRow(
+                modifier = Modifier
+                    .offset(x = (-12).dp)
+                    .onFocusChanged { if (it.hasFocus && scrollState.value != 0) scope.launch { scrollState.animateScrollTo(0) } },
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 6.dp, bottom = 6.dp)
+            ) {
                 item {
                     val resume = lastWatched
                     val label = when {

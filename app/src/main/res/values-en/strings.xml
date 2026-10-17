@@ -517,6 +517,7 @@
     <string name="tv_profile_settings">Profile / Settings</string>
     <string name="tv_continue_watching">Continue Watching</string>
     <string name="tv_ask_assistant">Ask the assistant</string>
+    <string name="tv_seek_bar_desc">Progress bar: Left and Right to scrub, OK to jump</string>
     <string name="tv_search">Search</string>
     <string name="tv_resume">Resume</string>
     <string name="tv_next_movie_tag">What should you watch next?</string>

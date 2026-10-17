@@ -62,13 +62,12 @@ fun TvApp(
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var destination by state::destination
     var homeFocus by state::homeFocus
-    var searchOpen by rememberSaveable { mutableStateOf(false) }
     var exitOpen by rememberSaveable { mutableStateOf(false) }
     // Detay paneli açıkken Geri önce paneli kapatır (MainActivity'deki işleyici).
     val detailOpen = viewModel.selectedItem.collectAsState().value != null
 
     BackHandler(enabled = !detailOpen && destination != TV_HOME) { destination = TV_HOME }
-    BackHandler(enabled = !detailOpen && destination == TV_HOME && !searchOpen) { exitOpen = true }
+    BackHandler(enabled = !detailOpen && destination == TV_HOME) { exitOpen = true }
 
     Box(
         modifier = modifier
@@ -93,7 +92,11 @@ fun TvApp(
                     }
                 },
                 onOpenAssistant = onOpenAssistant,
-                onOpenSearch = { searchOpen = true },
+                onSearchResult = { item ->
+                    val matched = viewModel.findMatchedItem(item)
+                    val target = if (matched.streamUrl.isNotEmpty()) matched else item
+                    if (target.type == "LIVE" || target.type == "LIVE_TV") onPlayItem(target) else viewModel.selectItem(target)
+                },
                 onPlayContinue = onPlayContinue
             )
             TvSection.LIVE -> {
@@ -124,32 +127,6 @@ fun TvApp(
                 onExit = {
                     exitOpen = false
                     hostActivity?.finish()
-                }
-            )
-        }
-
-        if (searchOpen) {
-            val searchQuery by viewModel.searchQuery.collectAsState()
-            val searchResults by viewModel.searchResults.collectAsState()
-            val isAILoading by viewModel.isAILoading.collectAsState()
-            com.example.ui.components.SearchPopupDialog(
-                isOpen = true,
-                searchQuery = searchQuery,
-                onQueryChange = { viewModel.updateSearchQuery(it) },
-                onSearchSubmit = { viewModel.saveSearchQuery(it) },
-                onAISearchClick = { viewModel.performNLPSearch(searchQuery) },
-                isAILoading = isAILoading,
-                searchResults = searchResults,
-                onItemClick = { item ->
-                    searchOpen = false
-                    viewModel.updateSearchQuery("")
-                    val matched = viewModel.findMatchedItem(item)
-                    val target = if (matched.streamUrl.isNotEmpty()) matched else item
-                    if (target.type == "LIVE" || target.type == "LIVE_TV") onPlayItem(target) else viewModel.selectItem(target)
-                },
-                onDismiss = {
-                    searchOpen = false
-                    viewModel.updateSearchQuery("")
                 }
             )
         }

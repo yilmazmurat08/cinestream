@@ -61,6 +61,7 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
    - **TV'de canlı kanal önizleme:** Listede gezerken seçili kanal küçük pencerede oynar.
    - **Kendi kanal grupları:** grup oluşturma, kanalları sıralama, kategorileri gizleme.
    - **Jenerik atlama:** Dizide giriş bir kez işaretlenir, sonraki bölümlerde "Jeneriği geç" düğmesi çıkar.
+   - **Dakikaya git (TV, kullanıcı fikri, 17 Ekim 2026):** Oynatıcının ilerleme çubuğunda küçük bir alan; kumandayla seçilir, rakamla dakika yazılır (ör. 65) ve yapım doğrudan o dakikaya gider. Ücretsizde çubukla Sol/Sağ sarma zaten var.
    - Paywall metni PRO özelliklerine göre yeniden yazılır.
 
 Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarılabilir):

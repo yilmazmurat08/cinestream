@@ -36,6 +36,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.zIndex
+import com.example.data.model.IPTVItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,7 +94,7 @@ private const val HERO_REFRESH_MS = 6_000L
 private const val HERO_FOCUS_DEBOUNCE_MS = 300L
 
 /**
- * TV ana sayfası: üstte logo ve PRO / ✨ / Arama; üst yarıda odaklanan bölüme göre değişen hero (Top Shelf);
+ * TV ana sayfası: üstte logo ve Arama / PRO / ✨ (arama yerinde açılan çubuktur, [TvSearchBar]); üst yarıda odaklanan bölüme göre değişen hero (Top Shelf);
  * altında 5 cam kart (Canlı TV, Filmler, Diziler, Kaydedilenler, Profil/Ayarlar) ve İzlemeye Devam Et çubuğu.
  * Alt gezinme çubuğu ve aşağı çek-yenile yoktur; hero bir carousel değildir (odaklanamaz, kaymaz).
  */
@@ -103,7 +105,7 @@ fun TvHomeScreen(
     onFocusChanged: (String) -> Unit,
     onOpenSection: (String) -> Unit,
     onOpenAssistant: () -> Unit,
-    onOpenSearch: () -> Unit,
+    onSearchResult: (IPTVItem) -> Unit,
     onPlayContinue: (ContinueWatching) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -153,30 +155,52 @@ fun TvHomeScreen(
                 .height(heroHeight)
         )
 
-        // Üst bar
+        // Üst bar. Arama paneli aşağı açılınca hero ve kartların üstünde kalsın diye en üst katmanda;
+        // öğeler üste hizalı ve 44 dp yükseklikte, böylece panel açılınca bar kaymaz.
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
             modifier = Modifier
+                .zIndex(1f)
                 .fillMaxWidth()
                 .padding(horizontal = 48.dp, vertical = 24.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.img_app_logo_1782414357652),
-                contentDescription = stringResource(R.string.app_name),
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = "CineStream",
-                style = TextStyle(
-                    brush = Brush.linearGradient(listOf(Color.White, Color.White, TvTheme.Accent)),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black
+            Box(modifier = Modifier.height(44.dp), contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(id = R.drawable.img_app_logo_1782414357652),
+                    contentDescription = stringResource(R.string.app_name),
+                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
+                    contentScale = ContentScale.Crop
                 )
-            )
+            }
+            Spacer(Modifier.width(12.dp))
+            Box(modifier = Modifier.height(44.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "CineStream",
+                    style = TextStyle(
+                        brush = Brush.linearGradient(listOf(Color.White, Color.White, TvTheme.Accent)),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                )
+            }
             Spacer(Modifier.weight(1f))
             val topDown = Modifier.focusProperties { down = askFocus }
+            val searchQuery by viewModel.searchQuery.collectAsState()
+            val searchResults by viewModel.searchResults.collectAsState()
+            val isAILoading by viewModel.isAILoading.collectAsState()
+            TvSearchBar(
+                query = searchQuery,
+                onQueryChange = { viewModel.updateSearchQuery(it) },
+                onSubmit = { viewModel.saveSearchQuery(it) },
+                onAiSearch = { viewModel.performNLPSearch(it) },
+                isAiLoading = isAILoading,
+                results = searchResults,
+                onItemClick = onSearchResult,
+                buttonFocus = searchFocus,
+                onFocused = { onFocus(TvSection.TOP_BAR) },
+                buttonModifier = topDown
+            )
+            Spacer(Modifier.width(14.dp))
             TvGlassButton(
                 onClick = { viewModel.openPaywall() },
                 shape = TvTheme.PillShape,
@@ -193,9 +217,6 @@ fun TvHomeScreen(
             Spacer(Modifier.width(14.dp))
             TvTopIconButton(Icons.Filled.AutoAwesome, stringResource(R.string.tv_ask_assistant), starFocus, topDown,
                 onFocused = { onFocus(TvSection.TOP_BAR) }, onClick = onOpenAssistant, tag = "tv_top_star")
-            Spacer(Modifier.width(14.dp))
-            TvTopIconButton(Icons.Filled.Search, stringResource(R.string.tv_search), searchFocus, topDown,
-                onFocused = { onFocus(TvSection.TOP_BAR) }, onClick = onOpenSearch, tag = "tv_top_search")
         }
 
         // Asistana sor: yeri sabit (hero'nun sol altı), yazı uzunluğuna göre kaymaz.

@@ -516,6 +516,7 @@
     <string name="tv_profile_settings">Profil / Ayarlar</string>
     <string name="tv_continue_watching">İzlemeye Devam Et</string>
     <string name="tv_ask_assistant">Asistana sor</string>
+    <string name="tv_seek_bar_desc">İlerleme çubuğu: Sol ve Sağ ile sar, OK ile git</string>
     <string name="tv_search">Ara</string>
     <string name="tv_resume">Devam et</string>
     <string name="tv_next_movie_tag">Sıradaki film ne olsun?</string>

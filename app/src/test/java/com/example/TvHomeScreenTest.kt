@@ -71,7 +71,7 @@ open class TvHomeScreenTest {
                 onFocusChanged = {},
                 onOpenSection = { opened = it },
                 onOpenAssistant = {},
-                onOpenSearch = {},
+                onSearchResult = {},
                 onPlayContinue = { resumed = it }
             )
         }
@@ -113,7 +113,7 @@ open class TvHomeScreenTest {
                 onFocusChanged = {},
                 onOpenSection = {},
                 onOpenAssistant = {},
-                onOpenSearch = {},
+                onSearchResult = {},
                 onPlayContinue = {}
             )
         }

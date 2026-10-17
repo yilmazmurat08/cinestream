@@ -64,6 +64,12 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.runtime.rememberUpdatedState
@@ -631,7 +637,16 @@ private fun TvControlBar(
             isLive && now != null -> ((System.currentTimeMillis() - now.startEpochMillis).toFloat() / (now.endEpochMillis - now.startEpochMillis).coerceAtLeast(1)).coerceIn(0f, 1f)
             else -> null
         }
-        if (progress != null) {
+        if (!isLive && durationSec > 0) {
+            Spacer(Modifier.height(10.dp))
+            // Film/dizi: çubuk kumandayla seçilebilir; Sol/Sağ ile sarılır (bkz. [TvSeekBar]).
+            TvSeekBar(
+                positionSec = positionSec,
+                durationSec = durationSec,
+                onSeekTo = { target -> onSeek((target - positionSec) * 1000) },
+                onUserActivity = onUserActivity
+            )
+        } else if (progress != null) {
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(if (isLive) now!!.startTimeFormatted else formatClock(positionSec), color = TvTheme.TextSecondary, fontSize = 13.sp)
@@ -658,6 +673,112 @@ private fun TvControlBar(
             if (isLive) TvBarButton(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, stringResource(if (isSaved) R.string.tv_remove_favorite else R.string.tv_add_favorite), "tv_bar_save", onClick = onToggleSaved, onUserActivity = onUserActivity)
             }
         }
+    }
+}
+
+/** Sarma: Sol/Sağ basılı tutulunca adım büyür (10 sn → 30 sn → 60 sn). */
+internal fun tvSeekStepSec(repeatCount: Int): Long = when {
+    repeatCount >= 15 -> 60L
+    repeatCount >= 5 -> 30L
+    else -> 10L
+}
+
+/** Son tuştan bu kadar sonra (ya da OK ile hemen) seçilen yere gidilir. */
+internal const val TV_SEEK_COMMIT_DELAY_MS = 900L
+
+/**
+ * Kumandayla seçilebilen ilerleme çubuğu (film/dizi). Odaklanınca kalınlaşır ve bir tutamaç çıkar; Sol/Sağ seçilen
+ * yeri kaydırır (zaman fuşya renkte gösterilir), OK ya da kısa bir bekleme sonrası oraya gidilir. Odak çubuktan
+ * çıkarsa bekleyen yere yine gidilir. Yukarı/Aşağı odağı başka düğmeye taşır.
+ */
+@Composable
+internal fun TvSeekBar(
+    positionSec: Long,
+    durationSec: Long,
+    onSeekTo: (Long) -> Unit,
+    onUserActivity: () -> Unit
+) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    var pending by remember { mutableStateOf<Long?>(null) }
+    val commit = rememberUpdatedState(onSeekTo)
+    LaunchedEffect(pending) {
+        val target = pending ?: return@LaunchedEffect
+        kotlinx.coroutines.delay(TV_SEEK_COMMIT_DELAY_MS)
+        commit.value(target)
+        pending = null
+    }
+    LaunchedEffect(focused) {
+        if (!focused) pending?.let { commit.value(it); pending = null }
+    }
+    val shownSec = pending ?: positionSec
+    val fraction = (shownSec.toFloat() / durationSec).coerceIn(0f, 1f)
+    val description = stringResource(R.string.tv_seek_bar_desc)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            formatClock(shownSec),
+            color = if (pending != null) TvTheme.FocusGlow else TvTheme.TextSecondary,
+            fontSize = 13.sp,
+            fontWeight = if (pending != null) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.testTag("tv_seek_time")
+        )
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            contentAlignment = Alignment.CenterStart,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp)
+                .height(22.dp)
+                .semantics { contentDescription = description }
+                .onKeyEvent { event ->
+                    val key = event.key
+                    val isOk = key == Key.DirectionCenter || key == Key.Enter || key == Key.NumPadEnter
+                    when {
+                        key == Key.DirectionLeft || key == Key.DirectionRight -> {
+                            if (event.type == KeyEventType.KeyDown) {
+                                onUserActivity()
+                                val step = tvSeekStepSec(event.nativeKeyEvent.repeatCount)
+                                val base = pending ?: positionSec
+                                val next = if (key == Key.DirectionRight) base + step else base - step
+                                pending = next.coerceIn(0L, (durationSec - 1).coerceAtLeast(0L))
+                            }
+                            true
+                        }
+                        isOk -> {
+                            if (event.type == KeyEventType.KeyUp) {
+                                onUserActivity()
+                                pending?.let { commit.value(it); pending = null }
+                            }
+                            true
+                        }
+                        else -> false
+                    }
+                }
+                .focusable(interactionSource = interaction)
+                .testTag("tv_seek_bar")
+        ) {
+            val barHeight = if (focused) 8.dp else 4.dp
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(barHeight)
+                    .clip(TvTheme.PillShape)
+                    .background(Color.White.copy(alpha = if (focused) 0.3f else 0.2f))
+            ) {
+                Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(TvTheme.Accent))
+            }
+            if (focused) {
+                val thumb = 18.dp
+                Box(
+                    Modifier
+                        .offset(x = (maxWidth - thumb) * fraction)
+                        .size(thumb)
+                        .clip(TvTheme.PillShape)
+                        .background(Color.White)
+                        .testTag("tv_seek_thumb")
+                )
+            }
+        }
+        Text(formatClock(durationSec), color = TvTheme.TextSecondary, fontSize = 13.sp)
     }
 }
 
