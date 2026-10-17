@@ -252,7 +252,13 @@ fun HomeScreen(
     val homeLazyListState = rememberLazyListState()
     val isScrollable = selectedTypeFilter == "ALL" || searchQuery.isNotEmpty()
     val isHeroVisible = searchQuery.isEmpty() && selectedTypeFilter == "ALL"
-    val isScrolled by remember { derivedStateOf { homeLazyListState.firstVisibleItemIndex > 0 || homeLazyListState.firstVisibleItemScrollOffset > 30 } }
+    // İlk öğe 1 px'lik tutamak (aşağıda): yaklaşık 30 px'den fazla kaydırılınca "kaydırıldı" sayılır.
+    val isScrolled by remember {
+        derivedStateOf {
+            homeLazyListState.firstVisibleItemIndex > 1 ||
+                (homeLazyListState.firstVisibleItemIndex == 1 && homeLazyListState.firstVisibleItemScrollOffset > 29)
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -456,6 +462,13 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxSize()
                     ) {
+                        // Listenin başında her zaman 1 px'lik görünmez parça. Üstteki bölümler (Öne Çıkan, IMDb 8+) veri
+                        // gelene kadar boş (yüksekliksiz) olduğu için liste görünen ilk dolu bölüme ("Devam Et") tutunuyor,
+                        // bölümler dolunca da onların altında kalıyordu: uygulama ana sayfanın ortasından açılıyordu.
+                        item(key = "home_top_anchor") {
+                            Spacer(modifier = Modifier.fillMaxWidth().height(1.dp))
+                        }
+
                         // 1. Top Hero Featured Movie Card (12 Saatte Bir Değişen M3U Özel Film Kartı)
                         if (isHeroVisible) {
                             item(key = "hero_featured") {

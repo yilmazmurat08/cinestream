@@ -3,6 +3,11 @@ package com.example
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -163,6 +168,29 @@ open class PhoneSmokeTest {
             compose.runOnUiThread { screen = content }
         }
         settle(3_000)
+    }
+
+    /**
+     * Açılışta ana sayfa en üstten (Öne Çıkan) başlar. Öne Çıkan slaytları internetten geç gelir; liste eskiden
+     * görünen ilk dolu bölüme ("Devam Et") tutunuyor, slaytlar gelince onların altında kalıyordu.
+     */
+    @Test
+    fun home_opensAtTheTop_evenWhenTheFeaturedSlidesArriveLate() {
+        show { HomeScreen(viewModel = vm, onPlayItem = {}, onPlayContinueWatching = {}, onNavigateToMultiScreen = {}) }
+        // Slaytlar ekran açıldıktan sonra gelir (gerçekte TMDB'den; testte ağ yok, doğrudan verilir).
+        val slide = com.example.data.repository.FeaturedMovie(title = "Geç Gelen Film", posterUrl = null, overview = "Özet",
+            iptvItem = movies[1], streamUrl = movies[1].streamUrl)
+        val carousel = IPTVViewModel::class.java.getDeclaredField("_featuredCarousel").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        compose.runOnUiThread {
+            (carousel.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<com.example.data.repository.FeaturedMovie>>).value = listOf(slide)
+        }
+        for (i in 0 until 40) {
+            if (compose.onAllNodes(hasTestTag("hero_carousel")).fetchSemanticsNodes().isNotEmpty()) break
+            settle(200)
+        }
+        settle(1_000)
+        compose.onNodeWithTag("hero_carousel").assertIsDisplayed()
     }
 
     @Test
