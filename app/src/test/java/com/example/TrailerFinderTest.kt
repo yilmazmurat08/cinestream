@@ -9,6 +9,7 @@ import com.example.util.TrailerLookup
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -91,5 +92,40 @@ class TrailerFinderTest {
         assertNull(offline.find("Ağsız Yapım", null, isMovie = true))
         assertNull(offline.find("Ağsız Yapım", null, isMovie = true))
         assertEquals(2, tmdbCalls)
+    }
+
+    @Test
+    fun cacheNeverGrowsPastLimit_oldestDropped_fileStaysSmall() = runBlocking {
+        val prefs = app.getSharedPreferences(TrailerFinder.PREFS, Context.MODE_PRIVATE)
+        // Sınırda dolu önbellek: uzun adlı 2000 eski kayıt (+ bozuk bir kayıt).
+        val editor = prefs.edit()
+        for (i in 0 until TrailerFinder.MAX_ENTRIES - 1) {
+            editor.putString(
+                TrailerFinder.cacheKey("Çok Uzun Adlı Bir Yapım Örneği Numara $i ve Devamı", "2020", isMovie = true),
+                "id:${1_000L + i}:abcdefghijk"
+            )
+        }
+        editor.putString("MOVIE|bozuk|", "anlamsız-değer")
+        editor.commit()
+
+        clock = 10_000_000L
+        val f = finder(TrailerLookup.Found("yeniFragman1"), TrailerLookup.NotFound)
+        assertEquals("yeniFragman1", f.find("Yeni Film", "2026", isMovie = true))
+
+        val all = prefs.all
+        assertTrue("kayıt sayısı sınırı aşmamalı: ${all.size}", all.size <= TrailerFinder.TRIM_TO)
+        // En yeni kayıt korunur, en eski ve bozuk kayıt silinir.
+        assertTrue(all.containsKey(TrailerFinder.cacheKey("Yeni Film", "2026", isMovie = true)))
+        assertTrue(all.containsKey(TrailerFinder.cacheKey("Çok Uzun Adlı Bir Yapım Örneği Numara ${TrailerFinder.MAX_ENTRIES - 2} ve Devamı", "2020", isMovie = true)))
+        assertTrue(!all.containsKey(TrailerFinder.cacheKey("Çok Uzun Adlı Bir Yapım Örneği Numara 0 ve Devamı", "2020", isMovie = true)))
+        assertTrue(!all.containsKey("MOVIE|bozuk|"))
+
+        // Dosya boyutu: sınırdayken bile birkaç yüz KB'ı geçmez.
+        val file = java.io.File(app.applicationInfo.dataDir, "shared_prefs/${TrailerFinder.PREFS}.xml")
+        if (file.exists()) assertTrue("dosya ${file.length()} bayt", file.length() < 400_000)
+
+        // Bozuk değer okunursa çökmez, yeniden aranır.
+        prefs.edit().putString(TrailerFinder.cacheKey("Bozuk", null, true), "id:").commit()
+        assertEquals("yeniFragman1", f.find("Bozuk", null, isMovie = true))
     }
 }
