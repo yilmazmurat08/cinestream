@@ -4,19 +4,19 @@ Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
 
 ```
 <tr-TR>
-• Yeni: Birden fazla liste! Ayarlar → Liste Yönetimi'nden hepsini tek yerden yönet. 1 liste ücretsiz, 2. ve 3. liste PRO.
-• Arama yenilendi: diziler de bulunuyor, Türkçe harfler fark etmiyor, en yakın sonuç en üstte.
-• Ana sayfa: günün popüler film ve dizileri, gerçek IMDb puanları, sinema ve dizi kanalları.
-• Kanallar sağlayıcının sırasıyla listeleniyor; dizi bölüm numaraları düzeltildi.
-• TV: OK tuşu kanal listesini açar, çıkışta onay kartı.
-• Daha akıcı oynatma, daha az veri kullanımı.
+• Yeni: Kanal kartında yayın akışı! EPG'ye dokun, 12 saatlik akışı gör; programa "Hatırlat" de, başlamadan 5 dk önce bildirim gelsin.
+• Eksik fragmanlar otomatik bulunuyor (resmî fragman önce).
+• Puanlar TMDB'den: daha doğru ve tutarlı.
+• Çocuk kilidi yalnızca yetişkin klasörlerini kilitliyor.
+• Oynatıcıda kanal listesi yanda dar panel; liste günde bir kez güncelleniyor, açılışta donma yok.
+• TV: yerinde arama, çubukla ileri/geri sarma, kanal panelinde yayın akışı.
 </tr-TR>
 <en-US>
-• New: Multiple playlists! Manage them all under Settings → Playlist Manager. 1 playlist is free, the 2nd and 3rd are PRO.
-• Better search: finds series too, ignores Turkish accents, best match first.
-• Home: today's popular movies and series, real IMDb ratings, movie and series channels.
-• Channels follow your provider's order; episode numbers fixed.
-• TV: OK opens the channel list, exit confirmation card.
-• Smoother playback, less data usage.
+• New: Program guide on every channel card! Tap EPG to see the next 12 hours; tap "Remind me" to get a notification 5 min before it starts.
+• Missing trailers are found automatically (official trailer first).
+• Ratings now come from TMDB: more accurate and consistent.
+• Parental lock only locks adult folders.
+• Slim side channel list in the player; playlist refreshes once a day, no freeze at startup.
+• TV: in-place search, scrub with the progress bar, program guide in the channel panel.
 </en-US>
 ```

@@ -1816,7 +1816,7 @@ fun LegacyExoPlayerScreen(
                                 shape = CircleShape,
                                 color = if (showTray) NeonPink.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.5f),
                                 border = BorderStroke(1.dp, if (showTray) NeonPink else Color.White.copy(alpha = 0.3f)),
-                                modifier = Modifier.size(layout.playerSecondaryControlSize)
+                                modifier = Modifier.size(layout.playerSecondaryControlSize).testTag("player_tray_button")
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
