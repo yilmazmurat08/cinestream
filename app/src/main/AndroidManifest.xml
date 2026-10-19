@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Program hatırlatmaları: telefon yeniden başlayınca alarmlar yeniden kurulur. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- TV asistanı: uygulama içi sesli soru (kumanda mikrofonu). İzin yalnızca sesle sorarken istenir. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
@@ -59,6 +61,15 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:theme="@style/Theme.MyApplication" />
+        <!-- Program hatırlatmaları: zamanı gelince bildirim; açılışta ve güncellemede alarmları yeniden kurar. -->
+        <receiver
+            android:name=".reminder.ProgramReminderReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
         <service
             android:name=".player.PlaybackForegroundService"
             android:foregroundServiceType="mediaPlayback"

@@ -91,6 +91,25 @@ sealed class ActiveScreen {
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        /** Program hatırlatması bildirimine dokununca: bu kanal açılır. */
+        const val ACTION_OPEN_CHANNEL = "com.cinestream.iptv.OPEN_CHANNEL"
+        const val EXTRA_OPEN_CHANNEL_ID = "open_channel_id"
+    }
+
+    private fun handleOpenChannelIntent(intent: android.content.Intent?) {
+        if (intent?.action != ACTION_OPEN_CHANNEL) return
+        val id = intent.getIntExtra(EXTRA_OPEN_CHANNEL_ID, Int.MIN_VALUE)
+        if (id != Int.MIN_VALUE) viewModel.requestOpenChannel(id)
+        // Ekran döndürülünce ya da uygulama yeniden açılınca aynı kanal tekrar açılmasın.
+        intent.action = null
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleOpenChannelIntent(intent)
+    }
+
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(com.example.util.LocaleHelper.wrap(newBase))
     }
@@ -158,6 +177,7 @@ class MainActivity : ComponentActivity() {
 
         // Cancel existing/reset and reschedule 24-hour retention reminder
         scheduleRetentionReminder()
+        if (savedInstanceState == null) handleOpenChannelIntent(intent)
 
         setContent {
             val appTheme by viewModel.appTheme.collectAsState()
@@ -232,6 +252,16 @@ class MainActivity : ComponentActivity() {
                                     android.widget.Toast.LENGTH_LONG
                                 ).show()
                             }
+                        }
+
+                        // Program hatırlatması bildiriminden gelindi: liste yüklenince kanal açılır.
+                        val openChannelRequest by viewModel.openChannelRequest.collectAsState()
+                        LaunchedEffect(openChannelRequest, isStateReady) {
+                            if (openChannelRequest == null || !isStateReady) return@LaunchedEffect
+                            val channel = viewModel.consumeOpenChannelRequest() ?: return@LaunchedEffect
+                            viewModel.selectItem(null)
+                            if (isTvMode) tvPlayerUi.launch = com.example.ui.tv.TvPlayerUiState.LAUNCH_ENTER
+                            currentScreen = ActiveScreen.Player(channel)
                         }
 
                         LaunchedEffect(Unit) {

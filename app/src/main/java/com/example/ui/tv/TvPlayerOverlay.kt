@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
@@ -467,6 +468,17 @@ private fun TvChannelPanel(
     val requesters = remember(items) { HashMap<Int, FocusRequester>() }
     val continueWatching by viewModel.continueWatching.collectAsState()
     fun requester(id: Int) = requesters.getOrPut(id) { FocusRequester() }
+    // Yayın akışı (telefondaki kanal kartıyla aynı): Sağ tuşu odaktaki kanalın 12 saatlik akışını yanda açar,
+    // Sol ya da Geri kapatır. Yayındaki programda OK kanalı açar; sonraki programlarda OK hatırlatma kurar/kaldırır.
+    var epgChannel by remember { mutableStateOf<IPTVItem?>(null) }
+    val reminderKeys by viewModel.reminderKeys.collectAsState()
+    val toggleReminder = com.example.ui.components.rememberReminderToggle(viewModel)
+    LaunchedEffect(Unit) { viewModel.refreshReminders() }
+    BackHandler(enabled = epgChannel != null) {
+        val back = epgChannel
+        epgChannel = null
+        back?.let { requesters[it.id]?.let { r -> runCatching { r.requestFocus() } } }
+    }
     // Panel açılınca (ve kategori değişince) odak izlenen kanalda, yoksa listenin başında.
     LaunchedEffect(items, categoriesOpen) {
         if (categoriesOpen || items.isEmpty()) return@LaunchedEffect
@@ -474,6 +486,7 @@ private fun TvChannelPanel(
         listState.scrollToItem((index - 3).coerceAtLeast(0))
         requestFocusWhenReady(requester(items[index].id))
     }
+    Row(Modifier.fillMaxHeight()) {
     Column(
         Modifier
             .width(380.dp)
@@ -511,6 +524,7 @@ private fun TvChannelPanel(
             itemsIndexed(items, key = { _, c -> c.id }) { index, channel ->
                 val playing = channel.id == playingId
                 val now = remember(channel.id) { if (isLive) viewModel.tvEpgNowNext(channel).first?.title else null }
+                val hasEpg = remember(channel.id) { isLive && viewModel.hasEpg(channel) }
                 TvGlassButton(
                     onClick = { onSelect(channel) },
                     onFocused = onUserActivity,
@@ -524,10 +538,21 @@ private fun TvChannelPanel(
                         .height(58.dp)
                         .focusProperties { if (isLive) left = FocusRequester.Cancel }
                         .onPreviewKeyEvent { e ->
-                            if (isLive && e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown) {
-                                onOpenCategories()
-                                true
-                            } else false
+                            when {
+                                isLive && e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown -> {
+                                    epgChannel = null
+                                    onOpenCategories()
+                                    true
+                                }
+                                isLive && e.key == Key.DirectionRight && hasEpg -> {
+                                    if (e.type == KeyEventType.KeyDown) {
+                                        onUserActivity()
+                                        epgChannel = channel
+                                    }
+                                    true
+                                }
+                                else -> false
+                            }
                         }
                         .testTag("tv_channel_${channel.id}")
                 ) {
@@ -564,6 +589,116 @@ private fun TvChannelPanel(
                             }
                         }
                         if (playing) Icon(Icons.AutoMirrored.Filled.VolumeUp, null, tint = TvTheme.Accent, modifier = Modifier.size(18.dp))
+                        if (hasEpg) {
+                            Spacer(Modifier.width(6.dp))
+                            // Kumandada Sağ tuşu; telefonda TV modunda dokunarak açılır.
+                            Text("EPG ›", color = if (epgChannel?.id == channel.id) TvTheme.FocusGlow else TvTheme.TextMuted,
+                                fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .pointerInput(channel.id) { detectTapGestures { epgChannel = if (epgChannel?.id == channel.id) null else channel } }
+                                    .testTag("tv_epg_open_${channel.id}"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    epgChannel?.let { channel ->
+        TvEpgColumn(
+            viewModel = viewModel,
+            channel = channel,
+            reminderKeys = reminderKeys,
+            onWatch = { onSelect(channel) },
+            onToggleReminder = { program -> toggleReminder(channel, program) },
+            onClose = {
+                epgChannel = null
+                requesters[channel.id]?.let { r -> runCatching { r.requestFocus() } }
+            },
+            onUserActivity = onUserActivity
+        )
+    }
+    }
+}
+
+/** TV kanal panelinin yanında açılan 12 saatlik yayın akışı (kumandayla gezilir). */
+@Composable
+private fun TvEpgColumn(
+    viewModel: IPTVViewModel,
+    channel: IPTVItem,
+    reminderKeys: Set<String>,
+    onWatch: () -> Unit,
+    onToggleReminder: (EPGProgram) -> Unit,
+    onClose: () -> Unit,
+    onUserActivity: () -> Unit
+) {
+    val programs = remember(channel.id) { viewModel.epgSchedule(channel) }
+    val firstFocus = remember(channel.id) { FocusRequester() }
+    LaunchedEffect(channel.id) { if (programs.isNotEmpty()) requestFocusWhenReady(firstFocus) }
+    Column(
+        Modifier
+            .width(360.dp)
+            .fillMaxHeight()
+            .background(TvTheme.GlassDark.copy(alpha = 0.92f))
+            .padding(top = 24.dp)
+            .testTag("tv_epg_column")
+    ) {
+        Text(stringResource(R.string.epg_schedule_header), color = Color(0xFFD4A853), fontSize = 12.sp,
+            fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp, modifier = Modifier.padding(horizontal = 20.dp))
+        Text(channel.cleanedName.ifBlank { channel.name }, color = TvTheme.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+            maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+        Spacer(Modifier.height(6.dp))
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            itemsIndexed(programs, key = { _, p -> p.startEpochMillis }) { index, program ->
+                val hasReminder = com.example.reminder.ProgramReminder.key(channel.id, program.startEpochMillis) in reminderKeys
+                TvGlassButton(
+                    onClick = { if (program.isLiveNow) onWatch() else onToggleReminder(program) },
+                    onFocused = onUserActivity,
+                    shape = TvTheme.RowShape,
+                    focusRequester = if (index == 0) firstFocus else null,
+                    focusScale = 1.03f,
+                    glassColor = if (program.isLiveNow) Color(0xFFF59E0B).copy(alpha = 0.14f) else Color.Transparent,
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onPreviewKeyEvent { e ->
+                            if (e.key == Key.DirectionLeft) {
+                                if (e.type == KeyEventType.KeyDown) onClose()
+                                true
+                            } else false
+                        }
+                        .testTag("tv_epg_program_${program.startEpochMillis}")
+                ) { focused ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                        Text(program.startTimeFormatted, color = if (program.isLiveNow) Color(0xFFF59E0B) else TvTheme.TextSecondary,
+                            fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(program.title, color = TvTheme.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (focused) {
+                                Text(
+                                    stringResource(
+                                        when {
+                                            program.isLiveNow -> R.string.epg_watch_now
+                                            hasReminder -> R.string.epg_reminder_on
+                                            else -> R.string.epg_remind_button
+                                        }
+                                    ),
+                                    color = TvTheme.FocusGlow, fontSize = 12.sp
+                                )
+                            }
+                        }
+                        if (program.isLiveNow) {
+                            Text(stringResource(R.string.epg_on_air), color = Color(0xFFF59E0B), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                        if (hasReminder) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.epg_reminder_on),
+                                tint = TvTheme.FocusGlow, modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             }

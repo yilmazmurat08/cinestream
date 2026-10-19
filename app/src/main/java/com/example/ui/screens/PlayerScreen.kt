@@ -1834,7 +1834,9 @@ fun LegacyExoPlayerScreen(
             }
 
             // 4. Bölümler ve Öneriler Paneli (SideDrawer in Landscape / BottomSheet in Portrait)
-            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            // Yön, ekranın gerçek ölçüsünden de okunur: bazı telefonlarda yatayken yapılandırma dikey kalıyor ve alttaki
+            // geniş liste açılıp ekranın yarısını kaplıyordu.
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || screenWidth > screenHeight
             AnimatedVisibility(
                 visible = showTray,
                 enter = if (isLandscape) slideInHorizontally(initialOffsetX = { it }) else slideInVertically(initialOffsetY = { it }),
@@ -1842,16 +1844,19 @@ fun LegacyExoPlayerScreen(
                 modifier = if (isLandscape) Modifier.align(Alignment.CenterEnd) else Modifier.align(Alignment.BottomCenter)
             ) {
                 if (isLandscape) {
-                    // Landscape Right SideDrawer
+                    // Yatay: sağdan açılan dar panel. Kenarlardan boşluklu; sistem gezinme tuşları ve kamera
+                    // çentiği paneli örtmez, görüntü solda görünmeye devam eder.
                     Card(
-                        shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E071A).copy(alpha = 0.94f)),
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E071A).copy(alpha = 0.92f)),
                         modifier = Modifier
-                            .width(320.dp)
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End + WindowInsetsSides.Vertical))
+                            .padding(top = 12.dp, bottom = 12.dp, end = 12.dp)
+                            .width(290.dp)
                             .fillMaxHeight()
                             .border(
-                                BorderStroke(1.dp, NeonPink.copy(alpha = 0.3f)),
-                                RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
+                                BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+                                RoundedCornerShape(22.dp)
                             )
                             .testTag("player_side_drawer")
                     ) {
@@ -1942,6 +1947,18 @@ fun LegacyExoPlayerScreen(
                                                             overflow = TextOverflow.Ellipsis
                                                         )
                                                     }
+                                                    // Canlı kanal: yayın akışı varsa şu anki program.
+                                                    if (sib.type == "LIVE") {
+                                                        iptvViewModel?.currentProgramTitle(sib)?.let { now ->
+                                                            Text(
+                                                                text = now,
+                                                                color = MutedText,
+                                                                fontSize = 10.sp,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                        }
+                                                    }
                                                     trayProgressById.of(sib)?.let { fraction ->
                                                         TrayWatchProgress(fraction, Modifier.padding(top = 4.dp))
                                                     }
@@ -1987,16 +2004,18 @@ fun LegacyExoPlayerScreen(
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF0E071A)),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(210.dp)
                             .border(
                                 BorderStroke(1.dp, NeonPink.copy(alpha = 0.2f)),
                                 RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                             )
                             .testTag("player_channel_tray")
                     ) {
+                        // Dikey: alttaki sistem gezinme tuşları listeyi örtmez (liste tuşların üstünde kalır).
                         Column(
                             modifier = Modifier
-                                .fillMaxSize()
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .height(210.dp)
                                 .padding(16.dp)
                         ) {
                             Row(

@@ -419,6 +419,72 @@ class IPTVViewModel(
         }
     }
 
+    // Program hatırlatması bildiriminden açılacak kanal (MainActivity tüketir).
+    private val _openChannelRequest = MutableStateFlow<Int?>(null)
+    val openChannelRequest: StateFlow<Int?> = _openChannelRequest.asStateFlow()
+
+    fun requestOpenChannel(channelId: Int) {
+        _openChannelRequest.value = channelId
+    }
+
+    /** İsteği tüketir: kanal kütüphanede yoksa (liste değişmiş) ya da kilitli kategorideyse null; uygulama yalnızca açılır. */
+    suspend fun consumeOpenChannelRequest(): IPTVItem? {
+        val id = _openChannelRequest.value ?: return null
+        _openChannelRequest.value = null
+        val item = withContext(Dispatchers.IO) { runCatching { repository.getItemByIdDirect(id) }.getOrNull() } ?: return null
+        if (item.streamUrl.isBlank() || hiddenWhileLocked(item)) return null
+        return item
+    }
+
+    // ---- Program hatırlatmaları (EPG) ----
+    private val _reminderKeys = MutableStateFlow<Set<String>>(emptySet())
+    /** Kurulu hatırlatmaların anahtarları (kanal|başlangıç); kartlarda zil simgesi için. */
+    val reminderKeys: StateFlow<Set<String>> = _reminderKeys.asStateFlow()
+
+    fun refreshReminders() {
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            _reminderKeys.value = com.example.reminder.ProgramReminders.keys(getApplication())
+        }
+    }
+
+    /** Hatırlatmayı kurar ya da kaldırır; kurulduysa true, kaldırıldıysa false, kurulamadıysa null döner. */
+    suspend fun toggleReminder(channel: IPTVItem, program: com.example.data.model.EPGProgram): Boolean? = withContext(Dispatchers.IO) {
+        val app = getApplication<Application>()
+        val result = if (com.example.reminder.ProgramReminders.isSet(app, channel.id, program.startEpochMillis)) {
+            com.example.reminder.ProgramReminders.remove(app, channel.id, program.startEpochMillis)
+            false
+        } else {
+            val added = com.example.reminder.ProgramReminders.add(
+                app,
+                com.example.reminder.ProgramReminder(
+                    channelId = channel.id,
+                    channelName = channel.cleanedName.ifBlank { channel.name },
+                    programTitle = program.title,
+                    startMillis = program.startEpochMillis
+                )
+            )
+            if (added) true else null
+        }
+        _reminderKeys.value = com.example.reminder.ProgramReminders.keys(app)
+        result
+    }
+
+    /** Kanalın yayın akışı: şu an yayında olan ve sonraki [hours] saat içinde başlayanlar (EPG yoksa boş). */
+    fun epgSchedule(channel: IPTVItem, hours: Int = 12, now: Long = System.currentTimeMillis()): List<com.example.data.model.EPGProgram> {
+        val key = channel.tvgId?.lowercase(java.util.Locale.ROOT)?.trim().orEmpty()
+        if (key.isEmpty()) return emptyList()
+        val programs = _realEpgPrograms.value[key] ?: return emptyList()
+        return com.example.data.epg.EpgSchedule.window(programs, now, hours)
+    }
+
+    @androidx.annotation.VisibleForTesting
+    internal fun setEpgProgramsForTest(programs: Map<String, List<EPGProgram>>) {
+        _realEpgPrograms.value = programs
+    }
+
+    /** Kanalın yayın akışı var mı (EPG düğmesi yalnızca o zaman görünür). */
+    fun hasEpg(channel: IPTVItem, now: Long = System.currentTimeMillis()): Boolean = epgSchedule(channel, 12, now).isNotEmpty()
+
     /** Kanalın EPG'deki şu anki ve sonraki programı (EPG yoksa ikisi de null). */
     fun tvEpgNowNext(channel: IPTVItem): Pair<com.example.data.model.EPGProgram?, com.example.data.model.EPGProgram?> {
         val key = channel.tvgId?.lowercase(java.util.Locale.ROOT)?.trim().orEmpty()

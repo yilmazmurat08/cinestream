@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.TextStyle
 import coil.compose.AsyncImage
-import com.example.ui.components.VerticalEPGComponent
 import com.example.ui.components.SafeAsyncImage
 import com.example.ui.components.extractYouTubeVideoId
 import com.example.player.RadioPlayerManager
@@ -1279,48 +1278,6 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .wrapContentHeight()
                     )
-                } else if (selectedTypeFilter == "EPG") {
-                    val realEpgPrograms by viewModel.realEpgPrograms.collectAsState()
-                    VerticalEPGComponent(
-                        liveChannels = liveChannels,
-                        onPlayChannel = onPlayItem,
-                        onSelectChannelDetails = { viewModel.selectItem(it) },
-                        realEpgPrograms = realEpgPrograms,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Surface(
-                            onClick = { viewModel.setSelectedTypeFilter("LIVE") },
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color.White.copy(alpha = 0.08f)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowBack,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = stringResource(R.string.home_back_to_folders),
-                                    color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
                 } else if (selectedTypeFilter == "MOVIE") {
                     FolderGridScreen(
                         groups = movieGroups,

@@ -64,6 +64,12 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
    - **Dakikaya git (TV, kullanıcı fikri, 17 Ekim 2026):** Oynatıcının ilerleme çubuğunda küçük bir alan; kumandayla seçilir, rakamla dakika yazılır (ör. 65) ve yapım doğrudan o dakikaya gider. Ücretsizde çubukla Sol/Sağ sarma zaten var.
    - Paywall metni PRO özelliklerine göre yeniden yazılır.
 
+**Kanal kartında yayın akışı ve program hatırlatma — YAPILDI (19 Ekim 2026, henüz paketlenmedi; onaylı taslak: https://claude.ai/artifact/PzarsAnRMP1daxnfuTy1cm):**
+- Ayrı EPG ekranı ve "Şu an ekranda" bandı kaldırıldı. Canlı kanal kartında Oynat + EPG düğmesi (EPG yalnızca gerçek yayın akışı olan kanalda). EPG kartın altında 12 saatlik akışı açar.
+- Programa dokununca "Hatırlat (5 dk önce)"; **ücretsiz**. Bildirime dokununca kanal açılır (`ProgramReminders`, `ProgramReminderReceiver`; yeniden başlatmada alarmlar yeniden kurulur).
+- Oynatıcı (telefon, yatay): sağdan açılan dar kanal paneli; dikeyde alttaki liste sistem tuşlarının üstünde.
+- TV: kanal panelinde Sağ tuşu akışı yanda açar, OK hatırlatma kurar, Sol kapatır.
+
 Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarılabilir):
 - Kaldığın yerden devam et.
 - Otomatik liste güncelleme.
@@ -71,7 +77,6 @@ Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarıla
 Sonraya kalanlar:
 - Canlı yayını durdurma ve geri sarma.
 - Yapay zekâ "Şu an ne izlesem?".
-- Program hatırlatma.
 - İzlerken açılan mini kanal listesi.
 - Profiller ve cihazlar arası eşitleme.
 

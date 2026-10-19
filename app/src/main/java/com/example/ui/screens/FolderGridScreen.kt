@@ -66,7 +66,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import com.example.ui.IPTVViewModel
 import com.example.ui.theme.*
-import com.example.data.epg.EPGProvider
 import com.example.data.model.ChannelEPG
 import com.example.data.model.EPGProgram
 import java.text.SimpleDateFormat
@@ -403,19 +402,6 @@ fun FolderListLayout(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             )
-        }
-
-        // EPG Info Area positioned directly below search bar for Live TV
-        if (groups.any { it.type == "LIVE" } || title.contains("Canlı", ignoreCase = true)) {
-            val liveChannels = groups.flatMap { it.items }
-            if (liveChannels.isNotEmpty()) {
-                item(key = "live_epg_section") {
-                    CompactEPGSection(
-                        liveChannels = liveChannels,
-                        onPlayChannel = { item -> onPlayItem(item) }
-                    )
-                }
-            }
         }
 
         if (filteredGroups.isEmpty()) {
@@ -762,6 +748,19 @@ fun FolderDetailLayout(
     val favorites by viewModel.favorites.collectAsState()
 
     if (group.type == "LIVE") {
+        // Kanal kartlarındaki yayın akışı: aynı anda tek kanalınki açık; "şimdi yayında" dakikada bir güncellenir.
+        val realEpgPrograms by viewModel.realEpgPrograms.collectAsState()
+        val reminderKeys by viewModel.reminderKeys.collectAsState()
+        var openEpgChannelId by androidx.compose.runtime.saveable.rememberSaveable(group.id) { mutableStateOf<Int?>(null) }
+        var epgMinute by remember { mutableStateOf(System.currentTimeMillis() / 60_000L) }
+        LaunchedEffect(Unit) {
+            viewModel.refreshReminders()
+            while (true) {
+                kotlinx.coroutines.delay(60_000L - System.currentTimeMillis() % 60_000L)
+                epgMinute = System.currentTimeMillis() / 60_000L
+            }
+        }
+        val toggleReminder = com.example.ui.components.rememberReminderToggle(viewModel)
         val filteredItems = remember(group.items, searchQuery) {
             if (searchQuery.isBlank()) {
                 group.items
@@ -877,14 +876,6 @@ fun FolderDetailLayout(
                 )
             }
 
-            // EPG Info Area - Scrolls with list
-            item(key = "folder_epg") {
-                CompactEPGSection(
-                    liveChannels = group.items,
-                    onPlayChannel = { item -> onPlayItem(item) }
-                )
-            }
-
             // Category Title Header - Scrolls with list
             item(key = "folder_category_title") {
                 Row(
@@ -939,13 +930,19 @@ fun FolderDetailLayout(
             } else {
                 itemsIndexed(filteredItems, key = { index, item -> "${item.id}_$index" }) { index, item ->
                     val isFav = favorites.any { it.id == item.id } || item.isFavorite
+                    val epgPrograms = remember(item.id, realEpgPrograms, epgMinute) { viewModel.epgSchedule(item) }
                     LiveChannelCard(
                         rank = index + 1,
                         item = item,
                         groupName = group.name,
                         isFavorite = isFav,
                         onToggleFavorite = { viewModel.toggleFavorite(item) },
-                        onClick = { onPlayItem(item) }
+                        onClick = { onPlayItem(item) },
+                        epgPrograms = epgPrograms,
+                        epgOpen = openEpgChannelId == item.id,
+                        onToggleEpg = { openEpgChannelId = if (openEpgChannelId == item.id) null else item.id },
+                        reminderKeys = reminderKeys,
+                        onToggleReminder = { program -> toggleReminder(item, program) }
                     )
                 }
             }
@@ -1551,20 +1548,27 @@ fun LiveChannelCard(
     onClick: () -> Unit,
     onToggleFavorite: (() -> Unit)? = null,
     isFavorite: Boolean = item.isFavorite,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Kanalın yayın akışı (12 saat); boşsa EPG düğmesi görünmez. */
+    epgPrograms: List<com.example.data.model.EPGProgram> = emptyList(),
+    epgOpen: Boolean = false,
+    onToggleEpg: () -> Unit = {},
+    reminderKeys: Set<String> = emptySet(),
+    onToggleReminder: (com.example.data.model.EPGProgram) -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardPurpleBg),
-        border = BorderStroke(1.dp, Color(0x33F59E0B)),
+        border = BorderStroke(1.dp, if (epgOpen) Color(0x73D946EF) else Color(0x33F59E0B)),
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .testTag("live_channel_card_${item.id}")
     ) {
+        // Kartın üst satırına dokunmak kanalı açar; açılan yayın akışına dokunmak açmaz.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onClick)
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1619,8 +1623,10 @@ fun LiveChannelCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
+                // Yayın akışı varsa şu anki program, yoksa klasör adı.
+                val nowTitle = epgPrograms.firstOrNull { it.isLiveNow }?.title
                 Text(
-                    text = stringResource(R.string.folder_channel_live_suffix, groupName),
+                    text = if (nowTitle != null) stringResource(R.string.epg_now_prefix, nowTitle) else stringResource(R.string.folder_channel_live_suffix, groupName),
                     color = SlateGray,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -1631,25 +1637,19 @@ fun LiveChannelCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Small fire indicator and viewers
-            val viewers = remember(item.id) { (item.id.hashCode() % 350 + 150).coerceAtLeast(120) }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Whatshot,
-                    contentDescription = null,
-                    tint = NeonPink,
-                    modifier = Modifier.size(14.dp)
+            // EPG (yalnızca yayın akışı varsa) ve Oynat: kullanıcı hangisini isterse.
+            if (epgPrograms.isNotEmpty()) {
+                com.example.ui.components.EpgToggleButton(
+                    open = epgOpen,
+                    onClick = onToggleEpg,
+                    modifier = Modifier.testTag("live_epg_button_${item.id}")
                 )
-                Text(
-                    text = "$viewers",
-                    color = NeonPink,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Spacer(modifier = Modifier.width(6.dp))
             }
+            com.example.ui.components.ChannelPlayButton(
+                onClick = onClick,
+                modifier = Modifier.testTag("live_play_button_${item.id}")
+            )
 
             // Favorite Heart Icon Button
             if (onToggleFavorite != null) {
@@ -1669,190 +1669,19 @@ fun LiveChannelCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun CompactEPGSection(
-    liveChannels: List<IPTVItem>,
-    onPlayChannel: (IPTVItem) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: com.example.ui.IPTVViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-) {
-    if (liveChannels.isEmpty()) return
-
-    // UX FIX: Bu bölüm eskiden 120dp+ yükseklikte, kanal alanını gereksiz yere
-    // kaplayan ve zaman zaman boş/kırık kartlar gösteren bir yatay carousel'di.
-    // Artık tek satırlık, dönen (rotating) bir "Şu An Ekranda" bandı: ~52dp yer
-    // kaplıyor, kanal klasör listesine çok daha fazla alan bırakıyor. Tıklanınca
-    // uygulamada zaten var olan tam ekran EPG rehberini (VerticalEPGComponent)
-    // bir diyalog içinde açıyor, böylece hiçbir işlevsellik kaybı olmuyor.
-    val epgList = remember(liveChannels) {
-        EPGProvider.generateEPGForChannels(liveChannels)
-    }
-
-    val nowPlayingEntries = remember(epgList) {
-        epgList.mapNotNull { channelEpg ->
-            val prog = channelEpg.currentProgram ?: return@mapNotNull null
-            channelEpg.channel to prog.title
-        }
-    }
-
-    if (nowPlayingEntries.isEmpty()) return
-
-    var tickerIndex by remember(nowPlayingEntries) { mutableStateOf(0) }
-    LaunchedEffect(nowPlayingEntries) {
-        while (isActive) {
-            delay(4000L)
-            tickerIndex = (tickerIndex + 1) % nowPlayingEntries.size
-        }
-    }
-
-    var currentTimeStr by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
-        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-        while (isActive) {
-            currentTimeStr = sdf.format(Date())
-            delay(1000L)
-        }
-    }
-
-    var showFullEpg by remember { mutableStateOf(false) }
-    val (activeChannel, activeProgramTitle) = nowPlayingEntries[tickerIndex % nowPlayingEntries.size]
-
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = CardPurpleBg.copy(alpha = 0.85f),
-        border = BorderStroke(1.dp, CineOrange.copy(alpha = 0.35f)),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-            .clickable { showFullEpg = true }
-            .testTag("compact_epg_section")
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(7.dp)
-                    .clip(CircleShape)
-                    .background(CineOrange)
+        if (epgOpen && epgPrograms.isNotEmpty()) {
+            com.example.ui.components.ChannelEpgDropdown(
+                channelId = item.id,
+                programs = epgPrograms,
+                reminderKeys = reminderKeys,
+                onToggleReminder = onToggleReminder,
+                onWatch = onClick,
+                modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(26.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (!activeChannel.logoUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = activeChannel.logoUrl,
-                        contentDescription = activeChannel.cleanedName,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = activeChannel.cleanedName.take(1).uppercase(),
-                        color = CineOrange,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = activeChannel.cleanedName,
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = stringResource(R.string.folder_now_playing, activeProgramTitle),
-                    color = Color.White.copy(alpha = 0.65f),
-                    fontSize = 11.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            if (currentTimeStr.isNotEmpty()) {
-                Text(
-                    text = currentTimeStr,
-                    color = CineOrange,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = stringResource(R.string.folder_view_full_epg),
-                tint = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-
-    if (showFullEpg) {
-        androidx.compose.ui.window.Dialog(
-            onDismissRequest = { showFullEpg = false },
-            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF0D0518))
-            ) {
-                val realEpgPrograms by viewModel.realEpgPrograms.collectAsState()
-                com.example.ui.components.VerticalEPGComponent(
-                    liveChannels = liveChannels,
-                    onPlayChannel = { channel ->
-                        showFullEpg = false
-                        onPlayChannel(channel)
-                    },
-                    onSelectChannelDetails = { },
-                    realEpgPrograms = realEpgPrograms,
-                    modifier = Modifier.fillMaxSize()
-                )
-                IconButton(
-                    onClick = { showFullEpg = false },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp)
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.close),
-                        tint = Color.White
-                    )
-                }
-            }
         }
     }
 }
 
-/** Klasör ekranlarının başlığı (Canlı Yayın / Sinema / Dizi klasörleri). */
 @Composable
 fun FolderTitleHeader(title: String, displayTitle: String, viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
     Row(
@@ -1873,36 +1702,8 @@ fun FolderTitleHeader(title: String, displayTitle: String, viewModel: IPTVViewMo
             fontWeight = FontWeight.ExtraBold,
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            // Başlık kalan alanın tamamını kullanır; EPG düğmesi sağa yaslanır (eskiden başlık yarıya sığıp kesiliyordu).
+            // Başlık kalan alanın tamamını kullanır (yayın akışı artık her kanalın kartında).
             modifier = Modifier.weight(1f)
         )
-        if (title.contains("Canlı", ignoreCase = true)) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                onClick = { viewModel.setSelectedTypeFilter("EPG") },
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFFF6D00).copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6D00).copy(alpha = 0.4f))
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarViewDay,
-                        contentDescription = null,
-                        tint = Color(0xFFFF6D00),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "EPG",
-                        color = Color(0xFFFF6D00),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
     }
 }
