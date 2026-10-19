@@ -435,6 +435,7 @@
     <string name="settings_auto_refresh_desc">Uygulama açılışında IPTV kanallarını otomatik günceller.</string>
     <string name="settings_cache">Görsel ve Veri Önbelleği</string>
     <string name="settings_cache_desc">Biriken resim önbelleklerini ve geçici dosyaları temizler.</string>
+    <string name="diagnostics_unlocked">Tanılama açıldı: Ayarlar\'da çökme günlükleri görünüyor.</string>
     <string name="settings_crash_logs_title">Çökme Günlükleri (Tanılama)</string>
     <string name="settings_crash_logs_desc">Bir çökme olduysa detaylı kaydını buradan görüp kopyalayabilirsin.</string>
     <string name="settings_tmdb_notice">Bu ürün TMDB API\'sini kullanmaktadır ancak TMDB tarafından onaylanmamıştır veya sertifikalandırılmamıştır.</string>

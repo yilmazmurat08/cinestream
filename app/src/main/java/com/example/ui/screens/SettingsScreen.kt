@@ -757,6 +757,10 @@ fun DataAndMemoryCard(
                 }
             }
 
+            // Çökme günlükleri yalnızca tanılama açıldıysa görünür (sürüm satırına 7 kez dokununca; bkz. DiagnosticsUnlock).
+            val diagnosticsContext = LocalContext.current
+            LaunchedEffect(Unit) { com.example.util.DiagnosticsUnlock.load(diagnosticsContext) }
+            if (com.example.util.DiagnosticsUnlock.unlocked.value) {
             Spacer(modifier = Modifier.height(4.dp))
             var showCrashLogsDialog by remember { mutableStateOf(false) }
             Row(
@@ -790,6 +794,7 @@ fun DataAndMemoryCard(
 
             if (showCrashLogsDialog) {
                 CrashLogsDialog(onDismiss = { showCrashLogsDialog = false })
+            }
             }
 
             // TMDB bildirimi (logo + metin) Ayarlar > Yasal kartında; burada tekrarlanmaz.

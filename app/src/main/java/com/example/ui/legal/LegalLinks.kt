@@ -8,6 +8,7 @@ import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -117,10 +118,26 @@ fun LegalSettingsCard(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier,
                     )
                 }
             }
+            // Sürüm satırına 7 kez art arda dokununca tanılama (çökme günlükleri) açılır.
+            val versionContext = androidx.compose.ui.platform.LocalContext.current
+            var versionTaps by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
             Text(
                 stringResource(R.string.legal_app_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.padding(top = 6.dp).testTag("settings_app_version")
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .clickable(
+                        interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        if (com.example.util.DiagnosticsUnlock.unlocked.value) return@clickable
+                        versionTaps++
+                        if (versionTaps >= com.example.util.DiagnosticsUnlock.TAPS) {
+                            com.example.util.DiagnosticsUnlock.unlock(versionContext)
+                            android.widget.Toast.makeText(versionContext, versionContext.getString(R.string.diagnostics_unlocked), android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .testTag("settings_app_version")
             )
         }
     }

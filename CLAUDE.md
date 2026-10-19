@@ -70,6 +70,9 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
 - Oynatıcı (telefon, yatay): sağdan açılan dar kanal paneli; dikeyde alttaki liste sistem tuşlarının üstünde.
 - TV: kanal panelinde Sağ tuşu akışı yanda açar, OK hatırlatma kurar, Sol kapatır.
 
+**Sonraki sürüme (1.1.8) bekleyenler — kodda hazır, paketlenmedi (kullanıcı 1.1.7'yi test ediyor; hata çıkarsa düzeltmeyle birlikte 1.1.8 üretilir):**
+- Ayarlar'daki "Çökme Günlükleri (Tanılama)" gizli; Ayarlar altındaki sürüm satırına 7 kez dokununca açılır (`DiagnosticsUnlock`). Çökme sonrası hata ekranı her zaman görünür.
+
 Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarılabilir):
 - Kaldığın yerden devam et.
 - Otomatik liste güncelleme.

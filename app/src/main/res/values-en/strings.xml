@@ -436,6 +436,7 @@
     <string name="settings_auto_refresh_desc">Automatically updates IPTV channels when the app starts.</string>
     <string name="settings_cache">Image &amp; Data Cache</string>
     <string name="settings_cache_desc">Clears cached images and temporary files.</string>
+    <string name="diagnostics_unlocked">Diagnostics on: crash logs are now shown in Settings.</string>
     <string name="settings_crash_logs_title">Crash Logs (Diagnostics)</string>
     <string name="settings_crash_logs_desc">If a crash happened, you can view and copy its detailed log here.</string>
     <string name="settings_tmdb_notice">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
