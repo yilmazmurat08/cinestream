@@ -3354,10 +3354,17 @@ class IPTVViewModel(
             null -> isAdultDetected(group)
         }
 
-    /** Yalnızca otomatik tespit (klasör kartının "yetişkin" görünümü için); elle ayarlardan etkilenmez. */
+    /**
+     * Yalnızca otomatik tespit; elle ayarlardan etkilenmez. Klasör, adı yetişkin içerik belirtiyorsa ya da içindekilerin
+     * çoğu kesin olarak yetişkinse kilitlenir. Tek bir yapımın adı (ör. "Sex Education") bütün klasörü kilitlemez;
+     * öyle bir yapım ayrıca kendi adıyla süzülür ([isAdultContent] öğe için).
+     */
     fun isAdultDetected(group: IPTVGroup): Boolean {
-        if (isAdultContent(group.name)) return true
-        return group.items.any { isAdultContent(it.category, it.cleanedName.ifBlank { it.name }) }
+        if (com.example.util.AdultContentFilter.isAdultCategory(group.name)) return true
+        val items = group.items
+        if (items.isEmpty()) return false
+        val adultTitles = items.count { com.example.util.AdultContentFilter.isAdultTitle(it.cleanedName.ifBlank { it.name }) }
+        return adultTitles * 2 > items.size
     }
 
     class Factory(private val application: Application) : ViewModelProvider.Factory {

@@ -158,4 +158,34 @@ class CategoryLockFeatureTest {
         assertTrue(categories.first { it.name == "XXX Yetişkin" }.isAdult)
     }
 
+
+    /**
+     * Kullanıcı geri bildirimi (19 Ekim 2026): "Neredeyse tüm klasörler kilitli." Bir klasördeki tek bir yapımın adı
+     * ("Sex Education", "Essex Boys", "Stripes"...) bütün klasörü kilitliyordu. Artık yalnızca adı yetişkin içerik
+     * belirten klasörler ya da içeriğinin çoğu yetişkin olan klasörler kilitlenir.
+     */
+    @Test
+    fun ordinaryTitles_doNotLockWholeFolder_onlyAdultFoldersAreLocked() {
+        fun folder(name: String, titles: List<String>) =
+            IPTVGroup(id = name, name = name, type = "MOVIE", items = titles.mapIndexed { i, t -> item(i + 1, "MOVIE", name, t) })
+
+        val ordinary = listOf("Sex Education", "Essex Boys", "Stripes", "Mature Love", "Adult Beginners", "Babes in Toyland",
+            "Webcams", "Hardcore Henry", "Sensual Moments", "Playboy Bunny Story", "Kara Şövalye", "Aile Arasında")
+        listOf("AILE FILMLERI", "AKSIYON FILMLERI", "ALTYAZILI FILMLER").forEach { name ->
+            assertFalse("$name kilitlenmemeli", vm.isAdultContent(folder(name, ordinary)))
+        }
+        ordinary.forEach { title -> assertFalse("$title yetişkin sayılmamalı", vm.isAdultContent(item(1, "MOVIE", "Aksiyon", title))) }
+
+        // Gerçek yetişkin içerik yine kilitli.
+        assertTrue(vm.isAdultContent(folder("XX: Yetişkin", listOf("Film 1"))))
+        assertTrue(vm.isAdultContent(folder("Adult VIP", listOf("Film 1"))))
+        assertTrue(vm.isAdultContent(folder("+18 Filmler", listOf("Film 1"))))
+        // Sıradan adlı klasör, içeriğinin çoğu açıkça yetişkinse kilitli.
+        assertTrue(vm.isAdultContent(folder("VIP Paket", listOf("XX: Kanal 1", "XX: Kanal 2", "Kanal 3 +18", "Haber"))))
+        // Tek bir açık yetişkin yapım klasörü kilitlemez ama kendisi süzülür.
+        val mixed = folder("Karışık", listOf("Film A", "Film B", "Film C XXX"))
+        assertFalse(vm.isAdultContent(mixed))
+        assertTrue(vm.isAdultContent(item(1, "MOVIE", "Karışık", "Film C XXX")))
+        assertTrue(vm.isAdultContent(item(1, "LIVE", "Ulusal", "XX: Gizli Kanal")))
+    }
 }

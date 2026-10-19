@@ -23,11 +23,30 @@ object AdultContentFilter {
         RegexOption.IGNORE_CASE
     )
 
-    fun isAdult(category: String, name: String = ""): Boolean {
+    /**
+     * Kategori ya da yapım yetişkin içerik mi. Kategori adı geniş kelime listesiyle denetlenir; yapım adı yalnızca
+     * kesin işaretlerle ([isAdultTitle]). Böylece "Sex Education", "Essex", "Stripes" gibi sıradan adlar yetişkin
+     * sayılmaz.
+     */
+    fun isAdult(category: String, name: String = ""): Boolean =
+        isAdultCategory(category) || (name.isNotEmpty() && isAdultTitle(name))
+
+    /** Kategori (klasör) adı yetişkin içerik belirtiyor mu. */
+    fun isAdultCategory(category: String): Boolean {
+        if (category.isBlank()) return false
         val lowerCat = category.lowercase(Locale.ROOT)
-        val lowerName = name.lowercase(Locale.ROOT)
-        if (keywords.any { kw -> lowerCat.contains(kw) || lowerName.contains(kw) }) return true
-        if (prefixRegex.containsMatchIn(name) || prefixRegex.containsMatchIn(category)) return true
-        return wordRegex.containsMatchIn(category) || (name.isNotEmpty() && wordRegex.containsMatchIn(name))
+        if (keywords.any { kw -> lowerCat.contains(kw) }) return true
+        return prefixRegex.containsMatchIn(category) || wordRegex.containsMatchIn(category)
     }
+
+    // Yapım adında yalnızca kesin işaretler (tek başına kelime olarak): "sex", "mature", "strip", "adult" gibi
+    // sıradan film adlarında da geçen kelimeler sayılmaz.
+    private val titleRegex = Regex(
+        """(?:^|[^a-zA-Z0-9])(\+18|18\+|xxx|porn(?:o)?|erotik|erotic|erotica|nsfw|hentai|brazzers|onlyfans)(?:$|[^a-zA-Z0-9])""",
+        RegexOption.IGNORE_CASE
+    )
+
+    /** Yapım/kanal adı kesin olarak yetişkin içerik mi ("XX:" öneki ya da açık işaretler). */
+    fun isAdultTitle(name: String): Boolean =
+        prefixRegex.containsMatchIn(name) || titleRegex.containsMatchIn(name)
 }
