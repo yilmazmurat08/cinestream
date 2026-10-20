@@ -30,6 +30,8 @@ import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.SportsEsports
+import androidx.compose.material.icons.outlined.SportsSoccer
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -87,7 +89,15 @@ object TvSection {
     const val CONTINUE = "CONTINUE"
     const val ASSISTANT = "ASSISTANT"
     const val TOP_BAR = "TOP_BAR"
-    val cards = listOf(LIVE, MOVIE, SERIES, SAVED, SETTINGS)
+    const val GAMES = "GAMES"
+    const val SPORTS = "SPORTS"
+    // Oyunlar ve Spor açma/kapama anahtarlarıyla görünür (BuildConfig.FEATURE_GAMES / FEATURE_SPORTS).
+    val cards = listOfNotNull(
+        LIVE, MOVIE, SERIES, SAVED,
+        GAMES.takeIf { com.example.BuildConfig.FEATURE_GAMES },
+        SPORTS.takeIf { com.example.BuildConfig.FEATURE_SPORTS },
+        SETTINGS
+    )
 }
 
 private const val HERO_REFRESH_MS = 6_000L
@@ -313,6 +323,8 @@ private fun TvSectionCard(
         TvSection.MOVIE -> Icons.Outlined.Movie to R.string.tv_movies
         TvSection.SERIES -> Icons.Outlined.Tv to R.string.tv_series
         TvSection.SAVED -> Icons.Outlined.Bookmark to R.string.tv_saved
+        TvSection.GAMES -> Icons.Outlined.SportsEsports to R.string.tv_games
+        TvSection.SPORTS -> Icons.Outlined.SportsSoccer to R.string.tv_sports
         else -> Icons.Outlined.Person to R.string.tv_profile_settings
     }
     TvGlassButton(
@@ -324,7 +336,17 @@ private fun TvSectionCard(
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(icon, contentDescription = null, tint = if (f) TvTheme.FocusGlow else TvTheme.Accent, modifier = Modifier.size(40.dp))
             Spacer(Modifier.height(12.dp))
-            Text(stringResource(label), color = TvTheme.TextPrimary, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            // Oyunlar ve Spor açıkken 7 kart olur: yazı küçülür ve gerekirse iki satıra iner (kesilmez).
+            val crowded = TvSection.cards.size > 5
+            Text(
+                stringResource(label),
+                color = TvTheme.TextPrimary,
+                fontSize = if (crowded) 14.sp else 19.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = if (crowded) 2 else 1,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = if (crowded) 17.sp else androidx.compose.ui.unit.TextUnit.Unspecified
+            )
         }
     }
 }

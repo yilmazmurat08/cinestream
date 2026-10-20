@@ -275,7 +275,6 @@ fun HomeScreen(
     val homeUserPhotoUrl by viewModel.userPhotoUrl.collectAsState()
     val profilePhotoUrl = homeUserProfile?.photoUrl ?: homeUserPhotoUrl
     val profileDisplayName = homeUserProfile?.displayName ?: homeUserName ?: stringResource(R.string.profile_menu_guest)
-    val homeContext = LocalContext.current
 
     if (isProfileMenuOpen) {
         com.example.ui.components.FrostedProfileMenu(
@@ -284,14 +283,17 @@ fun HomeScreen(
             onDismiss = { isProfileMenuOpen = false },
             onSettings = { isProfileMenuOpen = false; viewModel.setSelectedTypeFilter("SETTINGS") },
             onProfile = { isProfileMenuOpen = false; isProfileEditOpen = true },
+            // Oyunlar ve Spor PRO: ücretsizde PRO ekranı açılır (önizleme sürümünde satın almadan açık).
             onGames = {
                 isProfileMenuOpen = false
-                android.widget.Toast.makeText(homeContext, R.string.profile_menu_coming_soon, android.widget.Toast.LENGTH_SHORT).show()
+                if (isProUser || com.example.BuildConfig.PREVIEW_UNLOCK_PRO) viewModel.setSelectedTypeFilter("GAMES") else viewModel.openPaywall()
             },
             onSport = {
                 isProfileMenuOpen = false
-                android.widget.Toast.makeText(homeContext, R.string.profile_menu_coming_soon, android.widget.Toast.LENGTH_SHORT).show()
+                if (isProUser || com.example.BuildConfig.PREVIEW_UNLOCK_PRO) viewModel.setSelectedTypeFilter("SPORTS") else viewModel.openPaywall()
             },
+            showGames = com.example.BuildConfig.FEATURE_GAMES,
+            showSport = com.example.BuildConfig.FEATURE_SPORTS,
             onMyList = { isProfileMenuOpen = false; viewModel.setSelectedTypeFilter("WATCHLIST") }
         )
     }
@@ -1577,6 +1579,14 @@ fun HomeScreen(
                     )
                 } else if (selectedTypeFilter == "SETTINGS") {
                     SettingsScreen(viewModel = viewModel)
+                } else if (selectedTypeFilter == "GAMES") {
+                    com.example.ui.features.games.GamesHost(
+                        viewModel = viewModel,
+                        tvMode = false,
+                        onGoSeriesFolders = { viewModel.setSelectedTypeFilter("SERIES") }
+                    )
+                } else if (selectedTypeFilter == "SPORTS") {
+                    com.example.ui.features.SportsHost(viewModel = viewModel, onPlayItem = onPlayItem, tvMode = false)
                 }
 
                 // Bottom padding for edge-to-edge comfort (Requirement 2: Universal Responsive UI)

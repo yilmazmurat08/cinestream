@@ -27,6 +27,11 @@ android {
     // Yeni buzlu alt bar (telefon): Ana Sayfa, Filmler, Diziler, Canlı TV + profil menüsü.
     // Açma/kapama anahtarı: "false" yapılınca eski alt bar geri gelir.
     buildConfigField("boolean", "NEW_BOTTOM_BAR", "true")
+    // Spor ve Oyunlar (PRO). Açma/kapama anahtarı: "false" yapılınca menüde görünmez.
+    buildConfigField("boolean", "FEATURE_SPORTS", "true")
+    buildConfigField("boolean", "FEATURE_GAMES", "true")
+    // Yalnızca önizleme (test) sürümünde: satın alma olmadan PRO özellikleri açılır. Mağazada her zaman false.
+    buildConfigField("boolean", "PREVIEW_UNLOCK_PRO", "false")
 
     // Play lisans anahtarı (herkese açık anahtar; satın alma imzasını doğrulamak için). Depoda tutulmaz, derleme
     // anında ortam değişkeninden okunur. Boşsa uygulama imza denetimi yapmaz (test sürümleri).
@@ -75,6 +80,17 @@ android {
     // Süre sınırı testi: qa ile aynı ama ücretsiz süre açık ve yalnızca 2 dakika (süre dolması, saat hilesi,
     // canlı yayının durması hızlıca denenir). Mağaza sürümü etkilenmez (60 dakika).
     // Derleme: ./gradlew assembleQaLimit  → app/build/outputs/apk/qaLimit/app-qaLimit.apk
+    // Önizleme: yeni özellikleri (alt bar, Spor, Oyunlar) denemek için. Ayrı paket adıyla ("CineStream Test")
+    // Play sürümünün yanına kurulur; Play sürümü ve verileri olduğu gibi kalır. Satın alma bu pakette çalışmaz,
+    // bu yüzden PRO özellikleri satın almadan açıktır.
+    // Derleme: ./gradlew assemblePreview  → app/build/outputs/apk/preview/app-preview.apk
+    create("preview") {
+      initWith(getByName("qa"))
+      applicationIdSuffix = ".test"
+      versionNameSuffix = "-test"
+      matchingFallbacks += listOf("qa", "release")
+      buildConfigField("boolean", "PREVIEW_UNLOCK_PRO", "true")
+    }
     create("qaLimit") {
       initWith(getByName("qa"))
       matchingFallbacks += listOf("qa", "release")
@@ -180,6 +196,8 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.coil.compose)
+  // Spor modülü (ayrı dal; açma/kapama: BuildConfig.SPORTS_ENABLED).
+  implementation(project(":sports"))
   // QR kod (TV'de "Telefonla gir")
   implementation("com.google.zxing:core:3.5.3")
   implementation(libs.converter.moshi)

@@ -95,7 +95,7 @@ fun FrostedBottomBar(
         FrostedTab("LIVE", stringResource(R.string.nav_bar_live), Icons.Filled.LiveTv, Icons.Outlined.LiveTv),
     )
     // Ayarlar ve Listem profil menüsünden açılır: o sayfalardayken profil düğmesi vurgulanır.
-    val profileActive = menuOpen || selectedTypeFilter == "SETTINGS" || selectedTypeFilter == "WATCHLIST"
+    val profileActive = menuOpen || selectedTypeFilter in setOf("SETTINGS", "WATCHLIST", "GAMES", "SPORTS")
 
     Box(
         modifier = Modifier
@@ -213,6 +213,8 @@ fun FrostedProfileMenu(
     onGames: () -> Unit,
     onSport: () -> Unit,
     onMyList: () -> Unit,
+    showGames: Boolean = true,
+    showSport: Boolean = true,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
@@ -262,8 +264,8 @@ fun FrostedProfileMenu(
                     HorizontalDivider(color = Color(0x14FFFFFF))
                     MenuRow(Icons.Filled.Settings, stringResource(R.string.settings_title), pro = false, tag = "menu_settings", onClick = onSettings)
                     MenuRow(Icons.Filled.Person, stringResource(R.string.nav_profile), pro = false, tag = "menu_profile", onClick = onProfile)
-                    MenuRow(Icons.Filled.SportsEsports, stringResource(R.string.profile_menu_games), pro = true, tag = "menu_games", onClick = onGames)
-                    MenuRow(Icons.Filled.SportsSoccer, stringResource(R.string.profile_menu_sport), pro = true, tag = "menu_sport", onClick = onSport)
+                    if (showGames) MenuRow(Icons.Filled.SportsEsports, stringResource(R.string.profile_menu_games), pro = true, tag = "menu_games", onClick = onGames)
+                    if (showSport) MenuRow(Icons.Filled.SportsSoccer, stringResource(R.string.profile_menu_sport), pro = true, tag = "menu_sport", onClick = onSport)
                     MenuRow(Icons.Filled.Bookmark, stringResource(R.string.profile_menu_my_list), pro = false, tag = "menu_my_list", onClick = onMyList)
                 }
             }

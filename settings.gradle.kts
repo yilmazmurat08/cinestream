@@ -25,3 +25,4 @@ dependencyResolutionManagement {
 rootProject.name = "CineStream IPTV"
 
 include(":app")
+include(":sports")

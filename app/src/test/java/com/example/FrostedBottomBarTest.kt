@@ -26,7 +26,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Yeni buzlu alt bar (telefon, realme C55 ölçüleri): dört sekme ve profil menüsü çalışıyor mu,
- * menüden Ayarlar / Listem / Profil açılıyor mu, Oyunlar ve Spor çökmeden "Yakında" diyor mu.
+ * menüden Ayarlar / Listem / Profil açılıyor mu, Oyunlar ve Spor ücretsizde PRO ekranını açıyor mu.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "tr-w360dp-h800dp-port-xxhdpi")
@@ -106,11 +106,15 @@ class FrostedBottomBarTest {
         click("menu_my_list")
         assertEquals("WATCHLIST", vm.selectedTypeFilter.value)
 
-        // Oyunlar ve Spor henüz yok: menü kapanır, sayfa değişmez, çökme olmaz.
+        // Oyunlar ve Spor PRO: ücretsiz kullanıcıda sayfa değişmez, PRO ekranı açılır.
         click("bottom_nav_profile_menu")
         click("menu_games")
+        assertTrue(vm.showPaywallDialog.value)
+        compose.runOnUiThread { vm.closePaywall() }
         click("bottom_nav_profile_menu")
         click("menu_sport")
+        assertTrue(vm.showPaywallDialog.value)
+        compose.runOnUiThread { vm.closePaywall() }
         assertEquals("WATCHLIST", vm.selectedTypeFilter.value)
         assertTrue(!exists("frosted_profile_menu"))
 
