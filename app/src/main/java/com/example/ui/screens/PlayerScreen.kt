@@ -1202,7 +1202,12 @@ fun LegacyExoPlayerScreen(
             if (com.example.BuildConfig.FREE_WATCH_LIMIT && iptvViewModel != null && !isProUser) {
                 FreeTimeRemainingBadge(
                     remainingSeconds = com.example.ui.IPTVViewModel.FREE_DAILY_WATCH_SECONDS - totalWatchSeconds,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp)
+                    // Sistem gezinme tuşları ve kamera deliği sayacı örtmesin (tablette yatayken tuşlar sağda/altta kalıyordu).
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .padding(end = 16.dp, bottom = 16.dp)
+                        .testTag("free_time_badge")
                 )
             }
         }
