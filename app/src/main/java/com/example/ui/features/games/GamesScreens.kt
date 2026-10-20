@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -526,20 +528,32 @@ private fun SwipeCard(item: IPTVItem, summary: String, rating: Double, modifier:
 
 @Composable
 private fun WheelGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> Unit) {
+    val context = LocalContext.current
     val groups by viewModel.movieGroups.collectAsState()
     var categories by remember { mutableStateOf<List<String>?>(null) }
+    var eligible by remember { mutableStateOf<List<String>>(emptyList()) }
     var picks by remember { mutableStateOf<List<IPTVItem>>(emptyList()) }
     var landed by remember { mutableStateOf<String?>(null) }
     var spinning by remember { mutableStateOf(false) }
+    var choosing by remember { mutableStateOf(false) }
     val rotation = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val spinFocus = remember { FocusRequester() }
 
+    fun showOnWheel(list: List<String>) {
+        categories = list
+        picks = emptyList()
+        landed = null
+        scope.launch { rotation.snapTo(0f) }
+    }
+
     LaunchedEffect(groups.size) {
         if (categories.isNullOrEmpty()) {
-            categories = withContext(Dispatchers.Default) {
-                GamesLogic.wheelCategories(groups.associate { it.name to it.items }, { viewModel.isAdultContent(it) })
-            }
+            val map = groups.associate { it.name to it.items }
+            eligible = withContext(Dispatchers.Default) { GamesLogic.wheelEligibleCategories(map) { viewModel.isAdultContent(it) } }
+            // Kullanıcının kendi seçtiği kategoriler varsa onlar, yoksa rastgele 8 kategori.
+            categories = GamesLogic.wheelSavedCategories(WheelChoiceStore.load(context), eligible)
+                ?: eligible.shuffled().take(GamesLogic.WHEEL_SLICES)
         }
     }
     LaunchedEffect(tvMode, categories) { if (tvMode && !categories.isNullOrEmpty()) runCatching { spinFocus.requestFocus() } }
@@ -602,6 +616,18 @@ private fun WheelGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> U
                                 }
                             }
                             Text(stringResource(R.string.game_wheel_hint), color = GameMuted, fontSize = 13.sp)
+                            // Hep aynı kategoriler sıkmasın: rastgele yeni kategoriler ya da kullanıcının kendi seçimi.
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                                GameButton(stringResource(R.string.game_wheel_shuffle), "wheel_shuffle", modifier = Modifier.weight(1f), primary = false, onClick = {
+                                    if (!spinning) {
+                                        WheelChoiceStore.save(context, emptyList())
+                                        val current = categories.orEmpty().toSet()
+                                        val fresh = eligible.filterNot { it in current }.shuffled()
+                                        showOnWheel((fresh + eligible.filter { it in current }.shuffled()).take(GamesLogic.WHEEL_SLICES))
+                                    }
+                                })
+                                GameButton(stringResource(R.string.game_wheel_choose), "wheel_choose", modifier = Modifier.weight(1f), primary = false, onClick = { if (!spinning) choosing = true })
+                            }
                         }
                     }
                     if (wide) {
@@ -614,6 +640,110 @@ private fun WheelGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> U
                         results(Modifier.fillMaxWidth())
                     }
                 }
+            }
+        }
+    }
+
+    if (choosing) {
+        WheelChoiceDialog(
+            eligible = eligible,
+            initial = categories.orEmpty(),
+            onDismiss = { choosing = false },
+            onSave = { chosen ->
+                choosing = false
+                WheelChoiceStore.save(context, chosen)
+                showOnWheel(chosen)
+            }
+        )
+    }
+}
+
+/** Kullanıcının çark için seçtiği kategoriler (cihazda saklanır; boş liste = rastgele). */
+private object WheelChoiceStore {
+    private const val PREFS = "games_prefs"
+    private const val KEY = "wheel_categories"
+    private const val SEP = "\u001F"
+
+    fun load(context: android.content.Context): List<String> = runCatching {
+        context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).getString(KEY, null)
+            ?.split(SEP)?.filter { it.isNotBlank() }.orEmpty()
+    }.getOrDefault(emptyList())
+
+    fun save(context: android.content.Context, categories: List<String>) {
+        runCatching {
+            context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).edit()
+                .putString(KEY, categories.joinToString(SEP)).apply()
+        }
+    }
+}
+
+/** Çark kategorilerini seçme penceresi: en az 2, en çok 8. Telefonda dokunma, TV'de kumanda ile çalışır. */
+@Composable
+private fun WheelChoiceDialog(eligible: List<String>, initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) {
+    var selected by remember { mutableStateOf(initial.filter { it in eligible }) }
+    val firstRow = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstRow.requestFocus() } }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 560.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .background(GameCard)
+                .border(1.dp, GameBorder, RoundedCornerShape(22.dp))
+                .padding(18.dp)
+                .testTag("wheel_choose_dialog"),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(stringResource(R.string.game_wheel_choose_title), color = GameText, fontSize = 22.sp, fontFamily = FontFamily.Serif, fontStyle = FontStyle.Italic)
+            Text(stringResource(R.string.game_wheel_choose_desc, selected.size), color = GameMuted, fontSize = 13.sp)
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier.weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(eligible.size) { index ->
+                    val name = eligible[index]
+                    val checked = name in selected
+                    val interaction = remember { MutableInteractionSource() }
+                    val focused by interaction.collectIsFocusedAsState()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (index == 0) Modifier.focusRequester(firstRow) else Modifier)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (checked) GameAccent.copy(alpha = 0.18f) else Color.Transparent)
+                            .border(2.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(12.dp))
+                            .clickable(interactionSource = interaction, indication = com.example.ui.tv.tvFocusIndicationOrNull()) {
+                                selected = GamesLogic.toggleWheelChoice(selected, name)
+                            }
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                            .testTag("wheel_choice_$index")
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (checked) GameAccent else Color.Transparent)
+                                .border(2.dp, if (checked) GameAccent else GameMuted, RoundedCornerShape(6.dp))
+                        ) {
+                            if (checked) Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text(name, color = GameText, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End), modifier = Modifier.fillMaxWidth()) {
+                GameButton(stringResource(R.string.game_wheel_cancel), "wheel_choose_cancel", primary = false, onClick = onDismiss)
+                val canSave = selected.size >= GamesLogic.WHEEL_MIN_SLICES
+                GameButton(
+                    stringResource(R.string.game_wheel_save),
+                    "wheel_choose_save",
+                    primary = canSave,
+                    onClick = { if (canSave) onSave(selected) }
+                )
             }
         }
     }

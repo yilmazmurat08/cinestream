@@ -746,4 +746,10 @@
     <string name="game_puzzle_open">Kartı aç</string>
     <string name="game_puzzle_loading">Poster hazırlanıyor…</string>
     <string name="game_puzzle_empty">Puzzle için poster yüklenemedi. İnternet bağlantını kontrol edip yeniden dene.</string>
+    <string name="game_wheel_shuffle">Kategorileri değiştir</string>
+    <string name="game_wheel_choose">Kendim seçeyim</string>
+    <string name="game_wheel_choose_title">Çark kategorileri</string>
+    <string name="game_wheel_choose_desc">En az 2, en çok 8 kategori seç. Seçimin kaydedilir. (%1$d/8)</string>
+    <string name="game_wheel_save">Kaydet</string>
+    <string name="game_wheel_cancel">Vazgeç</string>
 </resources>

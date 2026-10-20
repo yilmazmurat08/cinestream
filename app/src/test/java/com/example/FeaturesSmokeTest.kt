@@ -196,6 +196,18 @@ open class FeaturesSmokeTest {
         assertTrue(vm.selectedItem.value != null)
         compose.runOnUiThread { vm.selectItem(null) }
         settle()
+        // Kategoriler değiştirilebilir: rastgele yenileri ya da kullanıcının kendi seçimi (en az 2, kaydedilir).
+        click("wheel_shuffle")
+        assertTrue(exists("wheel"))
+        click("wheel_choose")
+        assertTrue("Seçim penceresi açılmalı", waitFor("wheel_choose_dialog"))
+        click("wheel_choice_0")
+        click("wheel_choose_save")
+        assertTrue(!exists("wheel_choose_dialog"))
+        assertTrue(exists("wheel"))
+        click("wheel_spin")
+        settle(4_500)
+        assertTrue("Seçilen kategorilerle çark yine film vermeli", waitFor("wheel_pick_0"))
         back()
 
         // 4. Poster puzzle: poster parçalara bölünür; iki parçaya dokununca yer değişir; ipucu tüm posteri gösterir.

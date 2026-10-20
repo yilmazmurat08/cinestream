@@ -747,4 +747,10 @@
     <string name="game_puzzle_open">Open card</string>
     <string name="game_puzzle_loading">Preparing the poster…</string>
     <string name="game_puzzle_empty">Could not load a poster for the puzzle. Check your connection and try again.</string>
+    <string name="game_wheel_shuffle">Change categories</string>
+    <string name="game_wheel_choose">Pick my own</string>
+    <string name="game_wheel_choose_title">Wheel categories</string>
+    <string name="game_wheel_choose_desc">Pick at least 2 and at most 8 categories. Your choice is saved. (%1$d/8)</string>
+    <string name="game_wheel_save">Save</string>
+    <string name="game_wheel_cancel">Cancel</string>
 </resources>

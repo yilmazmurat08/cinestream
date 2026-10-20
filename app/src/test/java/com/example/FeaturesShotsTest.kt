@@ -147,6 +147,11 @@ open class FeaturesShotsTest {
         click("wheel_spin")
         settle(5_000)
         shot("$prefix-3-cark")
+        click("wheel_choose")
+        settle(800)
+        shot("$prefix-3b-cark-secim")
+        click("wheel_choose_cancel")
+        settle(500)
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         settle(800)
         click("game_card_PUZZLE")

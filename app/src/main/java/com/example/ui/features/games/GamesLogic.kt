@@ -35,6 +35,31 @@ object GamesLogic {
             .shuffled(random)
             .take(WHEEL_SLICES)
 
+    /** Çarka konabilecek bütün kategoriler (en az 3 posterli film, yetişkin değil), adına göre sıralı. */
+    fun wheelEligibleCategories(moviesByCategory: Map<String, List<IPTVItem>>, isAdultCategory: (String) -> Boolean): List<String> =
+        moviesByCategory.entries
+            .filter { (cat, list) -> cat.isNotBlank() && !isAdultCategory(cat) && list.count { !it.logoUrl.isNullOrBlank() } >= WHEEL_PICKS }
+            .map { it.key }
+            .sortedBy { it.lowercase() }
+
+    const val WHEEL_MIN_SLICES = 2
+
+    /**
+     * Kullanıcının kaydettiği kategoriler: listede hâlâ bulunanlar (liste değişmiş olabilir), en çok [WHEEL_SLICES].
+     * En az [WHEEL_MIN_SLICES] tane kalmadıysa null (çark rastgele kategorilerle açılır).
+     */
+    fun wheelSavedCategories(saved: List<String>, eligible: List<String>): List<String>? {
+        val available = eligible.toSet()
+        return saved.filter { it in available }.distinct().take(WHEEL_SLICES).takeIf { it.size >= WHEEL_MIN_SLICES }
+    }
+
+    /** Seçim ekranında dokunulan kategori: seçiliyse çıkar, değilse (sınır dolmadıysa) ekle. */
+    fun toggleWheelChoice(selected: List<String>, category: String): List<String> = when {
+        category in selected -> selected - category
+        selected.size >= WHEEL_SLICES -> selected
+        else -> selected + category
+    }
+
     /** Çarkın durduğu kategoriden 3 rastgele posterli film. */
     fun wheelPicks(movies: List<IPTVItem>, isAdult: (IPTVItem) -> Boolean, random: Random = Random.Default): List<IPTVItem> =
         movies.filter { !it.logoUrl.isNullOrBlank() && !isAdult(it) }.shuffled(random).take(WHEEL_PICKS)

@@ -48,6 +48,33 @@ class GamesLogicTest {
     }
 
     @Test
+    fun wheelChoice_savedCategoriesFollowTheList_andLimitsHold() {
+        val eligible = listOf("Aksiyon", "Dram", "Korku", "Savaş")
+        // Listeden kalkan kategori düşer; 2'den az kalırsa kayıt kullanılmaz.
+        assertEquals(listOf("Korku", "Dram"), GamesLogic.wheelSavedCategories(listOf("Korku", "Silinen", "Dram"), eligible))
+        assertEquals(null, GamesLogic.wheelSavedCategories(listOf("Korku", "Silinen"), eligible))
+        assertEquals(null, GamesLogic.wheelSavedCategories(emptyList(), eligible))
+
+        var chosen = emptyList<String>()
+        (1..10).forEach { chosen = GamesLogic.toggleWheelChoice(chosen, "K$it") }
+        assertEquals("En çok 8 kategori", GamesLogic.WHEEL_SLICES, chosen.size)
+        chosen = GamesLogic.toggleWheelChoice(chosen, "K1")
+        assertFalse("K1" in chosen)
+        assertEquals(7, chosen.size)
+    }
+
+    @Test
+    fun wheelEligible_sortedAndFiltered() {
+        val map = mapOf(
+            "korku" to (1..3).map { item(it) },
+            "Aksiyon" to (4..6).map { item(it) },
+            "Az" to listOf(item(7)),
+            "XXX" to (8..10).map { item(it) }
+        )
+        assertEquals(listOf("Aksiyon", "korku"), GamesLogic.wheelEligibleCategories(map) { it == "XXX" })
+    }
+
+    @Test
     fun sliceAtTop_matchesDrawing() {
         // Dönmemiş çarkta saat 12'deki dilim 0; çark saat yönünde 1 dilim dönünce üstte son dilim olur.
         assertEquals(0, GamesLogic.sliceAtTop(0f, 8))
