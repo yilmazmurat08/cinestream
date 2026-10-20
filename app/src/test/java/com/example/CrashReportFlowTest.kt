@@ -47,4 +47,27 @@ class CrashReportFlowTest {
         assertNull(CrashRecoveryManager.pendingCrashReport(context))
         assertEquals(MainActivity::class.java.name, shadowOf(report).nextStartedActivity.component?.className)
     }
+
+    /** Kullanıcı rapor ekranını düğmeye basmadan (Geri tuşu, kaydırma) kapatsa da rapor tekrar çıkmaz. */
+    @Test
+    fun reportClosedWithBack_isNotShownAgain() {
+        CrashRecoveryManager.handleUncaughtException(context, Thread.currentThread(), IllegalStateException("geri tuşu testi"))
+        assertNotNull(CrashRecoveryManager.pendingCrashReport(context))
+        val controller = Robolectric.buildActivity(CrashReportActivity::class.java).setup()
+        controller.get().onBackPressed()
+        controller.pause().stop().destroy()
+        assertNull(CrashRecoveryManager.pendingCrashReport(context))
+    }
+
+    /** Uygulama güncellendikten sonra eski sürümün çökme raporu gösterilmez. */
+    @Test
+    fun reportFromBeforeAnUpdate_isIgnored() {
+        CrashRecoveryManager.handleUncaughtException(context, Thread.currentThread(), IllegalStateException("eski sürüm hatası"))
+        val file = CrashRecoveryManager.pendingCrashReport(context)!!
+        file.setLastModified(System.currentTimeMillis() - 60 * 60_000L)
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        info.lastUpdateTime = System.currentTimeMillis()
+        shadowOf(context.packageManager).installPackage(info)
+        assertNull(CrashRecoveryManager.pendingCrashReport(context))
+    }
 }

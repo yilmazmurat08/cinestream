@@ -145,11 +145,13 @@ fun DetailScreen(
     var playingTrailerId by remember(item) { mutableStateOf<String?>(null) }
     // Kart açılınca fragman kendiliğinden başlar; kullanıcı kapatır, biter ya da hata verirse aynı kartta tekrar başlamaz.
     var trailerAutoDismissed by remember(item) { mutableStateOf(false) }
+    // Fragman Fragman düğmesiyle mi başladı (oynatılamazsa YouTube'da açılır) yoksa kendiliğinden mi.
+    var trailerByUser by remember(item) { mutableStateOf(false) }
     com.example.ui.components.AutoStartTrailerEffect(
         videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl),
         dismissed = trailerAutoDismissed,
         playing = playingTrailerId != null,
-        onStart = { playingTrailerId = it }
+        onStart = { trailerByUser = false; playingTrailerId = it }
     )
 
     if (dynamicTrailerUrl.isNullOrEmpty() && viewModel != null) {
@@ -338,7 +340,7 @@ fun DetailScreen(
                             onError = {
                                 playingTrailerId = null
                                 trailerAutoDismissed = true
-                                android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
+                                com.example.ui.components.handleTrailerEmbedError(context, trailerId, trailerByUser)
                             },
                             // Fragman kapak alanının tamamını kaplar (Netflix tarzı); taşan kenarlar kırpılır.
                             fillArea = true,
@@ -572,7 +574,11 @@ fun DetailScreen(
                                     if (playingTrailerId != null) {
                                         playingTrailerId = null
                                         trailerAutoDismissed = true
+                                    } else if (!videoId.isNullOrEmpty() && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, videoId)) {
+                                        // Bu fragman uygulama içinde oynatılamıyor: doğrudan YouTube'da açılır.
+                                        com.example.ui.components.handleTrailerEmbedError(context, videoId, startedByUser = true)
                                     } else if (!videoId.isNullOrEmpty()) {
+                                        trailerByUser = true
                                         playingTrailerId = videoId
                                     } else {
                                         android.widget.Toast.makeText(

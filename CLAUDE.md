@@ -74,6 +74,8 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
 - Ayarlar'daki "Çökme Günlükleri (Tanılama)" gizli; Ayarlar altındaki sürüm satırına 7 kez dokununca açılır (`DiagnosticsUnlock`). Çökme sonrası hata ekranı her zaman görünür.
 - Oynatıcıdaki ücretsiz "kalan süre" sayacı sistem gezinme tuşlarının altında kalmıyor (tablette yatayken görünmüyordu).
 - Kapsamlı denetim (20 Ekim 2026): açılışta tüm liste belleğe yüklenmiyor (yalnızca sayım); EPG belleği küçüldü (26 saatlik pencere, açıklama saklanmaz); dizi ayrıştırma önbelleği sınırlı; önbellek temizliği resim önbelleğini korur; ağır liste/grup hesapları ana iş parçacığı dışında (Mi TV Stick'te donma/ANR riski azalır).
+- Fragman (20 Ekim 2026): sahibi gömülü oynatmaya izin vermeyen YouTube fragmanı Fragman düğmesiyle YouTube uygulamasında açılır; kendiliğinden başladıysa sessizce durur; cihazda hatırlanır (`TrailerEmbedBlocklist`). Telefon kartları, ana sayfa fragman kutusu, TV kartı.
+- Çökme raporu ekranı bir kez gösterilir (Geri tuşuyla kapatılsa da tekrar çıkmaz); uygulama güncellendiyse eski sürümün raporu gösterilmez.
 
 Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarılabilir):
 - Kaldığın yerden devam et.

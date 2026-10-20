@@ -1,0 +1,3 @@
+com.cinestream.sports.test.sports-mergeDebugUnitTestResources-0 /home/user/cinestream/sports/build/intermediates/incremental/debugUnitTest/mergeDebugUnitTestResources/merged.dir
+com.cinestream.sports.test.sports-mergeDebugUnitTestResources-1 /home/user/cinestream/sports/build/intermediates/incremental/debugUnitTest/mergeDebugUnitTestResources/stripped.dir
+com.cinestream.sports.test.sports-debugUnitTest-2 /home/user/cinestream/sports/build/intermediates/merged_res/debugUnitTest/mergeDebugUnitTestResources

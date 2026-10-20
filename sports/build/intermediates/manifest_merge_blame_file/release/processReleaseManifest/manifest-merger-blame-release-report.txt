@@ -1,0 +1,13 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.cinestream.sports" >
+4
+5    <uses-sdk android:minSdkVersion="26" />
+5-->INJECTED
+5-->INJECTED
+6    <!-- Maç hatırlatmaları (Android 13+ izin ister; CineStream'de zaten tanımlı). -->
+7    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+7-->/home/user/cinestream/sports/src/main/AndroidManifest.xml:4:5-77
+7-->/home/user/cinestream/sports/src/main/AndroidManifest.xml:4:22-74
+8
+9</manifest>

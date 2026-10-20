@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.cinestream.sports.SportsUiTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T15:38:37.699Z" hostname="vm" time="8.381">
+  <properties/>
+  <testcase name="followTeamFromMoreMenu_pinsItsMatchOnHome" classname="com.cinestream.sports.SportsUiTest" time="1.843"/>
+  <testcase name="home_majorLeagues_filterSheet_liveOnly_andBackClosesSheet" classname="com.cinestream.sports.SportsUiTest" time="0.692"/>
+  <testcase name="customize_hidingASportRemovesItFromThePicker" classname="com.cinestream.sports.SportsUiTest" time="1.088"/>
+  <testcase name="otherSportsLoadTheirLeagues" classname="com.cinestream.sports.SportsUiTest" time="0.782"/>
+  <testcase name="showAll_revealsLowerLeagues" classname="com.cinestream.sports.SportsUiTest" time="0.667"/>
+  <testcase name="watchButtonOnTheCardOpensThePlayerDirectly" classname="com.cinestream.sports.SportsUiTest" time="0.847"/>
+  <testcase name="channelNotInList_canBeAssigned_andIsRemembered" classname="com.cinestream.sports.SportsUiTest" time="1.453"/>
+  <testcase name="matchDetail_showsScore_andWatchesTheChannelFromTheList" classname="com.cinestream.sports.SportsUiTest" time="0.956"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

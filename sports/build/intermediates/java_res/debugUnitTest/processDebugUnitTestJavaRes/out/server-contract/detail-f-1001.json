@@ -1,0 +1,192 @@
+{
+ "leagues": [
+  {
+   "id": "f-203",
+   "sport": "football",
+   "name": "Süper Lig",
+   "country": {
+    "code": "Turkey",
+    "name": "Türkiye"
+   },
+   "major": true,
+   "priority": 1
+  }
+ ],
+ "teams": [
+  {
+   "id": "f-3573",
+   "name": "Gaziantep FK",
+   "short": "GAZ",
+   "league": "f-203",
+   "leagueName": "Süper Lig",
+   "sport": "football",
+   "colors": {
+    "primary": "#E30613",
+    "secondary": "#111111",
+    "pattern": "STRIPES"
+   }
+  },
+  {
+   "id": "f-996",
+   "name": "Alanyaspor",
+   "short": "ALA",
+   "league": "f-203",
+   "leagueName": "Süper Lig",
+   "sport": "football",
+   "colors": {
+    "primary": "#F7941D",
+    "secondary": "#00A651",
+    "pattern": "HALVES"
+   }
+  },
+  {
+   "id": "f-645",
+   "name": "Galatasaray",
+   "short": "GAL",
+   "league": "f-203",
+   "leagueName": "Süper Lig",
+   "sport": "football",
+   "colors": {
+    "primary": "#FDB913",
+    "secondary": "#A90432",
+    "pattern": "HALVES"
+   }
+  }
+ ],
+ "matches": [
+  {
+   "id": "f-1001",
+   "league": "f-203",
+   "home": "f-3573",
+   "away": "f-996",
+   "kickoff": "2026-10-12T16:00:00Z",
+   "status": "LIVE",
+   "minute": 67,
+   "period": null,
+   "score": {
+    "home": 2,
+    "away": 0
+   },
+   "broadcasts": [],
+   "round": "8. Hafta",
+   "venue": "Gaziantep Stadyumu"
+  }
+ ],
+ "match": {
+  "id": "f-1001",
+  "league": "f-203",
+  "home": "f-3573",
+  "away": "f-996",
+  "kickoff": "2026-10-12T16:00:00Z",
+  "status": "LIVE",
+  "minute": 67,
+  "period": null,
+  "score": {
+   "home": 2,
+   "away": 0
+  },
+  "broadcasts": [],
+  "round": "8. Hafta",
+  "venue": "Gaziantep Stadyumu"
+ },
+ "events": [
+  {
+   "minute": 12,
+   "type": "GOAL",
+   "side": "home",
+   "player": "M. Kaya"
+  },
+  {
+   "minute": 30,
+   "type": "YELLOW_CARD",
+   "side": "away",
+   "player": "B. Çelik"
+  },
+  {
+   "minute": 44,
+   "type": "PENALTY_GOAL",
+   "side": "home",
+   "player": "K. Aslan"
+  },
+  {
+   "minute": 58,
+   "type": "SUBSTITUTION",
+   "side": "away",
+   "player": "T. Er",
+   "detail": "E. Koç"
+  },
+  {
+   "minute": 61,
+   "type": "RED_CARD",
+   "side": "away",
+   "player": "B. Çelik"
+  }
+ ],
+ "stats": [
+  {
+   "key": "POSSESSION",
+   "home": 58,
+   "away": 42
+  },
+  {
+   "key": "SHOTS",
+   "home": 11,
+   "away": 6
+  },
+  {
+   "key": "SHOTS_ON_TARGET",
+   "home": 5,
+   "away": 2
+  },
+  {
+   "key": "CORNERS",
+   "home": 6,
+   "away": 3
+  },
+  {
+   "key": "FOULS",
+   "home": 9,
+   "away": 12
+  },
+  {
+   "key": "OFFSIDES",
+   "home": 1,
+   "away": 0
+  }
+ ],
+ "standings": [
+  {
+   "position": 1,
+   "team": "f-645",
+   "played": 7,
+   "won": 6,
+   "drawn": 1,
+   "lost": 0,
+   "goalsFor": 18,
+   "goalsAgainst": 6,
+   "points": 19
+  },
+  {
+   "position": 9,
+   "team": "f-3573",
+   "played": 7,
+   "won": 3,
+   "drawn": 1,
+   "lost": 3,
+   "goalsFor": 9,
+   "goalsAgainst": 10,
+   "points": 10
+  },
+  {
+   "position": 12,
+   "team": "f-996",
+   "played": 7,
+   "won": 2,
+   "drawn": 2,
+   "lost": 3,
+   "goalsFor": 7,
+   "goalsAgainst": 9,
+   "points": 8
+  }
+ ]
+}

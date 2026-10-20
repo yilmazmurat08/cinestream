@@ -33,6 +33,8 @@ class CrashReportActivity : Activity() {
         } catch (e: Throwable) {
             ""
         }
+        // Rapor bir kez gösterilir: ekran Geri tuşuyla ya da kaydırılarak kapatılsa da sonraki açılışta yeniden çıkmaz.
+        if (savedInstanceState == null) CrashRecoveryManager.clearPendingCrashReport(this)
 
         fun dp(v: Int) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), resources.displayMetrics).toInt()
 

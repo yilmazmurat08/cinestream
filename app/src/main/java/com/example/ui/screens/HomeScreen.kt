@@ -2698,7 +2698,8 @@ fun TrailerBoxSection(
                 onEnded = { playing = null },
                 onError = {
                     playing = null
-                    android.widget.Toast.makeText(context, context.getString(R.string.trailer_inapp_failed), android.widget.Toast.LENGTH_SHORT).show()
+                    // Fragman kutusunda oynatma her zaman kullanıcının dokunuşuyla başlar: YouTube'da açılır.
+                    com.example.ui.components.handleTrailerEmbedError(context, videoId, startedByUser = true)
                 },
                 modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).testTag("home_trailer_player")
             )
@@ -2728,7 +2729,13 @@ fun TrailerBoxSection(
                     TrailerBoxCard(
                         title = item.cleanedName,
                         youtubeThumbnailUrl = "https://img.youtube.com/vi/$ytId/hqdefault.jpg",
-                        onClick = { playing = ytId to item.cleanedName }
+                        onClick = {
+                            if (com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, ytId)) {
+                                com.example.ui.components.handleTrailerEmbedError(context, ytId, startedByUser = true)
+                            } else {
+                                playing = ytId to item.cleanedName
+                            }
+                        }
                     )
                 }
             }
