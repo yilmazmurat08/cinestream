@@ -145,11 +145,13 @@ fun TvDetailScreen(
     var trailerFailed by remember(item.id) { mutableStateOf(false) }
     // Kart açılınca fragman kendiliğinden başlar; kapatılır, biter ya da hata verirse aynı kartta tekrar başlamaz.
     var trailerAutoDismissed by remember(item.id) { mutableStateOf(false) }
+    // Fragman düğmeyle mi başladı: oynatılamazsa YouTube uygulamasında açılır; kendiliğinden başladıysa sessizce durur.
+    var trailerByUser by remember(item.id) { mutableStateOf(false) }
     com.example.ui.components.AutoStartTrailerEffect(
         videoId = com.example.ui.components.extractYouTubeVideoId(trailerUrl),
         dismissed = trailerAutoDismissed,
         playing = trailerPlaying,
-        onStart = { trailerPlaying = true }
+        onStart = { trailerByUser = false; trailerPlaying = true }
     )
     BackHandler(enabled = trailerPlaying) { trailerPlaying = false; trailerAutoDismissed = true }
     var extraCast by remember(item.id) { mutableStateOf<List<String>>(emptyList()) }
@@ -245,7 +247,11 @@ fun TvDetailScreen(
                 onError = {
                     trailerPlaying = false
                     trailerAutoDismissed = true
-                    trailerFailed = true
+                    com.example.ui.components.extractYouTubeVideoId(trailerUrl)?.let { id ->
+                        com.example.ui.components.TrailerEmbedBlocklist.block(context, id)
+                        // Düğmeyle başlatıldıysa YouTube'da açılır; açılamazsa kartta kısa uyarı görünür.
+                        trailerFailed = !trailerByUser || !com.example.ui.components.openTrailerInYouTube(context, id)
+                    } ?: run { trailerFailed = true }
                 },
                 modifier = Modifier.align(Alignment.TopEnd).fillMaxWidth(0.64f).aspectRatio(16f / 9f).testTag("tv_detail_trailer_player")
             )
@@ -332,7 +338,14 @@ fun TvDetailScreen(
                         ) {
                             trailerFailed = false
                             trailerAutoDismissed = true
-                            trailerPlaying = !trailerPlaying && com.example.ui.components.extractYouTubeVideoId(url) != null
+                            val id = com.example.ui.components.extractYouTubeVideoId(url)
+                            if (!trailerPlaying && id != null && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, id)) {
+                                // Bu fragman uygulama içinde oynatılamıyor: doğrudan YouTube uygulamasında açılır.
+                                trailerFailed = !com.example.ui.components.openTrailerInYouTube(context, id)
+                            } else {
+                                trailerByUser = true
+                                trailerPlaying = !trailerPlaying && id != null
+                            }
                         }
                     }
                 }

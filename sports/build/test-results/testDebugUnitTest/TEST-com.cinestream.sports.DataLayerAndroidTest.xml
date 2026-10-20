@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.cinestream.sports.DataLayerAndroidTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T15:38:02.539Z" hostname="vm" time="9.568">
+  <properties/>
+  <testcase name="jsonIsParsed_brokenRecordsAreSkipped" classname="com.cinestream.sports.DataLayerAndroidTest" time="6.247"/>
+  <testcase name="corruptedSettingsFileOpensWithDefaults" classname="com.cinestream.sports.DataLayerAndroidTest" time="1.106"/>
+  <testcase name="detailIsParsed" classname="com.cinestream.sports.DataLayerAndroidTest" time="0.151"/>
+  <testcase name="settingsAreSavedAndRead" classname="com.cinestream.sports.DataLayerAndroidTest" time="0.187"/>
+  <testcase name="notificationHistoryKeepsTheLatest50" classname="com.cinestream.sports.DataLayerAndroidTest" time="0.56"/>
+  <testcase name="remoteSourceAsksTheProxyAndReportsErrors" classname="com.cinestream.sports.DataLayerAndroidTest" time="0.642"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

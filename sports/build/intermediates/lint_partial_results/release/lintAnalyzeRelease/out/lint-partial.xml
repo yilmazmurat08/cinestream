@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 9.1.1" type="partial_results">
+    <map id="NotificationPermission">
+        <entry
+            name="source"
+            boolean="true"/>
+    </map>
+    <map id="UnusedResources">
+        <location id="R.string.sports_full_time_title"
+            file="${:sports*release*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="138"
+            column="13"
+            startOffset="7648"
+            endLine="138"
+            endColumn="42"
+            endOffset="7677"/>
+        <location id="R.string.sports_goal_title"
+            file="${:sports*release*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="137"
+            column="13"
+            startOffset="7597"
+            endLine="137"
+            endColumn="37"
+            endOffset="7621"/>
+        <location id="R.string.sports_kickoff_title"
+            file="${:sports*release*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="136"
+            column="13"
+            startOffset="7536"
+            endLine="136"
+            endColumn="40"
+            endOffset="7563"/>
+        <location id="R.string.sports_no_stats"
+            file="${:sports*release*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="63"
+            column="13"
+            startOffset="3177"
+            endLine="63"
+            endColumn="35"
+            endOffset="3199"/>
+        <location id="R.string.sports_no_table"
+            file="${:sports*release*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="64"
+            column="13"
+            startOffset="3248"
+            endLine="64"
+            endColumn="35"
+            endOffset="3270"/>
+        <location id="R.string.sports_tv_hint_follow"
+            file="${:sports*release*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="132"
+            column="13"
+            startOffset="7316"
+            endLine="132"
+            endColumn="41"
+            endOffset="7344"/>
+        <entry
+            name="model"
+            string="drawable[ic_sports_notification(U)],string[sports_title(U),sports_sport_football(U),sports_sport_basketball(U),sports_sport_volleyball(U),sports_sport_tennis(U),sports_search(U),sports_search_hint(U),sports_close_search(U),sports_filters(U),sports_more(U),sports_close(U),sports_back(U),sports_yesterday(U),sports_today(U),sports_tomorrow(U),sports_prev_day(U),sports_next_day(U),sports_live_only(U),sports_my_channels_only(U),sports_my_channels_only_desc(U),sports_leagues(U),sports_major_leagues(U),sports_all_matches(U),sports_pick_leagues(U),sports_notification_history(U),sports_followed_teams(U),sports_customize(U),sports_live(U),sports_half_time(U),sports_full_time(U),sports_postponed(U),sports_minute(U),sports_quarter(U),sports_quarter_short(U),sports_set(U),sports_not_started(U),sports_finished(U),sports_half_time_long(U),sports_watch(U),sports_watch_on(U),sports_backups(U),sports_followed_section(U),sports_no_matches(U),sports_no_matches_filtered(U),sports_show_all(U),sports_no_results(U),sports_load_error(U),sports_retry(U),sports_tab_summary(U),sports_tab_stats(U),sports_tab_table(U),sports_tab_broadcast(U),sports_no_events(U),sports_no_stats(D),sports_no_table(D),sports_own_goal(U),sports_penalty(U),sports_sub_out(U),sports_stat_possession(U),sports_stat_shots(U),sports_stat_shots_on_target(U),sports_stat_corners(U),sports_stat_fouls(U),sports_stat_offsides(U),sports_table_team(U),sports_table_played(U),sports_table_won(U),sports_table_drawn(U),sports_table_lost(U),sports_table_gd(U),sports_table_points(U),sports_in_your_list(U),sports_not_in_list(U),sports_assign_channel(U),sports_change_channel(U),sports_assign_text(U),sports_assign_search(U),sports_suggested(U),sports_remove_mapping(U),sports_manual_mapping(U),sports_epg_verified(U),sports_epg_found(U),sports_no_broadcast(U),sports_similar(U),sports_no_channels(U),sports_disclaimer(U),sports_remind(U),sports_reminder_on(U),sports_reminder_minutes(U),sports_follow(U),sports_unfollow(U),sports_team_search_hint(U),sports_no_followed(U),sports_next_match(U),sports_no_next_match(U),sports_live_now(U),sports_clear(U),sports_no_notifications(U),sports_customize_sports(U),sports_customize_sports_desc(U),sports_customize_default_leagues(U),sports_customize_notifications(U),sports_notify_reminder(U),sports_notify_kickoff(U),sports_notify_goals(U),sports_notify_full_time(U),sports_notify_live_note(U),sports_reminder_time(U),sports_customize_channels(U),sports_show_my_channel(U),sports_mappings_count(U),sports_reset(U),sports_move_up(U),sports_move_down(U),sports_details(U),sports_tv_ok_watch(U),sports_tv_hint_follow(D),sports_channel_name(U),sports_reminder_body(U),sports_kickoff_title(D),sports_goal_title(D),sports_full_time_title(D)];;;;"/>
+    </map>
+
+</incidents>

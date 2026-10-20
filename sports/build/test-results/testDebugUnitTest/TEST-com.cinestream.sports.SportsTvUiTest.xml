@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.cinestream.sports.SportsTvUiTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T15:38:31.735Z" hostname="vm" time="5.81">
+  <properties/>
+  <testcase name="tvLayout_panelFollowsFocus_okWatches" classname="com.cinestream.sports.SportsTvUiTest" time="5.773"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

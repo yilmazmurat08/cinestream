@@ -256,9 +256,22 @@ object CrashRecoveryManager {
 
     /** Henüz kullanıcıya gösterilmemiş bir çökme raporu varsa dosyasını döndürür. */
     fun pendingCrashReport(context: Context): File? = try {
-        getPrefs(context).getString(KEY_PENDING_REPORT_FILE, null)?.let { File(it) }?.takeIf { it.exists() }
+        val file = getPrefs(context).getString(KEY_PENDING_REPORT_FILE, null)?.let { File(it) }?.takeIf { it.exists() }
+        // Uygulama güncellendiyse eski sürümün çökmesi gösterilmez (o hata büyük ihtimalle düzeltildi).
+        if (file != null && file.lastModified() < installedAt(context)) {
+            clearPendingCrashReport(context)
+            null
+        } else {
+            file
+        }
     } catch (e: Throwable) {
         null
+    }
+
+    private fun installedAt(context: Context): Long = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
+    } catch (e: Throwable) {
+        0L
     }
 
     fun clearPendingCrashReport(context: Context) {
