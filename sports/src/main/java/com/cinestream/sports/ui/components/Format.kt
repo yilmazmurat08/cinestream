@@ -84,7 +84,7 @@ internal fun statusText(match: Match, short: Boolean = false): String? = when (m
     MatchStatus.SCHEDULED -> null
 }
 
-private val channelPrefix = Regex("^\\s*(\\[[^\\]]*]|[A-Za-z]{2,4}\\s*[|:\\-]+|\\|+)\\s*")
+private val channelPrefix = Regex("^\\s*(\\[[^\\]]*\\]|[A-Za-z]{2,4}\\s*[|:\\-]+|\\|+)\\s*")
 
 /** Kanal adını kartta okunur yapar: "TR | BEIN SPORTS 1 HD" → "BEIN SPORTS 1 HD". */
 internal fun cleanChannelName(name: String): String {

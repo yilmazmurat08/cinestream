@@ -709,7 +709,6 @@
     <string name="game_filter_all">All</string>
     <string name="game_filter_movie">Movie</string>
     <string name="game_filter_series">Series</string>
-    <string name="game_rating">Rating %1$s</string>
     <string name="game_wheel_title">Spin the wheel</string>
     <string name="game_wheel_desc">Categories come from your list. Wherever the wheel stops, we pick 3 movies from there.</string>
     <string name="game_wheel_spin">Spin</string>

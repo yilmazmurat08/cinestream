@@ -32,7 +32,8 @@ object ChannelKeys {
     private val noise = setOf("tr", "tur", "turk", "turkey", "turkiye", "raw", "hevc", "h264", "h265", "vip", "live", "canli")
     private val backupWords = setOf("yedek", "backup")
     private val synonyms = mapOf("sports" to "spor", "sport" to "spor")
-    private val brackets = Regex("\\[[^\\]]*]|\\([^)]*\\)|\\{[^}]*}")
+    // Kapanan "]" ve "}" kaçışlı yazılır: Android'in düzenli ifade motoru (ICU) kaçışsızını reddeder ve çöker.
+    private val brackets = Regex("\\[[^\\]]*\\]|\\([^)]*\\)|\\{[^}]*\\}")
     private val splitter = Regex("[^a-z0-9]+")
     private val backupRegex = Regex("\\b(yedek|backup)\\b")
     private val marks = Regex("\\p{Mn}+")

@@ -49,6 +49,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -94,6 +95,7 @@ import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.model.IPTVItem
 import com.example.data.model.isPlaceholderCast
+import com.example.data.model.isPlaceholderSummary
 import com.example.data.model.toBrowsableItem
 import com.example.ui.IPTVViewModel
 import kotlinx.coroutines.Dispatchers
@@ -327,10 +329,14 @@ private fun SwipeGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> U
 
     LaunchedEffect(filter, shuffleKey, movies.size, catalog.size) {
         deck = withContext(Dispatchers.Default) {
+            // Dizi kartında konu da gösterilsin: katalogdaki özet (yer tutucu değilse) taşınır.
+            val shows = catalog.map { show ->
+                show.toBrowsableItem().copy(summary = if (show.isPlaceholderSummary()) "" else show.summary)
+            }
             val source = when (filter) {
                 "MOVIE" -> movies
-                "SERIES" -> catalog.map { it.toBrowsableItem() }
-                else -> movies + catalog.map { it.toBrowsableItem() }
+                "SERIES" -> shows
+                else -> movies + shows
             }
             GamesLogic.swipeDeck(source, { viewModel.isAdultContent(it) })
         }
@@ -338,6 +344,15 @@ private fun SwipeGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> U
     }
 
     val current = deck?.getOrNull(index)
+    // Listede konu yoksa mevcut TMDB eşleştirmesinden (önbellekli) alınır; bulunamazsa konu satırı boş kalır.
+    val overviews = remember { mutableStateMapOf<Int, String>() }
+    LaunchedEffect(current?.id) {
+        val item = current ?: return@LaunchedEffect
+        if (item.summary.isBlank() && item.id !in overviews) {
+            val details = withTimeoutOrNull(8_000) { viewModel.tvTmdbDetails(item.cleanedName.ifBlank { item.name }, item.type) }
+            overviews[item.id] = details?.overview.orEmpty()
+        }
+    }
     val scope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
     val density = LocalDensity.current
@@ -360,13 +375,27 @@ private fun SwipeGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> U
     LaunchedEffect(tvMode, current?.id) { if (tvMode && current != null) runCatching { cardFocus.requestFocus() } }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = if (tvMode) 48.dp else 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxSize().padding(horizontal = if (tvMode) 48.dp else 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        GameHeader(stringResource(R.string.games_tag), stringResource(R.string.game_swipe_title), null, onBack)
+        // Üst kısım sade: geri, başlık ve yanında küçük filtreler; poster için yer kalsın.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            GameIconButton(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.game_back), "game_back", onBack)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                stringResource(R.string.game_swipe_title),
+                color = GameText,
+                fontSize = 22.sp,
+                fontFamily = FontFamily.Serif,
+                fontStyle = FontStyle.Italic,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("ALL" to R.string.game_filter_all, "MOVIE" to R.string.game_filter_movie, "SERIES" to R.string.game_filter_series).forEach { (key, label) ->
-                GameButton(stringResource(label), "swipe_filter_$key", onClick = { filter = key }, primary = filter == key)
+                FilterChipButton(stringResource(label), "swipe_filter_$key", selected = filter == key) { filter = key }
             }
         }
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -382,10 +411,14 @@ private fun SwipeGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> U
                     val focused by interaction.collectIsFocusedAsState()
                     SwipeCard(
                         item = current,
+                        summary = current.summary.ifBlank { overviews[current.id].orEmpty() },
                         rating = viewModel.tmdbRatingOf(current).takeIf { it > 0 } ?: current.rating,
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .aspectRatio(0.68f, matchHeightConstraintsFirst = true)
+                            .then(
+                                // Telefonda kart tüm genişliği kaplar (büyük poster); TV'de poster oranı korunur.
+                                if (tvMode) Modifier.fillMaxHeight().aspectRatio(0.68f, matchHeightConstraintsFirst = true)
+                                else Modifier.fillMaxSize()
+                            )
                             .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                             .graphicsLayer { rotationZ = offsetX.value / 40f }
                             .border(2.dp, if (focused) GameAccent else Color.Transparent, RoundedCornerShape(18.dp))
@@ -422,38 +455,59 @@ private fun SwipeGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> U
         }
         if (current != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally), modifier = Modifier.fillMaxWidth()) {
-                GameIconButton(Icons.Filled.Close, stringResource(R.string.game_skip), "swipe_skip", { decide(false) }, size = 60)
-                GameIconButton(Icons.Filled.Favorite, stringResource(R.string.game_like), "swipe_like", { decide(true) }, tint = GameAccent, size = 60)
+                GameIconButton(Icons.Filled.Close, stringResource(R.string.game_skip), "swipe_skip", { decide(false) }, size = 56)
+                GameIconButton(Icons.Filled.Favorite, stringResource(R.string.game_like), "swipe_like", { decide(true) }, tint = GameAccent, size = 56)
             }
         }
-        Text(
-            stringResource(if (tvMode) R.string.game_swipe_tv_hint else R.string.game_swipe_desc),
-            color = GameMuted,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
+        // Telefonda kaydırma ipucu oyun seçiminde yazıyor; burada yalnızca TV'de kumanda ipucu gösterilir.
+        if (tvMode) {
+            Text(
+                stringResource(R.string.game_swipe_tv_hint),
+                color = GameMuted,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
 @Composable
-private fun SwipeCard(item: IPTVItem, rating: Double, modifier: Modifier) {
+private fun FilterChipButton(text: String, tag: String, selected: Boolean, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) GameAccent else Color(0x1FFFFFFF))
+            .border(2.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(16.dp))
+            .clickable(interactionSource = interaction, indication = com.example.ui.tv.tvFocusIndicationOrNull(), onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .testTag(tag)
+    ) {
+        Text(text, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun SwipeCard(item: IPTVItem, summary: String, rating: Double, modifier: Modifier) {
     Box(modifier = modifier.clip(RoundedCornerShape(18.dp)).background(GameCard)) {
         AsyncImage(model = item.logoUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to Color(0xF20E071A))))
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.5f to Color.Transparent, 1f to Color(0xF20E071A))))
         Column(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // Tek satır bilgi: tür · yıl · puan.
             val meta = listOfNotNull(
-                stringResource(if (item.type == "SERIES") R.string.game_filter_series else R.string.game_filter_movie).uppercase(),
                 (item.genre.ifBlank { item.category }).takeIf { it.isNotBlank() },
-                GamesLogic.yearOf(item.releaseDate)
+                GamesLogic.yearOf(item.releaseDate),
+                if (rating > 0) "★ " + String.format(java.util.Locale.US, "%.1f", rating) else null
             ).joinToString(" · ")
-            Text(meta, color = GameGold, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(item.cleanedName.ifBlank { item.name }, color = GameText, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (rating > 0) {
-                Text(stringResource(R.string.game_rating, String.format(java.util.Locale.US, "%.1f", rating)), color = GameText, fontSize = 13.sp)
+            if (meta.isNotEmpty()) {
+                Text(meta, color = GameGold, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            if (item.summary.isNotBlank()) {
-                Text(item.summary, color = GameMuted, fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(item.cleanedName.ifBlank { item.name }, color = GameText, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (summary.isNotBlank()) {
+                Text(summary, color = Color(0xFFE4DEEC), fontSize = 14.sp, lineHeight = 19.sp, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("swipe_summary"))
             }
         }
     }
@@ -661,10 +715,13 @@ private fun QuizGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> Un
                             model = r.show.logoUrl,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().then(if (state.won) Modifier else Modifier.blur(16.dp))
+                            // Hafif bulanık: renkler ve yüzler sezilir, ipucu verir ama adı okunmaz.
+                            modifier = Modifier.fillMaxSize().then(if (state.won) Modifier else Modifier.blur(6.dp))
                         )
-                        // Android 12 altında bulanıklık çalışmaz: poster koyu bir örtüyle de gizlenir.
-                        if (!state.won) Box(Modifier.fillMaxSize().background(Color(0xB30E071A)).testTag("quiz_poster_hidden"))
+                        // Android 12 altında bulanıklık çalışmaz (Mi TV Stick): orada yalnızca yarı saydam bir örtü.
+                        if (!state.won && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+                            Box(Modifier.fillMaxSize().background(Color(0x990E071A)).testTag("quiz_poster_hidden"))
+                        }
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         when {

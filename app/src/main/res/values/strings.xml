@@ -708,7 +708,6 @@
     <string name="game_filter_all">Tümü</string>
     <string name="game_filter_movie">Film</string>
     <string name="game_filter_series">Dizi</string>
-    <string name="game_rating">Puan %1$s</string>
     <string name="game_wheel_title">Çarkı çevir</string>
     <string name="game_wheel_desc">Kategoriler senin listenden gelir. Çark nerede durursa oradan 3 film seçeriz.</string>
     <string name="game_wheel_spin">Çevir</string>
