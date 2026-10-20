@@ -42,6 +42,14 @@
     <string name="nav_live_tv">Live TV</string>
     <string name="nav_watchlist">Watchlist</string>
     <string name="nav_profile">Profile</string>
+    <string name="nav_bar_live">Live TV</string>
+    <string name="profile_menu_open">Profile menu</string>
+    <string name="profile_menu_games">Games</string>
+    <string name="profile_menu_sport">Sports</string>
+    <string name="profile_menu_my_list">My List</string>
+    <string name="profile_menu_pro_tag">PRO</string>
+    <string name="profile_menu_guest">User</string>
+    <string name="profile_menu_coming_soon">Coming soon.</string>
     <string name="close">Close</string>
     <string name="selected">Selected</string>
     <string name="login_tagline">A fast, elegant, AI-assisted player for your own playlists.</string>

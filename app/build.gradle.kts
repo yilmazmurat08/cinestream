@@ -24,6 +24,10 @@ android {
     // Günlük ücretsiz izleme süresi (saniye): mağazada 60 dakika.
     buildConfigField("long", "FREE_DAILY_WATCH_SECONDS", "3600L")
 
+    // Yeni buzlu alt bar (telefon): Ana Sayfa, Filmler, Diziler, Canlı TV + profil menüsü.
+    // Açma/kapama anahtarı: "false" yapılınca eski alt bar geri gelir.
+    buildConfigField("boolean", "NEW_BOTTOM_BAR", "true")
+
     // Play lisans anahtarı (herkese açık anahtar; satın alma imzasını doğrulamak için). Depoda tutulmaz, derleme
     // anında ortam değişkeninden okunur. Boşsa uygulama imza denetimi yapmaz (test sürümleri).
     val playLicenseKey = (System.getenv("CINESTREAM_PLAY_LICENSE_KEY") ?: "").replace(Regex("\\s"), "")

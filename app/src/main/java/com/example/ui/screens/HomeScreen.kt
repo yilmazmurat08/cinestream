@@ -266,6 +266,46 @@ fun HomeScreen(
         }
     }
 
+    // Yeni alt bar: profil menüsü ve profil düzenleme (Ayarlar'daki ile aynı pencere).
+    var isProfileMenuOpen by remember { mutableStateOf(false) }
+    var isProfileEditOpen by remember { mutableStateOf(false) }
+    val homeUserProfile by viewModel.userProfile.collectAsState()
+    val homeUserName by viewModel.userName.collectAsState()
+    val homeUserEmail by viewModel.userEmail.collectAsState()
+    val homeUserPhotoUrl by viewModel.userPhotoUrl.collectAsState()
+    val profilePhotoUrl = homeUserProfile?.photoUrl ?: homeUserPhotoUrl
+    val profileDisplayName = homeUserProfile?.displayName ?: homeUserName ?: stringResource(R.string.profile_menu_guest)
+    val homeContext = LocalContext.current
+
+    if (isProfileMenuOpen) {
+        com.example.ui.components.FrostedProfileMenu(
+            displayName = profileDisplayName,
+            photoUrl = profilePhotoUrl,
+            onDismiss = { isProfileMenuOpen = false },
+            onSettings = { isProfileMenuOpen = false; viewModel.setSelectedTypeFilter("SETTINGS") },
+            onProfile = { isProfileMenuOpen = false; isProfileEditOpen = true },
+            onGames = {
+                isProfileMenuOpen = false
+                android.widget.Toast.makeText(homeContext, R.string.profile_menu_coming_soon, android.widget.Toast.LENGTH_SHORT).show()
+            },
+            onSport = {
+                isProfileMenuOpen = false
+                android.widget.Toast.makeText(homeContext, R.string.profile_menu_coming_soon, android.widget.Toast.LENGTH_SHORT).show()
+            },
+            onMyList = { isProfileMenuOpen = false; viewModel.setSelectedTypeFilter("WATCHLIST") }
+        )
+    }
+    if (isProfileEditOpen) {
+        EditProfileDialog(
+            currentName = homeUserProfile?.displayName ?: homeUserName ?: stringResource(R.string.profile_menu_guest),
+            currentEmail = homeUserProfile?.email ?: homeUserEmail ?: "",
+            currentPhotoUrl = profilePhotoUrl,
+            onDismiss = { isProfileEditOpen = false },
+            onSave = { newName, newEmail, newPhoto -> viewModel.updateUserProfile(newName, newEmail, newPhoto) },
+            onLogout = { viewModel.logout() }
+        )
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -282,6 +322,16 @@ fun HomeScreen(
             )
         },
         bottomBar = {
+            if (com.example.BuildConfig.NEW_BOTTOM_BAR) {
+                com.example.ui.components.FrostedBottomBar(
+                    selectedTypeFilter = selectedTypeFilter,
+                    photoUrl = profilePhotoUrl,
+                    stripColor = if (currentTheme.isDark) MidPurpleBg else themeBg,
+                    menuOpen = isProfileMenuOpen,
+                    onSelectTab = { viewModel.setSelectedTypeFilter(it) },
+                    onToggleMenu = { isProfileMenuOpen = !isProfileMenuOpen }
+                )
+            } else {
             Surface(
                 color = Color(0xFF141218).copy(alpha = 0.95f),
                 modifier = Modifier
@@ -431,6 +481,7 @@ fun HomeScreen(
                         }
                     }
                 }
+            }
             }
         }
     ) { innerPadding ->

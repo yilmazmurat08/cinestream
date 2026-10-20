@@ -47,6 +47,14 @@
     <string name="nav_live_tv">Canlı Yayın</string>
     <string name="nav_watchlist">İzleme Listesi</string>
     <string name="nav_profile">Profil</string>
+    <string name="nav_bar_live">Canlı TV</string>
+    <string name="profile_menu_open">Profil menüsü</string>
+    <string name="profile_menu_games">Oyunlar</string>
+    <string name="profile_menu_sport">Spor</string>
+    <string name="profile_menu_my_list">Listem</string>
+    <string name="profile_menu_pro_tag">PRO</string>
+    <string name="profile_menu_guest">Kullanıcı</string>
+    <string name="profile_menu_coming_soon">Yakında geliyor.</string>
     <string name="close">Kapat</string>
     <string name="selected">Seçili</string>
     <string name="login_tagline">Kendi listelerin için yapay zekâ destekli, hızlı ve şık bir oynatıcı.</string>
