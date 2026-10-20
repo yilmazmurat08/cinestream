@@ -89,6 +89,7 @@ Sonraya kalanlar:
 https://claude.ai/artifact/3v9FABLB6e6763tUZwYTPd
 
 **Ayrı dal `claude/yeni-alt-bar` (20 Ekim 2026; yayına girecek dala birleştirilmedi):** yeni buzlu alt bar + profil menüsü, Oyunlar (Kaydırma, Çark, Dizi yarışması; PRO) ve Spor modülü (`:sports`, PRO; maçlar şimdilik örnek veri, ekranda yazıyor). Telefon ve TV. Açma/kapama: `BuildConfig.NEW_BOTTOM_BAR`, `FEATURE_GAMES`, `FEATURE_SPORTS`. Test için `preview` sürüm türü: ayrı paket (`com.cinestream.iptv.test`, ad "CineStream Test"), Play sürümünün yanına kurulur, satın alma çalışmaz, PRO özellikleri açık (`PREVIEW_UNLOCK_PRO`). Derleme: `./gradlew assemblePreview`. Yarışma Xtream dizi kataloğu ister (M3U'da "yeterli bilgi yok" der); yapay zekâ cümle güzelleştirme henüz yok (düz kalıp).
+**Spor veri kaynağı kararı (kullanıcı, 20 Ekim 2026): API-Sports.** Aracı sunucu Cloudflare Workers'ta; anahtar yalnızca Cloudflare gizli ayarında. Önce ücretsiz planla denenir; Spor PRO olarak açılırken yalnızca futbol için Pro plan (~19 $/ay, 7.500 istek/gün). ESPN'in resmî olmayan uç noktası ve Footballdata.io ücretsiz planı reddedildi (lisans riski / az istek, Süper Lig yok).
 
 **Özellik havuzu (16 Ekim 2026, kullanıcı kararı; sırası henüz belli değil):**
 Yayındaki uygulama bozulmasın diye ayrı dalda, ayrı modül olarak ve açma/kapama anahtarıyla yapılır; kullanıcı test edip onaylayınca birleştirilir. Önce yukarıdaki yol haritası önerilir.

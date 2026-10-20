@@ -30,6 +30,8 @@ android {
     // Spor ve Oyunlar (PRO). Açma/kapama anahtarı: "false" yapılınca menüde görünmez.
     buildConfigField("boolean", "FEATURE_SPORTS", "true")
     buildConfigField("boolean", "FEATURE_GAMES", "true")
+    // Spor aracı sunucusunun adresi (Cloudflare Workers; gizli değildir). Boşsa Spor örnek veriyle çalışır.
+    buildConfigField("String", "SPORTS_SERVER_URL", "\"\"")
     // Yalnızca önizleme (test) sürümünde: satın alma olmadan PRO özellikleri açılır. Mağazada her zaman false.
     buildConfigField("boolean", "PREVIEW_UNLOCK_PRO", "false")
 

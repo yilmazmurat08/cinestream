@@ -34,7 +34,8 @@ import java.time.Clock
 /**
  * CineStream ile Spor modülü arasındaki köprü (telefon ve TV).
  * Kanallar kullanıcının canlı kanallarından gelir; "İzle" listedeki kanalı oynatıcıda açar.
- * Veri sunucusu henüz kurulmadığı için maçlar örnek veridir; ekranın üstünde bu açıkça yazılır.
+ * Sunucu adresi (BuildConfig.SPORTS_SERVER_URL) boşsa maçlar örnek veridir ve ekranın üstünde bu açıkça yazılır;
+ * adres verilince gerçek veri aracı sunucudan (API-Sports) gelir.
  */
 @Composable
 fun SportsHost(
@@ -44,9 +45,13 @@ fun SportsHost(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current.applicationContext
+    val serverUrl = com.example.BuildConfig.SPORTS_SERVER_URL
+    val demo = serverUrl.isBlank()
+    val language = if (java.util.Locale.getDefault().language == "tr") "tr" else "en"
     val dependencies = remember(viewModel) {
         SportsDependencies(
-            dataSource = DemoSportsDataSource(Clock.systemDefaultZone()),
+            dataSource = if (demo) DemoSportsDataSource(Clock.systemDefaultZone())
+            else com.cinestream.sports.data.remote.RemoteSportsDataSource(serverUrl, language),
             settings = DataStoreSportsSettingsStore(context),
             channels = object : ChannelProvider {
                 override val channels: Flow<List<PlaylistChannel>> =
@@ -56,7 +61,7 @@ fun SportsHost(
         )
     }
     Column(modifier = modifier.fillMaxSize().testTag("sports_host")) {
-        Text(
+        if (demo) Text(
             text = stringResource(R.string.sports_demo_notice),
             color = Color(0xFF1A0F24),
             fontSize = 12.sp,
