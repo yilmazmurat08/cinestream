@@ -215,7 +215,11 @@ fun HomeScreen(
     val popularSeriesIds by viewModel.popularSeriesInLibraryIds.collectAsState()
     // Popüler Diziler: önce TMDB'de bugün popüler olup katalogda bulunanlar (her gün değişir), kalan yer en yüksek
     // puanlılarla dolar.
-    val top10Series = remember(xtreamSeriesCatalogForTop10, popularSeriesIds, topRatedIds) {
+    // Katalog on binlerce dizi olabilir: sıralama (filmlerdeki gibi) ana iş parçacığını meşgul etmesin.
+    val top10Series = com.example.ui.components.rememberComputedOffMain(
+        xtreamSeriesCatalogForTop10, popularSeriesIds, topRatedIds,
+        workSize = xtreamSeriesCatalogForTop10.size, fallback = emptyList<IPTVItem>()
+    ) {
         popularSeriesRow(xtreamSeriesCatalogForTop10, popularSeriesIds, topRatedIds["SERIES"].orEmpty()) { viewModel.isAdultContent(it) }
     }
 

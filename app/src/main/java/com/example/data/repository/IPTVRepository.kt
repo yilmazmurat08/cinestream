@@ -178,22 +178,15 @@ class IPTVRepository(
         emptyList()
     }
 
-    // Cache-First Architecture: Checks local Room database first.
-    // If local DB contains data, returns local data immediately and bypasses network requests (0-second instant startup).
-    suspend fun getLocalChannels(): List<IPTVItem> = try {
-        iptvDao.getAllItemsDirect()
+    /**
+     * Kayıtlı liste var mı (açılışta). Yalnızca sayı okunur: büyük listelerde (100 bin+ öğe) bütün tabloyu belleğe
+     * almak 1 GB'lık TV kutularında açılışta bellek sıçramasına yol açıyordu.
+     */
+    suspend fun hasLocalItems(): Boolean = try {
+        iptvDao.getItemCount() > 0
     } catch (e: Exception) {
-        Log.e(TAG, "Database access exception in getLocalChannels", e)
-        emptyList()
-    }
-
-    suspend fun getHomeData(): List<IPTVItem> = withContext(Dispatchers.IO) {
-        val cachedItems = getLocalChannels()
-        if (cachedItems.isNotEmpty()) {
-            cachedItems
-        } else {
-            fetchFromNetwork()
-        }
+        Log.e(TAG, "Database access exception in hasLocalItems", e)
+        false
     }
 
     /** Önce uygulamanın kendi kimliği, kabul edilmezse genel tarayıcı kimliği denenir (bkz. AppUserAgent). */
@@ -293,7 +286,8 @@ class IPTVRepository(
         }
     }
 
-    suspend fun fetchFromNetwork(): List<IPTVItem> = withContext(Dispatchers.IO) {
+    /** Ekrandaki listeyi yeniler; kayıtlı öğe sayısını döndürür. */
+    suspend fun fetchFromNetwork(): Int = withContext(Dispatchers.IO) {
         // Yalnızca ekrandaki liste yenilenir; diğer listeler kullanıcı onlara geçince yenilenir.
         val userPlaylists = listOfNotNull(playlistToRefresh())
         if (userPlaylists.isNotEmpty()) {
@@ -306,16 +300,17 @@ class IPTVRepository(
                     if (firstException == null) firstException = e
                 }
             }
-            val newlyLoaded = iptvDao.getAllItemsDirect()
-            if (newlyLoaded.isNotEmpty()) {
-                return@withContext newlyLoaded
+            // Yalnızca sayı okunur (bütün liste belleğe alınmaz; ekran listeyi kendi akışından okur).
+            val loaded = iptvDao.getItemCount()
+            if (loaded > 0) {
+                return@withContext loaded
             }
             if (firstException != null) {
                 throw firstException
             }
-            return@withContext emptyList()
+            return@withContext 0
         }
-        emptyList()
+        0
     }
 
     suspend fun getItemsByTypeDirect(type: String): List<IPTVItem> = iptvDao.getItemsByTypeDirect(type)

@@ -16,9 +16,10 @@ object RealEpgProvider {
     private const val MAX_XMLTV_BYTES = 60L * 1024L * 1024L
     // Büyük sağlayıcıların XMLTV'si geçmiş günler dahil 7-14 günlük program içerir. Hepsi açıklamalarıyla belleğe
     // alınınca düşük bellekli TV kutularında uygulama kapanabiliyordu: yalnızca rehberde gereken aralık tutulur.
-    private const val KEEP_PAST_MS = 3L * 60L * 60L * 1000L
-    private const val KEEP_AHEAD_MS = 72L * 60L * 60L * 1000L
-    private const val MAX_DESCRIPTION_CHARS = 400
+    // Ekranlar en fazla 12 saat ileriyi gösterir (kanal kartı, TV paneli); rehber 6 saatte bir yenilenir. Uygulama bir
+    // gün açık kalsa da akış bitmesin diye 26 saat tutulur (eskiden 72 saat: büyük listelerde yüz binlerce program).
+    private const val KEEP_PAST_MS = 1L * 60L * 60L * 1000L
+    private const val KEEP_AHEAD_MS = 26L * 60L * 60L * 1000L
 
     private var cachedPrograms: Map<String, List<EPGProgram>> = emptyMap()
     private var cachedForUrl: String? = null
@@ -120,13 +121,13 @@ object RealEpgProvider {
                                         now >= currentStop -> 1f
                                         else -> 0f
                                     }
-                                    val desc = currentDesc.orEmpty()
                                     val program = EPGProgram(
                                         id = "real_${chId}_$progCounter",
                                         channelId = 0,
                                         channelName = chId,
                                         title = currentTitle ?: "",
-                                        description = if (desc.length > MAX_DESCRIPTION_CHARS) desc.take(MAX_DESCRIPTION_CHARS).trimEnd() + "…" else desc,
+                                        // Açıklama hiçbir ekranda gösterilmiyor: bellekte tutulmaz (programların en büyük alanıydı).
+                                        description = "",
                                         category = "",
                                         startTimeFormatted = timeFmt.format(java.util.Date(currentStart)),
                                         endTimeFormatted = timeFmt.format(java.util.Date(currentStop)),

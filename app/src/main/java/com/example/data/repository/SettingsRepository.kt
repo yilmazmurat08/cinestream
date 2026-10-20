@@ -422,9 +422,15 @@ class SettingsRepository(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        // Görsel önbelleği yukarıda kendi API'siyle boşaltıldı; klasörü açıkken silinirse görseller bir sonraki açılışa
+        // kadar önbelleğe yazılamıyordu. Diğer geçici dosyalar silinir, önbellek klasörü yeniden oluşturulur.
+        // Veritabanı, ayarlar, favoriler ve izleme geçmişi önbellekte değildir; dokunulmaz.
         try {
             val cacheDir = context.cacheDir
-            cacheDir.deleteRecursively()
+            cacheDir.listFiles()?.forEach { file ->
+                if (file.name != "image_cache") file.deleteRecursively()
+            }
+            cacheDir.mkdirs()
         } catch (e: Exception) {
             e.printStackTrace()
         }

@@ -153,7 +153,8 @@ class AuditFixesTest {
         try {
             val programs = RealEpgProvider.fetchProgramsFromUrl(server.url("/xmltv.php").toString())["trt1"].orEmpty()
             assertEquals(listOf("Şu an", "Yarın"), programs.map { it.title })
-            assertTrue("açıklama kısaltılır: ${programs.first().description.length}", programs.first().description.length <= 401)
+            // Açıklama hiçbir ekranda gösterilmiyor: bellekte tutulmaz (1 GB'lık TV kutularında yer açar).
+            assertTrue("açıklama tutulmaz", programs.first().description.isEmpty())
         } finally {
             server.shutdown()
             RealEpgProvider.clearCache()

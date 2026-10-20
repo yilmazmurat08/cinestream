@@ -1258,7 +1258,8 @@ class IPTVViewModel(
         } else {
             items.filter { it.category.equals(category, ignoreCase = true) }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** Tüm canlı kanallar (seçili klasöre göre süzülmez). TV oynatıcısının kategori listesi için. */
     val allLiveChannels: StateFlow<List<IPTVItem>> = liveItemsShared.debounce(400)
@@ -1273,7 +1274,8 @@ class IPTVViewModel(
         } else {
             items.filter { it.category.equals(category, ignoreCase = true) }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val series: StateFlow<List<IPTVItem>> = combine(
         seriesItemsShared.debounce(400),
@@ -1284,7 +1286,8 @@ class IPTVViewModel(
         } else {
             items.filter { it.category.equals(category, ignoreCase = true) }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
      * "En Yüksek Puanlılar": TMDB'nin en yüksek puanlı (8+) film ve dizilerinden kütüphanede olanlar, TMDB puanıyla.
@@ -1404,7 +1407,8 @@ class IPTVViewModel(
         } else {
             items.filter { it.category.equals(category, ignoreCase = true) }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private fun naturalCompare(a: String, b: String): Int {
         var i = 0; var j = 0
@@ -1457,7 +1461,8 @@ class IPTVViewModel(
                     com.example.data.model.IPTVGroup(id = cat, name = cat, type = "LIVE", items = list)
                 }
                 .sortedBy { it.name }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val movieGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = movieItemsShared
         .map { items ->
@@ -1466,7 +1471,8 @@ class IPTVViewModel(
                     com.example.data.model.IPTVGroup(id = cat, name = cat, type = "MOVIE", items = list.sortedWith(naturalOrderItemComparator))
                 }
                 .sortedWith(compareBy({ movieCategoryRank(it.name).first }, { movieCategoryRank(it.name).second }))
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val seriesGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = seriesItemsShared
         .map { items ->
@@ -1475,7 +1481,8 @@ class IPTVViewModel(
                     com.example.data.model.IPTVGroup(id = cat, name = cat, type = "SERIES", items = list.sortedWith(naturalOrderItemComparator))
                 }
                 .sortedWith(compareBy({ seriesCategoryRank(it.name).first }, { seriesCategoryRank(it.name).second }))
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val directorActorSpotlights: StateFlow<List<SpotlightCollection>> = combine(
         movieItemsShared,
@@ -1518,7 +1525,8 @@ class IPTVViewModel(
             }
 
         (directorCards + actorCards)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val trailerBoxItems: StateFlow<List<IPTVItem>> = combine(
         movieItemsShared,
@@ -1728,8 +1736,7 @@ class IPTVViewModel(
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             _isLoading.value = true
             try {
-                val localChannels = repository.getLocalChannels()
-                if (localChannels.isNotEmpty()) {
+                if (repository.hasLocalItems()) {
                     // DB has data -> bypass network request completely and load UI state instantly
                     _isLoading.value = false
                     val autoRefresh = settingsRepository.autoRefreshListFlow.firstOrNull() ?: true
@@ -1738,7 +1745,7 @@ class IPTVViewModel(
                     }
                 } else {
                     // DB is empty -> initial fetch from network
-                    repository.getHomeData()
+                    repository.fetchFromNetwork()
                     _isLoading.value = false
                 }
                 loadTMDBDiscoverContent()

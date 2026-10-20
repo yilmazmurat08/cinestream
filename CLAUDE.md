@@ -73,6 +73,7 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
 **Sonraki sürüme (1.1.8) bekleyenler — kodda hazır, paketlenmedi (kullanıcı 1.1.7'yi test ediyor; hata çıkarsa düzeltmeyle birlikte 1.1.8 üretilir):**
 - Ayarlar'daki "Çökme Günlükleri (Tanılama)" gizli; Ayarlar altındaki sürüm satırına 7 kez dokununca açılır (`DiagnosticsUnlock`). Çökme sonrası hata ekranı her zaman görünür.
 - Oynatıcıdaki ücretsiz "kalan süre" sayacı sistem gezinme tuşlarının altında kalmıyor (tablette yatayken görünmüyordu).
+- Kapsamlı denetim (20 Ekim 2026): açılışta tüm liste belleğe yüklenmiyor (yalnızca sayım); EPG belleği küçüldü (26 saatlik pencere, açıklama saklanmaz); dizi ayrıştırma önbelleği sınırlı; önbellek temizliği resim önbelleğini korur; ağır liste/grup hesapları ana iş parçacığı dışında (Mi TV Stick'te donma/ANR riski azalır).
 
 Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarılabilir):
 - Kaldığın yerden devam et.

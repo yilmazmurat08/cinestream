@@ -46,6 +46,7 @@ data class Platform(
 object SeriesParser {
     // Cache map for parsed results to optimize performance and completely avoid main thread regex ANR
     private val parseCache = java.util.concurrent.ConcurrentHashMap<String, ParsedEpisodeInfo>()
+    private const val PARSE_CACHE_LIMIT = 60_000
     /** Adda açık sezon/bölüm etiketi: "S01E02", "S1 E2", "1x02". */
     private val SEASON_EPISODE_TAG = Regex("""(?i)\bS\d{1,2}\s*E\d{1,3}\b|\b\d{1,2}x\d{1,3}\b""")
 
@@ -199,6 +200,8 @@ object SeriesParser {
             }
         }
         
+        // Sınırsız büyümesin: liste her yenilendiğinde yeni adlar eklenir (büyük listede yüz binlerce bölüm).
+        if (parseCache.size > PARSE_CACHE_LIMIT) parseCache.clear()
         parseCache[rawName] = result
         return result
     }
