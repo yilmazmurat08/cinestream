@@ -48,6 +48,27 @@ object GamesLogic {
         return (pointer / sweep).toInt().coerceIn(0, slices - 1)
     }
 
+    // ---- Poster puzzle ----
+    // order[konum] = o konumdaki parçanın asıl sırası. Her parça kendi sırasındaysa puzzle çözülmüştür.
+
+    /** Karışık başlangıç; hiçbir zaman çözülmüş hâlde başlamaz. */
+    fun puzzleShuffle(pieces: Int, random: Random = Random.Default): List<Int> {
+        if (pieces < 2) return (0 until pieces).toList()
+        var order: List<Int>
+        do {
+            order = (0 until pieces).shuffled(random)
+        } while (isPuzzleSolved(order))
+        return order
+    }
+
+    fun isPuzzleSolved(order: List<Int>): Boolean = order.isNotEmpty() && order.withIndex().all { it.index == it.value }
+
+    /** İki konumdaki parçaların yerini değiştirir. */
+    fun puzzleSwap(order: List<Int>, a: Int, b: Int): List<Int> {
+        if (a == b || a !in order.indices || b !in order.indices) return order
+        return order.toMutableList().also { it[a] = order[b]; it[b] = order[a] }
+    }
+
     // ---- Dizi bilgi yarışması ----
 
     /** Bir dizinin soru üretmeye yarayan gerçek bilgileri (TMDB, yoksa listenin kendi bilgisi). */

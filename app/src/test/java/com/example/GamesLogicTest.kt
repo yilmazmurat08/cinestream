@@ -104,6 +104,31 @@ class GamesLogicTest {
     }
 
     @Test
+    fun puzzle_neverStartsSolved_andSwapsSolveIt() {
+        for (seed in 0 until 200) {
+            val order = GamesLogic.puzzleShuffle(9, Random(seed))
+            assertEquals((0 until 9).toSet(), order.toSet())
+            assertFalse(GamesLogic.isPuzzleSolved(order))
+        }
+        // Her parçayı kendi yerine taşıyan yer değiştirmelerle puzzle çözülür.
+        var order = GamesLogic.puzzleShuffle(16, Random(7))
+        for (pos in order.indices) {
+            val from = order.indexOf(pos)
+            order = GamesLogic.puzzleSwap(order, pos, from)
+        }
+        assertTrue(GamesLogic.isPuzzleSolved(order))
+    }
+
+    @Test
+    fun puzzleSwap_ignoresInvalidPositions() {
+        val order = listOf(1, 0, 2)
+        assertEquals(listOf(0, 1, 2), GamesLogic.puzzleSwap(order, 0, 1))
+        assertEquals(order, GamesLogic.puzzleSwap(order, 1, 1))
+        assertEquals(order, GamesLogic.puzzleSwap(order, -1, 5))
+        assertFalse(GamesLogic.isPuzzleSolved(emptyList()))
+    }
+
+    @Test
     fun yearOf_acceptsOnlyRealYears() {
         assertEquals("2021", GamesLogic.yearOf("2021-09-28"))
         assertEquals(null, GamesLogic.yearOf(""))

@@ -735,4 +735,16 @@
     <string name="game_quiz_note">Questions are built from the series\' real details (year, cast, genre, seasons). No spoilers.</string>
     <string name="tv_games">Games</string>
     <string name="tv_sports">Sports</string>
+    <string name="game_puzzle_title">Poster puzzle</string>
+    <string name="game_puzzle_desc">A poster is cut into pieces. Tap two pieces in turn to swap them; when the poster is complete, its card opens.</string>
+    <string name="game_puzzle_tv_hint">Move with the arrow keys and pick two pieces with OK to swap them.</string>
+    <string name="game_puzzle_moves">%1$d moves</string>
+    <string name="game_puzzle_easy">3×3 easy</string>
+    <string name="game_puzzle_hard">4×4 hard</string>
+    <string name="game_puzzle_hint">Hint</string>
+    <string name="game_puzzle_new">New puzzle</string>
+    <string name="game_puzzle_solved">Done! %1$s</string>
+    <string name="game_puzzle_open">Open card</string>
+    <string name="game_puzzle_loading">Preparing the poster…</string>
+    <string name="game_puzzle_empty">Could not load a poster for the puzzle. Check your connection and try again.</string>
 </resources>

@@ -37,6 +37,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.Extension
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Quiz
@@ -124,6 +130,7 @@ private const val HUB = "HUB"
 private const val SWIPE = "SWIPE"
 private const val WHEEL = "WHEEL"
 private const val QUIZ = "QUIZ"
+private const val PUZZLE = "PUZZLE"
 
 /**
  * Oyunlar (PRO): Kaydırma, Çark ve Dizi bilgi yarışması. Telefonda dokunma, TV'de kumanda ile oynanır.
@@ -148,6 +155,7 @@ fun GamesHost(
             SWIPE -> SwipeGame(viewModel, tvMode, onBack = { game = HUB })
             WHEEL -> WheelGame(viewModel, tvMode, onBack = { game = HUB })
             QUIZ -> QuizGame(viewModel, tvMode, onBack = { game = HUB }, onGoSeriesFolders = onGoSeriesFolders)
+            PUZZLE -> PuzzleGame(viewModel, tvMode, onBack = { game = HUB })
             else -> GamesHub(tvMode, onOpen = { game = it })
         }
     }
@@ -249,7 +257,8 @@ private fun GamesHub(tvMode: Boolean, onOpen: (String) -> Unit) {
         val cards = listOf(
             Triple(SWIPE, Icons.Filled.Style, R.string.game_swipe_title to R.string.game_swipe_desc),
             Triple(WHEEL, Icons.Filled.Casino, R.string.game_wheel_title to R.string.game_wheel_desc),
-            Triple(QUIZ, Icons.Filled.Quiz, R.string.game_quiz_title to R.string.game_quiz_desc)
+            Triple(QUIZ, Icons.Filled.Quiz, R.string.game_quiz_title to R.string.game_quiz_desc),
+            Triple(PUZZLE, Icons.Filled.Extension, R.string.game_puzzle_title to R.string.game_puzzle_desc)
         )
         val content: @Composable (Modifier) -> Unit = { itemModifier ->
             cards.forEachIndexed { i, (kind, icon, texts) ->
@@ -666,6 +675,212 @@ private fun PosterTile(item: IPTVItem, tag: String, modifier: Modifier, onClick:
                 .testTag(tag)
         )
         Text(item.cleanedName.ifBlank { item.name }, color = GameText, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+// ---------------------------------------------------------------- 4. Poster puzzle
+
+/** Posteri bitmap olarak yükler (parçalara bölmek için yazılımsal bitmap gerekir). Olmazsa null. */
+private suspend fun loadPosterBitmap(context: android.content.Context, url: String?): ImageBitmap? {
+    if (url.isNullOrBlank()) return null
+    return try {
+        withTimeoutOrNull(10_000) {
+            val request = ImageRequest.Builder(context).data(url).allowHardware(false).size(720, 1080).build()
+            val result = context.imageLoader.execute(request)
+            ((result as? SuccessResult)?.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.asImageBitmap()
+        }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+}
+
+@Composable
+private fun PuzzleGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val movies by viewModel.movies.collectAsState()
+    val catalog by viewModel.xtreamSeriesCatalog.collectAsState()
+    var grid by rememberSaveable { mutableIntStateOf(3) }
+    var roundKey by remember { mutableIntStateOf(0) }
+    var item by remember { mutableStateOf<IPTVItem?>(null) }
+    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var order by remember { mutableStateOf(emptyList<Int>()) }
+    var selected by remember { mutableStateOf<Int?>(null) }
+    var moves by remember { mutableIntStateOf(0) }
+    var showHint by remember { mutableStateOf(false) }
+    val solved = GamesLogic.isPuzzleSolved(order) && bitmap != null
+    val firstTile = remember { FocusRequester() }
+
+    LaunchedEffect(roundKey, grid, movies.isEmpty(), catalog.isEmpty()) {
+        loading = true
+        bitmap = null
+        item = null
+        selected = null
+        moves = 0
+        showHint = false
+        val pool = withContext(Dispatchers.Default) {
+            GamesLogic.swipeDeck(movies + catalog.map { it.toBrowsableItem() }, { viewModel.isAdultContent(it) })
+        }
+        // Posteri yüklenemeyen yapım atlanır, sıradaki denenir.
+        for (candidate in pool.take(6)) {
+            val image = loadPosterBitmap(context, candidate.logoUrl) ?: continue
+            item = candidate
+            bitmap = image
+            order = GamesLogic.puzzleShuffle(grid * grid)
+            break
+        }
+        loading = false
+    }
+    // Poster tamamlanınca kısa bir kutlamadan sonra yapımın kartı açılır.
+    LaunchedEffect(solved) {
+        if (solved) {
+            kotlinx.coroutines.delay(1_200)
+            item?.let { viewModel.selectItem(it) }
+        }
+    }
+    LaunchedEffect(tvMode, bitmap) { if (tvMode && bitmap != null) runCatching { firstTile.requestFocus() } }
+    LaunchedEffect(showHint) {
+        if (showHint) {
+            kotlinx.coroutines.delay(2_500)
+            showHint = false
+        }
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val boxWidth = maxWidth
+        val boxHeight = maxHeight
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = if (tvMode) 48.dp else 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            GameHeader(stringResource(R.string.games_tag), stringResource(R.string.game_puzzle_title), null, onBack)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FilterChipButton(stringResource(R.string.game_puzzle_easy), "puzzle_grid_3", selected = grid == 3) { grid = 3 }
+                FilterChipButton(stringResource(R.string.game_puzzle_hard), "puzzle_grid_4", selected = grid == 4) { grid = 4 }
+                Spacer(Modifier.weight(1f))
+                if (bitmap != null) Text(stringResource(R.string.game_puzzle_moves, moves), color = GameGold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+            val image = bitmap
+            when {
+                loading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(color = GameAccent, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(R.string.game_puzzle_loading), color = GameMuted)
+                }
+                image == null -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    EmptyMessage(stringResource(R.string.game_puzzle_empty))
+                    GameButton(stringResource(R.string.game_puzzle_new), "puzzle_new", onClick = { roundKey++ })
+                }
+                else -> {
+                    // Tahta posterin oranında (2:3); ekrana sığacak en büyük boy.
+                    val boardWidth = minOf(boxWidth - if (tvMode) 96.dp else 32.dp, (boxHeight - 180.dp).coerceAtLeast(240.dp) * (2f / 3f))
+                    val board: @Composable () -> Unit = {
+                        Box(Modifier.width(boardWidth).aspectRatio(2f / 3f).clip(RoundedCornerShape(14.dp)).background(GameCard)) {
+                            if (showHint || solved) {
+                                Canvas(Modifier.fillMaxSize().testTag(if (solved) "puzzle_solved" else "puzzle_hint_image")) {
+                                    drawImage(image, dstSize = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt()))
+                                }
+                            } else {
+                                Column(Modifier.fillMaxSize().padding(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    for (row in 0 until grid) {
+                                        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                            for (col in 0 until grid) {
+                                                val position = row * grid + col
+                                                PuzzleTile(
+                                                    image = image,
+                                                    piece = order.getOrElse(position) { position },
+                                                    grid = grid,
+                                                    selected = selected == position,
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .fillMaxHeight()
+                                                        .then(if (position == 0) Modifier.focusRequester(firstTile) else Modifier)
+                                                        .testTag("puzzle_tile_$position")
+                                                ) {
+                                                    val first = selected
+                                                    when {
+                                                        first == null -> selected = position
+                                                        first == position -> selected = null
+                                                        else -> {
+                                                            order = GamesLogic.puzzleSwap(order, first, position)
+                                                            selected = null
+                                                            moves++
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    val side: @Composable (Modifier) -> Unit = { m ->
+                        Column(m, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (solved) {
+                                Text(
+                                    stringResource(R.string.game_puzzle_solved, item?.cleanedName?.ifBlank { item?.name }.orEmpty()),
+                                    color = GameAccent,
+                                    fontSize = 22.sp,
+                                    fontFamily = FontFamily.Serif,
+                                    fontStyle = FontStyle.Italic
+                                )
+                                GameButton(stringResource(R.string.game_puzzle_open), "puzzle_open", onClick = { item?.let { viewModel.selectItem(it) } })
+                            } else {
+                                Text(
+                                    stringResource(if (tvMode) R.string.game_puzzle_tv_hint else R.string.game_puzzle_desc),
+                                    color = GameMuted,
+                                    fontSize = 13.sp
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                if (!solved) GameButton(stringResource(R.string.game_puzzle_hint), "puzzle_hint", onClick = { showHint = true }, primary = false)
+                                GameButton(stringResource(R.string.game_puzzle_new), "puzzle_new", onClick = { roundKey++ }, primary = solved)
+                            }
+                        }
+                    }
+                    if (tvMode) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                            board()
+                            side(Modifier.weight(1f))
+                        }
+                    } else {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { board() }
+                        side(Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Posterin bir parçası; seçili parça fuşya, kumanda odağı beyaz çerçeveli. */
+@Composable
+private fun PuzzleTile(image: ImageBitmap, piece: Int, grid: Int, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val pieceW = image.width / grid
+    val pieceH = image.height / grid
+    Canvas(
+        modifier = modifier
+            .border(
+                width = if (selected || focused) 3.dp else 0.dp,
+                color = if (selected) GameAccent else if (focused) Color.White else Color.Transparent
+            )
+            .clickable(interactionSource = interaction, indication = com.example.ui.tv.tvFocusIndicationOrNull(), onClick = onClick)
+    ) {
+        drawImage(
+            image = image,
+            srcOffset = androidx.compose.ui.unit.IntOffset((piece % grid) * pieceW, (piece / grid) * pieceH),
+            srcSize = androidx.compose.ui.unit.IntSize(pieceW, pieceH),
+            dstSize = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt())
+        )
+        if (selected) drawRect(GameAccent.copy(alpha = 0.25f))
     }
 }
 

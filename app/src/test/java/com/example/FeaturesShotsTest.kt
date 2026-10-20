@@ -147,6 +147,13 @@ open class FeaturesShotsTest {
         click("wheel_spin")
         settle(5_000)
         shot("$prefix-3-cark")
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        settle(800)
+        click("game_card_PUZZLE")
+        settle(4_000)
+        click("puzzle_tile_0")
+        settle(500)
+        shot("$prefix-5-puzzle")
         show { SportsHost(viewModel = vm!!, onPlayItem = {}, tvMode = tv) }
         settle(2_500)
         shot("$prefix-4-spor")

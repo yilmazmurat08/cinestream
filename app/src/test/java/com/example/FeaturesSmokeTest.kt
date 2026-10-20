@@ -112,13 +112,25 @@ open class FeaturesSmokeTest {
         settle(1_500)
     }
 
+    /** Cihazdaki küçük bir poster dosyası (puzzle'ın parçalara bölebilmesi için gerçek bir resim). */
+    private fun localPoster(): String {
+        val file = java.io.File(app.cacheDir, "smoke_poster.png")
+        if (!file.exists()) {
+            val bmp = android.graphics.Bitmap.createBitmap(120, 180, android.graphics.Bitmap.Config.ARGB_8888)
+            android.graphics.Canvas(bmp).drawColor(android.graphics.Color.MAGENTA)
+            file.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        return android.net.Uri.fromFile(file).toString()
+    }
+
     private fun seed(): IPTVViewModel {
+        val poster = localPoster()
         val cats = listOf("Korku", "Savaş", "Aksiyon", "Komedi", "XXX Yetişkin")
         val items = (0 until 120).map { i ->
             val type = if (i % 4 == 3) "SERIES" else "MOVIE"
             IPTVItem(
                 id = 81000 + i, playlistId = 1, name = "Yapım $i", cleanedName = "Yapım $i",
-                logoUrl = "http://10.255.255.1/p/$i.png", streamUrl = "http://10.255.255.1/v/$i",
+                logoUrl = poster, streamUrl = "http://10.255.255.1/v/$i",
                 category = cats[i % cats.size], type = type, summary = "Özet $i", releaseDate = "20${10 + i % 15}-01-01",
                 genre = "Dram", rating = 7.5
             )
@@ -185,6 +197,26 @@ open class FeaturesSmokeTest {
         compose.runOnUiThread { vm.selectItem(null) }
         settle()
         back()
+
+        // 4. Poster puzzle: poster parçalara bölünür; iki parçaya dokununca yer değişir; ipucu tüm posteri gösterir.
+        click("game_card_PUZZLE")
+        assertTrue("Puzzle tahtası görünmeli", waitFor("puzzle_tile_0"))
+        if (tvMode) {
+            press(Key.DirectionCenter)
+            press(Key.DirectionRight)
+            press(Key.DirectionCenter)
+        } else {
+            click("puzzle_tile_0")
+            click("puzzle_tile_4")
+        }
+        assertTrue(exists("puzzle_tile_8"))
+        click("puzzle_hint")
+        assertTrue(exists("puzzle_hint_image"))
+        settle(3_000)
+        click("puzzle_grid_4")
+        assertTrue("4×4 tahtada 16 parça olmalı", waitFor("puzzle_tile_15"))
+        back()
+        assertTrue(exists("game_card_PUZZLE"))
 
         // 3. Yarışma: listede Xtream dizi kataloğu yok; çökmeden "yeterli bilgi yok" der.
         click("game_card_QUIZ")

@@ -734,4 +734,16 @@
     <string name="game_quiz_note">Sorular dizinin gerçek bilgilerinden (yıl, oyuncu, tür, sezon) üretilir. Sürpriz bozan soru sorulmaz.</string>
     <string name="tv_games">Oyunlar</string>
     <string name="tv_sports">Spor</string>
+    <string name="game_puzzle_title">Poster puzzle</string>
+    <string name="game_puzzle_desc">Bir yapımın posteri parçalara bölünür. İki parçaya sırayla dokunup yerlerini değiştir; poster tamamlanınca kartı açılır.</string>
+    <string name="game_puzzle_tv_hint">Ok tuşlarıyla gez, OK ile iki parça seç; yerleri değişir.</string>
+    <string name="game_puzzle_moves">%1$d hamle</string>
+    <string name="game_puzzle_easy">3×3 kolay</string>
+    <string name="game_puzzle_hard">4×4 zor</string>
+    <string name="game_puzzle_hint">İpucu</string>
+    <string name="game_puzzle_new">Yeni puzzle</string>
+    <string name="game_puzzle_solved">Tamamlandı! %1$s</string>
+    <string name="game_puzzle_open">Kartı aç</string>
+    <string name="game_puzzle_loading">Poster hazırlanıyor…</string>
+    <string name="game_puzzle_empty">Puzzle için poster yüklenemedi. İnternet bağlantını kontrol edip yeniden dene.</string>
 </resources>
