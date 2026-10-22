@@ -86,6 +86,12 @@ class FrostedBottomBarShotsTest {
         settle()
         captureScreenRoboImage(File(outDir, "alt-bar-2b-canli-tv.png").absolutePath)
 
+        vm!!.updateSearchQuery("Yapım")
+        settle()
+        captureScreenRoboImage(File(outDir, "alt-bar-4-arama.png").absolutePath)
+        vm!!.updateSearchQuery("")
+        settle()
+
         compose.onAllNodes(hasTestTag("bottom_nav_profile_menu"), useUnmergedTree = true)[0].performSemanticsAction(SemanticsActions.OnClick)
         settle()
         captureScreenRoboImage(File(outDir, "alt-bar-3-profil-menusu.png").absolutePath)

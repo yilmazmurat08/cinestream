@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import android.os.Build
+import android.view.Window
+import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,6 +51,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -57,14 +63,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import coil.compose.AsyncImage
 import com.example.R
 
 // Onaylı taslak renkleri (docs/tasarim/ozellik-taslaklari/Main.dc.html).
 private val FrostedBarColor = Color(0x9E2A2838)        // rgba(42,40,56,0.62)
 private val FrostedBorderColor = Color(0x29FFFFFF)     // 1 px rgba(255,255,255,0.16)
-// Taslakta 0.82 + bulanıklık; Compose'da arka plan bulanıklığı yok, arkadaki yazı karışmasın diye daha koyu.
-private val FrostedMenuColor = Color(0xFF262432)
+// Açılan paneller (profil menüsü, arama): arkası bulanıksa bar gibi yarı saydam; bulanıklık yoksa
+// (Android 12 altı ya da cihazda kapalı) arkadaki yazı karışmasın diye daha koyu.
+private val FrostedPanelBlurred = Color(0x9E2A2838)    // bar ile aynı: rgba(42,40,56,0.62)
+private val FrostedPanelPlain = Color(0xEB2A2838)      // rgba(42,40,56,0.92)
 private val SelectedTabColor = Color(0x1FFFFFFF)       // seçili sekme hafif vurgulu
 private val InactiveTabText = Color(0xFFC9C3D3)
 private val MenuMutedText = Color(0xFFA79FB5)
@@ -222,6 +231,7 @@ fun FrostedProfileMenu(
     showSport: Boolean = true,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val blurred = rememberDialogBackdropBlur()
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -231,9 +241,9 @@ fun FrostedProfileMenu(
                 ) { onDismiss() }
         ) {
             Surface(
-                color = FrostedMenuColor,
+                color = frostedPanelColor(blurred),
                 shape = RoundedCornerShape(26.dp),
-                border = BorderStroke(1.dp, Color(0x24FFFFFF)),
+                border = BorderStroke(1.dp, FrostedBorderColor),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
@@ -319,4 +329,33 @@ private fun MenuRow(icon: ImageVector, title: String, pro: Boolean, tag: String,
             modifier = Modifier.size(20.dp)
         )
     }
+}
+
+/** Açılan panelin rengi: arkası bulanıksa bar gibi yarı saydam, değilse daha koyu. */
+fun frostedPanelColor(backdropBlurred: Boolean): Color = if (backdropBlurred) FrostedPanelBlurred else FrostedPanelPlain
+
+/** Panel çerçevesi: bar ile aynı ince açık çizgi. */
+val FrostedPanelBorder: Color get() = FrostedBorderColor
+
+/**
+ * Dialog içinden çağrılır: pencerenin arkasındaki ekranı bulanıklaştırır (Android 12+ ve cihazda açıksa).
+ * Panel yarı saydam kalır, arkadaki içerik buzlu cam gibi görünür. Bulanıklık olmazsa false döner.
+ */
+@Composable
+fun rememberDialogBackdropBlur(): Boolean {
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+    val radiusPx = with(LocalDensity.current) { 18.dp.roundToPx() }
+    return remember(window) {
+        if (window == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) false
+        else runCatching { enableBlurBehind(window, radiusPx) }.getOrDefault(false)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.S)
+private fun enableBlurBehind(window: Window, radiusPx: Int): Boolean {
+    if (!window.windowManager.isCrossWindowBlurEnabled) return false
+    window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+    window.attributes = window.attributes.also { it.blurBehindRadius = radiusPx }
+    window.setDimAmount(0.3f)
+    return true
 }
