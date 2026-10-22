@@ -6,6 +6,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.db.AppDatabase
@@ -57,12 +59,12 @@ class FrostedBottomBarTest {
 
     private fun exists(tag: String) = compose.onAllNodes(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
-    private fun start(): IPTVViewModel {
+    private fun start(categoryOf: (Int) -> String = { "Kategori" }): IPTVViewModel {
         val items = (0 until 120).map { i ->
             val type = listOf("LIVE", "MOVIE", "SERIES")[i % 3]
             IPTVItem(
                 id = 79000 + i, playlistId = 1, name = "Öğe $i", cleanedName = "Öğe $i", logoUrl = null,
-                streamUrl = "http://10.255.255.1/x/$i", category = "Kategori", type = type
+                streamUrl = "http://10.255.255.1/x/$i", category = categoryOf(i), type = type
             )
         }
         runBlocking { db.iptvDao().insertItems(items) }
@@ -128,5 +130,28 @@ class FrostedBottomBarTest {
             compose.mainClock.advanceTimeBy(50)
         }
         assertTrue(exists("edit_profile_pick_photo"))
+    }
+
+    /**
+     * Bar içeriğin üstünde yüzer: arkasında düz şerit yok, liste barın arkasına kadar uzanır.
+     * Liste sonuna kaydırılınca son klasör barın üstünde görünür (barın altında kalmaz).
+     */
+    @Test
+    fun contentScrollsBehindTheBar_lastItemStaysAboveIt() {
+        start { i -> "Klasör ${i % 30}" }
+        click("bottom_nav_LIVE")
+        val bar = compose.onAllNodes(hasTestTag("frosted_bottom_bar"), useUnmergedTree = true)[0].fetchSemanticsNode().boundsInRoot
+        val list = compose.onAllNodes(hasTestTag("folder_grid_view"), useUnmergedTree = true)[0]
+        assertTrue("Liste barın arkasına uzanmalı", list.fetchSemanticsNode().boundsInRoot.bottom > bar.top)
+
+        repeat(15) {
+            list.performTouchInput { swipeUp() }
+            settle()
+        }
+        // Ekrandaki en alttaki klasör kartı (liste sonuna gelindi).
+        val lastBottom = (0 until 30).map { "folder_card_Klasör $it" }.filter { exists(it) }
+            .maxOf { compose.onAllNodes(hasTestTag(it), useUnmergedTree = true)[0].fetchSemanticsNode().boundsInRoot.bottom }
+        val pillTop = bar.top + 8 * compose.activity.resources.displayMetrics.density
+        assertTrue("Son klasör (alt $lastBottom) barın (üst $pillTop) üstünde kalmalı", lastBottom <= pillTop)
     }
 }

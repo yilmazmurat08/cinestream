@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import java.util.Locale
 import androidx.compose.material3.*
+import com.example.ui.components.LocalFloatingBarInset
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.integerResource
 import androidx.compose.ui.res.dimensionResource
@@ -319,7 +320,7 @@ fun FolderListLayout(
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = 24.dp + LocalFloatingBarInset.current),
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = adaptiveLayout.screenPadding)
@@ -771,7 +772,7 @@ fun FolderDetailLayout(
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(bottom = 24.dp),
+            contentPadding = PaddingValues(bottom = 24.dp + LocalFloatingBarInset.current),
             modifier = modifier
                 .fillMaxSize()
                 .padding(horizontal = adaptiveLayout.screenPadding)
@@ -966,7 +967,7 @@ fun FolderDetailLayout(
             columns = GridCells.Fixed(adaptiveLayout.gridColumns),
             verticalArrangement = Arrangement.spacedBy(adaptiveLayout.gridSpacing),
             horizontalArrangement = Arrangement.spacedBy(adaptiveLayout.gridSpacing),
-            contentPadding = PaddingValues(bottom = 24.dp),
+            contentPadding = PaddingValues(bottom = 24.dp + LocalFloatingBarInset.current),
             modifier = modifier
                 .fillMaxSize()
                 .padding(horizontal = adaptiveLayout.screenPadding)
@@ -1112,7 +1113,7 @@ fun FolderDetailLayout(
             columns = GridCells.Fixed(adaptiveLayout.gridColumns),
             verticalArrangement = Arrangement.spacedBy(adaptiveLayout.gridSpacing),
             horizontalArrangement = Arrangement.spacedBy(adaptiveLayout.gridSpacing),
-            contentPadding = PaddingValues(bottom = 24.dp),
+            contentPadding = PaddingValues(bottom = 24.dp + LocalFloatingBarInset.current),
             modifier = modifier
                 .fillMaxSize()
                 .padding(horizontal = adaptiveLayout.screenPadding)

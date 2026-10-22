@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import com.example.ui.components.LocalFloatingBarInset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -153,12 +154,16 @@ fun GamesHost(
             .background(GameBg)
             .testTag("games_host")
     ) {
+        // Oyunlar barın üstünde biter (düğmeler ve poster barın altında kalmasın); zemin barın arkasına uzanır.
+        val gameModifier = Modifier.fillMaxSize().padding(bottom = if (game == HUB) 0.dp else LocalFloatingBarInset.current)
+        Box(gameModifier) {
         when (game) {
             SWIPE -> SwipeGame(viewModel, tvMode, onBack = { game = HUB })
             WHEEL -> WheelGame(viewModel, tvMode, onBack = { game = HUB })
             QUIZ -> QuizGame(viewModel, tvMode, onBack = { game = HUB }, onGoSeriesFolders = onGoSeriesFolders)
             PUZZLE -> PuzzleGame(viewModel, tvMode, onBack = { game = HUB })
             else -> GamesHub(tvMode, onOpen = { game = it })
+        }
         }
     }
 }
@@ -252,7 +257,9 @@ private fun GamesHub(tvMode: Boolean, onOpen: (String) -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = if (tvMode) 48.dp else 20.dp, vertical = 20.dp),
+            .padding(horizontal = if (tvMode) 48.dp else 20.dp, vertical = 20.dp)
+            // Oyun seçimi barın arkasından kayar; son kart barın altında kalmaz.
+            .padding(bottom = LocalFloatingBarInset.current),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         GameHeader(stringResource(R.string.games_tag), stringResource(R.string.games_title), stringResource(R.string.games_hub_subtitle), null)

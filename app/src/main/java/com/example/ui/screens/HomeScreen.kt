@@ -328,7 +328,6 @@ fun HomeScreen(
                 com.example.ui.components.FrostedBottomBar(
                     selectedTypeFilter = selectedTypeFilter,
                     photoUrl = profilePhotoUrl,
-                    stripColor = if (currentTheme.isDark) MidPurpleBg else themeBg,
                     menuOpen = isProfileMenuOpen,
                     onSelectTab = { viewModel.setSelectedTypeFilter(it) },
                     onToggleMenu = { isProfileMenuOpen = !isProfileMenuOpen }
@@ -487,10 +486,17 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
+        // Yeni alt bar içeriğin üstünde yüzer: içerik barın altına kadar uzanır ve kaydırılırken barın arkasında
+        // görünür. Listeler sonda bar yüksekliği kadar boşluk bırakır (LocalFloatingBarInset), son öğe barın altında kalmaz.
+        val floatingBarInset = if (com.example.BuildConfig.NEW_BOTTOM_BAR) innerPadding.calculateBottomPadding() else 0.dp
+        CompositionLocalProvider(com.example.ui.components.LocalFloatingBarInset provides floatingBarInset) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(
+                    if (com.example.BuildConfig.NEW_BOTTOM_BAR) PaddingValues(top = innerPadding.calculateTopPadding())
+                    else innerPadding
+                )
                 .background(backgroundBrush)
                 .testTag("home_screen")
         ) {
@@ -517,7 +523,7 @@ fun HomeScreen(
                     LazyColumn(
                         state = homeLazyListState,
                         verticalArrangement = Arrangement.Top,
-                        contentPadding = PaddingValues(bottom = 24.dp),
+                        contentPadding = PaddingValues(bottom = 24.dp + com.example.ui.components.LocalFloatingBarInset.current),
                         modifier = Modifier
                             .fillMaxSize()
                     ) {
@@ -1516,6 +1522,7 @@ fun HomeScreen(
                 } else if (selectedTypeFilter == "RADIO") {
                     val chunkedRadio = remember(radioChannels) { radioChannels.chunked(2) }
                     LazyColumn(
+                        contentPadding = PaddingValues(bottom = com.example.ui.components.LocalFloatingBarInset.current),
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
@@ -1586,7 +1593,12 @@ fun HomeScreen(
                         onGoSeriesFolders = { viewModel.setSelectedTypeFilter("SERIES") }
                     )
                 } else if (selectedTypeFilter == "SPORTS") {
-                    com.example.ui.features.SportsHost(viewModel = viewModel, onPlayItem = onPlayItem, tvMode = false)
+                    com.example.ui.features.SportsHost(
+                        viewModel = viewModel,
+                        onPlayItem = onPlayItem,
+                        tvMode = false,
+                        modifier = Modifier.padding(bottom = com.example.ui.components.LocalFloatingBarInset.current)
+                    )
                 }
 
                 // Bottom padding for edge-to-edge comfort (Requirement 2: Universal Responsive UI)
@@ -1620,6 +1632,7 @@ fun HomeScreen(
                 viewModel.updateSearchQuery("")
             }
         )
+    }
     }
 }
 }

@@ -39,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +73,12 @@ private val AvatarIcon = Color(0xFFE9D9F5)
 private val Accent = Color(0xFFD946EF)
 private val GoldTag = Color(0xFFD4A853)
 
+/**
+ * Yeni alt bar içeriğin üstünde yüzer (arkasında düz şerit yok). Kaydırılan listeler sonda bu kadar boşluk bırakır;
+ * böylece içerik barın arkasından görünür ama son öğe barın altında kalmaz. Eski alt barda ve TV'de 0.
+ */
+val LocalFloatingBarInset = compositionLocalOf { 0.dp }
+
 private data class FrostedTab(val filterType: String, val title: String, val active: ImageVector, val inactive: ImageVector)
 
 /**
@@ -83,7 +90,6 @@ private data class FrostedTab(val filterType: String, val title: String, val act
 fun FrostedBottomBar(
     selectedTypeFilter: String,
     photoUrl: String?,
-    stripColor: Color,
     menuOpen: Boolean,
     onSelectTab: (String) -> Unit,
     onToggleMenu: () -> Unit,
@@ -100,7 +106,6 @@ fun FrostedBottomBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(stripColor)
             .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .testTag("frosted_bottom_bar")
