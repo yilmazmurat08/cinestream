@@ -759,6 +759,22 @@ fun LegacyExoPlayerScreen(
         }
     }
 
+    // Donma bekçisi: yayın askıda kalırsa ya da görüntü donarsa aynı yayına sessizce yeniden bağlanır
+    // (canlı yayın en güncel noktadan, film/dizi kaldığı yerden). Oynatıcı bırakılmadan önce durur.
+    DisposableEffect(player) {
+        val guard = com.example.player.PlaybackStallGuard(
+            player = player,
+            isLive = { item.type == "LIVE" || item.type == "LIVE_TV" },
+            onGiveUp = {
+                // Üç yeniden bağlanmada da düzelmedi: sonsuz dönen daire yerine "Yeniden dene" gösterilir.
+                try { player.stop() } catch (e: Exception) { }
+                streamFailed = true
+            }
+        )
+        guard.start()
+        onDispose { guard.stop() }
+    }
+
     // Restart controls timer on visibility toggles
     LaunchedEffect(controlsVisible, showTray, isScreenLocked) {
         resetControlsTimer()

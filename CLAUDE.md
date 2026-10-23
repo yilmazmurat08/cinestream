@@ -77,6 +77,12 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
 - Fragman (20 Ekim 2026): sahibi gömülü oynatmaya izin vermeyen YouTube fragmanı Fragman düğmesiyle YouTube uygulamasında açılır; kendiliğinden başladıysa sessizce durur; cihazda hatırlanır (`TrailerEmbedBlocklist`). Telefon kartları, ana sayfa fragman kutusu, TV kartı.
 - Çökme raporu ekranı bir kez gösterilir (Geri tuşuyla kapatılsa da tekrar çıkmaz); uygulama güncellendiyse eski sürümün raporu gösterilmez.
 
+**Ayrı dal `claude/akici-oynatma` (23 Ekim 2026; takılma ve donmaları azaltma; yayına girecek dala birleştirilmedi, test APK'sı için `claude/yeni-alt-bar`'a birleştirildi). Herkese açık:**
+- Donma bekçisi (`PlaybackStallGuard` + `StallWatchdog`): yayın 8 sn hiç ilerlemezse (veri gelmiyor, süre durdu ya da görüntü dondu) sessizce yeniden bağlanır; canlı en güncel noktadan, film/dizi kaldığı yerden. Veri yavaş da olsa geliyorsa karışmaz. Sarma ve yeniden bağlanmadan sonra 15 sn bekler. 3 denemede düzelmezse sonsuz dönen daire yerine "Yeniden dene" çıkar.
+- Akıllı tampon (`AdaptiveLoadControl`): takılan yayında oynatma biraz daha fazla veriyle yeniden başlar (her takılmada +2,5 sn, en çok +7,5 sn; 3 dk sorunsuzsa başa döner).
+- Bağlantı zaman aşımı 30 → 10 sn, okuma 30 → 15 sn. Tampon bellek sınırı uygulama payının 1/4'ü (16–64 MB; Mi TV Stick'te bellek taşmasına karşı).
+- Gerçek oynatıcıyla stres testleri: `PlaybackResilienceTest`, `PlayerStallRecoveryTest` (test videosu `app/src/test/resources/player/`, sahte IPTV sunucusu `FakeStreamServer.kt`).
+
 Zaten var olan, ücretsiz özellikler (rakipte PRO; tanıtımda öne çıkarılabilir):
 - Kaldığın yerden devam et.
 - Otomatik liste güncelleme.
