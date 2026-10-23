@@ -25,6 +25,14 @@ import java.util.concurrent.TimeUnit
 @OptIn(UnstableApi::class)
 object ExoPlayerConfigurator {
 
+    const val CONNECT_TIMEOUT_S = 10L
+    const val READ_TIMEOUT_S = 15L
+    /** Akıllı tamponun takılma sonrası bekleyişe en çok ekleyeceği süre. */
+    private const val MAX_EXTRA_REBUFFER_MS = 7_500L
+
+    /** Oynatıcı tamponunun bellek sınırı: uygulamanın bellek payının dörtte biri, 16–64 MB arası. */
+    fun bufferByteLimit(memoryClassMb: Int): Int = (memoryClassMb / 4).coerceIn(16, 64) * 1024 * 1024
+
     /**
      * IPTV yayınları için OkHttp istemcisi: sertifikalar doğrulanır; sertifikası bozuk https sunucularda
      * aynı adres http ile denenir (bkz. NetworkModule.provideIptvOkHttpClient). Yönlendirmeleri ve
@@ -58,8 +66,9 @@ object ExoPlayerConfigurator {
                     }
                     response
                 }
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                // Askıda kalan bağlantı uzun süre beklenmez: hata hızlı gelir, yeniden deneme hemen başlar.
+                .connectTimeout(CONNECT_TIMEOUT_S, TimeUnit.SECONDS)
+                .readTimeout(READ_TIMEOUT_S, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .followRedirects(true)
                 .followSslRedirects(true)
@@ -75,8 +84,9 @@ object ExoPlayerConfigurator {
                     }
                     chain.proceed(requestBuilder.build())
                 }
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                // Askıda kalan bağlantı uzun süre beklenmez: hata hızlı gelir, yeniden deneme hemen başlar.
+                .connectTimeout(CONNECT_TIMEOUT_S, TimeUnit.SECONDS)
+                .readTimeout(READ_TIMEOUT_S, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .followRedirects(true)
                 .followSslRedirects(true)
@@ -159,7 +169,16 @@ object ExoPlayerConfigurator {
             }
         }
 
-        val loadControl = DefaultLoadControl.Builder()
+        // Tampon bellekte (uygulamanın payından) tutulur. Yüksek bit hızlı yayında süreye göre sınırsız
+        // tampon 1 GB'lık cihazda (Mi TV Stick) belleği doldurup çökmeye yol açabilir: bayt sınırı konur.
+        // En az tampon süresine (minBuffer) kadar süre önceliklidir: sınır yalnızca bunun üstünde işler,
+        // ileri tampon hiçbir zaman aç kalmaz (geri tampon belleği doldursa bile).
+        val memoryClassMb = (wrappedContext.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager)
+            ?.memoryClass ?: 128
+        val targetBufferBytes = bufferByteLimit(memoryClassMb)
+        val backBufferMs = if (memoryClassMb < 256) 15_000 else 30_000
+
+        val defaultLoadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 minBuffer,
                 maxBuffer,
@@ -167,9 +186,17 @@ object ExoPlayerConfigurator {
                 bufferForPlaybackAfterRebuffer
             )
             .setPrioritizeTimeOverSizeThresholds(true)
-            .setTargetBufferBytes(C.LENGTH_UNSET)
-            .setBackBuffer(30_000, true) // Retain 30s back buffer to prevent re-buffering micro-stutters
+            .setTargetBufferBytes(targetBufferBytes)
+            .setBackBuffer(backBufferMs, true) // Geri sarmada yeniden yüklememek için geri tampon
             .build()
+        // Akıllı tampon: takılan yayında oynatma biraz daha fazla veriyle yeniden başlar.
+        val loadControl = AdaptiveLoadControl(
+            delegate = defaultLoadControl,
+            policy = AdaptiveRebufferPolicy(
+                baseMs = bufferForPlaybackAfterRebuffer.toLong(),
+                maxMs = minOf(minBuffer.toLong(), bufferForPlaybackAfterRebuffer + MAX_EXTRA_REBUFFER_MS)
+            )
+        )
 
         // 3. IPTV OkHttp Data Source (sertifika doğrulamalı + http yedeği, yönlendirmeler, VLC başlıkları, zaman aşımları)
         val okHttpClient = createIptvOkHttpClient()
