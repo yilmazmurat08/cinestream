@@ -1,8 +1,0 @@
-com.cinestream.sports-pngs-0 /home/user/cinestream/sports/build/generated/res/pngs/debug
-com.cinestream.sports-updated_navigation_xml-1 /home/user/cinestream/sports/build/generated/updated_navigation_xml/debug
-com.cinestream.sports-mergeDebugResources-2 /home/user/cinestream/sports/build/intermediates/incremental/debug/mergeDebugResources/merged.dir
-com.cinestream.sports-mergeDebugResources-3 /home/user/cinestream/sports/build/intermediates/incremental/debug/mergeDebugResources/stripped.dir
-com.cinestream.sports-debug-4 /home/user/cinestream/sports/build/intermediates/merged_res/debug/mergeDebugResources
-com.cinestream.sports-debug-5 /home/user/cinestream/sports/build/intermediates/packaged_res/debug/packageDebugResources
-com.cinestream.sports-debug-6 /home/user/cinestream/sports/src/debug/res
-com.cinestream.sports-main-7 /home/user/cinestream/sports/src/main/res
