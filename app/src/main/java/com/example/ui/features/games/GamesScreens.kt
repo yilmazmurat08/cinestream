@@ -53,6 +53,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import com.example.ui.components.LocalFloatingBarInset
+import com.example.ui.components.LocalFloatingTopBarInset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -154,8 +155,12 @@ fun GamesHost(
             .background(GameBg)
             .testTag("games_host")
     ) {
-        // Oyunlar barın üstünde biter (düğmeler ve poster barın altında kalmasın); zemin barın arkasına uzanır.
-        val gameModifier = Modifier.fillMaxSize().padding(bottom = if (game == HUB) 0.dp else LocalFloatingBarInset.current)
+        // Oyunlar barların arasında kalır (düğmeler ve poster barların altında kalmasın); zemin barların arkasına uzanır.
+        val gameModifier = if (game == HUB) {
+            Modifier.fillMaxSize()
+        } else {
+            Modifier.fillMaxSize().padding(top = LocalFloatingTopBarInset.current, bottom = LocalFloatingBarInset.current)
+        }
         Box(gameModifier) {
         when (game) {
             SWIPE -> SwipeGame(viewModel, tvMode, onBack = { game = HUB })
@@ -258,8 +263,8 @@ private fun GamesHub(tvMode: Boolean, onOpen: (String) -> Unit) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = if (tvMode) 48.dp else 20.dp, vertical = 20.dp)
-            // Oyun seçimi barın arkasından kayar; son kart barın altında kalmaz.
-            .padding(bottom = LocalFloatingBarInset.current),
+            // Oyun seçimi barların arkasından kayar; ilk ve son kart barların altında kalmaz.
+            .padding(top = LocalFloatingTopBarInset.current, bottom = LocalFloatingBarInset.current),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         GameHeader(stringResource(R.string.games_tag), stringResource(R.string.games_title), stringResource(R.string.games_hub_subtitle), null)

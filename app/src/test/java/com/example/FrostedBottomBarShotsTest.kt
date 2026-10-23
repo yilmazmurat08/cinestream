@@ -6,6 +6,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.db.AppDatabase
@@ -71,7 +73,8 @@ class FrostedBottomBarShotsTest {
             })[IPTVViewModel::class.java]
         }
         compose.setContent {
-            MyApplicationTheme(dynamicColor = false) {
+            // Kullanıcının telefonundaki gibi koyu tema.
+            MyApplicationTheme(appTheme = com.example.ui.theme.AppTheme.PURE_BLACK, dynamicColor = false) {
                 HomeScreen(viewModel = vm!!, onNavigateToChat = {}, onPlayItem = {}, onPlayContinueWatching = {}, onNavigateToMultiScreen = {})
             }
         }
@@ -85,6 +88,13 @@ class FrostedBottomBarShotsTest {
         compose.onAllNodes(hasTestTag("bottom_nav_LIVE"), useUnmergedTree = true)[0].performSemanticsAction(SemanticsActions.OnClick)
         settle()
         captureScreenRoboImage(File(outDir, "alt-bar-2b-canli-tv.png").absolutePath)
+
+        // Kaydırılınca içerik üst ve alt barın arkasından geçer.
+        compose.onAllNodes(hasTestTag("folder_grid_view"), useUnmergedTree = true)[0].performTouchInput {
+            swipe(start = center, end = center.copy(y = center.y - 380f), durationMillis = 400)
+        }
+        settle()
+        captureScreenRoboImage(File(outDir, "alt-bar-2c-kaydirilmis.png").absolutePath)
 
         vm!!.updateSearchQuery("Yapım")
         settle()

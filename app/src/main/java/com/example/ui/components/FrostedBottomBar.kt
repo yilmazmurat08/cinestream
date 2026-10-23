@@ -42,7 +42,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -74,7 +76,8 @@ private val FrostedBorderColor = Color(0x29FFFFFF)     // 1 px rgba(255,255,255,
 // (Android 12 altı ya da cihazda kapalı) arkadaki yazı karışmasın diye daha koyu.
 private val FrostedPanelBlurred = Color(0x9E2A2838)    // bar ile aynı: rgba(42,40,56,0.62)
 private val FrostedPanelPlain = Color(0xEB2A2838)      // rgba(42,40,56,0.92)
-private val SelectedTabColor = Color(0x1FFFFFFF)       // seçili sekme hafif vurgulu
+// Seçili sekme: profil resmindeki gibi mor halka, içi hafif mor.
+private val SelectedTabFill = Color(0x24D946EF)        // rgba(217,70,239,0.14)
 private val InactiveTabText = Color(0xFFC9C3D3)
 private val MenuMutedText = Color(0xFFA79FB5)
 private val AvatarBg = Color(0xFF3B2A55)
@@ -87,6 +90,19 @@ private val GoldTag = Color(0xFFD4A853)
  * böylece içerik barın arkasından görünür ama son öğe barın altında kalmaz. Eski alt barda ve TV'de 0.
  */
 val LocalFloatingBarInset = compositionLocalOf { 0.dp }
+
+/**
+ * Üst bar da içeriğin üstünde yüzer (buzlu): kaydırılan listeler başta bu kadar boşluk bırakır; ilk açılışta hiçbir
+ * şey barın altında kalmaz, kaydırınca içerik barın arkasından geçer. Eski tasarımda ve TV'de 0.
+ */
+val LocalFloatingTopBarInset = compositionLocalOf { 0.dp }
+
+/**
+ * Yeni tasarımda üst bar: alt barla aynı ton, hafif buzlu. Alt bardan daha az saydam: arkadan geçen başlıklar
+ * logo ve durum çubuğuyla karışmasın. Mor çizgi yerine ince açık çizgi.
+ */
+val FrostedTopBarColor = Color(0xD11E1B2A)             // rgba(30,27,42,0.82)
+val FrostedTopBarLine = Color(0x1FFFFFFF)              // 1 px rgba(255,255,255,0.12)
 
 private data class FrostedTab(val filterType: String, val title: String, val active: ImageVector, val inactive: ImageVector)
 
@@ -132,6 +148,9 @@ fun FrostedBottomBar(
         ) {
             tabs.forEach { tab ->
                 val isSelected = selectedTypeFilter == tab.filterType
+                // Sekme değişince halka ve dolgu yumuşakça geçer.
+                val ringColor by animateColorAsState(if (isSelected) Accent else Color.Transparent, label = "tabRing")
+                val fillColor by animateColorAsState(if (isSelected) SelectedTabFill else Color.Transparent, label = "tabFill")
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -139,15 +158,8 @@ fun FrostedBottomBar(
                         .weight(1f)
                         .height(56.dp)
                         .clip(RoundedCornerShape(24.dp))
-                        .then(
-                            if (isSelected) {
-                                Modifier
-                                    .background(SelectedTabColor)
-                                    .border(1.dp, FrostedBorderColor, RoundedCornerShape(24.dp))
-                            } else {
-                                Modifier
-                            }
-                        )
+                        .background(fillColor)
+                        .border(2.dp, ringColor, RoundedCornerShape(24.dp))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             // Telefonda görünüm aynı (vurgu yok); TV'de kumanda odağı görünür.

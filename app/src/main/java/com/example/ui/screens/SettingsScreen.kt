@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import com.example.ui.components.LocalFloatingBarInset
+import com.example.ui.components.LocalFloatingTopBarInset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -144,7 +145,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(horizontal = adaptiveLayout.screenPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = LocalFloatingBarInset.current)
+                .padding(top = LocalFloatingTopBarInset.current, bottom = LocalFloatingBarInset.current)
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             

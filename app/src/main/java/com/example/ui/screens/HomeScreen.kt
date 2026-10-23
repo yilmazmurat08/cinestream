@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -316,6 +317,7 @@ fun HomeScreen(
             CineStreamTopBar(
                 isProUser = isProUser,
                 isScrolled = isScrolled,
+                frosted = com.example.BuildConfig.NEW_BOTTOM_BAR,
                 onLogoClick = { viewModel.setSelectedTypeFilter("ALL") },
                 onProClick = { viewModel.openPaywall() },
                 onSearchClick = { isSearchPopupOpen = true },
@@ -488,15 +490,17 @@ fun HomeScreen(
     ) { innerPadding ->
         // Yeni alt bar içeriğin üstünde yüzer: içerik barın altına kadar uzanır ve kaydırılırken barın arkasında
         // görünür. Listeler sonda bar yüksekliği kadar boşluk bırakır (LocalFloatingBarInset), son öğe barın altında kalmaz.
+        // Üst bar da buzlu ve içeriğin üstünde yüzer: listeler başta üst bar kadar boşluk bırakır (LocalFloatingTopBarInset).
         val floatingBarInset = if (com.example.BuildConfig.NEW_BOTTOM_BAR) innerPadding.calculateBottomPadding() else 0.dp
-        CompositionLocalProvider(com.example.ui.components.LocalFloatingBarInset provides floatingBarInset) {
+        val floatingTopBarInset = if (com.example.BuildConfig.NEW_BOTTOM_BAR) innerPadding.calculateTopPadding() else 0.dp
+        CompositionLocalProvider(
+            com.example.ui.components.LocalFloatingBarInset provides floatingBarInset,
+            com.example.ui.components.LocalFloatingTopBarInset provides floatingTopBarInset
+        ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    if (com.example.BuildConfig.NEW_BOTTOM_BAR) PaddingValues(top = innerPadding.calculateTopPadding())
-                    else innerPadding
-                )
+                .padding(if (com.example.BuildConfig.NEW_BOTTOM_BAR) PaddingValues(0.dp) else innerPadding)
                 .background(backgroundBrush)
                 .testTag("home_screen")
         ) {
@@ -513,7 +517,9 @@ fun HomeScreen(
                     PullToRefreshDefaults.Indicator(
                         state = pullState,
                         isRefreshing = isLoading,
-                        modifier = Modifier.align(Alignment.TopCenter),
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = com.example.ui.components.LocalFloatingTopBarInset.current),
                         color = CineOrange,
                         containerColor = Color(0xFF1E1E24)
                     )
@@ -523,7 +529,10 @@ fun HomeScreen(
                     LazyColumn(
                         state = homeLazyListState,
                         verticalArrangement = Arrangement.Top,
-                        contentPadding = PaddingValues(bottom = 24.dp + com.example.ui.components.LocalFloatingBarInset.current),
+                        contentPadding = PaddingValues(
+                            top = com.example.ui.components.LocalFloatingTopBarInset.current,
+                            bottom = 24.dp + com.example.ui.components.LocalFloatingBarInset.current
+                        ),
                         modifier = Modifier
                             .fillMaxSize()
                     ) {
@@ -1387,6 +1396,7 @@ fun HomeScreen(
                             }
                             LazyColumn(
                                 modifier = Modifier
+                                    .padding(top = com.example.ui.components.LocalFloatingTopBarInset.current)
                                     .fillMaxWidth()
                                     .height(600.dp)
                             ) {
@@ -1474,7 +1484,11 @@ fun HomeScreen(
                                 }
                             }
                         } else {
-                            Column(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(top = com.example.ui.components.LocalFloatingTopBarInset.current)
+                                    .fillMaxWidth()
+                            ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -1522,7 +1536,10 @@ fun HomeScreen(
                 } else if (selectedTypeFilter == "RADIO") {
                     val chunkedRadio = remember(radioChannels) { radioChannels.chunked(2) }
                     LazyColumn(
-                        contentPadding = PaddingValues(bottom = com.example.ui.components.LocalFloatingBarInset.current),
+                        contentPadding = PaddingValues(
+                            top = com.example.ui.components.LocalFloatingTopBarInset.current,
+                            bottom = com.example.ui.components.LocalFloatingBarInset.current
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
@@ -1597,7 +1614,10 @@ fun HomeScreen(
                         viewModel = viewModel,
                         onPlayItem = onPlayItem,
                         tvMode = false,
-                        modifier = Modifier.padding(bottom = com.example.ui.components.LocalFloatingBarInset.current)
+                        modifier = Modifier.padding(
+                            top = com.example.ui.components.LocalFloatingTopBarInset.current,
+                            bottom = com.example.ui.components.LocalFloatingBarInset.current
+                        )
                     )
                 }
 
@@ -3077,15 +3097,34 @@ fun CineStreamTopBar(
     onSearchClick: () -> Unit,
     onChatClick: () -> Unit = {},
     onCalendarClick: () -> Unit = {},
+    // Yeni tasarım: alt bar gibi hafif buzlu (yarı saydam, az mor); altta mor çizgi yerine ince açık çizgi.
+    frosted: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
     val isNarrowScreen = layout.screenWidthDp < 380
 
     Surface(
-        color = if (isScrolled) MidPurpleBg.copy(alpha = 0.98f) else DeepPurpleBg.copy(alpha = 0.94f),
-        border = BorderStroke(0.5.dp, if (isScrolled) AccentNeonPurple.copy(alpha = 0.2f) else AccentNeonPurple.copy(alpha = 0.08f)),
-        modifier = modifier.fillMaxWidth()
+        color = when {
+            frosted -> com.example.ui.components.FrostedTopBarColor
+            isScrolled -> MidPurpleBg.copy(alpha = 0.98f)
+            else -> DeepPurpleBg.copy(alpha = 0.94f)
+        },
+        border = if (frosted) null else BorderStroke(0.5.dp, if (isScrolled) AccentNeonPurple.copy(alpha = 0.2f) else AccentNeonPurple.copy(alpha = 0.08f)),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (frosted) {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        val y = size.height - 0.5.dp.toPx()
+                        drawLine(com.example.ui.components.FrostedTopBarLine, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                    }
+                } else {
+                    Modifier
+                }
+            )
+            .testTag("home_top_bar")
     ) {
         Column(
             modifier = Modifier

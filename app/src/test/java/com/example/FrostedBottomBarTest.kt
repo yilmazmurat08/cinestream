@@ -154,4 +154,26 @@ class FrostedBottomBarTest {
         val pillTop = bar.top + 8 * compose.activity.resources.displayMetrics.density
         assertTrue("Son klasör (alt $lastBottom) barın (üst $pillTop) üstünde kalmalı", lastBottom <= pillTop)
     }
+
+    /**
+     * Üst bar da buzlu ve içeriğin üstünde yüzer: ilk açılışta başlık ve ilk klasör barın altında kalmaz,
+     * liste barın arkasına uzanır (kaydırınca içerik barın arkasından geçer).
+     */
+    @Test
+    fun topBar_contentStartsBelowIt_andScrollsBehindIt() {
+        start { i -> "Klasör ${i % 30}" }
+        click("bottom_nav_LIVE")
+        val topBar = compose.onAllNodes(hasTestTag("home_top_bar"), useUnmergedTree = true)[0].fetchSemanticsNode().boundsInRoot
+        val list = compose.onAllNodes(hasTestTag("folder_grid_view"), useUnmergedTree = true)[0]
+        assertTrue("Liste üst barın arkasına uzanmalı", list.fetchSemanticsNode().boundsInRoot.top < topBar.bottom)
+        val firstCardTop = (0 until 30).map { "folder_card_Klasör $it" }.filter { exists(it) }
+            .minOf { compose.onAllNodes(hasTestTag(it), useUnmergedTree = true)[0].fetchSemanticsNode().boundsInRoot.top }
+        assertTrue("İlk klasör (üst $firstCardTop) üst barın (alt ${topBar.bottom}) altında kalmamalı", firstCardTop >= topBar.bottom)
+
+        list.performTouchInput { swipeUp() }
+        settle()
+        val anyBehind = (0 until 30).map { "folder_card_Klasör $it" }.filter { exists(it) }
+            .any { compose.onAllNodes(hasTestTag(it), useUnmergedTree = true)[0].fetchSemanticsNode().boundsInRoot.top < topBar.bottom }
+        assertTrue("Kaydırınca içerik üst barın arkasından geçmeli", anyBehind)
+    }
 }
