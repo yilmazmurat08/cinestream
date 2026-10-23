@@ -125,9 +125,7 @@ object ExoPlayerConfigurator {
         context: Context,
         hardwareAcceleration: Boolean,
         bufferSize: String,
-        reduceCellularQuality: Boolean,
-        // Testler oynatıcıya sahte saat verir; uygulamada kullanılmaz.
-        configureBuilder: (ExoPlayer.Builder) -> Unit = {}
+        reduceCellularQuality: Boolean
     ): ExoPlayer {
         val wrappedContext = getAttributionContext(context.applicationContext)
 
@@ -256,7 +254,6 @@ object ExoPlayerConfigurator {
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
-            .also(configureBuilder)
             .build()
     }
 
