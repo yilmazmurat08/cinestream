@@ -51,6 +51,8 @@ android {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      // Yerel kütüphanelerin sembol tablosu AAB'ye eklenir; Play çökme raporlarını okunur gösterir.
+      ndk { debugSymbolLevel = "SYMBOL_TABLE" }
       val keystorePath = System.getenv("KEYSTORE_PATH")
       if (!keystorePath.isNullOrEmpty() && file(keystorePath).exists()) {
         signingConfig = signingConfigs.getByName("release")

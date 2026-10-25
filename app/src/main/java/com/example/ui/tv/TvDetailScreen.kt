@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -292,7 +293,7 @@ fun TvDetailScreen(
                     rating?.let { "★ " + String.format(java.util.Locale.getDefault(), "%.1f", it) },
                     year,
                     genre,
-                    seasons.size.takeIf { isSeries && it > 0 }?.let { stringResource(R.string.tv_season_count, it) }
+                    seasons.size.takeIf { isSeries && it > 0 }?.let { pluralStringResource(R.plurals.tv_season_count, it, it) }
                 )
                 if (meta.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))

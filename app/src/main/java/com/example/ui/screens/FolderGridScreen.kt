@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.example.R
 import com.example.data.model.IPTVGroup
@@ -1527,7 +1528,7 @@ fun TvShowFolderCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (show.seasons.isNotEmpty()) stringResource(R.string.folder_season_count, show.seasons.size) else show.category.ifBlank { stringResource(R.string.folder_series_fallback) },
+                    text = if (show.seasons.isNotEmpty()) pluralStringResource(R.plurals.folder_season_count, show.seasons.size, show.seasons.size) else show.category.ifBlank { stringResource(R.string.folder_series_fallback) },
                     color = SlateGray, // High-contrast light Slate Gray
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,

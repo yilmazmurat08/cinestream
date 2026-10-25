@@ -317,7 +317,10 @@
     <string name="folder_item_live">Canlı Yayın</string>
     <string name="folder_item_movie">Film</string>
     <string name="folder_episode_count">%1$d Bölüm</string>
-    <string name="folder_season_count">%1$d Sezon</string>
+    <plurals name="folder_season_count">
+        <item quantity="one">%1$d Sezon</item>
+        <item quantity="other">%1$d Sezon</item>
+    </plurals>
     <string name="folder_series_fallback">Dizi</string>
     <string name="folder_channel_live_suffix">\@%1$s • Canlı</string>
     <string name="home_folder_live">Canlı Yayın</string>
@@ -542,7 +545,10 @@
     <string name="tv_resume_episode">Devam et: S%1$d B%2$d</string>
     <string name="tv_add_favorite">Kaydet</string>
     <string name="tv_remove_favorite">Kaydedildi</string>
-    <string name="tv_season_count">%1$d sezon</string>
+    <plurals name="tv_season_count">
+        <item quantity="one">%1$d sezon</item>
+        <item quantity="other">%1$d sezon</item>
+    </plurals>
     <string name="tv_seasons">Sezonlar</string>
     <string name="tv_season_n">Sezon %1$d</string>
     <string name="tv_episodes">Bölümler</string>
