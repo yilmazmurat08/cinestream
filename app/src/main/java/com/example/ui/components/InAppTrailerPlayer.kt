@@ -178,6 +178,9 @@ private fun createTrailerWebView(
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
+        // Sayfa yalnızca YouTube'dan yüklenir; cihazdaki dosyalara erişim kapalı (Android 10 ve altında varsayılan açık).
+        settings.allowFileAccess = false
+        settings.allowContentAccess = false
         webChromeClient = object : WebChromeClient() {
             // Varsayılan gri "oynat" afişi yerine video yüklenene kadar siyah görünür.
             override fun getDefaultVideoPoster(): android.graphics.Bitmap? =
