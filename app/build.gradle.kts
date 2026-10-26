@@ -73,6 +73,14 @@ android {
     // Süre sınırı testi: qa ile aynı ama ücretsiz süre açık ve yalnızca 2 dakika (süre dolması, saat hilesi,
     // canlı yayının durması hızlıca denenir). Mağaza sürümü etkilenmez (60 dakika).
     // Derleme: ./gradlew assembleQaLimit  → app/build/outputs/apk/qaLimit/app-qaLimit.apk
+    // Yan yana kurulan test sürümü: ayrı paket (com.cinestream.iptv.test), ad "CineStream Test". Play sürümü ve
+    // verileri silinmeden denenir; satın alma bu pakette çalışmaz. Derleme: ./gradlew assemblePreview
+    create("preview") {
+      initWith(getByName("qa"))
+      applicationIdSuffix = ".test"
+      versionNameSuffix = "-test"
+      matchingFallbacks += listOf("qa", "release")
+    }
     create("qaLimit") {
       initWith(getByName("qa"))
       matchingFallbacks += listOf("qa", "release")
