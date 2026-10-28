@@ -271,12 +271,16 @@ open class ReleaseSmokeTest {
 class ReleaseSmokeLandscapeTest : ReleaseSmokeTest()
 
 /** Mi TV Stick: Android 9, 1080p TV. */
+@OptIn(ExperimentalTestApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], qualifiers = "tr-w960dp-h540dp-land-television")
 class ReleaseSmokeTvTest {
 
+    // Ekran işleri (LaunchedEffect) uygulamadaki gibi ana iş parçacığında sürsün: Compose'un test ortamı varsayılan
+    // olarak bekletmeyen dağıtıcı kullanır; veritabanından dönen iş arka plan iş parçacığında devam edip liste
+    // ölçülürken durumu değiştiriyordu (testte ara sıra "Index 2, size 2"; cihazda olmaz).
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createAndroidComposeRule<ComponentActivity>(kotlinx.coroutines.test.StandardTestDispatcher())
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
     // Kendi bellek içi veritabanı: diğer testlerin arka plan işleri bu testin çizimine karışmaz.
