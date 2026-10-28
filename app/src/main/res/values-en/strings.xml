@@ -46,9 +46,10 @@
     <string name="selected">Selected</string>
     <string name="login_tagline">A fast, elegant, AI-assisted player for your own playlists.</string>
     <string name="login_section_ai_title">1. AI (Gemini) Settings</string>
-    <string name="login_api_key_placeholder">Paste your API key (Optional)</string>
+    <string name="login_api_key_placeholder">Paste your key (optional)</string>
     <string name="login_hide_key">Hide Key</string>
     <string name="login_show_key">Show Key</string>
+    <string name="login_gemini_key_note">Your own key, your full control: stored encrypted on this device only.</string>
     <string name="login_how_to_get_key">How to Get a Gemini API Key?</string>
     <string name="login_section_media_title">2. Media / Playlist Settings</string>
     <string name="login_playlist_label">M3U Playlist or Stream Link</string>

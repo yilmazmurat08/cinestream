@@ -51,9 +51,10 @@
     <string name="selected">Seçili</string>
     <string name="login_tagline">Kendi listelerin için yapay zekâ destekli, hızlı ve şık bir oynatıcı.</string>
     <string name="login_section_ai_title">1. Yapay Zeka (Gemini) Ayarları</string>
-    <string name="login_api_key_placeholder">API Anahtarınızı yapıştırın (İsteğe bağlı)</string>
+    <string name="login_api_key_placeholder">Anahtarı yapıştır (isteğe bağlı)</string>
     <string name="login_hide_key">Anahtarı Gizle</string>
     <string name="login_show_key">Anahtarı Göster</string>
+    <string name="login_gemini_key_note">Kendi anahtarınla tüm kontrol sende: yalnızca bu cihazda şifreli saklanır.</string>
     <string name="login_how_to_get_key">Gemini API Key Nasıl Alınır?</string>
     <string name="login_section_media_title">2. Medya / Liste Ayarları</string>
     <string name="login_playlist_label">M3U Listesi veya Yayın Bağlantısı</string>

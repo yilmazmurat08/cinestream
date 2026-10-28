@@ -163,15 +163,15 @@ fun LoginScreen(
                 // App Logo
                 Box(
                     modifier = Modifier
-                        .size(90.dp)
-                        .clip(RoundedCornerShape(24.dp))
+                        .size(68.dp)
+                        .clip(RoundedCornerShape(20.dp))
                         .background(Color.White.copy(alpha = 0.05f))
                         .border(
                             width = 1.dp,
                             brush = Brush.radialGradient(
                                 colors = listOf(Color.White.copy(alpha = 0.3f), Color.Transparent)
                             ),
-                            shape = RoundedCornerShape(24.dp)
+                            shape = RoundedCornerShape(20.dp)
                         )
                         .padding(2.dp)
                 ) {
@@ -180,18 +180,18 @@ fun LoginScreen(
                         contentDescription = stringResource(R.string.login_logo_description),
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(22.dp)),
+                            .clip(RoundedCornerShape(18.dp)),
                         alpha = 0.85f,
                         contentScale = ContentScale.Crop
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = "CineStream",
                     color = Color.White,
-                    fontSize = 32.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = (-1).sp,
                     textAlign = TextAlign.Center
@@ -206,7 +206,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(top = 2.dp)
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = stringResource(R.string.login_tagline),
@@ -218,7 +218,7 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // --- BÖLÜM 1: YAPAY ZEKA (GEMINI) AYARLARI ---
             Card(
@@ -228,7 +228,7 @@ fun LoginScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -237,63 +237,65 @@ fun LoginScreen(
                             imageVector = Icons.Default.Key,
                             contentDescription = null,
                             tint = CineOrange,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = stringResource(R.string.login_section_ai_title),
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
+                            fontSize = 14.sp
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    OutlinedTextField(
+                    CompactLoginField(
                         value = apiKeyInput,
                         onValueChange = {
                             apiKeyInput = it
                             onSaveApiKey(it)
                         },
-                        label = { Text("Gemini API Key") },
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.login_api_key_placeholder),
-                                color = Color.White.copy(alpha = 0.35f),
-                                fontSize = 13.sp
-                            )
-                        },
-                        trailingIcon = {
+                        placeholder = stringResource(R.string.login_api_key_placeholder),
+                        leadingIcon = Icons.Default.Key,
+                        visualTransformation = if (isApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailing = {
                             IconButton(onClick = { isApiKeyVisible = !isApiKeyVisible }) {
                                 Icon(
                                     imageVector = if (isApiKeyVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                     contentDescription = if (isApiKeyVisible) stringResource(R.string.login_hide_key) else stringResource(R.string.login_show_key),
                                     tint = Color.White.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         },
-                        visualTransformation = if (isApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White.copy(alpha = 0.06f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
-                            focusedBorderColor = CineOrange,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = CineOrange,
-                            focusedLabelColor = CineOrange,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("login_gemini_api_key_input")
+                        modifier = Modifier.testTag("login_gemini_api_key_input")
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    // Kendi anahtarı: cihazda şifreli saklanır, istekler doğrudan Google'a gider.
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, start = 2.dp, end = 2.dp)
+                            .testTag("login_gemini_key_note")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = CineOrange.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(top = 1.dp).size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.login_gemini_key_note),
+                            color = Color.White.copy(alpha = 0.55f),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     if (isTvDevice) {
                         com.example.ui.tv.PhoneEntryButton(
@@ -306,6 +308,7 @@ fun LoginScreen(
                     TextButton(
                         onClick = { showApiHelpSheet = true },
                         colors = ButtonDefaults.textButtonColors(contentColor = CineOrange),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                         modifier = Modifier.testTag("gemini_help_button")
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -325,7 +328,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // --- BÖLÜM 2: MEDYA / LISTE AYARLARI ---
             Card(
@@ -335,7 +338,7 @@ fun LoginScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -344,18 +347,18 @@ fun LoginScreen(
                             imageVector = Icons.Default.LiveTv,
                             contentDescription = null,
                             tint = CineOrange,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = stringResource(R.string.login_section_media_title),
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
+                            fontSize = 14.sp
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     if (isTvDevice) {
                         com.example.ui.tv.PhoneEntryButton(
@@ -365,58 +368,29 @@ fun LoginScreen(
                         Spacer(modifier = Modifier.height(10.dp))
                     }
 
-                    OutlinedTextField(
+                    CompactLoginField(
                         value = playlistUrlInput,
                         onValueChange = { playlistUrlInput = it },
-                        label = { Text(stringResource(R.string.login_playlist_label)) },
-                        placeholder = { Text("http://example.com/playlist.m3u", color = Color.White.copy(alpha = 0.3f)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White.copy(alpha = 0.06f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
-                            focusedBorderColor = CineOrange,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = CineOrange,
-                            focusedLabelColor = CineOrange,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("login_playlist_url_input")
+                        placeholder = stringResource(R.string.login_playlist_label),
+                        leadingIcon = Icons.Default.Link,
+                        modifier = Modifier.testTag("login_playlist_url_input")
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
+                    CompactLoginField(
                         value = epgUrlInput,
                         onValueChange = { epgUrlInput = it },
-                        label = { Text(stringResource(R.string.login_epg_label)) },
-                        placeholder = { Text(stringResource(R.string.epg_url_placeholder), color = Color.White.copy(alpha = 0.3f)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White.copy(alpha = 0.06f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
-                            focusedBorderColor = CineOrange,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = CineOrange,
-                            focusedLabelColor = CineOrange,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("login_epg_url_input")
+                        placeholder = stringResource(R.string.login_epg_label),
+                        leadingIcon = Icons.Default.CalendarMonth,
+                        modifier = Modifier.testTag("login_epg_url_input")
                     )
 
                     TextButton(
                         onClick = { showXtreamSection = !showXtreamSection },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.7f)),
-                        modifier = Modifier.padding(top = 4.dp)
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(top = 2.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -443,69 +417,41 @@ fun LoginScreen(
                                 .padding(top = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            OutlinedTextField(
+                            CompactLoginField(
                                 value = xcodeHost,
                                 onValueChange = { xcodeHost = it },
-                                label = { Text(stringResource(R.string.login_server_address)) },
-                                placeholder = { Text("http://server.com:8080", color = Color.White.copy(alpha = 0.3f)) },
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = CineOrange,
-                                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                    focusedLabelColor = CineOrange,
-                                    unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
+                                placeholder = stringResource(R.string.login_server_address),
+                                leadingIcon = Icons.Default.Dns
                             )
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                OutlinedTextField(
+                                CompactLoginField(
                                     value = xcodeUser,
                                     onValueChange = { xcodeUser = it },
-                                    label = { Text(stringResource(R.string.login_username_label)) },
-                                    singleLine = true,
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        focusedBorderColor = CineOrange,
-                                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                        focusedLabelColor = CineOrange,
-                                        unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
-                                    ),
+                                    placeholder = stringResource(R.string.login_username_label),
+                                    leadingIcon = Icons.Default.Person,
                                     modifier = Modifier.weight(1f)
                                 )
 
-                                OutlinedTextField(
+                                CompactLoginField(
                                     value = xcodePass,
                                     onValueChange = { xcodePass = it },
-                                    label = { Text(stringResource(R.string.login_password_label)) },
-                                    singleLine = true,
+                                    placeholder = stringResource(R.string.login_password_label),
+                                    leadingIcon = null,
                                     visualTransformation = if (showXcodePass) VisualTransformation.None else PasswordVisualTransformation(),
-                                    trailingIcon = {
+                                    trailing = {
                                         IconButton(onClick = { showXcodePass = !showXcodePass }) {
                                             Icon(
                                                 imageVector = if (showXcodePass) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                                 contentDescription = null,
-                                                tint = Color.White.copy(alpha = 0.6f)
+                                                tint = Color.White.copy(alpha = 0.6f),
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        focusedBorderColor = CineOrange,
-                                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                        focusedLabelColor = CineOrange,
-                                        unfocusedLabelColor = Color.White.copy(alpha = 0.5f)
-                                    ),
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -514,7 +460,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // --- BOTTOM PRIMARY ACTION: GOOGLE LOGIN & SAVE ---
             if (isLoading) {
@@ -652,7 +598,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(52.dp)
                         .testTag("google_login_button"),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
@@ -670,9 +616,11 @@ fun LoginScreen(
                         )
                         Text(
                             text = stringResource(R.string.login_cta_button),
-                            fontSize = 16.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = Color.Black,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -683,6 +631,7 @@ fun LoginScreen(
                     text = stringResource(R.string.login_terms_notice),
                     color = Color.White.copy(alpha = 0.4f),
                     fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -691,6 +640,7 @@ fun LoginScreen(
                     text = stringResource(R.string.app_disclaimer),
                     color = Color.White.copy(alpha = 0.55f),
                     fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp).testTag("login_disclaimer")
                 )
@@ -716,6 +666,68 @@ fun LoginScreen(
                 onDismiss = { showApiHelpSheet = false }
             )
         }
+    }
+}
+
+/** Giriş ekranı için kısa (48 dp) metin alanı: solda ikon, içinde ipucu; uygulamanın mor vurgusu korunur. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CompactLoginField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector?,
+    modifier: Modifier = Modifier,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val colors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Color.White.copy(alpha = 0.06f),
+        unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
+        focusedBorderColor = CineOrange,
+        unfocusedBorderColor = Color.White.copy(alpha = 0.16f),
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        cursorColor = CineOrange,
+        focusedLeadingIconColor = CineOrange,
+        unfocusedLeadingIconColor = Color.White.copy(alpha = 0.45f)
+    )
+    val shape = RoundedCornerShape(12.dp)
+    androidx.compose.foundation.text.BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        visualTransformation = visualTransformation,
+        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(CineOrange),
+        interactionSource = interaction,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp)
+    ) { inner ->
+        OutlinedTextFieldDefaults.DecorationBox(
+            value = value,
+            innerTextField = inner,
+            enabled = true,
+            singleLine = true,
+            visualTransformation = visualTransformation,
+            interactionSource = interaction,
+            placeholder = {
+                Text(placeholder, color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp, maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            },
+            leadingIcon = leadingIcon?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
+            trailingIcon = trailing,
+            colors = colors,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+            container = {
+                OutlinedTextFieldDefaults.ContainerBox(
+                    enabled = true, isError = false, interactionSource = interaction, colors = colors, shape = shape,
+                    focusedBorderThickness = 1.5.dp, unfocusedBorderThickness = 1.dp
+                )
+            }
+        )
     }
 }
 

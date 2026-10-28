@@ -248,6 +248,18 @@ class PhonePromoShotsTest {
         compose.onRoot().captureRoboImage(filePath = File(outDir, "p07-giris-baglantilar.png").absolutePath)
     }
 
+    @Test fun p18_loginTop() = shot("p18-giris-ust", 2_000) {
+        com.example.ui.screens.LoginScreen(viewModel = vm, onLoginSuccess = { _, _ -> })
+    }
+
+    @Test fun p19_loginMedia() {
+        compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.LoginScreen(viewModel = vm, onLoginSuccess = { _, _ -> }) } }
+        settle(2_000)
+        compose.onNodeWithTag("login_playlist_url_input").performScrollTo()
+        settle(1_000)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "p19-giris-liste.png").absolutePath)
+    }
+
     @Test fun p08_settingsLegal() {
         compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.SettingsScreen(viewModel = vm) } }
         settle(2_000)
