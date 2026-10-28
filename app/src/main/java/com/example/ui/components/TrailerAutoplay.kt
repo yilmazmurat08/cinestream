@@ -7,19 +7,23 @@ import kotlinx.coroutines.delay
 /** Kart açıldıktan sonra fragmanın kendiliğinden başlamasını bekleyen süre (önce kapak görünür). */
 const val TRAILER_AUTOPLAY_DELAY_MS = 1_500L
 
-/** Fragman otomatik başlamalı mı: bağlantı bulunmuş, kullanıcı kapatmamış/bitmemiş ve şu an oynamıyor olmalı. */
-fun shouldAutoplayTrailer(videoId: String?, dismissed: Boolean, playing: Boolean): Boolean =
-    !videoId.isNullOrBlank() && !dismissed && !playing
+/**
+ * Fragman otomatik başlamalı mı: Ayarlar'da açık, bağlantı bulunmuş, bu kartta bitmemiş/hata vermemiş ve şu an
+ * oynamıyor olmalı.
+ */
+fun shouldAutoplayTrailer(videoId: String?, dismissed: Boolean, playing: Boolean, enabled: Boolean = true): Boolean =
+    enabled && !videoId.isNullOrBlank() && !dismissed && !playing
 
 /**
  * Film/dizi kartı açılınca fragman, kısa bir gecikmeyle üstteki kapak görselinin yerinde kendiliğinden oynar (telefon
- * ve TV). Kullanıcı kapatırsa, fragman biterse veya hata verirse aynı kartta bir daha otomatik başlamaz ([dismissed]).
+ * ve TV). Ayarlar'da "Fragmanı otomatik oynat" kapalıysa başlamaz ([enabled]). Fragman biterse veya hata verirse aynı
+ * kartta bir daha otomatik başlamaz ([dismissed]).
  */
 @Composable
-fun AutoStartTrailerEffect(videoId: String?, dismissed: Boolean, playing: Boolean, onStart: (String) -> Unit) {
+fun AutoStartTrailerEffect(videoId: String?, dismissed: Boolean, playing: Boolean, enabled: Boolean, onStart: (String) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    LaunchedEffect(videoId, dismissed) {
-        if (!shouldAutoplayTrailer(videoId, dismissed, playing)) return@LaunchedEffect
+    LaunchedEffect(videoId, dismissed, enabled) {
+        if (!shouldAutoplayTrailer(videoId, dismissed, playing, enabled)) return@LaunchedEffect
         // Daha önce uygulama içinde oynatılamamış fragman kendiliğinden denenmez.
         if (TrailerEmbedBlocklist.isBlocked(context, videoId)) return@LaunchedEffect
         delay(TRAILER_AUTOPLAY_DELAY_MS)

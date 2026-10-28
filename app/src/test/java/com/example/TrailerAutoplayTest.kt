@@ -13,5 +13,6 @@ class TrailerAutoplayTest {
         assertFalse(shouldAutoplayTrailer("", dismissed = false, playing = false))
     }
     @Test fun doesNotRestart_afterUserClosedOrEndedOrFailed() = assertFalse(shouldAutoplayTrailer("abc123", dismissed = true, playing = false))
+    @Test fun doesNotStart_whenTurnedOffInSettings() = assertFalse(shouldAutoplayTrailer("abc123", dismissed = false, playing = false, enabled = false))
     @Test fun doesNotStart_whileAlreadyPlaying() = assertFalse(shouldAutoplayTrailer("abc123", dismissed = false, playing = true))
 }

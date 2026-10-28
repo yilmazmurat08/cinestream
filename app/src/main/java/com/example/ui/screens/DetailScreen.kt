@@ -147,10 +147,12 @@ fun DetailScreen(
     var trailerAutoDismissed by remember(item) { mutableStateOf(false) }
     // Fragman Fragman düğmesiyle mi başladı (oynatılamazsa YouTube'da açılır) yoksa kendiliğinden mi.
     var trailerByUser by remember(item) { mutableStateOf(false) }
+    val autoplayTrailer = viewModel?.autoplayTrailer?.collectAsState()?.value ?: true
     com.example.ui.components.AutoStartTrailerEffect(
         videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl),
         dismissed = trailerAutoDismissed,
         playing = playingTrailerId != null,
+        enabled = autoplayTrailer,
         onStart = { trailerByUser = false; playingTrailerId = it }
     )
 
@@ -567,55 +569,54 @@ fun DetailScreen(
                             }
 
                             // Fragman Button
-                            Button(
-                                onClick = {
-                                    val rawUrl = item.trailerUrl ?: dynamicTrailerUrl
-                                    val videoId = com.example.ui.components.extractYouTubeVideoId(rawUrl)
-                                    if (playingTrailerId != null) {
-                                        playingTrailerId = null
-                                        trailerAutoDismissed = true
-                                    } else if (!videoId.isNullOrEmpty() && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, videoId)) {
-                                        // Bu fragman uygulama içinde oynatılamıyor: doğrudan YouTube'da açılır.
-                                        com.example.ui.components.handleTrailerEmbedError(context, videoId, startedByUser = true)
-                                    } else if (!videoId.isNullOrEmpty()) {
-                                        trailerByUser = true
-                                        playingTrailerId = videoId
-                                    } else {
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            context.getString(R.string.detail_no_trailer_found),
-                                            android.widget.Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF1E1E24),
-                                    contentColor = Color.White
-                                ),
-                                shape = RoundedCornerShape(26.dp),
-                                border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.15f)),
-                                contentPadding = PaddingValues(horizontal = 14.dp),
-                                modifier = Modifier
-                                    .height(50.dp)
-                                    .testTag("action_trailer_button")
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                            if (playingTrailerId == null) {
+                                Button(
+                                    onClick = {
+                                        val rawUrl = item.trailerUrl ?: dynamicTrailerUrl
+                                        val videoId = com.example.ui.components.extractYouTubeVideoId(rawUrl)
+                                        if (!videoId.isNullOrEmpty() && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, videoId)) {
+                                            // Bu fragman uygulama içinde oynatılamıyor: doğrudan YouTube'da açılır.
+                                            com.example.ui.components.handleTrailerEmbedError(context, videoId, startedByUser = true)
+                                        } else if (!videoId.isNullOrEmpty()) {
+                                            trailerByUser = true
+                                            playingTrailerId = videoId
+                                        } else {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                context.getString(R.string.detail_no_trailer_found),
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF1E1E24),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(26.dp),
+                                    border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.15f)),
+                                    contentPadding = PaddingValues(horizontal = 14.dp),
+                                    modifier = Modifier
+                                        .height(50.dp)
+                                        .testTag("action_trailer_button")
                                 ) {
-                                    Icon(
-                                        imageVector = if (playingTrailerId != null) Icons.Default.Close else Icons.Default.Movie,
-                                        contentDescription = stringResource(R.string.trailer),
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = stringResource(if (playingTrailerId != null) R.string.trailer_close else R.string.trailer),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Movie,
+                                            contentDescription = stringResource(R.string.trailer),
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = stringResource(R.string.trailer),
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp
+                                        )
+                                    }
                                 }
                             }
                         }

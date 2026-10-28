@@ -83,6 +83,7 @@ fun SettingsScreen(
     val selectedBuffer by viewModel.bufferSize.collectAsState()
     val reduceCellularQuality by viewModel.reduceCellularQuality.collectAsState()
     val autoRefreshList by viewModel.autoRefreshList.collectAsState()
+    val autoplayTrailer by viewModel.autoplayTrailer.collectAsState()
     val subtitleSize by viewModel.subtitleSize.collectAsState()
     val subtitleColor by viewModel.subtitleColor.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
@@ -256,6 +257,8 @@ fun SettingsScreen(
                             onReduceCellularChange = { viewModel.setReduceCellularQuality(it) },
                             autoRefreshList = autoRefreshList,
                             onAutoRefreshChange = { viewModel.setAutoRefreshList(it) },
+                            autoplayTrailer = autoplayTrailer,
+                            onAutoplayTrailerChange = { viewModel.setAutoplayTrailer(it) },
                             isClearingCache = isClearingCache,
                             onClearCache = {
                                 isClearingCache = true
@@ -382,6 +385,8 @@ fun SettingsScreen(
                         onReduceCellularChange = { viewModel.setReduceCellularQuality(it) },
                         autoRefreshList = autoRefreshList,
                         onAutoRefreshChange = { viewModel.setAutoRefreshList(it) },
+                        autoplayTrailer = autoplayTrailer,
+                        onAutoplayTrailerChange = { viewModel.setAutoplayTrailer(it) },
                         isClearingCache = isClearingCache,
                         onClearCache = {
                             isClearingCache = true
@@ -607,7 +612,9 @@ fun DataAndMemoryCard(
     autoRefreshList: Boolean,
     onAutoRefreshChange: (Boolean) -> Unit,
     isClearingCache: Boolean,
-    onClearCache: () -> Unit
+    onClearCache: () -> Unit,
+    autoplayTrailer: Boolean = true,
+    onAutoplayTrailerChange: (Boolean) -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -704,6 +711,47 @@ fun DataAndMemoryCard(
                     checked = autoRefreshList,
                     onCheckedChange = onAutoRefreshChange,
                     modifier = Modifier.testTag("auto_refresh_list_switch"),
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = CineOrange
+                    )
+                )
+            }
+
+            // Custom bulletproof divider
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                    .padding(vertical = 12.dp)
+            )
+
+            // Fragmanı otomatik oynat
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_autoplay_trailer),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_autoplay_trailer_desc),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                Switch(
+                    checked = autoplayTrailer,
+                    onCheckedChange = onAutoplayTrailerChange,
+                    modifier = Modifier.testTag("autoplay_trailer_switch"),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = CineOrange

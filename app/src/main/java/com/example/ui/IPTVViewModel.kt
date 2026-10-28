@@ -166,6 +166,9 @@ class IPTVViewModel(
     val autoRefreshList: StateFlow<Boolean> = settingsRepository.autoRefreshListFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val autoplayTrailer: StateFlow<Boolean> = settingsRepository.autoplayTrailerFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
     val subtitleSize: StateFlow<Int> = settingsRepository.subtitleSizeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 16)
 
@@ -686,6 +689,12 @@ class IPTVViewModel(
         }
     }
 
+    fun setAutoplayTrailer(enabled: Boolean) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setAutoplayTrailer(enabled)
+        }
+    }
+
     fun setSubtitleSize(size: Int) {
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setSubtitleSize(size)
@@ -1133,6 +1142,12 @@ class IPTVViewModel(
     }
 
     val continueWatching: StateFlow<List<ContinueWatching>> = repository.continueWatchingFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Kaydedilenler'deki "Nerede kalmıştık": yarım kalan son 5 film/dizi (bkz. ResumeShelf). */
+    val resumeShelf: StateFlow<List<ContinueWatching>> = repository.continueWatchingFlow
+        .map { com.example.util.ResumeShelf.from(it) }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val favorites: StateFlow<List<IPTVItem>> = repository.favoriteItemsFlow

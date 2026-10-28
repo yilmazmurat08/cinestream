@@ -187,12 +187,28 @@ fun HeroBannerCard(
             .testTag("hero_banner_card")
     ) {
         // --- Arka Plan Backdrop ---
+        // Görsel yoksa ya da yüklenemezse boş alan yerine ortada uygulamanın logosu görünür.
+        var imageFailed by remember(backdropUrl) { mutableStateOf(backdropUrl.isNullOrBlank()) }
         AsyncImage(
             model = backdropUrl,
             contentDescription = title,
             contentScale = ContentScale.Crop,
+            onError = { imageFailed = true },
+            onSuccess = { imageFailed = false },
             modifier = Modifier.fillMaxSize()
         )
+        if (imageFailed) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(com.example.R.drawable.img_app_logo_1782414357652),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(bottom = 140.dp)
+                    .size(150.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(32.dp))
+                    .testTag("hero_logo_fallback")
+            )
+        }
 
         // --- Alt Karartma Gradienti (metinlerin okunurluğu için) ---
         Box(

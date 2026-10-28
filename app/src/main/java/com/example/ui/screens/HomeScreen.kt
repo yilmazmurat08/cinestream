@@ -1522,7 +1522,8 @@ fun HomeScreen(
                     WatchlistScreen(
                         viewModel = viewModel,
                         onSelectItem = { item -> viewModel.selectItem(item) },
-                        onExploreClick = { viewModel.setSelectedTypeFilter("ALL") }
+                        onExploreClick = { viewModel.setSelectedTypeFilter("ALL") },
+                        onPlayContinueWatching = onPlayContinueWatching
                     )
                 } else if (selectedTypeFilter == "SETTINGS") {
                     SettingsScreen(viewModel = viewModel)

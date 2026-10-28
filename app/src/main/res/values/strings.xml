@@ -99,6 +99,8 @@
     <string name="home_duel_header">🔀 Kararsız Kalanlar İçin Günün Seçimi</string>
     <string name="watchlist_tab_all">Tümü</string>
     <string name="watchlist_tab_live">Canlı</string>
+    <string name="resume_shelf_title">Nerede kalmıştık</string>
+    <string name="resume_minutes_left">%1$d dk kaldı</string>
     <string name="detail_date_desc">Tarih</string>
     <string name="detail_add_favorite">Favorilere Ekle</string>
     <string name="detail_close">Detayları Kapat</string>
@@ -436,6 +438,8 @@
     <string name="settings_cellular_quality_desc">Mobil verideyken yayını 480p çözünürlüğe sınırlar.</string>
     <string name="settings_auto_refresh">Listeyi Otomatik Yenile</string>
     <string name="settings_auto_refresh_desc">Uygulama açılışında IPTV kanallarını otomatik günceller.</string>
+    <string name="settings_autoplay_trailer">Fragmanı otomatik oynat</string>
+    <string name="settings_autoplay_trailer_desc">Film ya da dizi kartı açılınca fragman kendiliğinden başlar.</string>
     <string name="settings_cache">Görsel ve Veri Önbelleği</string>
     <string name="settings_cache_desc">Biriken resim önbelleklerini ve geçici dosyaları temizler.</string>
     <string name="diagnostics_unlocked">Tanılama açıldı: Ayarlar\'da çökme günlükleri görünüyor.</string>

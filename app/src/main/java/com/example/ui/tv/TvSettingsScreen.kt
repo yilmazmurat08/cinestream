@@ -113,6 +113,7 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
     val selectedBuffer by viewModel.bufferSize.collectAsState()
     val reduceCellularQuality by viewModel.reduceCellularQuality.collectAsState()
     val autoRefreshList by viewModel.autoRefreshList.collectAsState()
+    val autoplayTrailer by viewModel.autoplayTrailer.collectAsState()
     val subtitleSize by viewModel.subtitleSize.collectAsState()
     val subtitleColor by viewModel.subtitleColor.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
@@ -279,6 +280,8 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
                         onReduceCellularChange = { viewModel.setReduceCellularQuality(it) },
                         autoRefreshList = autoRefreshList,
                         onAutoRefreshChange = { viewModel.setAutoRefreshList(it) },
+                        autoplayTrailer = autoplayTrailer,
+                        onAutoplayTrailerChange = { viewModel.setAutoplayTrailer(it) },
                         isClearingCache = isClearingCache,
                         onClearCache = {
                             isClearingCache = true

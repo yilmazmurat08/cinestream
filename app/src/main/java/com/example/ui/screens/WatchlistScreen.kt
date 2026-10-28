@@ -62,9 +62,11 @@ fun WatchlistScreen(
     viewModel: IPTVViewModel,
     onSelectItem: (IPTVItem) -> Unit,
     onExploreClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPlayContinueWatching: (com.example.data.model.ContinueWatching) -> Unit = {}
 ) {
     val adaptiveLayout = rememberAppAdaptiveLayout()
+    val resumeShelf by viewModel.resumeShelf.collectAsState()
     val favorites by viewModel.favoritesWithSeries.collectAsState()
     val currentTheme = LocalAppTheme.current
     var selectedTab by remember { mutableStateOf("ALL") } // ALL, MOVIE, SERIES, LIVE
@@ -141,6 +143,11 @@ fun WatchlistScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (resumeShelf.isNotEmpty()) {
+            ResumeShelfRow(resumeShelf, contentColor, onPlayContinueWatching)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Search bar inside Watchlist if favorites exist
         if (favorites.isNotEmpty()) {
@@ -446,6 +453,97 @@ fun WatchlistScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** "Nerede kalmıştık": yarım kalan son film ve diziler; dokununca kaldığı yerden oynar. */
+@Composable
+private fun ResumeShelfRow(
+    shelf: List<com.example.data.model.ContinueWatching>,
+    contentColor: Color,
+    onPlay: (com.example.data.model.ContinueWatching) -> Unit
+) {
+    Column(modifier = Modifier.testTag("resume_shelf")) {
+        Text(
+            text = stringResource(R.string.resume_shelf_title),
+            color = contentColor,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(shelf, key = { it.itemId }) { cw ->
+                Column(
+                    modifier = Modifier
+                        .width(112.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onPlay(cw) }
+                        .testTag("resume_shelf_${cw.itemId}")
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(2f / 3f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Brush.verticalGradient(listOf(Color(0xFF2C2D35), Color(0xFF14151B))))
+                    ) {
+                        if (!cw.itemLogo.isNullOrBlank()) {
+                            AsyncImage(
+                                model = cw.itemLogo,
+                                contentDescription = cw.itemName,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text(
+                                text = cw.itemName.take(1).uppercase(),
+                                color = CineOrange,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(36.dp)
+                                .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                                .padding(6.dp)
+                        )
+                        com.example.util.ResumeShelf.progress(cw)?.let { p ->
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .background(Color.White.copy(alpha = 0.25f))
+                            ) {
+                                Box(modifier = Modifier.fillMaxWidth(p).fillMaxHeight().background(CineOrange))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = cw.itemName,
+                        color = contentColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    com.example.util.ResumeShelf.minutesLeft(cw)?.let { m ->
+                        Text(
+                            text = stringResource(R.string.resume_minutes_left, m),
+                            color = contentColor.copy(alpha = 0.6f),
+                            fontSize = 11.sp
+                        )
                     }
                 }
             }

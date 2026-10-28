@@ -145,10 +145,12 @@ fun SeriesDetailScreen(
     var trailerAutoDismissed by remember(item) { mutableStateOf(false) }
     // Fragman Fragman düğmesiyle mi başladı (oynatılamazsa YouTube'da açılır) yoksa kendiliğinden mi.
     var trailerByUser by remember(item) { mutableStateOf(false) }
+    val autoplayTrailer = viewModel?.autoplayTrailer?.collectAsState()?.value ?: true
     com.example.ui.components.AutoStartTrailerEffect(
         videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl),
         dismissed = trailerAutoDismissed,
         playing = playingTrailerId != null,
+        enabled = autoplayTrailer,
         onStart = { trailerByUser = false; playingTrailerId = it }
     )
 
@@ -713,59 +715,59 @@ fun SeriesDetailScreen(
                                         .testTag("series_play_first_button")
                                 )
 
-                                Button(
-                                    onClick = {
-                                        val videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl)
-                                        if (playingTrailerId != null) {
-                                            playingTrailerId = null
-                                            trailerAutoDismissed = true
-                                        } else if (!videoId.isNullOrEmpty() && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, videoId)) {
-                                            // Bu fragman uygulama içinde oynatılamıyor: doğrudan YouTube'da açılır.
-                                            com.example.ui.components.handleTrailerEmbedError(context, videoId, startedByUser = true)
-                                        } else if (!videoId.isNullOrEmpty()) {
-                                            trailerByUser = true
-                                            playingTrailerId = videoId
-                                        } else {
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                context.getString(R.string.detail_no_trailer_found),
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF1E1E24),
-                                        contentColor = if (currentTheme.isDark) Color.White else Color.Black
-                                    ),
-                                    shape = RoundedCornerShape(26.dp),
-                                    border = BorderStroke(
-                                        width = 0.8.dp,
-                                        color = if (currentTheme.isDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.15f)
-                                    ),
-                                    contentPadding = PaddingValues(horizontal = 10.dp),
-                                    modifier = Modifier
-                                        .weight(1.2f)
-                                        .height(50.dp)
-                                        .testTag("series_watch_trailer_button")
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center
+                                // Fragman Button
+                                if (playingTrailerId == null) {
+                                    Button(
+                                        onClick = {
+                                            val videoId = com.example.ui.components.extractYouTubeVideoId(item.trailerUrl ?: dynamicTrailerUrl)
+                                            if (!videoId.isNullOrEmpty() && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, videoId)) {
+                                                // Bu fragman uygulama içinde oynatılamıyor: doğrudan YouTube'da açılır.
+                                                com.example.ui.components.handleTrailerEmbedError(context, videoId, startedByUser = true)
+                                            } else if (!videoId.isNullOrEmpty()) {
+                                                trailerByUser = true
+                                                playingTrailerId = videoId
+                                            } else {
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.detail_no_trailer_found),
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF1E1E24),
+                                            contentColor = if (currentTheme.isDark) Color.White else Color.Black
+                                        ),
+                                        shape = RoundedCornerShape(26.dp),
+                                        border = BorderStroke(
+                                            width = 0.8.dp,
+                                            color = if (currentTheme.isDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.15f)
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 10.dp),
+                                        modifier = Modifier
+                                            .weight(1.2f)
+                                            .height(50.dp)
+                                            .testTag("series_watch_trailer_button")
                                     ) {
-                                        Icon(
-                                            imageVector = if (playingTrailerId != null) Icons.Default.Close else Icons.Default.Movie,
-                                            contentDescription = stringResource(R.string.detail_watch_trailer_desc),
-                                            tint = if (currentTheme.isDark) Color.White else Color.Black,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = stringResource(if (playingTrailerId != null) R.string.trailer_close else R.string.trailer),
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Movie,
+                                                contentDescription = stringResource(R.string.detail_watch_trailer_desc),
+                                                tint = if (currentTheme.isDark) Color.White else Color.Black,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = stringResource(R.string.trailer),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
                                     }
                                 }
 

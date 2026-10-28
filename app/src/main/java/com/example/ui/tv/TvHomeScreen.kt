@@ -1,5 +1,6 @@
 package com.example.ui.tv
 
+import com.example.ui.components.fadeEdges
 import com.example.util.displayRating
 
 import androidx.compose.animation.Crossfade
@@ -443,6 +444,7 @@ private fun TvHero(
 
 @Composable
 private fun TvHeroLayer(content: ShelfContent, showTag: Boolean) {
+    val appLogoPainter = androidx.compose.ui.res.painterResource(R.drawable.img_app_logo_1782414357652)
     val glow = rememberDominantColor(content.imageUrl.takeIf { content.imageKind != ShelfImageKind.WIDE })
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = maxHeight
@@ -453,7 +455,15 @@ private fun TvHeroLayer(content: ShelfContent, showTag: Boolean) {
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.CenterEnd,
-                modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().fillMaxWidth(0.72f)
+                // Afiş yüklenemezse mor boşluk yerine uygulamanın logosu görünür.
+                error = appLogoPainter,
+                fallback = appLogoPainter,
+                // Kenarlar yumuşakça zemine karışır; görselin sol kenarında keskin çizgi kalmaz.
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.72f)
+                    .fadeEdges(left = 0.35f, top = 0.12f, right = 0.04f, bottom = 0.3f)
             )
             ShelfImageKind.POSTER, ShelfImageKind.LOGO -> {
                 val imageBox: Dp = if (content.imageKind == ShelfImageKind.LOGO) h * 0.5f else h * 0.78f
@@ -473,7 +483,15 @@ private fun TvHeroLayer(content: ShelfContent, showTag: Boolean) {
                         model = content.imageUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Fit, // gerilmez, kırpılmaz
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(if (content.imageKind == ShelfImageKind.POSTER) 14.dp else 0.dp))
+                        error = appLogoPainter,
+                        fallback = appLogoPainter,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(if (content.imageKind == ShelfImageKind.POSTER) 14.dp else 0.dp))
+                            .then(
+                                if (content.imageKind == ShelfImageKind.POSTER) Modifier.fadeEdges(left = 0.18f, top = 0.1f, right = 0.12f, bottom = 0.18f)
+                                else Modifier
+                            )
                     )
                 }
             }

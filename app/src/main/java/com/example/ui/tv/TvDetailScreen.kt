@@ -148,10 +148,12 @@ fun TvDetailScreen(
     var trailerAutoDismissed by remember(item.id) { mutableStateOf(false) }
     // Fragman düğmeyle mi başladı: oynatılamazsa YouTube uygulamasında açılır; kendiliğinden başladıysa sessizce durur.
     var trailerByUser by remember(item.id) { mutableStateOf(false) }
+    val autoplayTrailer by viewModel.autoplayTrailer.collectAsState()
     com.example.ui.components.AutoStartTrailerEffect(
         videoId = com.example.ui.components.extractYouTubeVideoId(trailerUrl),
         dismissed = trailerAutoDismissed,
         playing = trailerPlaying,
+        enabled = autoplayTrailer,
         onStart = { trailerByUser = false; trailerPlaying = true }
     )
     BackHandler(enabled = trailerPlaying) { trailerPlaying = false; trailerAutoDismissed = true }
@@ -190,6 +192,15 @@ fun TvDetailScreen(
         if (!isSeries) similar = viewModel.tvSimilar(item, null, covers)
     }
     val scrollState = rememberScrollState()
+    // Odak düğme satırındayken sayfa en üstte durur. Odak aşağıdan geri gelince sistemin "odağı göster" kaydırması
+    // bizim kaydırmamızı yarıda kesebilir (başlık ekranın üstünde kalıyordu); kaydırma durunca tekrar en üste dönülür.
+    var actionsFocused by remember(item.id) { mutableStateOf(false) }
+    LaunchedEffect(actionsFocused) {
+        if (!actionsFocused) return@LaunchedEffect
+        androidx.compose.runtime.snapshotFlow { scrollState.isScrollInProgress to scrollState.value }.collect { (moving, value) ->
+            if (!moving && value != 0) scrollState.animateScrollTo(0)
+        }
+    }
     LaunchedEffect(item.id) {
         scrollState.scrollTo(0)
         requestFocusWhenReady(playFocus)
@@ -311,7 +322,7 @@ fun TvDetailScreen(
             LazyRow(
                 modifier = Modifier
                     .offset(x = (-12).dp)
-                    .onFocusChanged { if (it.hasFocus && scrollState.value != 0) scope.launch { scrollState.animateScrollTo(0) } },
+                    .onFocusChanged { actionsFocused = it.hasFocus },
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 contentPadding = PaddingValues(start = 12.dp, end = 48.dp, top = 6.dp, bottom = 6.dp)
             ) {
@@ -330,22 +341,21 @@ fun TvDetailScreen(
                         }
                     }
                 }
-                trailerUrl?.let { url ->
+                // Fragman oynarken düğme gizlenir (kapatmak için Geri tuşu); fragman oynamıyorsa elle başlatılır.
+                if (!trailerPlaying) trailerUrl?.let { url ->
                     item {
-                        TvActionButton(
-                            if (trailerPlaying) Icons.Filled.Close else Icons.Filled.Movie,
-                            stringResource(if (trailerPlaying) R.string.trailer_close else R.string.trailer),
-                            "tv_detail_trailer"
-                        ) {
+                        TvActionButton(Icons.Filled.Movie, stringResource(R.string.trailer), "tv_detail_trailer") {
                             trailerFailed = false
                             trailerAutoDismissed = true
                             val id = com.example.ui.components.extractYouTubeVideoId(url)
-                            if (!trailerPlaying && id != null && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, id)) {
+                            if (id != null && com.example.ui.components.TrailerEmbedBlocklist.isBlocked(context, id)) {
                                 // Bu fragman uygulama içinde oynatılamıyor: doğrudan YouTube uygulamasında açılır.
                                 trailerFailed = !com.example.ui.components.openTrailerInYouTube(context, id)
-                            } else {
+                            } else if (id != null) {
                                 trailerByUser = true
-                                trailerPlaying = !trailerPlaying && id != null
+                                // Düğme gizleneceği için odak İzle'ye geçer; kumanda odağı kaybolmaz.
+                                runCatching { playFocus.requestFocus() }
+                                trailerPlaying = true
                             }
                         }
                     }

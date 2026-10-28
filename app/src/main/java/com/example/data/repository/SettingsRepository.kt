@@ -32,6 +32,7 @@ class SettingsRepository(
         val BUFFER_SIZE = stringPreferencesKey("buffer_size")
         val REDUCE_CELLULAR_QUALITY = booleanPreferencesKey("reduce_cellular_quality")
         val AUTO_REFRESH_LIST = booleanPreferencesKey("auto_refresh_list")
+        val AUTOPLAY_TRAILER = booleanPreferencesKey("autoplay_trailer")
         val SUBTITLE_SIZE = intPreferencesKey("subtitle_size")
         val SUBTITLE_COLOR = stringPreferencesKey("subtitle_color")
         val PARENTAL_LOCK = booleanPreferencesKey("parental_lock")
@@ -179,6 +180,14 @@ class SettingsRepository(
             preferences[AUTO_REFRESH_LIST] ?: true
         }
 
+    /** Film/dizi kartı açılınca fragman kendiliğinden oynasın mı (varsayılan açık). */
+    val autoplayTrailerFlow: Flow<Boolean> = store.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.map { preferences ->
+            preferences[AUTOPLAY_TRAILER] ?: true
+        }
+
     val subtitleSizeFlow: Flow<Int> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
@@ -270,6 +279,12 @@ class SettingsRepository(
     suspend fun setAutoRefreshList(enabled: Boolean) {
         store.edit { preferences ->
             preferences[AUTO_REFRESH_LIST] = enabled
+        }
+    }
+
+    suspend fun setAutoplayTrailer(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[AUTOPLAY_TRAILER] = enabled
         }
     }
 

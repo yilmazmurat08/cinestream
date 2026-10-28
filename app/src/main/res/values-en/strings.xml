@@ -94,6 +94,8 @@
     <string name="home_duel_header">🔀 Today\'s Pick for the Indecisive</string>
     <string name="watchlist_tab_all">All</string>
     <string name="watchlist_tab_live">Live</string>
+    <string name="resume_shelf_title">Where you left off</string>
+    <string name="resume_minutes_left">%1$d min left</string>
     <string name="detail_date_desc">Date</string>
     <string name="detail_add_favorite">Add to Favorites</string>
     <string name="detail_close">Close Details</string>
@@ -437,6 +439,8 @@
     <string name="settings_cellular_quality_desc">Limits streams to 480p while on mobile data.</string>
     <string name="settings_auto_refresh">Auto-Refresh Lists</string>
     <string name="settings_auto_refresh_desc">Automatically updates IPTV channels when the app starts.</string>
+    <string name="settings_autoplay_trailer">Autoplay trailers</string>
+    <string name="settings_autoplay_trailer_desc">Trailers start by themselves when you open a movie or series card.</string>
     <string name="settings_cache">Image &amp; Data Cache</string>
     <string name="settings_cache_desc">Clears cached images and temporary files.</string>
     <string name="diagnostics_unlocked">Diagnostics on: crash logs are now shown in Settings.</string>

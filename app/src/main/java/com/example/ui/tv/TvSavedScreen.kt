@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +55,7 @@ fun TvSavedScreen(
 ) {
     val context = LocalContext.current
     val favorites by viewModel.favoritesWithSeries.collectAsState()
+    val resumeShelf by viewModel.resumeShelf.collectAsState()
     var tab by rememberSaveable { mutableStateOf("ALL") }
     val firstFocus = remember { FocusRequester() }
     val removedText = stringResource(R.string.tv_removed_from_saved)
@@ -90,6 +92,27 @@ fun TvSavedScreen(
         }
         Spacer(Modifier.height(6.dp))
         Text(stringResource(R.string.tv_saved_hint), color = TvTheme.TextMuted, fontSize = 13.sp)
+        // "Nerede kalmıştık": yarım kalan son 5 film/dizi; OK kaldığı yerden oynatır.
+        if (resumeShelf.isNotEmpty()) {
+            Spacer(Modifier.height(14.dp))
+            Text(stringResource(R.string.resume_shelf_title), color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                contentPadding = PaddingValues(top = 10.dp, bottom = 4.dp),
+                modifier = Modifier.testTag("tv_resume_shelf")
+            ) {
+                androidx.compose.foundation.lazy.items(resumeShelf, key = { it.itemId }) { cw ->
+                    TvPosterCard(
+                        title = cw.itemName,
+                        posterUrl = cw.itemLogo,
+                        onClick = { onPlayItem(com.example.continueWatchingItem(cw)) },
+                        subtitle = com.example.util.ResumeShelf.minutesLeft(cw)?.let { stringResource(R.string.resume_minutes_left, it) },
+                        tag = "tv_resume_${cw.itemId}",
+                        modifier = Modifier.width(104.dp)
+                    )
+                }
+            }
+        }
         Box(Modifier.weight(1f)) {
             if (shown.isEmpty()) {
                 Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
