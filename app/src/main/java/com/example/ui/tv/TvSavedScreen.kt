@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -101,7 +102,7 @@ fun TvSavedScreen(
                 contentPadding = PaddingValues(top = 10.dp, bottom = 4.dp),
                 modifier = Modifier.testTag("tv_resume_shelf")
             ) {
-                androidx.compose.foundation.lazy.items(resumeShelf, key = { it.itemId }) { cw ->
+                lazyItems(resumeShelf, key = { it.itemId }) { cw ->
                     TvPosterCard(
                         title = cw.itemName,
                         posterUrl = cw.itemLogo,
