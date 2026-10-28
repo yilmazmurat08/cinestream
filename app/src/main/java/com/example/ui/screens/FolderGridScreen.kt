@@ -67,7 +67,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import com.example.ui.IPTVViewModel
 import com.example.ui.theme.*
-import com.example.data.model.ChannelEPG
 import com.example.data.model.EPGProgram
 import java.text.SimpleDateFormat
 import java.util.Date

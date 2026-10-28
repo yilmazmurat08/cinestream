@@ -132,7 +132,6 @@ fun HomeScreen(
     val userName by viewModel.userName.collectAsState()
     val context = LocalContext.current
     val selectedCategory by viewModel.selectedCategory.collectAsState()
-    val categories by viewModel.categories.collectAsState()
     val allItems by viewModel.allItems.collectAsState()
     val trailerBoxItems by viewModel.trailerBoxItems.collectAsState()
     val recommendedItems by viewModel.recommendedItems.collectAsState()
@@ -175,7 +174,6 @@ fun HomeScreen(
     }
 
     var isSearchPopupOpen by remember { mutableStateOf(false) }
-    var isVoiceOverlayOpen by remember { mutableStateOf(false) }
     val selectedTypeFilter by viewModel.selectedTypeFilter.collectAsState()
     val activeFolderGroup by viewModel.activeFolderGroup.collectAsState()
     val selectedItem by viewModel.selectedItem.collectAsState()
@@ -191,12 +189,6 @@ fun HomeScreen(
     // Reset selected category to "Tümü" when switching bottom navigation tabs
     LaunchedEffect(selectedTypeFilter) {
         viewModel.selectCategory("Tümü")
-    }
-
-    // Dynamically filter category chips based on the selected tab (All, Canlı, Film, Dizi, Radyo)
-    val currentCategories = remember(categories, selectedTypeFilter) {
-        if (selectedTypeFilter == "SETTINGS") return@remember emptyList<String>()
-        categories
     }
 
     // Ana sayfa vitrin listelerine yetişkin içerik hiçbir şekilde girmez (ilk 10 uygun öğe bulunana kadar süzülür).
@@ -236,15 +228,6 @@ fun HomeScreen(
     val themeBg = MaterialTheme.colorScheme.background
     val contentColor = MaterialTheme.colorScheme.onBackground
     val mutedContentColor = contentColor.copy(alpha = 0.5f)
-    val actionButtonBg = if (currentTheme.isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
-
-    // Dynamic background ambient color state based on focus / active carousel (glowing purple/magenta Aurora)
-    val ambientColorStart = remember(currentTheme) {
-        CineOrange.copy(alpha = currentTheme.ambientBlurAlpha * 1.5f)
-    }
-    val ambientColorEnd = remember(currentTheme) {
-        CineRed.copy(alpha = currentTheme.ambientBlurAlpha * 0.8f)
-    }
 
     val backgroundBrush = if (currentTheme.isDark) {
         CinematicBackgroundGradient
@@ -256,7 +239,6 @@ fun HomeScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val homeLazyListState = rememberLazyListState()
-    val isScrollable = selectedTypeFilter == "ALL" || searchQuery.isNotEmpty()
     val isHeroVisible = searchQuery.isEmpty() && selectedTypeFilter == "ALL"
     // Vitrin en üstte: afiş üst barın arkasına kadar uzanır, bar saydam durur.
     val heroSlidesForBar by viewModel.heroSlides.collectAsState()

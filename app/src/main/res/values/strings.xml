@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">CineStream IPTV</string>
     <string name="settings_title">Ayarlar</string>
-    <string name="settings_subtitle">Uygulama tercihlerinizi ve oynatıcı ayarlarınızı özelleştirin.</string>
     <string name="app_language">Uygulama Dili</string>
     <string name="app_language_desc">Arayüz dilini özelleştirin (Türkçe / English).</string>
     <string name="language_tr">Türkçe (TR)</string>
@@ -250,10 +249,6 @@
     <string name="action_close">Kapat</string>
     <string name="action_cancel">İptal</string>
     <string name="action_clear">Temizle</string>
-    <string name="action_got_it">Anladım</string>
-    <string name="tmdb_info_series">Bu dizi şu anda gündemde ve popüler, ancak kütüphanende henüz bulunmuyor. IPTV sağlayıcın eklediğinde burada, kendi listende görünecek.</string>
-    <string name="tmdb_info_movie">Bu film şu anda sinemalarda gösteriliyor, henüz kütüphanende değil. IPTV sağlayıcın eklediğinde burada, kendi listende görünecek.</string>
-    <string name="media_live_epg_badge">CANLI YAYIN &amp; TV EPG REHBERİ</string>
     <string name="detail_no_summary">Bu içerik için özet bilgisi bulunmuyor.</string>
     <string name="detail_show_less">Daha Az Göster</string>
     <string name="detail_read_more">Devamını Oku...</string>
@@ -261,7 +256,6 @@
     <string name="detail_collapse">Daralt</string>
     <string name="detail_expand">Genişlet</string>
     <string name="detail_ai_recommendations">AI Önerileri</string>
-    <string name="featured_badge">Öne Çıkan</string>
     <string name="person_result_count">%1$d sonuç</string>
     <string name="person_status_library">Kütüphanen taranıyor…</string>
     <string name="person_status_tmdb">TMDB\'den filmografisi alınıyor…</string>
@@ -456,12 +450,9 @@
     <string name="settings_pin_protection_desc">Yetişkin veya kilitli içeriklere erişimde 4 haneli PIN ister.</string>
     <string name="settings_pin_code">4 Haneli PIN Kodu</string>
     <string name="settings_pin_code_desc">Kilitli içerikleri açmak için kullanılacak kod.</string>
-    <string name="settings_edit">Düzenle</string>
     <string name="settings_edit_profile">Profil Bilgilerini Düzenle</string>
     <string name="settings_select_desc">Seç</string>
     <string name="settings_close_desc">Kapat</string>
-    <string name="settings_profile_photo_desc">Profil Fotoğrafı</string>
-    <string name="settings_default_profile_desc">Varsayılan Profil</string>
     <string name="settings_edit_desc">Düzenle</string>
     <string name="settings_clear">Temizle</string>
     <string name="settings_copy">Kopyala</string>

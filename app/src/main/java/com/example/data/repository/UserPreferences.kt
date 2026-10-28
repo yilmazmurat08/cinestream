@@ -16,9 +16,6 @@ class UserPreferences(private val context: Context) {
         val MANUAL_EPG_URL = stringPreferencesKey("manual_epg_url")
     }
 
-    val isSetupCompleted: Flow<Boolean> = context.dataStore.data
-        .map { prefs -> prefs[IS_SETUP_COMPLETED] ?: false }
-
     suspend fun saveUserSettings(apiKey: String, playlistUrl: String, epgUrl: String = "") {
         context.dataStore.edit { prefs ->
             if (apiKey.isNotBlank()) prefs[GEMINI_API_KEY] = com.example.util.SecretCipher.encrypt(apiKey)

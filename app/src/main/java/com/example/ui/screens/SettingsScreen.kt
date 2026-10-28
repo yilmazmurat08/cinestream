@@ -116,7 +116,6 @@ fun SettingsScreen(
     var pinInputValue by remember { mutableStateOf("") }
     var apiKeyInputValue by remember { mutableStateOf("") }
     var isClearingCache by remember { mutableStateOf(false) }
-    var isManualSyncing by remember { mutableStateOf(false) }
 
     val bufferOptions = listOf("Düşük", "Normal", "Yüksek")
     val subtitleColorOptions = listOf("Beyaz", "Sarı", "Yeşil", "Mavi")
@@ -1855,127 +1854,6 @@ private fun ProPointItem(text: String) {
             fontSize = 12.sp,
             color = Color.White.copy(alpha = 0.9f)
         )
-    }
-}
-
-@Composable
-fun AccountHeaderComponent(
-    displayName: String?,
-    email: String?,
-    photoUrl: String?,
-    onEditClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag("account_header_component"),
-        shape = RoundedCornerShape(24.dp),
-        color = Color(0xFF16131E),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 24.dp, horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Profile Photo (90.dp, clip CircleShape, border, ContentScale.Crop)
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(CircleShape)
-                    .border(
-                        border = BorderStroke(
-                            width = 2.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF9C27B0), Color(0xFF3F51B5), CineOrange)
-                            )
-                        ),
-                        shape = CircleShape
-                    )
-                    .background(Color(0xFF231C2E)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (!photoUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(photoUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = stringResource(R.string.settings_profile_photo_desc),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = stringResource(R.string.settings_default_profile_desc),
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.size(48.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Kullanıcı Ad-Soyadı
-            Text(
-                text = if (!displayName.isNullOrBlank()) displayName else stringResource(R.string.settings_default_user),
-                style = TextStyle(
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                ),
-                textAlign = TextAlign.Center
-            )
-
-            // E-posta Adresi
-            if (!email.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = email,
-                    color = Color.Gray,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 'Düzenle' Butonu (koyu gri Color(0xFF2C2C2E), rounded)
-            Surface(
-                onClick = onEditClick,
-                shape = RoundedCornerShape(20.dp),
-                color = Color(0xFF2C2C2E),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
-                modifier = Modifier.testTag("edit_profile_button")
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.settings_edit_desc),
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.settings_edit),
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
     }
 }
 

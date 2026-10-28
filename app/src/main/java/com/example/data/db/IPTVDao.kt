@@ -70,9 +70,6 @@ interface IPTVDao {
     @Query("SELECT COUNT(*) FROM iptv_items_parked WHERE playlistId = :playlistId")
     suspend fun getParkedItemCount(playlistId: Int): Int
 
-    @Query("SELECT id FROM iptv_items_parked WHERE playlistId != :playlistId")
-    suspend fun getParkedItemIdsExcludingPlaylist(playlistId: Int): List<Int>
-
     @Query("""
         INSERT OR REPLACE INTO xtream_series_catalog_parked (playlistId, seriesId, name, canonicalKey, coverUrl, backdropUrl, plot, rating, releaseDate, genre, `cast`, director, categoryId)
         SELECT :playlistId, seriesId, name, canonicalKey, coverUrl, backdropUrl, plot, rating, releaseDate, genre, `cast`, director, categoryId FROM xtream_series_catalog

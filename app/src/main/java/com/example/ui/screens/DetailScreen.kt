@@ -267,17 +267,6 @@ fun DetailScreen(
         label = "sec4_offset"
     )
 
-    val sec5Alpha by animateFloatAsState(
-        targetValue = if (startAnimations) 1f else 0f,
-        animationSpec = tween(durationMillis = 300, delayMillis = 400),
-        label = "sec5_alpha"
-    )
-    val sec5OffsetY by animateFloatAsState(
-        targetValue = if (startAnimations) 0f else 30f,
-        animationSpec = tween(durationMillis = 300, delayMillis = 400),
-        label = "sec5_offset"
-    )
-
     Box(
         modifier = modifier
             .fillMaxSize()

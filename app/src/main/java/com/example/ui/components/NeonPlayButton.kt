@@ -40,17 +40,6 @@ fun NeonPlayButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "neon_play_rotation")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2800, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "neon_rotation_angle"
-    )
-
     val sweepGradient = Brush.sweepGradient(
         colors = listOf(
             NeonPurpleBorder1,

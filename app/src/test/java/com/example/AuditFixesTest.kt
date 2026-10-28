@@ -12,10 +12,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.api.MetadataEnricher
-import com.example.data.epg.EPGProvider
 import com.example.data.epg.RealEpgProvider
 import com.example.data.model.EPGProgram
-import com.example.data.model.IPTVItem
 import com.example.data.repository.preferencesCorruptionHandler
 import com.example.ui.screens.MultiScreenStatusOverlay
 import com.example.ui.theme.MyApplicationTheme
@@ -31,7 +29,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -188,18 +185,15 @@ class AuditFixesTest {
     @Test
     fun epg_liveNow_isComputedFromTheCurrentTime() {
         val now = System.currentTimeMillis()
-        val channel = IPTVItem(id = 1, playlistId = 1, name = "TRT 1", cleanedName = "TRT 1", logoUrl = null,
-            streamUrl = "http://h/1.ts", category = "Ulusal", type = "LIVE", tvgId = "trt1")
         fun prog(title: String, start: Long, end: Long, live: Boolean) = EPGProgram(
             id = title, channelId = 0, channelName = "trt1", title = title, description = "", category = "",
             startTimeFormatted = "", endTimeFormatted = "", startEpochMillis = start, endEpochMillis = end, isLiveNow = live
         )
-        // İndirildiğinde "Eski" canlıydı; şimdi "Şimdiki" canlı.
+        // İndirildiğinde "Eski" canlıydı; şimdi "Şimdiki" canlı. Kanal kartı ve TV paneli bu akışı gösterir.
         val stale = listOf(prog("Eski", now - 4 * 3_600_000, now - 3 * 3_600_000, live = true), prog("Şimdiki", now - 600_000, now + 600_000, live = false))
-        val epg = EPGProvider.generateEPGForSingleChannel(channel, mapOf("trt1" to stale))
-        assertEquals("Şimdiki", epg.currentProgram?.title)
-        assertFalse(epg.programs.first { it.title == "Eski" }.isLiveNow)
-        assertTrue(epg.programs.first { it.title == "Şimdiki" }.isLiveNow)
+        val shown = com.example.data.epg.EpgSchedule.window(stale, now, 12)
+        assertEquals(listOf("Şimdiki"), shown.map { it.title })
+        assertTrue(shown.single().isLiveNow)
     }
 
     // ---------------------------------------------------------------- Çoklu ekran

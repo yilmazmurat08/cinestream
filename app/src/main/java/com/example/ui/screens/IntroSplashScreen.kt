@@ -35,7 +35,6 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -429,15 +428,5 @@ fun IntroSplashScreen(
             )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun IntroSplashScreenPreview() {
-    IntroSplashScreen(
-        appName = "CineStream",
-        tagline = stringResource(R.string.intro_tagline),
-        onIntroFinished = {}
-    )
 }
 

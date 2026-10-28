@@ -36,8 +36,6 @@ import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 
-data class SpotlightCollection(val title: String, val subtitle: String, val queryKey: String)
-
 class IPTVViewModel(
     application: Application,
     private val repository: IPTVRepository,
@@ -567,12 +565,6 @@ class IPTVViewModel(
         val usage = kotlinx.coroutines.withTimeoutOrNull(2_000) { settingsRepository.watchUsageFlow.first() } ?: watchUsage.value
         return usage.secondsOn(settingsRepository.watchDayNow()) >= FREE_DAILY_WATCH_SECONDS
     }
-
-    val firstLaunchTime: StateFlow<Long> = settingsRepository.firstLaunchTimeFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
-
-    val completedPlaybackSessions: StateFlow<Int> = settingsRepository.completedPlaybackSessionsFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val hasTriggeredInAppReview: StateFlow<Boolean> = settingsRepository.hasTriggeredInAppReviewFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -1237,10 +1229,6 @@ class IPTVViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
 
-    // Manuel / Carousel filmleri (M3U listesinden rastgele 10 film - donma ve performans korumalı)
-    private val _moviesState = MutableStateFlow<List<IPTVItem>>(emptyList())
-    val moviesState: StateFlow<List<IPTVItem>> = _moviesState.asStateFlow()
-
     private val _aiBulletinText = MutableStateFlow("🍿 Bugün ne izlemek istersiniz? İlgi alanlarınıza göre harika içerikler keşfetmek için takipte kalın!")
     val aiBulletinText: StateFlow<String> = _aiBulletinText.asStateFlow()
 
@@ -1250,18 +1238,6 @@ class IPTVViewModel(
 
     private val _isAILoading = MutableStateFlow(false)
     val isAILoading: StateFlow<Boolean> = _isAILoading.asStateFlow()
-
-    private val _isMoodLoading = MutableStateFlow(false)
-    val isMoodLoading: StateFlow<Boolean> = _isMoodLoading.asStateFlow()
-
-    // Available categories dynamically extracted from database query without loading full item objects
-    val categories: StateFlow<List<String>> = repository.getDistinctCategoriesFlow()
-        .map { rawCats ->
-            val finalCats = mutableListOf<String>()
-            finalCats.add("Tümü")
-            finalCats.addAll(rawCats)
-            finalCats
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Tümü"))
 
     // Filtered by Type and selectedCategory using type-specific Room flows
     val liveChannels: StateFlow<List<IPTVItem>> = combine(
@@ -1497,50 +1473,6 @@ class IPTVViewModel(
                 }
                 .sortedWith(compareBy({ seriesCategoryRank(it.name).first }, { seriesCategoryRank(it.name).second }))
         }.flowOn(Dispatchers.Default)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val directorActorSpotlights: StateFlow<List<SpotlightCollection>> = combine(
-        movieItemsShared,
-        seriesItemsShared
-    ) { movies, series ->
-        val candidates = movies + series
-        val directorGroups = mutableMapOf<String, MutableList<IPTVItem>>()
-        val actorGroups = mutableMapOf<String, MutableList<IPTVItem>>()
-
-        candidates.forEach { item ->
-            val d = item.director.trim()
-            if (d.isNotBlank()) {
-                directorGroups.getOrPut(d) { mutableListOf() }.add(item)
-            }
-            item.cast.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { actor ->
-                actorGroups.getOrPut(actor) { mutableListOf() }.add(item)
-            }
-        }
-
-        val directorCards = directorGroups.filterValues { it.size >= 2 }
-            .entries.sortedByDescending { it.value.size }
-            .take(4)
-            .map { (name, list) ->
-                SpotlightCollection(
-                    title = "🎬 $name Sineması",
-                    subtitle = list.take(3).joinToString(" • ") { it.cleanedName },
-                    queryKey = name
-                )
-            }
-
-        val actorCards = actorGroups.filterValues { it.size >= 2 }
-            .entries.sortedByDescending { it.value.size }
-            .take(4)
-            .map { (name, list) ->
-                SpotlightCollection(
-                    title = "🎭 $name Koleksiyonu",
-                    subtitle = list.take(3).joinToString(" • ") { it.cleanedName },
-                    queryKey = name
-                )
-            }
-
-        (directorCards + actorCards)
-    }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val trailerBoxItems: StateFlow<List<IPTVItem>> = combine(
@@ -1815,13 +1747,6 @@ class IPTVViewModel(
                     if (shownIds.isEmpty() || shownIds.any { it !in itemIds }) {
                         loadFeaturedCarousel(items)
                     }
-
-                    // Carousel filmleri: Sadece filmleri al, karıştır, en fazla 10 tane al (performans korumalı)
-                    val carouselMovies = items
-                        .filter { it.type == "MOVIE" || it.type.isBlank() }
-                        .shuffled()
-                        .take(10)
-                    _moviesState.value = carouselMovies
                 }
             }
         }

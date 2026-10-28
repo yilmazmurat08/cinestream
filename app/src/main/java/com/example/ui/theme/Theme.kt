@@ -31,18 +31,6 @@ val LocalSelectedAppTheme = staticCompositionLocalOf { AppTheme.SYSTEM }
 val AppTheme.isDark: Boolean
     get() = this == AppTheme.PURE_BLACK
 
-val AppTheme.frostedBackground: Color
-    get() = if (this.isDark) MidPurpleBg.copy(alpha = 0.75f) else Color.White.copy(alpha = 0.72f)
-
-val AppTheme.frostedBorderColor: Color
-    get() = if (this.isDark) AccentNeonPurple.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.08f)
-
-val AppTheme.frostedBlurRadius: Dp
-    get() = if (this.isDark) 20.dp else 12.dp
-
-val AppTheme.ambientBlurAlpha: Float
-    get() = if (this.isDark) 0.2f else 0.04f
-
 private val PureBlackColorScheme = darkColorScheme(
     primary = AccentNeonPurple,
     onPrimary = WhiteText,

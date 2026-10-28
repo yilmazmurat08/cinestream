@@ -170,7 +170,6 @@ fun LegacyExoPlayerScreen(
     val subtitleColor by (iptvViewModel?.subtitleColor?.collectAsState() ?: remember { mutableStateOf("Beyaz") })
 
     // ExoPlayer creation & lifecycle management
-    var fallbackCount by remember(item) { mutableStateOf(0) }
     val player = remember(item) {
         // Stop any background radio playback when starting a video
         try {

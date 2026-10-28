@@ -19,10 +19,3 @@ data class EPGProgram(
     val isLiveNow: Boolean = false,
     val progressPercent: Float = 0f
 ) : Serializable
-
-@Immutable
-data class ChannelEPG(
-    val channel: IPTVItem,
-    val programs: List<EPGProgram>,
-    val currentProgram: EPGProgram? = null
-) : Serializable

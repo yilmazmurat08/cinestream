@@ -49,7 +49,6 @@ class SettingsRepository(
         val WATCH_DAY = stringPreferencesKey("watch_day")
         // Günün hesaplandığı saat dilimi ilk kullanımda sabitlenir: saat dilimini değiştirmek süreyi yenilemez.
         val WATCH_ZONE = stringPreferencesKey("watch_zone")
-        val FIRST_LAUNCH_TIME = longPreferencesKey("first_launch_time")
         val COMPLETED_PLAYBACK_SESSIONS = intPreferencesKey("completed_playback_sessions")
         val HAS_TRIGGERED_IN_APP_REVIEW = booleanPreferencesKey("has_triggered_in_app_review")
         val SYNC_INTERVAL = stringPreferencesKey("sync_interval")
@@ -102,13 +101,6 @@ class SettingsRepository(
             preferences[SYNC_INTERVAL] ?: "24_HOURS"
         }
 
-    val completedPlaybackSessionsFlow: Flow<Int> = store.data
-        .catch { exception ->
-            if (exception is IOException) emit(emptyPreferences()) else throw exception
-        }.map { preferences ->
-            preferences[COMPLETED_PLAYBACK_SESSIONS] ?: 0
-        }
-
     val hasTriggeredInAppReviewFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
@@ -129,20 +121,6 @@ class SettingsRepository(
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }.map { preferences ->
             WatchUsage(day = preferences[WATCH_DAY], seconds = preferences[TOTAL_WATCH_SECONDS] ?: 0L)
-        }
-
-    val firstLaunchTimeFlow: Flow<Long> = store.data
-        .catch { exception ->
-            if (exception is IOException) emit(emptyPreferences()) else throw exception
-        }.map { preferences ->
-            val time = preferences[FIRST_LAUNCH_TIME] ?: 0L
-            if (time == 0L) {
-                val now = System.currentTimeMillis()
-                store.edit { prefs -> prefs[FIRST_LAUNCH_TIME] = now }
-                now
-            } else {
-                time
-            }
         }
 
     val appLanguageFlow: Flow<String> = store.data

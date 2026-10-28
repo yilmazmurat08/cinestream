@@ -135,8 +135,6 @@ class IPTVRepository(
         }
     }
 
-    fun getDistinctCategoriesFlow(): Flow<List<String>> = iptvDao.getDistinctCategoriesFlow().guardedRead("categories")
-
     suspend fun getAllSeriesCovers(): Map<String, String> =
         iptvDao.getAllSeriesCovers().associate { it.showTitleKey to it.coverUrl }
 

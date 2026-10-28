@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">CineStream IPTV</string>
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Customize your app preferences and video player options.</string>
     <string name="app_language">App Language</string>
     <string name="app_language_desc">Change the interface language (Turkish / English).</string>
     <string name="language_tr">Turkish (TR)</string>
@@ -251,10 +250,6 @@
     <string name="action_close">Close</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_clear">Clear</string>
-    <string name="action_got_it">Got it</string>
-    <string name="tmdb_info_series">This series is trending right now but is not in your library yet. It will appear here in your own list once your IPTV provider adds it.</string>
-    <string name="tmdb_info_movie">This movie is showing in cinemas right now and is not in your library yet. It will appear here in your own list once your IPTV provider adds it.</string>
-    <string name="media_live_epg_badge">LIVE TV &amp; EPG GUIDE</string>
     <string name="detail_no_summary">No summary is available for this title.</string>
     <string name="detail_show_less">Show Less</string>
     <string name="detail_read_more">Read More...</string>
@@ -262,7 +257,6 @@
     <string name="detail_collapse">Collapse</string>
     <string name="detail_expand">Expand</string>
     <string name="detail_ai_recommendations">AI Recommendations</string>
-    <string name="featured_badge">Featured</string>
     <string name="person_result_count">%1$d results</string>
     <string name="person_status_library">Searching your library…</string>
     <string name="person_status_tmdb">Loading filmography from TMDB…</string>
@@ -457,12 +451,9 @@
     <string name="settings_pin_protection_desc">Asks for a 4-digit PIN to open adult or locked content.</string>
     <string name="settings_pin_code">4-Digit PIN Code</string>
     <string name="settings_pin_code_desc">The code used to unlock locked content.</string>
-    <string name="settings_edit">Edit</string>
     <string name="settings_edit_profile">Edit Profile</string>
     <string name="settings_select_desc">Select</string>
     <string name="settings_close_desc">Close</string>
-    <string name="settings_profile_photo_desc">Profile Photo</string>
-    <string name="settings_default_profile_desc">Default Profile</string>
     <string name="settings_edit_desc">Edit</string>
     <string name="settings_clear">Clear</string>
     <string name="settings_copy">Copy</string>

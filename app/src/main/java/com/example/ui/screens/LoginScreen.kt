@@ -722,7 +722,7 @@ private fun CompactLoginField(
             colors = colors,
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
             container = {
-                OutlinedTextFieldDefaults.ContainerBox(
+                OutlinedTextFieldDefaults.Container(
                     enabled = true, isError = false, interactionSource = interaction, colors = colors, shape = shape,
                     focusedBorderThickness = 1.5.dp, unfocusedBorderThickness = 1.dp
                 )
@@ -1240,15 +1240,6 @@ fun StepThreeVisual() {
             )
         }
     }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true, backgroundColor = 0xFF0F0F14)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen(
-        savedApiKey = "",
-        onLoginSuccess = { _, _ -> }
-    )
 }
 
 
