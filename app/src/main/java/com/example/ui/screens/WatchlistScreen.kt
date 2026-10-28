@@ -476,7 +476,8 @@ private fun ResumeShelfRow(
         )
         Spacer(modifier = Modifier.height(10.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(shelf, key = { it.itemId }) { cw ->
+            // Anahtar kaydın kendi numarası: aynı itemId iki kayıtta olabilir (liste yenilenince eşleştirme), çakışma çökertir.
+            items(shelf, key = { it.id }) { cw ->
                 Column(
                     modifier = Modifier
                         .width(112.dp)

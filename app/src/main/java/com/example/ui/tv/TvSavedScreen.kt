@@ -102,7 +102,8 @@ fun TvSavedScreen(
                 contentPadding = PaddingValues(top = 10.dp, bottom = 4.dp),
                 modifier = Modifier.testTag("tv_resume_shelf")
             ) {
-                lazyItems(resumeShelf, key = { it.itemId }) { cw ->
+                // Anahtar kaydın kendi numarası: aynı itemId iki kayıtta olabilir (liste yenilenince eşleştirme), çakışma çökertir.
+                lazyItems(resumeShelf, key = { it.id }) { cw ->
                     TvPosterCard(
                         title = cw.itemName,
                         posterUrl = cw.itemLogo,
