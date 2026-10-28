@@ -596,9 +596,14 @@ fun FolderCard(
             )
             .testTag("folder_card_${group.name}")
     ) {
-        // Film ve dizi klasörlerinde türüne göre görsel (bkz. CategoryArt); canlı ve yetişkin klasörler değişmez.
-        val art = remember(group.name, isMovie, isSeries, isAdult) {
-            if ((isMovie || isSeries) && !isAdult) com.example.util.CategoryArt.forFolder(group.name) else null
+        // Klasörün türüne göre görsel (bkz. CategoryArt); yetişkin klasörler değişmez.
+        val art = remember(group.name, isLive, isMovie, isSeries, isAdult) {
+            when {
+                isAdult -> null
+                isLive -> com.example.util.CategoryArt.forLive(group.name)
+                isMovie || isSeries -> com.example.util.CategoryArt.forFolder(group.name)
+                else -> null
+            }
         }
         Box(
             modifier = Modifier

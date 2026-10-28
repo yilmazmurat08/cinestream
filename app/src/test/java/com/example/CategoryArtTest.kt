@@ -36,4 +36,16 @@ class CategoryArtTest {
         assertEquals(R.drawable.genre_general, CategoryArt.forFolder("Diğer"))
         assertEquals(R.drawable.genre_general, CategoryArt.forFolder("Karışık 2024"))
     }
+
+    @Test fun liveFolders() {
+        assertEquals(R.drawable.live_news, CategoryArt.forLive("HABER"))
+        assertEquals(R.drawable.live_music, CategoryArt.forLive("MÜZİK"))
+        assertEquals(R.drawable.live_sports, CategoryArt.forLive("TR | SPOR"))
+        assertEquals(R.drawable.live_religious, CategoryArt.forLive("DİNİ"))
+        assertEquals(R.drawable.live_relax, CategoryArt.forLive("RELAX LOOP"))
+        assertEquals(R.drawable.live_radio, CategoryArt.forLive("Radyo"))
+        assertEquals(R.drawable.genre_kids, CategoryArt.forLive("ÇOCUK"))
+        assertEquals(R.drawable.genre_general, CategoryArt.forLive("CINEMA (7/24)"))
+        assertEquals(R.drawable.live_tv, CategoryArt.forLive("TR | ULUSAL"))
+    }
 }

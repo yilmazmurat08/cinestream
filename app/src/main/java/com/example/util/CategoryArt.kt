@@ -35,12 +35,34 @@ object CategoryArt {
         R.drawable.genre_classic to listOf("klasik", "classic", "nostalji", "yesilcam", "yeşilçam"),
         R.drawable.genre_awards to listOf("imdb", "oscar", "ödül", "odul", "best", "top 10", "top10", "en iyi"),
     )
+    private val LIVE: List<Pair<Int, List<String>>> = listOf(
+        R.drawable.live_news to listOf("haber", "news"),
+        R.drawable.live_sports to listOf("spor", "sport", "futbol", "football"),
+        R.drawable.live_music to listOf("müzik", "muzik", "music"),
+        R.drawable.live_religious to listOf(" dini", "religious", "islam", "kuran", "quran"),
+        R.drawable.live_relax to listOf("relax", "doğa", "doga", "nature", "ambient", "manzara"),
+        R.drawable.live_radio to listOf("radyo", "radio"),
+        R.drawable.genre_documentary to listOf("belgesel", "documentary", "docu"),
+        R.drawable.genre_kids to listOf("çocuk", "cocuk", "kids", "cartoon", "çizgi", "cizgi"),
+        R.drawable.genre_general to listOf("sinema", "cinema", "film", "movie"),
+    )
+
+    /** Canlı klasör görseli: haber, spor, müzik…; eşleşmeyen klasöre genel televizyon görseli gelir. */
+    @DrawableRes
+    fun forLive(name: String): Int {
+        val n = normalize(name)
+        return LIVE.firstOrNull { (_, keys) -> keys.any { it in n } }?.first ?: R.drawable.live_tv
+    }
+
+    private fun normalize(name: String): String =
+        // "AKSİYON" küçük harfe "aksi̇yon" (noktalı i) olarak döner; nokta atılır, ı da i sayılır.
+        " " + name.lowercase(Locale.ROOT).replace("\u0307", "").replace('ı', 'i')
+            .replace('|', ' ').replace('_', ' ').replace('-', ' ') + " "
+
     /** Kart görseli. Platform klasörleri (Netflix, Disney…) dahil eşleşmeyen her klasör genel görseli alır. */
     @DrawableRes
     fun forFolder(name: String): Int {
-        // "AKSİYON" küçük harfe "aksi̇yon" (noktalı i) olarak döner; nokta atılır, ı da i sayılır.
-        val n = " " + name.lowercase(Locale.ROOT).replace("\u0307", "").replace('ı', 'i')
-            .replace('|', ' ').replace('_', ' ').replace('-', ' ') + " "
+        val n = normalize(name)
         GENRES.firstOrNull { (_, keys) -> keys.any { it in n } }?.let { return it.first }
         SPECIAL.firstOrNull { (_, keys) -> keys.any { it in n } }?.let { return it.first }
         return R.drawable.genre_general

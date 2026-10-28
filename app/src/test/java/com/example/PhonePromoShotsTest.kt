@@ -271,6 +271,14 @@ class PhonePromoShotsTest {
         com.example.ui.screens.FolderGridScreen(groups = groups, title = "Filmler", viewModel = vm, onPlayItem = {})
     }
 
+    @Test fun p17_liveFolders() = shot("p17-canli-klasorler", 3_000) {
+        val names = listOf("HABER", "SPOR", "MÜZİK", "TR | ULUSAL", "DİNİ", "RELAX LOOP", "RADYO", "ÇOCUK")
+        val groups = names.mapIndexed { i, n ->
+            com.example.data.model.IPTVGroup(id = "l$i", name = n, type = "LIVE", items = movies.take(3 + i % 5))
+        }
+        com.example.ui.screens.FolderGridScreen(groups = groups, title = "Canlı Yayın", viewModel = vm, onPlayItem = {})
+    }
+
     @Test fun p16_seriesFolders() = shot("p16-dizi-klasorleri", 3_000) {
         val names = listOf("Yerli Diziler", "Suç Dizileri", "Gerilim Dizileri", "Komedi Dizileri", "Bilim Kurgu Dizileri", "Yeni Eklenen Diziler")
         val groups = names.mapIndexed { i, n ->
