@@ -259,7 +259,7 @@ class PhonePromoShotsTest {
     }
 
     private val sampleFolders = listOf(
-        "TR | AKSİYON", "Komedi", "Dram", "Korku", "Bilim Kurgu", "Macera", "Romantik", "Animasyon",
+        "Gerilim", "Vizyondakiler", "TR | AKSİYON", "Komedi", "Dram", "Korku", "Bilim Kurgu", "Macera", "Romantik", "Animasyon",
         "Fantastik", "Suç & Polisiye", "Belgesel", "Aile", "Savaş", "4K UHD", "Yerli Filmler", "Klasikler",
         "Çocuk", "IMDb Top", "NETFLIX FİLMLERİ", "Diğer"
     )
@@ -282,7 +282,7 @@ class PhonePromoShotsTest {
             })
         }
         shot("p15-tv-film-kategorileri", 5_000) {
-            com.example.ui.tv.TvBrowseScreen(vm, "MOVIE", com.example.ui.tv.TvAppState("MOVIE", "MOVIE", "Korku", null, null))
+            com.example.ui.tv.TvBrowseScreen(vm, "MOVIE", com.example.ui.tv.TvAppState("MOVIE", "MOVIE", "Gerilim", null, null))
         }
     }
 
