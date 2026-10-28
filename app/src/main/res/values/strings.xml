@@ -453,7 +453,6 @@
     <string name="settings_edit_profile">Profil Bilgilerini Düzenle</string>
     <string name="settings_select_desc">Seç</string>
     <string name="settings_close_desc">Kapat</string>
-    <string name="settings_edit_desc">Düzenle</string>
     <string name="settings_clear">Temizle</string>
     <string name="settings_copy">Kopyala</string>
     <string name="settings_full_name">Ad Soyad</string>
