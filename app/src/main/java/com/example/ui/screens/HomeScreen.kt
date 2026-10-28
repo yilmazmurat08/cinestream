@@ -258,6 +258,16 @@ fun HomeScreen(
     val homeLazyListState = rememberLazyListState()
     val isScrollable = selectedTypeFilter == "ALL" || searchQuery.isNotEmpty()
     val isHeroVisible = searchQuery.isEmpty() && selectedTypeFilter == "ALL"
+    // Vitrin en üstte: afiş üst barın arkasına kadar uzanır, bar saydam durur.
+    val heroSlidesForBar by viewModel.heroSlides.collectAsState()
+    val heroOnTop = isHeroVisible && heroSlidesForBar.isNotEmpty()
+    val heroBarThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 380.dp.toPx() }
+    val barOverHero by remember(heroOnTop) {
+        derivedStateOf {
+            heroOnTop && (homeLazyListState.firstVisibleItemIndex == 0 ||
+                (homeLazyListState.firstVisibleItemIndex == 1 && homeLazyListState.firstVisibleItemScrollOffset < heroBarThresholdPx))
+        }
+    }
     // İlk öğe 1 px'lik tutamak (aşağıda): yaklaşık 30 px'den fazla kaydırılınca "kaydırıldı" sayılır.
     val isScrolled by remember {
         derivedStateOf {
@@ -274,6 +284,7 @@ fun HomeScreen(
             CineStreamTopBar(
                 isProUser = isProUser,
                 isScrolled = isScrolled,
+                transparent = barOverHero,
                 onLogoClick = { viewModel.setSelectedTypeFilter("ALL") },
                 onProClick = { viewModel.openPaywall() },
                 onSearchClick = { isSearchPopupOpen = true },
@@ -434,10 +445,15 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
+        val heroTopInset = innerPadding.calculateTopPadding()
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                // Vitrin varken içerik üst barın altından başlar (afiş barın arkasında görünür).
+                .padding(
+                    top = if (heroOnTop) 0.dp else innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding()
+                )
                 .background(backgroundBrush)
                 .testTag("home_screen")
         ) {
@@ -485,6 +501,8 @@ fun HomeScreen(
                                         slides = heroSlides,
                                         // Sayfa kaydırılırken otomatik geçiş duraklar (iki animasyon aynı anda takılma yapar).
                                         paused = homeLazyListState.isScrollInProgress,
+                                        topInset = heroTopInset,
+                                        fadeColor = if (currentTheme.isDark) com.example.ui.theme.DeepPurpleBg else themeBg,
                                         onPlayClick = { item ->
                                             val matched = viewModel.findMatchedItem(item)
                                             val targetItem = if (matched.streamUrl.isNotEmpty()) matched else item
@@ -3004,14 +3022,24 @@ fun CineStreamTopBar(
     onSearchClick: () -> Unit,
     onChatClick: () -> Unit = {},
     onCalendarClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    transparent: Boolean = false
 ) {
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
     val isNarrowScreen = layout.screenWidthDp < 380
+    // Vitrinin üstündeyken bar saydam; sayfa kaydırılınca yumuşakça koyu zemine geçer.
+    val barColor by androidx.compose.animation.animateColorAsState(
+        when {
+            transparent -> Color.Transparent
+            isScrolled -> MidPurpleBg.copy(alpha = 0.98f)
+            else -> DeepPurpleBg.copy(alpha = 0.94f)
+        },
+        label = "topBarColor"
+    )
 
     Surface(
-        color = if (isScrolled) MidPurpleBg.copy(alpha = 0.98f) else DeepPurpleBg.copy(alpha = 0.94f),
-        border = BorderStroke(0.5.dp, if (isScrolled) AccentNeonPurple.copy(alpha = 0.2f) else AccentNeonPurple.copy(alpha = 0.08f)),
+        color = barColor,
+        border = if (transparent) null else BorderStroke(0.5.dp, if (isScrolled) AccentNeonPurple.copy(alpha = 0.2f) else AccentNeonPurple.copy(alpha = 0.08f)),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(

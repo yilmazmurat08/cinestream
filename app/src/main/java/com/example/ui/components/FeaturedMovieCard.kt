@@ -27,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
@@ -60,7 +61,9 @@ fun FeaturedMovieCard(
     onInfoClick: (IPTVItem) -> Unit = {},
     favorites: List<IPTVItem> = emptyList(),
     onToggleFavorite: (IPTVItem) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    topInset: androidx.compose.ui.unit.Dp = 0.dp,
+    fadeColor: Color = com.example.ui.theme.DeepPurpleBg
 ) {
     if (featuredMovie == null) return
 
@@ -92,7 +95,9 @@ fun FeaturedMovieCard(
         onPlayClick = { onPlayClick(item) },
         onInfoClick = { onInfoClick(item) },
         onFavoriteClick = { onToggleFavorite(item) },
-        modifier = modifier
+        modifier = modifier,
+        topInset = topInset,
+        fadeColor = fadeColor
     )
 }
 
@@ -113,7 +118,9 @@ fun FeaturedHeroCarousel(
     onToggleFavorite: (IPTVItem) -> Unit = {},
     modifier: Modifier = Modifier,
     paused: Boolean = false,
-    autoAdvanceMillis: Long = 5_000L
+    autoAdvanceMillis: Long = 5_000L,
+    topInset: androidx.compose.ui.unit.Dp = 0.dp,
+    fadeColor: Color = com.example.ui.theme.DeepPurpleBg
 ) {
     if (slides.isEmpty()) return
     if (slides.size == 1) {
@@ -123,7 +130,9 @@ fun FeaturedHeroCarousel(
             onInfoClick = onInfoClick,
             favorites = favorites,
             onToggleFavorite = onToggleFavorite,
-            modifier = modifier
+            modifier = modifier,
+            topInset = topInset,
+            fadeColor = fadeColor
         )
         return
     }
@@ -142,21 +151,44 @@ fun FeaturedHeroCarousel(
         pagerState.animateScrollToPage(pagerState.currentPage + 1, animationSpec = tween(600))
     }
 
-    androidx.compose.foundation.pager.HorizontalPager(
-        state = pagerState,
-        beyondViewportPageCount = 1,
-        modifier = modifier
-            .onFocusChanged { hasFocusInside = it.hasFocus }
-            .testTag("hero_carousel")
-    ) { page ->
-        FeaturedMovieCard(
-            featuredMovie = slides[page % slides.size],
-            onPlayClick = onPlayClick,
-            onInfoClick = onInfoClick,
-            favorites = favorites,
-            onToggleFavorite = onToggleFavorite,
-            modifier = Modifier.fillMaxWidth()
-        )
+    Box(modifier = modifier) {
+        androidx.compose.foundation.pager.HorizontalPager(
+            state = pagerState,
+            beyondViewportPageCount = 1,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { hasFocusInside = it.hasFocus }
+                .testTag("hero_carousel")
+        ) { page ->
+            FeaturedMovieCard(
+                featuredMovie = slides[page % slides.size],
+                onPlayClick = onPlayClick,
+                onInfoClick = onInfoClick,
+                favorites = favorites,
+                onToggleFavorite = onToggleFavorite,
+                modifier = Modifier.fillMaxWidth(),
+                topInset = topInset,
+                fadeColor = fadeColor
+            )
+        }
+        // Sıra noktaları: hangi filmde olunduğunu gösterir.
+        val current = pagerState.currentPage % slides.size
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp)
+                .testTag("hero_dots")
+        ) {
+            repeat(slides.size) { i ->
+                Box(
+                    Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(if (i == current) Color.White else Color.White.copy(alpha = 0.35f))
+                )
+            }
+        }
     }
 }
 
@@ -178,17 +210,43 @@ fun HeroBannerCard(
     onPlayClick: () -> Unit,
     onInfoClick: () -> Unit,
     onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    topInset: androidx.compose.ui.unit.Dp = 0.dp,
+    fadeColor: Color = com.example.ui.theme.DeepPurpleBg
 ) {
+    // Afişin ana rengi: altta, afiş kaybolurken hafif bir ışık olarak kalır.
+    val glow = com.example.ui.tv.rememberDominantColor(backdropUrl, fallback = Color.Transparent)
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(520.dp)
+            .height(560.dp + topInset)
             .testTag("hero_banner_card")
     ) {
         // --- Arka Plan Backdrop ---
         // Görsel yoksa ya da yüklenemezse boş alan yerine ortada uygulamanın logosu görünür.
         var imageFailed by remember(backdropUrl) { mutableStateOf(backdropUrl.isNullOrBlank()) }
+        // Görsel alta doğru kendisi saydamlaşır: altında sayfanın zemini (hangi renkte olursa olsun) görünür,
+        // vitrin ile sonraki bölüm arasında çizgi kalmaz.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        Brush.verticalGradient(
+                            0f to Color.Black,
+                            0.42f to Color.Black,
+                            0.58f to Color.Black.copy(alpha = 0.8f),
+                            0.72f to Color.Black.copy(alpha = 0.5f),
+                            0.85f to Color.Black.copy(alpha = 0.2f),
+                            0.95f to Color.Black.copy(alpha = 0.04f),
+                            1f to Color.Transparent
+                        ),
+                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                    )
+                }
+        ) {
         AsyncImage(
             model = backdropUrl,
             contentDescription = title,
@@ -209,34 +267,45 @@ fun HeroBannerCard(
                     .testTag("hero_logo_fallback")
             )
         }
+        }
 
-        // --- Alt Karartma Gradienti (metinlerin okunurluğu için) ---
+        // --- Afiş aşağı doğru yavaşça kaybolur ve sayfanın zeminine erir (arada çizgi kalmaz) ---
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.15f),
-                            Color.Black.copy(alpha = 0.75f),
-                            Color.Black.copy(alpha = 0.96f)
-                        ),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
+                        0f to Color.Transparent,
+                        0.40f to Color.Transparent,
+                        0.62f to fadeColor.copy(alpha = 0.35f),
+                        0.80f to fadeColor.copy(alpha = 0.45f),
+                        1f to Color.Transparent
+                    )
+                )
+        )
+        // --- Afişin renginde hafif ışık (alt kısım) ---
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.55f)
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(glow.copy(alpha = 0.22f), Color.Transparent),
+                        center = androidx.compose.ui.geometry.Offset.Unspecified
                     )
                 )
         )
 
-        // --- Üst Karartma (durum çubuğu / üst ikonların okunurluğu için) ---
+        // --- Üst Karartma (saydam üst bardaki logo ve düğmelerin okunurluğu için) ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(topInset + 70.dp)
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent)
+                        colors = listOf(fadeColor.copy(alpha = 0.6f), Color.Transparent)
                     )
                 )
         )
@@ -246,7 +315,7 @@ fun HeroBannerCard(
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 16.dp, end = 16.dp),
+                .padding(top = topInset + 12.dp, end = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             IconButton(
@@ -265,36 +334,13 @@ fun HeroBannerCard(
             }
         }
 
-        // --- Sol Üst: "Öne Çıkan" rozeti ---
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 16.dp, start = 16.dp)
-                .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(50))
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Filled.AutoAwesome,
-                contentDescription = null,
-                tint = CineOrange,
-                modifier = Modifier.size(14.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = stringResource(R.string.featured_badge),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White
-            )
-        }
-
         // --- Alt İçerik: Etiketler + Başlık + Özet + Butonlar ---
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
+                .padding(bottom = 34.dp)
         ) {
             // Tür / Puan / Yıl etiket satırı
             Row(verticalAlignment = Alignment.CenterVertically) {
