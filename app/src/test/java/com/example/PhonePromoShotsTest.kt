@@ -291,9 +291,18 @@ class PhonePromoShotsTest {
         com.example.ui.screens.FolderGridScreen(groups = groups, title = "Canlı Yayın", viewModel = vm, onPlayItem = {})
     }
 
-    @Test fun p20_topRatedRow() = shot("p20-en-yuksek-puanlilar", 3_000) {
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().background(com.example.ui.theme.DeepPurpleBg)) {
-            com.example.ui.screens.LegendsSection(items = movies.take(6), onItemClick = {}, onLongClick = {})
+    @Test fun p20_topRatedRow() {
+        // Uygulamadaki gibi: kartta TMDB puanı (rozet) ve afiş görseli; test bilgisayarında TMDB olmadığı için
+        // afiş yerine uygulamanın kendi tür görselleri kullanılır.
+        val arts = listOf(R.drawable.genre_action, R.drawable.genre_scifi, R.drawable.genre_drama, R.drawable.genre_thriller)
+        val legends = movies.take(4).mapIndexed { i, m -> m.copy(logoUrl = "android.resource://${app.packageName}/${arts[i]}") }
+        val ratings = legends.mapIndexed { i, m -> com.example.util.TmdbRatings.key(m) to listOf(9.4, 9.1, 8.9, 8.7)[i] }.toMap()
+        shot("p20-en-yuksek-puanlilar", 3_000) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.util.LocalTmdbRatings provides ratings) {
+                androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().background(com.example.ui.theme.DeepPurpleBg)) {
+                    com.example.ui.screens.LegendsSection(items = legends, onItemClick = {}, onLongClick = {})
+                }
+            }
         }
     }
 
