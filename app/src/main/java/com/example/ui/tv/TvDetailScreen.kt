@@ -82,6 +82,7 @@ import com.example.data.model.isPlaceholderSummary
 import com.example.data.repository.TMDBMediaDetails
 import com.example.ui.IPTVViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -192,13 +193,16 @@ fun TvDetailScreen(
         if (!isSeries) similar = viewModel.tvSimilar(item, null, covers)
     }
     val scrollState = rememberScrollState()
-    // Odak düğme satırındayken sayfa en üstte durur. Odak aşağıdan geri gelince sistemin "odağı göster" kaydırması
-    // bizim kaydırmamızı yarıda kesebilir (başlık ekranın üstünde kalıyordu); kaydırma durunca tekrar en üste dönülür.
+    // Odak düğme satırına gelince sayfa en üste döner. Sistemin "odağı göster" kaydırması bizimkini yarıda
+    // kesebildiği için (başlık ekranın üstünde kalıyordu) önce o kaydırmanın bitmesi beklenir. Yalnızca odak
+    // satıra geldiği anda yapılır; sonrasında sayfa kendiliğinden kaydırılmaz.
     var actionsFocused by remember(item.id) { mutableStateOf(false) }
     LaunchedEffect(actionsFocused) {
         if (!actionsFocused) return@LaunchedEffect
-        androidx.compose.runtime.snapshotFlow { scrollState.isScrollInProgress to scrollState.value }.collect { (moving, value) ->
-            if (!moving && value != 0) scrollState.animateScrollTo(0)
+        repeat(2) {
+            kotlinx.coroutines.delay(16)
+            androidx.compose.runtime.snapshotFlow { scrollState.isScrollInProgress }.first { !it }
+            if (scrollState.value != 0) runCatching { scrollState.animateScrollTo(0) }
         }
     }
     LaunchedEffect(item.id) {
