@@ -2413,22 +2413,6 @@ fun LegendsSection(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Surface(
-                color = Color(0xFFFFD700).copy(alpha = 0.15f),
-                border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "${items.size} Efsane",
-                    color = Color(0xFFFFD700),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
         }
 
         LazyRow(

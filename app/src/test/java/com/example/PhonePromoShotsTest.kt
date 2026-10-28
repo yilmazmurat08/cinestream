@@ -291,6 +291,12 @@ class PhonePromoShotsTest {
         com.example.ui.screens.FolderGridScreen(groups = groups, title = "Canlı Yayın", viewModel = vm, onPlayItem = {})
     }
 
+    @Test fun p20_topRatedRow() = shot("p20-en-yuksek-puanlilar", 3_000) {
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().background(com.example.ui.theme.DeepPurpleBg)) {
+            com.example.ui.screens.LegendsSection(items = movies.take(6), onItemClick = {}, onLongClick = {})
+        }
+    }
+
     @Test fun p16_seriesFolders() = shot("p16-dizi-klasorleri", 3_000) {
         val names = listOf("Yerli Diziler", "Suç Dizileri", "Gerilim Dizileri", "Komedi Dizileri", "Bilim Kurgu Dizileri", "Yeni Eklenen Diziler")
         val groups = names.mapIndexed { i, n ->
