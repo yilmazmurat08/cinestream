@@ -245,6 +245,27 @@ fun TvBrowseScreen(
                             .focusProperties { if (rightTarget != null && selected) right = rightTarget }
                             .testTag("tv_category_${category.key}")
                     ) { focused ->
+                        // Telefondaki klasör kartlarıyla aynı tür görseli, satırın arkasında koyulaştırılmış (bkz. CategoryArt).
+                        val art = remember(category.key, category.special, category.isAdult) {
+                            if (category.special == null && !category.isAdult && category.key.isNotEmpty()) com.example.util.CategoryArt.forFolder(category.name) else null
+                        }
+                        if (art != null) {
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(art),
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                alignment = Alignment.CenterEnd,
+                                alpha = if (focused || selected) 0.75f else 0.45f,
+                                modifier = Modifier.matchParentSize()
+                            )
+                            Box(
+                                Modifier.matchParentSize().background(
+                                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                        0f to androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.75f), 0.6f to androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f), 1f to androidx.compose.ui.graphics.Color.Transparent
+                                    )
+                                )
+                            )
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp)) {
                             val icon = when {
                                 category.special == TvSpecialSection.TOP10 -> Icons.Filled.TrendingUp

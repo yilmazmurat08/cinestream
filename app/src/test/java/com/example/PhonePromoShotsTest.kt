@@ -258,6 +258,34 @@ class PhonePromoShotsTest {
         compose.onRoot().captureRoboImage(filePath = File(outDir, "p08-ayarlar-yasal.png").absolutePath)
     }
 
+    private val sampleFolders = listOf(
+        "TR | AKSİYON", "Komedi", "Dram", "Korku", "Bilim Kurgu", "Macera", "Romantik", "Animasyon",
+        "Fantastik", "Suç & Polisiye", "Belgesel", "Aile", "Savaş", "4K UHD", "Yerli Filmler", "Klasikler",
+        "Çocuk", "IMDb Top", "NETFLIX FİLMLERİ", "Diğer"
+    )
+
+    @Test fun p14_movieFolders() = shot("p14-film-klasorleri", 3_000) {
+        val groups = sampleFolders.mapIndexed { i, n ->
+            com.example.data.model.IPTVGroup(id = "g$i", name = n, type = "MOVIE", items = movies.take(3 + i % 5))
+        }
+        com.example.ui.screens.FolderGridScreen(groups = groups, title = "Filmler", viewModel = vm, onPlayItem = {})
+    }
+
+    @Test
+    @Config(qualifiers = "tr-w960dp-h540dp-land-television-xhdpi")
+    fun p15_tvMovieCategories() {
+        runBlocking {
+            val db = AppDatabase.getDatabase(app)
+            db.iptvDao().insertItems(sampleFolders.mapIndexed { i, n ->
+                IPTVItem(id = 9300 + i, playlistId = 1, name = "Örnek $i", cleanedName = "Örnek $i", logoUrl = poster("Örnek $i", i),
+                    streamUrl = "http://10.255.255.1/x/$i.mp4", category = n, type = "MOVIE")
+            })
+        }
+        shot("p15-tv-film-kategorileri", 5_000) {
+            com.example.ui.tv.TvBrowseScreen(vm, "MOVIE", com.example.ui.tv.TvAppState("MOVIE", "MOVIE", "Korku", null, null))
+        }
+    }
+
     @Test fun p12_settingsMenu() = shot("p12-ayarlar-menu", 2_000) {
         com.example.ui.screens.SettingsScreen(viewModel = vm)
     }

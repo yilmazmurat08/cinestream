@@ -596,10 +596,40 @@ fun FolderCard(
             )
             .testTag("folder_card_${group.name}")
     ) {
+        // Film ve dizi klasörlerinde türüne göre görsel (bkz. CategoryArt); canlı ve yetişkin klasörler değişmez.
+        val art = remember(group.name, isMovie, isSeries, isAdult) {
+            if ((isMovie || isSeries) && !isAdult) com.example.util.CategoryArt.forFolder(group.name) else null
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(cardBg)
+        ) {
+            if (art != null) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(art),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    alignment = Alignment.CenterEnd,
+                    modifier = Modifier.matchParentSize()
+                )
+                // Yazıların okunması için soldan sağa koyu geçiş.
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                0f to Color.Black.copy(alpha = 0.78f),
+                                0.55f to Color.Black.copy(alpha = 0.35f),
+                                1f to Color.Transparent
+                            )
+                        )
+                )
+            }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (art != null) Modifier.heightIn(min = 112.dp) else Modifier)
                 .padding(20.dp)
         ) {
             Box(
@@ -728,6 +758,7 @@ fun FolderCard(
                     modifier = Modifier.size(28.dp)
                 )
             }
+        }
         }
     }
 }
