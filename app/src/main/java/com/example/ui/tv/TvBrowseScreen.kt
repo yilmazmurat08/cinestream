@@ -247,7 +247,11 @@ fun TvBrowseScreen(
                     ) { focused ->
                         // Telefondaki klasör kartlarıyla aynı tür görseli, satırın arkasında koyulaştırılmış (bkz. CategoryArt).
                         val art = remember(category.key, category.special, category.isAdult) {
-                            if (category.special == null && !category.isAdult && category.key.isNotEmpty()) com.example.util.CategoryArt.forFolder(category.name) else null
+                            when {
+                                category.special != null || category.key.isEmpty() -> null
+                                category.isAdult -> com.example.util.CategoryArt.ADULT
+                                else -> com.example.util.CategoryArt.forFolder(category.name)
+                            }
                         }
                         if (art != null) {
                             androidx.compose.foundation.Image(

@@ -47,6 +47,10 @@ object CategoryArt {
         R.drawable.genre_general to listOf("sinema", "cinema", "film", "movie"),
     )
 
+    /** Yetişkin klasörleri (film, dizi, canlı): insan içermeyen neon "18+" tabelası. */
+    @DrawableRes
+    val ADULT: Int = R.drawable.adult_neon
+
     /** Canlı klasör görseli: haber, spor, müzik…; eşleşmeyen klasöre genel televizyon görseli gelir. */
     @DrawableRes
     fun forLive(name: String): Int {

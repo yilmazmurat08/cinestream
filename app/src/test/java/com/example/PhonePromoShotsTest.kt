@@ -272,7 +272,7 @@ class PhonePromoShotsTest {
     }
 
     @Test fun p17_liveFolders() = shot("p17-canli-klasorler", 3_000) {
-        val names = listOf("HABER", "SPOR", "MÜZİK", "TR | ULUSAL", "DİNİ", "RELAX LOOP", "RADYO", "ÇOCUK")
+        val names = listOf("YETİŞKİN: TÜRK", "HABER", "SPOR", "MÜZİK", "TR | ULUSAL", "DİNİ", "RELAX LOOP", "RADYO", "ÇOCUK")
         val groups = names.mapIndexed { i, n ->
             com.example.data.model.IPTVGroup(id = "l$i", name = n, type = "LIVE", items = movies.take(3 + i % 5))
         }

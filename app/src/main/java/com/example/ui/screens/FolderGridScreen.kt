@@ -596,10 +596,10 @@ fun FolderCard(
             )
             .testTag("folder_card_${group.name}")
     ) {
-        // Klasörün türüne göre görsel (bkz. CategoryArt); yetişkin klasörler değişmez.
+        // Klasörün türüne göre görsel (bkz. CategoryArt).
         val art = remember(group.name, isLive, isMovie, isSeries, isAdult) {
             when {
-                isAdult -> null
+                isAdult -> com.example.util.CategoryArt.ADULT
                 isLive -> com.example.util.CategoryArt.forLive(group.name)
                 isMovie || isSeries -> com.example.util.CategoryArt.forFolder(group.name)
                 else -> null
