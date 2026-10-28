@@ -58,6 +58,8 @@ import coil.request.ImageRequest
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 import com.example.ui.theme.rememberAppAdaptiveLayout
 
@@ -104,6 +106,12 @@ fun SettingsScreen(
     // Kilitli kategoriler: ekranı açmak PIN ister (güvenli oturum açıksa istemez).
     val openCategoryLocks = rememberCategoryLocksOpener(viewModel)
 
+    // Ayarlar menüsü: null = bölüm listesi, değilse o bölümün sayfası (Geri tuşu listeye döner).
+    var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+    androidx.activity.compose.BackHandler(enabled = section != null) { section = null }
+    val settingsScroll = rememberScrollState()
+    LaunchedEffect(section) { settingsScroll.scrollTo(0) }
+
     var isBufferDropdownExpanded by remember { mutableStateOf(false) }
     var pinInputValue by remember { mutableStateOf("") }
     var apiKeyInputValue by remember { mutableStateOf("") }
@@ -143,57 +151,56 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = adaptiveLayout.screenPadding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(settingsScroll)
         ) {
             Spacer(modifier = Modifier.height(24.dp))
-            
-            // Header
-            Text(
-                text = stringResource(id = R.string.settings_title),
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-0.5).sp,
-                modifier = Modifier.testTag("settings_screen_title")
-            )
-            
-            Text(
-                text = stringResource(id = R.string.settings_subtitle),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
 
-            // PROFIL ÜST ALANI (Google Auth Kullanıcı Profil Kartı)
-            AccountHeaderComponent(
-                displayName = userProfile?.displayName ?: userName ?: "Kullanıcı",
-                email = userProfile?.email ?: userEmail ?: "",
-                photoUrl = userProfile?.photoUrl ?: userPhotoUrl,
-                onEditClick = { showEditProfileDialog = true },
-                modifier = Modifier.padding(bottom = 20.dp)
-            )
+            if (section == null) {
+                // Header
+                Text(
+                    text = stringResource(id = R.string.settings_title),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.5).sp,
+                    modifier = Modifier.testTag("settings_screen_title")
+                )
 
-            if (isLandscape) {
-                // Side-by-side grid layout for Landscape
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        CineStreamProUpgradeCard(
-                            isProUser = isProUser,
-                            onOpenPaywall = { viewModel.openPaywall() }
-                        )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                // Profil ve PRO: kısa, tek satırlık kartlar (ayrıntılar dokununca açılır).
+                SettingsProfileRow(
+                    displayName = userProfile?.displayName ?: userName,
+                    email = userProfile?.email ?: userEmail ?: "",
+                    photoUrl = userProfile?.photoUrl ?: userPhotoUrl,
+                    onEditClick = { showEditProfileDialog = true }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                SettingsProRow(isProUser = isProUser, onClick = { viewModel.openPaywall() })
 
-                        // 5. IPTV LİSTE YÖNETİMİ CARD
+                Spacer(modifier = Modifier.height(20.dp))
+
+                SettingsMenu(
+                    playlistCount = playlists.size,
+                    customEpg = manualEpgUrl.isNotBlank(),
+                    currentLanguage = currentLanguage,
+                    isTvMode = viewMode == com.example.data.repository.ViewMode.TV,
+                    appTheme = appTheme,
+                    bufferLabel = selectedBuffer,
+                    autoRefreshList = autoRefreshList,
+                    subtitleSize = subtitleSize,
+                    parentalLockEnabled = parentalLockEnabled,
+                    hasGeminiKey = geminiApiKey.isNotBlank(),
+                    onOpen = { section = it }
+                )
+            } else {
+                SettingsSectionHeader(title = settingsSectionTitle(section!!), onBack = { section = null })
+                Spacer(modifier = Modifier.height(12.dp))
+                when (section) {
+                    "PLAYLISTS" -> {
                         PlaylistManagerModule(viewModel = viewModel)
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // MANUEL EPG CARD
+                    }
+                    "EPG" -> {
                         ManualEpgCard(
                             currentEpgUrl = manualEpgUrl,
                             onSaveEpgUrl = { url ->
@@ -205,10 +212,8 @@ fun SettingsScreen(
                                 }
                             }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 0. DİL SEÇİMİ CARD
+                    }
+                    "LANGUAGE" -> {
                         LanguageSettingsCard(
                             currentLanguage = currentLanguage,
                             onLanguageSelect = { newLang ->
@@ -219,26 +224,20 @@ fun SettingsScreen(
                                 }
                             }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // GÖRÜNÜM MODU (Telefon / TV)
+                    }
+                    "VIEW_MODE" -> {
                         ViewModeSettingsCard(
                             currentMode = viewMode,
                             onModeSelect = { viewModel.setViewMode(it) }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // UYGULAMA TEMASI CARD
+                    }
+                    "THEME" -> {
                         ThemeSettingsCard(
                             currentTheme = appTheme,
                             onThemeSelect = { viewModel.setAppTheme(it) }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 1. OYNATICI AYARLARI CARD
+                    }
+                    "PLAYER" -> {
                         PlayerSettingsCard(
                             hwAccEnabled = hwAccEnabled,
                             onHwAccChange = { viewModel.setHardwareAcceleration(it) },
@@ -248,10 +247,8 @@ fun SettingsScreen(
                             bufferOptions = bufferOptions,
                             onBufferSelect = { viewModel.setBufferSize(it) }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 2. VERİ VE HAFIZA CARD
+                    }
+                    "DATA" -> {
                         DataAndMemoryCard(
                             reduceCellularQuality = reduceCellularQuality,
                             onReduceCellularChange = { viewModel.setReduceCellularQuality(it) },
@@ -269,9 +266,7 @@ fun SettingsScreen(
                             }
                         )
                     }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        // 3. ALTYAZI ÖZELLEŞTİRME CARD
+                    "SUBTITLES" -> {
                         SubtitlesCard(
                             subtitleSize = subtitleSize,
                             onSizeChange = { viewModel.setSubtitleSize(it) },
@@ -280,10 +275,8 @@ fun SettingsScreen(
                             colorMap = colorPreviewMap,
                             onColorSelect = { viewModel.setSubtitleColor(it) }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 4. GÜVENLİK CARD
+                    }
+                    "SECURITY" -> {
                         SecurityCard(
                             onOpenCategoryLocks = openCategoryLocks,
                             parentalLockEnabled = parentalLockEnabled,
@@ -296,9 +289,8 @@ fun SettingsScreen(
                                 }
                             }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                    }
+                    "AI" -> {
                         GeminiApiKeyCard(
                             apiKey = apiKeyInputValue,
                             isValidating = isValidatingGeminiKey,
@@ -316,131 +308,12 @@ fun SettingsScreen(
                                 Toast.makeText(context, context.getString(R.string.settings_gemini_key_deleted), Toast.LENGTH_SHORT).show()
                             }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                    }
+                    "ABOUT" -> {
                         com.example.ui.legal.LegalSettingsCard(onOpen = { viewModel.openLegal(it) })
                     }
                 }
-            } else {
-                // Single-column portrait layout
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CineStreamProUpgradeCard(
-                        isProUser = isProUser,
-                        onOpenPaywall = { viewModel.openPaywall() }
-                    )
-
-                    // OYNATMA LİSTELERİ CARD
-                    PlaylistManagerModule(viewModel = viewModel)
-
-                    // MANUEL EPG CARD
-                    ManualEpgCard(
-                        currentEpgUrl = manualEpgUrl,
-                        onSaveEpgUrl = { url ->
-                            Toast.makeText(context, context.getString(R.string.epg_url_saved_toast), Toast.LENGTH_SHORT).show()
-                            viewModel.setManualEpgUrl(url) { success ->
-                                if (!success) {
-                                    Toast.makeText(context, context.getString(R.string.epg_url_failed_toast), Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    )
-
-                    LanguageSettingsCard(
-                        currentLanguage = currentLanguage,
-                        onLanguageSelect = { newLang ->
-                            if (newLang != currentLanguage) {
-                                viewModel.setAppLanguage(newLang)
-                                LocaleHelper.setLocale(context, newLang)
-                                context.findActivity()?.recreate()
-                            }
-                        }
-                    )
-
-                    ViewModeSettingsCard(
-                        currentMode = viewMode,
-                        onModeSelect = { viewModel.setViewMode(it) }
-                    )
-
-                    ThemeSettingsCard(
-                        currentTheme = appTheme,
-                        onThemeSelect = { viewModel.setAppTheme(it) }
-                    )
-
-                    PlayerSettingsCard(
-                        hwAccEnabled = hwAccEnabled,
-                        onHwAccChange = { viewModel.setHardwareAcceleration(it) },
-                        selectedBuffer = selectedBuffer,
-                        isDropdownExpanded = isBufferDropdownExpanded,
-                        onDropdownToggle = { isBufferDropdownExpanded = it },
-                        bufferOptions = bufferOptions,
-                        onBufferSelect = { viewModel.setBufferSize(it) }
-                    )
-
-                    DataAndMemoryCard(
-                        reduceCellularQuality = reduceCellularQuality,
-                        onReduceCellularChange = { viewModel.setReduceCellularQuality(it) },
-                        autoRefreshList = autoRefreshList,
-                        onAutoRefreshChange = { viewModel.setAutoRefreshList(it) },
-                        autoplayTrailer = autoplayTrailer,
-                        onAutoplayTrailerChange = { viewModel.setAutoplayTrailer(it) },
-                        isClearingCache = isClearingCache,
-                        onClearCache = {
-                            isClearingCache = true
-                            viewModel.clearAppCache {
-                                isClearingCache = false
-                                Toast.makeText(context, context.getString(R.string.settings_toast_cache_cleared), Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    )
-
-                    SubtitlesCard(
-                        subtitleSize = subtitleSize,
-                        onSizeChange = { viewModel.setSubtitleSize(it) },
-                        selectedColor = subtitleColor,
-                        colorOptions = subtitleColorOptions,
-                        colorMap = colorPreviewMap,
-                        onColorSelect = { viewModel.setSubtitleColor(it) }
-                    )
-
-                    SecurityCard(
-                        onOpenCategoryLocks = openCategoryLocks,
-                        parentalLockEnabled = parentalLockEnabled,
-                        onLockChange = { viewModel.setParentalLock(it) },
-                        pinValue = pinInputValue,
-                        onPinChange = {
-                            if (it.length <= 4) {
-                                pinInputValue = it
-                                viewModel.setParentalPin(it)
-                            }
-                        }
-                    )
-
-                    GeminiApiKeyCard(
-                        apiKey = apiKeyInputValue,
-                        isValidating = isValidatingGeminiKey,
-                        onApiKeyChange = {
-                            apiKeyInputValue = it
-                        },
-                        onValidateClick = {
-                            viewModel.validateAndSaveGeminiApiKey(apiKeyInputValue) { _, message ->
-                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onDeleteClick = {
-                            viewModel.deleteGeminiApiKey()
-                            apiKeyInputValue = ""
-                            Toast.makeText(context, context.getString(R.string.settings_gemini_key_deleted), Toast.LENGTH_SHORT).show()
-                        }
-                    )
-
-                    com.example.ui.legal.LegalSettingsCard(onOpen = { viewModel.openLegal(it) })
-                }
             }
-            
             Spacer(modifier = Modifier.height(120.dp))
         }
 
@@ -2649,3 +2522,250 @@ private fun settingsOptionLabel(key: String): String = when (key) {
     else -> key
 }
 
+
+// ---------------------- Ayarlar menüsü ----------------------
+
+private data class SettingsEntry(val key: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val summary: String)
+
+/** Bölümün başlığı (menü satırı ve bölüm sayfasının üstü). */
+@Composable
+private fun settingsSectionTitle(key: String): String = stringResource(
+    when (key) {
+        "PLAYLISTS" -> R.string.settings_menu_playlists
+        "EPG" -> R.string.settings_menu_epg
+        "LANGUAGE" -> R.string.app_language
+        "VIEW_MODE" -> R.string.settings_view_mode
+        "THEME" -> R.string.app_theme
+        "PLAYER" -> R.string.settings_player
+        "DATA" -> R.string.settings_data_storage
+        "SUBTITLES" -> R.string.settings_subtitles
+        "SECURITY" -> R.string.settings_security
+        "AI" -> R.string.settings_menu_ai
+        else -> R.string.settings_menu_about
+    }
+)
+
+/**
+ * Ayarlar ana sayfası: her bölüm tek satır (simge, başlık, şu anki değer, ok). Satıra dokununca bölüm kendi
+ * sayfasında açılır. Satırlar konularına göre gruplanır.
+ */
+@Composable
+private fun SettingsMenu(
+    playlistCount: Int,
+    customEpg: Boolean,
+    currentLanguage: String,
+    isTvMode: Boolean,
+    appTheme: AppTheme,
+    bufferLabel: String,
+    autoRefreshList: Boolean,
+    subtitleSize: Int,
+    parentalLockEnabled: Boolean,
+    hasGeminiKey: Boolean,
+    onOpen: (String) -> Unit
+) {
+    val on = stringResource(R.string.settings_sum_on)
+    val off = stringResource(R.string.settings_sum_off)
+    val groups = listOf(
+        R.string.settings_group_content to listOf(
+            SettingsEntry("PLAYLISTS", Icons.Default.PlaylistPlay, settingsSectionTitle("PLAYLISTS"),
+                androidx.compose.ui.res.pluralStringResource(R.plurals.settings_sum_playlists, playlistCount, playlistCount)),
+            SettingsEntry("EPG", Icons.Default.DateRange, settingsSectionTitle("EPG"),
+                stringResource(if (customEpg) R.string.settings_sum_epg_custom else R.string.settings_sum_epg_auto))
+        ),
+        R.string.settings_group_appearance to listOf(
+            SettingsEntry("LANGUAGE", Icons.Default.Language, settingsSectionTitle("LANGUAGE"), if (currentLanguage == "en") "English" else "Türkçe"),
+            SettingsEntry("VIEW_MODE", if (isTvMode) Icons.Default.Tv else Icons.Default.PhoneAndroid, settingsSectionTitle("VIEW_MODE"),
+                stringResource(if (isTvMode) R.string.mode_tv else R.string.mode_phone)),
+            SettingsEntry("THEME", Icons.Default.Palette, settingsSectionTitle("THEME"), stringResource(
+                when (appTheme) {
+                    AppTheme.SYSTEM -> R.string.theme_system
+                    AppTheme.PURE_BLACK -> R.string.theme_dark
+                    AppTheme.SYSTEM_LIGHT -> R.string.theme_light
+                }
+            ))
+        ),
+        R.string.settings_group_playback to listOf(
+            SettingsEntry("PLAYER", Icons.Default.PlayCircle, settingsSectionTitle("PLAYER"), stringResource(R.string.settings_sum_buffer, bufferLabel)),
+            SettingsEntry("SUBTITLES", Icons.Default.Subtitles, settingsSectionTitle("SUBTITLES"), stringResource(R.string.settings_sum_subtitle_size, subtitleSize)),
+            SettingsEntry("DATA", Icons.Default.Storage, settingsSectionTitle("DATA"),
+                stringResource(R.string.settings_sum_auto_refresh, if (autoRefreshList) on else off))
+        ),
+        R.string.settings_group_privacy to listOf(
+            SettingsEntry("SECURITY", Icons.Default.Lock, settingsSectionTitle("SECURITY"),
+                stringResource(R.string.settings_sum_parental, if (parentalLockEnabled) on else off)),
+            SettingsEntry("AI", Icons.Default.AutoAwesome, settingsSectionTitle("AI"),
+                stringResource(if (hasGeminiKey) R.string.settings_sum_ai_key_set else R.string.settings_sum_ai_key_missing))
+        ),
+        R.string.settings_group_about to listOf(
+            SettingsEntry("ABOUT", Icons.Default.Info, settingsSectionTitle("ABOUT"), stringResource(R.string.settings_sum_about))
+        )
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.testTag("settings_menu")) {
+        groups.forEach { (groupTitle, entries) ->
+            Column {
+                Text(
+                    text = stringResource(groupTitle),
+                    color = CineOrange,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    entries.forEachIndexed { index, entry ->
+                        if (index > 0) {
+                            Box(
+                                Modifier
+                                    .padding(start = 64.dp)
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                            )
+                        }
+                        SettingsMenuRow(entry) { onOpen(entry.key) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsMenuRow(entry: SettingsEntry, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(com.example.ui.tv.tvRestorableFocus())
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .testTag("settings_row_${entry.key}")
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(CineOrange.copy(alpha = 0.16f))
+        ) {
+            Icon(entry.icon, contentDescription = null, tint = CineOrange, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(entry.title, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(entry.summary, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f), modifier = Modifier.size(22.dp))
+    }
+}
+
+/** Bölüm sayfasının üstü: geri oku ve bölüm başlığı. */
+@Composable
+private fun SettingsSectionHeader(title: String, onBack: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        IconButton(onClick = onBack, modifier = Modifier.testTag("settings_section_back")) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back), tint = MaterialTheme.colorScheme.onBackground)
+        }
+        Spacer(Modifier.width(4.dp))
+        Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun SettingsProfileRow(displayName: String?, email: String, photoUrl: String?, onEditClick: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        modifier = Modifier.fillMaxWidth().testTag("settings_profile_row")
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(com.example.ui.tv.tvRestorableFocus())
+                .clickable(onClick = onEditClick)
+                .padding(14.dp)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF7C3AED), CineOrange)))
+            ) {
+                if (!photoUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
+                } else {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+                }
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = if (!displayName.isNullOrBlank()) displayName else stringResource(R.string.settings_default_user),
+                    color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+                if (email.isNotBlank()) {
+                    Text(email, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.settings_edit_profile), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun SettingsProRow(isProUser: Boolean, onClick: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Brush.linearGradient(listOf(CineOrange, Color(0xFF7C3AED))), RoundedCornerShape(16.dp))
+            .testTag("settings_pro_row")
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Brush.horizontalGradient(listOf(CineOrange.copy(alpha = 0.18f), Color(0xFF7C3AED).copy(alpha = 0.10f))))
+                .then(com.example.ui.tv.tvRestorableFocus())
+                .clickable(onClick = onClick)
+                .padding(14.dp)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(CineOrange)
+            ) {
+                Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("CineStream PRO", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(if (isProUser) R.string.pro_card_title_active else R.string.settings_pro_row_free),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (isProUser) {
+                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(24.dp))
+            } else {
+                Text(
+                    stringResource(R.string.settings_pro_row_cta),
+                    color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(CineOrange).padding(horizontal = 14.dp, vertical = 7.dp)
+                )
+            }
+        }
+    }
+}

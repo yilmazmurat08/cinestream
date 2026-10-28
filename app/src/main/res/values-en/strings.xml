@@ -695,4 +695,31 @@
     <string name="playlist_delete_confirm_title">Delete this playlist?</string>
     <string name="playlist_delete_confirm_message">\"%1$s\" and its favourites will be deleted from this device.</string>
     <string name="playlist_slot_locked_filled">This playlist opens with PRO. It isn\'t deleted; it waits safely.</string>
+    <string name="settings_menu_playlists">Playlists</string>
+    <string name="settings_menu_epg">Program guide (EPG)</string>
+    <string name="settings_menu_ai">AI (Gemini)</string>
+    <string name="settings_menu_about">Legal &amp; about</string>
+    <string name="settings_group_content">CONTENT</string>
+    <string name="settings_group_appearance">APPEARANCE</string>
+    <string name="settings_group_playback">PLAYBACK</string>
+    <string name="settings_group_privacy">SECURITY &amp; AI</string>
+    <string name="settings_group_about">ABOUT</string>
+    <string name="settings_sum_on">on</string>
+    <string name="settings_sum_off">off</string>
+    <string name="settings_sum_epg_custom">Custom URL set</string>
+    <string name="settings_sum_epg_auto">Automatic from playlist</string>
+    <string name="settings_sum_buffer">Buffer: %1$s</string>
+    <string name="settings_sum_subtitle_size">Text size: %1$d</string>
+    <string name="settings_sum_auto_refresh">Automatic playlist refresh %1$s</string>
+    <string name="settings_sum_parental">Parental lock %1$s</string>
+    <string name="settings_sum_ai_key_set">Key set</string>
+    <string name="settings_sum_ai_key_missing">No key set</string>
+    <string name="settings_sum_about">Terms, privacy, version</string>
+    <string name="settings_back">Back</string>
+    <plurals name="settings_sum_playlists">
+        <item quantity="one">%1$d playlist</item>
+        <item quantity="other">%1$d playlists</item>
+    </plurals>
+    <string name="settings_pro_row_free">Remove the time limit, add 3 playlists</string>
+    <string name="settings_pro_row_cta">Upgrade</string>
 </resources>

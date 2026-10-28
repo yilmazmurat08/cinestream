@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
@@ -250,9 +251,23 @@ class PhonePromoShotsTest {
     @Test fun p08_settingsLegal() {
         compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.SettingsScreen(viewModel = vm) } }
         settle(2_000)
+        compose.onNodeWithTag("settings_row_ABOUT").performScrollTo().performClick()
+        settle(1_000)
         compose.onNodeWithTag("legal_settings_card").performScrollTo()
         settle(1_000)
         compose.onRoot().captureRoboImage(filePath = File(outDir, "p08-ayarlar-yasal.png").absolutePath)
+    }
+
+    @Test fun p12_settingsMenu() = shot("p12-ayarlar-menu", 2_000) {
+        com.example.ui.screens.SettingsScreen(viewModel = vm)
+    }
+
+    @Test fun p13_settingsSection() {
+        compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.SettingsScreen(viewModel = vm) } }
+        settle(2_000)
+        compose.onNodeWithTag("settings_row_DATA").performScrollTo().performClick()
+        settle(1_500)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "p13-ayarlar-bolum.png").absolutePath)
     }
 
     @Test

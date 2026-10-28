@@ -694,4 +694,31 @@
     <string name="playlist_delete_confirm_title">Liste silinsin mi?</string>
     <string name="playlist_delete_confirm_message">\"%1$s\" listesi ve bu listedeki favoriler bu cihazdan silinir.</string>
     <string name="playlist_slot_locked_filled">Bu liste PRO ile açılır. Silinmez, kenarda bekler.</string>
+    <string name="settings_menu_playlists">Liste Yönetimi</string>
+    <string name="settings_menu_epg">Yayın akışı (EPG)</string>
+    <string name="settings_menu_ai">Yapay zekâ (Gemini)</string>
+    <string name="settings_menu_about">Yasal ve hakkında</string>
+    <string name="settings_group_content">İÇERİK</string>
+    <string name="settings_group_appearance">GÖRÜNÜM</string>
+    <string name="settings_group_playback">OYNATMA</string>
+    <string name="settings_group_privacy">GÜVENLİK VE YAPAY ZEKÂ</string>
+    <string name="settings_group_about">HAKKINDA</string>
+    <string name="settings_sum_on">açık</string>
+    <string name="settings_sum_off">kapalı</string>
+    <string name="settings_sum_epg_custom">Özel adres tanımlı</string>
+    <string name="settings_sum_epg_auto">Listeden otomatik</string>
+    <string name="settings_sum_buffer">Tampon: %1$s</string>
+    <string name="settings_sum_subtitle_size">Yazı boyutu: %1$d</string>
+    <string name="settings_sum_auto_refresh">Otomatik liste güncelleme %1$s</string>
+    <string name="settings_sum_parental">Ebeveyn kilidi %1$s</string>
+    <string name="settings_sum_ai_key_set">Anahtar tanımlı</string>
+    <string name="settings_sum_ai_key_missing">Anahtar tanımlı değil</string>
+    <string name="settings_sum_about">Şartlar, gizlilik, sürüm</string>
+    <string name="settings_back">Geri</string>
+    <plurals name="settings_sum_playlists">
+        <item quantity="one">%1$d liste</item>
+        <item quantity="other">%1$d liste</item>
+    </plurals>
+    <string name="settings_pro_row_free">Süre sınırını kaldır, 3 liste ekle</string>
+    <string name="settings_pro_row_cta">Yükselt</string>
 </resources>
