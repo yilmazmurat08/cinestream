@@ -16,6 +16,7 @@ object CategoryArt {
         R.drawable.genre_family to listOf("aile", "family"),
         R.drawable.genre_documentary to listOf("belgesel", "documentary", "docu"),
         R.drawable.genre_horror to listOf("korku", "horror"),
+        R.drawable.genre_thriller to listOf("gerilim", "thriller", "suspense", "gizem", "mystery"),
         R.drawable.genre_scifi to listOf("bilim kurgu", "bilimkurgu", "sci fi", "scifi", "science fiction"),
         R.drawable.genre_fantasy to listOf("fantastik", "fantasy", "fantezi"),
         R.drawable.genre_war to listOf("savaş", "savas", " war", "war ", "military"),
@@ -27,6 +28,7 @@ object CategoryArt {
         R.drawable.genre_drama to listOf("dram", "drama"),
     )
     private val SPECIAL: List<Pair<Int, List<String>>> = listOf(
+        R.drawable.genre_new to listOf("yeni", "vizyon", " new ", "latest", "sinemada", "in cinema"),
         R.drawable.genre_4k to listOf("4k", "uhd", "2160"),
         R.drawable.genre_local to listOf("yerli", "türk", "turk"),
         R.drawable.genre_classic to listOf("klasik", "classic", "nostalji"),

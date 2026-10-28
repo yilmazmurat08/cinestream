@@ -26,6 +26,11 @@ class CategoryArtTest {
 
     @Test fun platformKeepsBrandColor_unknownGetsGeneral() {
         assertNull(CategoryArt.forFolder("NETFLIX FİLMLERİ"))
+        assertEquals(R.drawable.genre_thriller, CategoryArt.forFolder("Gerilim Filmleri"))
+        assertEquals(R.drawable.genre_thriller, CategoryArt.forFolder("TR | Thriller"))
+        assertEquals(R.drawable.genre_new, CategoryArt.forFolder("Vizyondakiler"))
+        assertEquals(R.drawable.genre_new, CategoryArt.forFolder("YENİ EKLENENLER"))
+        assertEquals(R.drawable.genre_new, CategoryArt.forFolder("EN | New Releases"))
         assertEquals(R.drawable.genre_general, CategoryArt.forFolder("Diğer"))
         assertEquals(R.drawable.genre_general, CategoryArt.forFolder("Karışık 2024"))
     }
