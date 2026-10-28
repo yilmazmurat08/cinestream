@@ -2,7 +2,6 @@ package com.example
 
 import com.example.util.CategoryArt
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CategoryArtTest {
@@ -24,8 +23,11 @@ class CategoryArtTest {
         assertEquals(R.drawable.genre_classic, CategoryArt.forFolder("Klasikler"))
     }
 
-    @Test fun platformKeepsBrandColor_unknownGetsGeneral() {
-        assertNull(CategoryArt.forFolder("NETFLIX FİLMLERİ"))
+    @Test fun platformAndUnknownGetGeneral() {
+        assertEquals(R.drawable.genre_general, CategoryArt.forFolder("NETFLIX FİLMLERİ"))
+        assertEquals(R.drawable.genre_general, CategoryArt.forFolder("PLATFORM: AMAZON"))
+        assertEquals(R.drawable.genre_mystery, CategoryArt.forFolder("GİZEM FİLMLERİ"))
+        assertEquals(R.drawable.genre_classic, CategoryArt.forFolder("YEŞİLÇAM FİLMLERİ"))
         assertEquals(R.drawable.genre_thriller, CategoryArt.forFolder("Gerilim Filmleri"))
         assertEquals(R.drawable.genre_thriller, CategoryArt.forFolder("TR | Thriller"))
         assertEquals(R.drawable.genre_new, CategoryArt.forFolder("Vizyondakiler"))
