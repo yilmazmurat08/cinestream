@@ -724,4 +724,5 @@
     <string name="sub_expiry_hint">Renew with your provider to keep streams running.</string>
     <string name="sub_expiry_close">Close</string>
     <string name="playlist_expiry_date">Expires: %s</string>
+    <string name="player_switched_backup">Stream failed, switched to backup: %s</string>
 </resources>

@@ -723,4 +723,5 @@
     <string name="sub_expiry_hint">Yayınlar kesilmesin diye sağlayıcınla yenile.</string>
     <string name="sub_expiry_close">Kapat</string>
     <string name="playlist_expiry_date">Bitiş: %s</string>
+    <string name="player_switched_backup">Yayın açılmadı, yedeğe geçildi: %s</string>
 </resources>

@@ -559,6 +559,23 @@ fun LegacyExoPlayerScreen(
     }
     var localRetryCount by remember(player) { mutableIntStateOf(0) }
 
+    // Kesintisiz izleme (deneme özelliği, PRO): canlı yayın kurtarılamazsa aynı kanalın yedek sürümüne geçilir.
+    // Yedek yoksa ya da hepsi denendiyse her zamanki hata penceresi ("Yeniden dene") kalır.
+    LaunchedEffect(streamFailed) {
+        if (!streamFailed || item.type != "LIVE" || iptvViewModel == null) return@LaunchedEffect
+        if (!com.example.util.LabFeatures.proFeature(isProUser)) return@LaunchedEffect
+        val backup = iptvViewModel.findBackupStream(item) ?: return@LaunchedEffect
+        // Arama veritabanında yapılır; bildirim ve kanal geçişi her zaman ana iş parçacığında olsun.
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            android.widget.Toast.makeText(
+                context,
+                context.getString(R.string.player_switched_backup, backup.cleanedName.ifBlank { backup.name }),
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            onPlayItem(backup)
+        }
+    }
+
     // Resim içinde resim: video oynarken ana ekran tuşuna basılınca küçük pencerede devam eder.
     val pipState = com.example.player.rememberPictureInPicture(
         player = player,

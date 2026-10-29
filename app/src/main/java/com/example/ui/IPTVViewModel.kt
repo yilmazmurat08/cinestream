@@ -709,6 +709,30 @@ class IPTVViewModel(
         }
     }
 
+    // Kesintisiz izleme: aynı kanal için denenen yayın adresleri (döngüye girmesin diye).
+    private var backupChainBase: String? = null
+    private val backupTried = mutableSetOf<String>()
+
+    /**
+     * Açılamayan canlı yayının yedeği (aynı kanalın HD/FHD/yedek sürümü). Yoksa ya da hepsi denendiyse null.
+     * Çağrılan kanal "denendi" sayılır; başka bir kanala geçilince liste sıfırlanır.
+     */
+    suspend fun findBackupStream(failed: IPTVItem): IPTVItem? = withContext(Dispatchers.IO) {
+        if (failed.type != "LIVE") return@withContext null
+        val base = com.example.util.BackupStreams.baseName(failed.cleanedName.ifBlank { failed.name })
+        synchronized(backupTried) {
+            if (base != backupChainBase) {
+                backupChainBase = base
+                backupTried.clear()
+            }
+            backupTried += failed.streamUrl
+        }
+        val token = com.example.util.BackupStreams.searchToken(failed.cleanedName.ifBlank { failed.name }) ?: return@withContext null
+        val pool = try { repository.dao.liveItemsLike("%$token%") } catch (e: Exception) { emptyList() }
+        val tried = synchronized(backupTried) { backupTried.toSet() }
+        com.example.util.BackupStreams.candidates(failed, pool, tried).firstOrNull { !isAdultContent(it) || isAdultContent(failed) }
+    }
+
     fun setAutoplayNextEpisode(enabled: Boolean) {
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setAutoplayNextEpisode(enabled)
