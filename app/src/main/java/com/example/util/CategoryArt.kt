@@ -37,13 +37,18 @@ object CategoryArt {
     )
     private val LIVE: List<Pair<Int, List<String>>> = listOf(
         R.drawable.live_news to listOf("haber", "news"),
-        R.drawable.live_sports to listOf("spor", "sport", "futbol", "football"),
+        // Lig, maç, gol, özet geçen klasörler de spor sayılır ("lig" kelime başında: "religious" karışmasın).
+        R.drawable.live_sports to listOf(
+            "spor", "sport", "futbol", "football", " lig", "superlig", "süperlig", "league",
+            "özet", "ozet", " gol ", " maç", " mac "
+        ),
         R.drawable.live_music to listOf("müzik", "muzik", "music"),
         R.drawable.live_religious to listOf(" dini", "religious", "islam", "kuran", "quran"),
         R.drawable.live_relax to listOf("relax", "doğa", "doga", "nature", "ambient", "manzara"),
         R.drawable.live_radio to listOf("radyo", "radio"),
         R.drawable.genre_documentary to listOf("belgesel", "documentary", "docu"),
         R.drawable.genre_kids to listOf("çocuk", "cocuk", "kids", "cartoon", "çizgi", "cizgi"),
+        R.drawable.genre_classic to listOf("yesilcam", "yeşilçam"),
         R.drawable.genre_general to listOf("sinema", "cinema", "film", "movie"),
     )
 

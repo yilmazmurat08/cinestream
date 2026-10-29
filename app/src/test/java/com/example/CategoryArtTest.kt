@@ -47,5 +47,12 @@ class CategoryArtTest {
         assertEquals(R.drawable.genre_kids, CategoryArt.forLive("ÇOCUK"))
         assertEquals(R.drawable.genre_general, CategoryArt.forLive("CINEMA (7/24)"))
         assertEquals(R.drawable.live_tv, CategoryArt.forLive("TR | ULUSAL"))
+        assertEquals(R.drawable.live_sports, CategoryArt.forLive("SÜPERLIG ÖZET"))
+        assertEquals(R.drawable.live_sports, CategoryArt.forLive("GOL KRALLARI"))
+        assertEquals(R.drawable.live_sports, CategoryArt.forLive("Süper Lig"))
+        assertEquals(R.drawable.live_sports, CategoryArt.forLive("Canlı Maç"))
+        assertEquals(R.drawable.live_religious, CategoryArt.forLive("Religious"))
+        assertEquals(R.drawable.genre_classic, CategoryArt.forLive("YEŞİLÇAM FİLMLERİ"))
+        assertEquals(R.drawable.genre_classic, CategoryArt.forFolder("YEŞİLÇAM DİZİLERİ"))
     }
 }
