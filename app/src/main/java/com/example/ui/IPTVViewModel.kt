@@ -167,6 +167,9 @@ class IPTVViewModel(
     val autoplayTrailer: StateFlow<Boolean> = settingsRepository.autoplayTrailerFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    val autoplayNextEpisode: StateFlow<Boolean> = settingsRepository.autoplayNextEpisodeFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
     val subtitleSize: StateFlow<Int> = settingsRepository.subtitleSizeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 16)
 
@@ -678,6 +681,12 @@ class IPTVViewModel(
     fun setAutoRefreshList(enabled: Boolean) {
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setAutoRefreshList(enabled)
+        }
+    }
+
+    fun setAutoplayNextEpisode(enabled: Boolean) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setAutoplayNextEpisode(enabled)
         }
     }
 

@@ -86,6 +86,7 @@ fun SettingsScreen(
     val reduceCellularQuality by viewModel.reduceCellularQuality.collectAsState()
     val autoRefreshList by viewModel.autoRefreshList.collectAsState()
     val autoplayTrailer by viewModel.autoplayTrailer.collectAsState()
+    val autoplayNextEpisode by viewModel.autoplayNextEpisode.collectAsState()
     val subtitleSize by viewModel.subtitleSize.collectAsState()
     val subtitleColor by viewModel.subtitleColor.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
@@ -244,7 +245,9 @@ fun SettingsScreen(
                             isDropdownExpanded = isBufferDropdownExpanded,
                             onDropdownToggle = { isBufferDropdownExpanded = it },
                             bufferOptions = bufferOptions,
-                            onBufferSelect = { viewModel.setBufferSize(it) }
+                            onBufferSelect = { viewModel.setBufferSize(it) },
+                            autoplayNextEpisode = autoplayNextEpisode,
+                            onAutoplayNextEpisodeChange = { viewModel.setAutoplayNextEpisode(it) }
                         )
                     }
                     "DATA" -> {
@@ -344,7 +347,9 @@ fun PlayerSettingsCard(
     isDropdownExpanded: Boolean,
     onDropdownToggle: (Boolean) -> Unit,
     bufferOptions: List<String>,
-    onBufferSelect: (String) -> Unit
+    onBufferSelect: (String) -> Unit,
+    autoplayNextEpisode: Boolean = true,
+    onAutoplayNextEpisodeChange: (Boolean) -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -400,6 +405,46 @@ fun PlayerSettingsCard(
                     checked = hwAccEnabled,
                     onCheckedChange = onHwAccChange,
                     modifier = Modifier.testTag("hardware_acc_switch"),
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = CineOrange
+                    )
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                    .padding(vertical = 12.dp)
+            )
+
+            // Sonraki bölümü otomatik oynat
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_autoplay_next),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_autoplay_next_desc),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                Switch(
+                    checked = autoplayNextEpisode,
+                    onCheckedChange = onAutoplayNextEpisodeChange,
+                    modifier = Modifier.testTag("autoplay_next_switch"),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = CineOrange

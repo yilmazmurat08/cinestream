@@ -88,6 +88,9 @@ import com.example.ui.IPTVViewModel
 import com.example.ui.theme.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.coroutineScope
@@ -259,6 +262,11 @@ fun LegacyExoPlayerScreen(
     val isProUser by (iptvViewModel?.isProUser?.collectAsState() ?: remember { mutableStateOf(false) })
     val totalWatchSeconds by (iptvViewModel?.totalWatchSeconds?.collectAsState() ?: remember { mutableStateOf(0L) })
     var hasRecordedSession by remember(item.id) { mutableStateOf(false) }
+
+    // Otomatik sonraki bölüm: bölüm bitince 10 sn sayaç çıkar, sonra sonraki bölüm başlar (Ayarlar'dan kapatılabilir).
+    val autoplayNextEpisode by (iptvViewModel?.autoplayNextEpisode?.collectAsState() ?: remember { mutableStateOf(true) })
+    val latestAutoplayNext by rememberUpdatedState(autoplayNextEpisode)
+    var nextCountdownItem by remember(item.id) { mutableStateOf<IPTVItem?>(null) }
 
     // Günlük ücretsiz süre doldu: oynatıcı kapanır ve PRO penceresi ana ekranda açılır. Oynatıcıda kalınmaz;
     // böylece "Yeniden dene" ya da uygulamaya geri dönüş yayını süre kontrolü olmadan yeniden başlatamaz.
@@ -599,6 +607,8 @@ fun LegacyExoPlayerScreen(
             override fun onPlaybackStateChanged(state: Int) {
                 isBuffering = state == Player.STATE_BUFFERING
                 if (state == Player.STATE_READY) {
+                    // Bölüm bittikten sonra yeniden oynatıldıysa (geri sarma) sayaç kapanır.
+                    nextCountdownItem = null
                     reachedReady = true
                     val dur = player.duration / 1000
                     if (dur > 0) {
@@ -612,8 +622,8 @@ fun LegacyExoPlayerScreen(
                         iptvViewModel?.recordCompletedPlaybackSession()
                     }
                     val next = latestNextItem
-                    if (item.type == "SERIES" && next != null) {
-                        onPlayItem(next)
+                    if (item.type == "SERIES" && next != null && latestAutoplayNext) {
+                        nextCountdownItem = next
                     }
                 }
                 resetControlsTimer()
@@ -1000,10 +1010,36 @@ fun LegacyExoPlayerScreen(
                     onUserActivity = { if (controlsVisible) resetControlsTimer() }
     )
 
+    // Sayaç bitince sonraki bölüm başlar (İptal ya da Geri ile durdurulmadıysa).
+    LaunchedEffect(nextCountdownItem) {
+        val next = nextCountdownItem ?: return@LaunchedEffect
+        delay(NEXT_EPISODE_COUNTDOWN_S * 1000L)
+        if (nextCountdownItem == next) {
+            nextCountdownItem = null
+            onPlayItem(next)
+        }
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(DeepPurpleBg)
+            // Sayaç açıkken kumandada OK: sonraki bölüm hemen başlar (Geri: iptal, sayacın içinde).
+            .onPreviewKeyEvent { event ->
+                val next = nextCountdownItem
+                val isOk = event.key == androidx.compose.ui.input.key.Key.DirectionCenter ||
+                    event.key == androidx.compose.ui.input.key.Key.Enter ||
+                    event.key == androidx.compose.ui.input.key.Key.NumPadEnter
+                if (next != null && isOk) {
+                    if (event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
+                        nextCountdownItem = null
+                        onPlayItem(next)
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
             .then(if (tvMode) tvModeKeys else Modifier)
             .then(if (tvMode) Modifier else com.example.ui.tv.tvChannelKeys(enabled = item.type == "LIVE") { step -> switchChannel(step) })
             .then(
@@ -2980,6 +3016,101 @@ fun LegacyExoPlayerScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        nextCountdownItem?.let { next ->
+            if (!isInPip) {
+                NextEpisodeCountdown(
+                    title = next.cleanedName.ifBlank { next.name },
+                    onPlayNow = {
+                        nextCountdownItem = null
+                        onPlayItem(next)
+                    },
+                    onCancel = { nextCountdownItem = null },
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
+            }
+        }
+    }
+}
+
+internal const val NEXT_EPISODE_COUNTDOWN_S = 10
+
+/** Bölüm bitince sağ altta çıkan sayaç: "Şimdi oynat" ya da "İptal" (Geri tuşu da iptal eder). */
+@Composable
+internal fun NextEpisodeCountdown(
+    title: String,
+    onPlayNow: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.activity.compose.BackHandler(onBack = onCancel)
+    var secondsLeft by remember { mutableIntStateOf(NEXT_EPISODE_COUNTDOWN_S) }
+    LaunchedEffect(Unit) {
+        while (secondsLeft > 0) {
+            delay(1000)
+            secondsLeft--
+        }
+    }
+    Surface(
+        color = Color.Black.copy(alpha = 0.85f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, CineOrange.copy(alpha = 0.6f)),
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(20.dp)
+            .widthIn(max = 360.dp)
+            .testTag("next_episode_countdown")
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.player_next_countdown, secondsLeft),
+                color = CineOrange,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            LinearProgressIndicator(
+                progress = { secondsLeft / NEXT_EPISODE_COUNTDOWN_S.toFloat() },
+                color = CineOrange,
+                trackColor = Color.White.copy(alpha = 0.15f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .height(3.dp)
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(top = 12.dp)
+            ) {
+                Button(
+                    onClick = onPlayNow,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CineOrange, contentColor = Color.White),
+                    modifier = Modifier.testTag("next_episode_play_now")
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.player_next_play_now), fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(
+                    onClick = onCancel,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                    modifier = Modifier.testTag("next_episode_cancel")
+                ) {
+                    Text(stringResource(R.string.player_next_cancel))
                 }
             }
         }

@@ -713,4 +713,9 @@
     </plurals>
     <string name="settings_pro_row_free">Remove the time limit, add 3 playlists</string>
     <string name="settings_pro_row_cta">Upgrade</string>
+    <string name="settings_autoplay_next">Autoplay next episode</string>
+    <string name="settings_autoplay_next_desc">When an episode ends, the next one starts after a 10-second countdown.</string>
+    <string name="player_next_countdown">Next episode in %d s</string>
+    <string name="player_next_play_now">Play now</string>
+    <string name="player_next_cancel">Cancel</string>
 </resources>

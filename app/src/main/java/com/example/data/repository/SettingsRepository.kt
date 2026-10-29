@@ -33,6 +33,7 @@ class SettingsRepository(
         val REDUCE_CELLULAR_QUALITY = booleanPreferencesKey("reduce_cellular_quality")
         val AUTO_REFRESH_LIST = booleanPreferencesKey("auto_refresh_list")
         val AUTOPLAY_TRAILER = booleanPreferencesKey("autoplay_trailer")
+        val AUTOPLAY_NEXT_EPISODE = booleanPreferencesKey("autoplay_next_episode")
         val SUBTITLE_SIZE = intPreferencesKey("subtitle_size")
         val SUBTITLE_COLOR = stringPreferencesKey("subtitle_color")
         val PARENTAL_LOCK = booleanPreferencesKey("parental_lock")
@@ -257,6 +258,20 @@ class SettingsRepository(
     suspend fun setAutoRefreshList(enabled: Boolean) {
         store.edit { preferences ->
             preferences[AUTO_REFRESH_LIST] = enabled
+        }
+    }
+
+    /** Dizi bölümü bitince sonraki bölüm 10 sn sayaçla kendiliğinden başlasın mı (varsayılan açık). */
+    val autoplayNextEpisodeFlow: Flow<Boolean> = store.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.map { preferences ->
+            preferences[AUTOPLAY_NEXT_EPISODE] ?: true
+        }
+
+    suspend fun setAutoplayNextEpisode(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[AUTOPLAY_NEXT_EPISODE] = enabled
         }
     }
 

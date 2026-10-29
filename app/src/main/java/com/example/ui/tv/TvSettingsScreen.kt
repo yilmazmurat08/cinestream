@@ -114,6 +114,7 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
     val reduceCellularQuality by viewModel.reduceCellularQuality.collectAsState()
     val autoRefreshList by viewModel.autoRefreshList.collectAsState()
     val autoplayTrailer by viewModel.autoplayTrailer.collectAsState()
+    val autoplayNextEpisode by viewModel.autoplayNextEpisode.collectAsState()
     val subtitleSize by viewModel.subtitleSize.collectAsState()
     val subtitleColor by viewModel.subtitleColor.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
@@ -273,7 +274,9 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
                         isDropdownExpanded = isBufferDropdownExpanded,
                         onDropdownToggle = { isBufferDropdownExpanded = it },
                         bufferOptions = listOf("Düşük", "Normal", "Yüksek"),
-                        onBufferSelect = { viewModel.setBufferSize(it) }
+                        onBufferSelect = { viewModel.setBufferSize(it) },
+                        autoplayNextEpisode = autoplayNextEpisode,
+                        onAutoplayNextEpisodeChange = { viewModel.setAutoplayNextEpisode(it) }
                     )
                     TvSetting.DATA -> DataAndMemoryCard(
                         reduceCellularQuality = reduceCellularQuality,

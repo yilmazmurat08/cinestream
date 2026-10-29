@@ -306,6 +306,25 @@ class PhonePromoShotsTest {
         }
     }
 
+    @Test
+    @Config(qualifiers = "tr-w800dp-h360dp-land-xxhdpi")
+    fun p21_nextEpisodeCountdown() = shot("p21-sonraki-bolum", 1_500) {
+        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF15101F))) {
+            com.example.ui.screens.NextEpisodeCountdown(
+                title = "Kuzey Yıldızı S01E03", onPlayNow = {}, onCancel = {},
+                modifier = androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.BottomEnd)
+            )
+        }
+    }
+
+    @Test fun p22_playerSettings() {
+        compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.SettingsScreen(viewModel = vm) } }
+        settle(2_000)
+        compose.onNodeWithTag("settings_row_PLAYER").performScrollTo().performClick()
+        settle(1_500)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "p22-oynatici-ayarlari.png").absolutePath)
+    }
+
     @Test fun p16_seriesFolders() = shot("p16-dizi-klasorleri", 3_000) {
         val names = listOf("Yerli Diziler", "Suç Dizileri", "Gerilim Dizileri", "Komedi Dizileri", "Bilim Kurgu Dizileri", "Yeni Eklenen Diziler")
         val groups = names.mapIndexed { i, n ->
