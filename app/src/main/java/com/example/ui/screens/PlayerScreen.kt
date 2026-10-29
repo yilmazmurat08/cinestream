@@ -46,6 +46,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -2663,6 +2664,9 @@ fun LegacyExoPlayerScreen(
             if (showTrackSelectorSheet) {
                 ModalBottomSheet(
                     onDismissRequest = { showTrackSelectorSheet = false },
+                    // TV: yarım açılan pencerede alttaki satırlar ekran dışında kalıyordu (kumandayla inilen satır
+                    // görünmüyordu); TV'de pencere tam açılır ve liste odakla birlikte kayar.
+                    sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = tvMode),
                     containerColor = Color(0xFF0E071A),
                     scrimColor = Color.Black.copy(alpha = 0.65f),
                     shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
@@ -2725,7 +2729,7 @@ fun LegacyExoPlayerScreen(
 
                                 if (audioTracks.isNotEmpty()) {
                                     LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        itemsIndexed(audioTracks, key = { i, _ -> "audio_$i" }) { _, (group, index) ->
+                                        itemsIndexed(audioTracks, key = { i, _ -> "audio_$i" }) { row, (group, index) ->
                                             val format = group.getTrackFormat(index)
                                             val isSelected = group.isTrackSelected(index)
                                             val label = format.label ?: format.language ?: "Ses $index"
@@ -2733,8 +2737,10 @@ fun LegacyExoPlayerScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
+                                                    .testTag("track_audio_$row")
                                                     .clip(RoundedCornerShape(8.dp))
                                                     .background(if (isSelected) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
+                                                    .trackRowFocus()
                                                     .clickable {
                                                         player.trackSelectionParameters = player.trackSelectionParameters
                                                             .buildUpon()
@@ -2806,8 +2812,10 @@ fun LegacyExoPlayerScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 6.dp)
+                                        .testTag("track_sub_off")
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(if (isSubtitlesDisabled) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
+                                        .trackRowFocus()
                                         .clickable {
                                             player.trackSelectionParameters = player.trackSelectionParameters
                                                 .buildUpon()
@@ -2837,7 +2845,7 @@ fun LegacyExoPlayerScreen(
 
                                 if (subtitleTracks.isNotEmpty()) {
                                     LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        itemsIndexed(subtitleTracks, key = { i, _ -> "sub_$i" }) { _, (group, index) ->
+                                        itemsIndexed(subtitleTracks, key = { i, _ -> "sub_$i" }) { row, (group, index) ->
                                             val format = group.getTrackFormat(index)
                                             val isSelected = !isSubtitlesDisabled && group.isTrackSelected(index)
                                             val label = format.label ?: format.language ?: stringResource(R.string.player_subtitle_track, index)
@@ -2845,8 +2853,10 @@ fun LegacyExoPlayerScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
+                                                    .testTag("track_sub_$row")
                                                     .clip(RoundedCornerShape(8.dp))
                                                     .background(if (isSelected) NeonPink.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f))
+                                                    .trackRowFocus()
                                                     .clickable {
                                                         player.trackSelectionParameters = player.trackSelectionParameters
                                                             .buildUpon()
@@ -3233,4 +3243,23 @@ private fun TrayWatchProgress(fraction: Float, modifier: Modifier = Modifier) {
                 .background(NeonPink)
         )
     }
+}
+
+/**
+ * Ses/altyazı satırı kumandayla odaklanınca belirgin olsun (TV): açık zemin ve beyaz çerçeve.
+ * Dokunmatik ekranda satırlar odak almaz; telefondaki görünüm değişmez.
+ */
+@Composable
+private fun Modifier.trackRowFocus(): Modifier {
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(8.dp)
+    return this
+        .onFocusChanged { focused = it.isFocused }
+        .then(
+            if (focused) {
+                Modifier
+                    .background(Color.White.copy(alpha = 0.22f), shape)
+                    .border(2.dp, Color.White, shape)
+            } else Modifier
+        )
 }
