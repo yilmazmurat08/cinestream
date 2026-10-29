@@ -733,6 +733,27 @@ class IPTVViewModel(
         com.example.util.BackupStreams.candidates(failed, pool, tried).firstOrNull { !isAdultContent(it) || isAdultContent(failed) }
     }
 
+    // Catch-up: kanal başına arşiv listesi 10 dk saklanır (EPG her açıldığında sunucuya gidilmesin).
+    private val catchUpCache = java.util.concurrent.ConcurrentHashMap<Int, Pair<Long, List<com.example.util.CatchUpProgram>>>()
+
+    /** Kanalın arşivde izlenebilen geçmiş programları (yalnızca deneme sürümünde; Xtream olmayan kanalda boş). */
+    suspend fun catchUpPrograms(channel: IPTVItem): List<com.example.util.CatchUpProgram> {
+        if (!com.example.util.LabFeatures.enabled) return emptyList()
+        val c = com.example.util.CatchUp.credentialsOf(channel) ?: return emptyList()
+        val now = System.currentTimeMillis()
+        catchUpCache[channel.id]?.let { (at, list) -> if (now - at < 10 * 60_000L) return list }
+        val zone = _xtreamAccount.value?.serverTimezone?.let { java.util.TimeZone.getTimeZone(it) } ?: java.util.TimeZone.getDefault()
+        val list = com.example.data.api.XtreamCatchUpApi.fetch(c, now, zone)
+        catchUpCache[channel.id] = now to list
+        return list
+    }
+
+    /** Arşivdeki programı oynatılacak öğeye çevirir. */
+    fun catchUpItem(channel: IPTVItem, program: com.example.util.CatchUpProgram): IPTVItem? {
+        val c = com.example.util.CatchUp.credentialsOf(channel) ?: return null
+        return com.example.util.CatchUp.itemFor(channel, c, program)
+    }
+
     fun setAutoplayNextEpisode(enabled: Boolean) {
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setAutoplayNextEpisode(enabled)
@@ -3337,6 +3358,8 @@ class IPTVViewModel(
 
     // Save Progress Action (Continue Watching)
     fun saveProgress(item: IPTVItem, progressSeconds: Long, totalSeconds: Long) {
+        // Arşivden izlenen program izleme geçmişine yazılmaz (adresi zamana bağlı, sonra açılmaz).
+        if (item.type == com.example.util.CatchUp.TYPE) return
         viewModelScope.launch(coroutineExceptionHandler) {
             repository.saveContinueWatching(item, progressSeconds, totalSeconds)
         }

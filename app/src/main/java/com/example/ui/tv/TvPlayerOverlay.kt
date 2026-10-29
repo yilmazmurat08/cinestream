@@ -49,6 +49,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.draw.rotate
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.History
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -610,6 +615,7 @@ private fun TvChannelPanel(
             reminderKeys = reminderKeys,
             onWatch = { onSelect(channel) },
             onToggleReminder = { program -> toggleReminder(channel, program) },
+            onWatchCatchUp = { program -> viewModel.catchUpItem(channel, program)?.let(onSelect) },
             onClose = {
                 epgChannel = null
                 requesters[channel.id]?.let { r -> runCatching { r.requestFocus() } }
@@ -628,10 +634,25 @@ private fun TvEpgColumn(
     reminderKeys: Set<String>,
     onWatch: () -> Unit,
     onToggleReminder: (EPGProgram) -> Unit,
+    onWatchCatchUp: (com.example.util.CatchUpProgram) -> Unit,
     onClose: () -> Unit,
     onUserActivity: () -> Unit
 ) {
     val programs = remember(channel.id) { viewModel.epgSchedule(channel) }
+    // Catch-up (deneme, PRO): arşivdeki geçmiş programlar akışın üstünde; Yukarı tuşuyla ulaşılır.
+    val isPro by viewModel.isProUser.collectAsState()
+    val catchUpOn = com.example.util.LabFeatures.proFeature(isPro)
+    val catchUp by produceState(emptyList<com.example.util.CatchUpProgram>(), channel.id, catchUpOn) {
+        value = if (catchUpOn) viewModel.catchUpPrograms(channel) else emptyList()
+    }
+    var catchUpOpen by remember(channel.id) { mutableStateOf(false) }
+    val dayLabel = com.example.ui.components.rememberCatchUpDayLabel()
+    val closeOnLeft = Modifier.onPreviewKeyEvent { e ->
+        if (e.key == Key.DirectionLeft) {
+            if (e.type == KeyEventType.KeyDown) onClose()
+            true
+        } else false
+    }
     val firstFocus = remember(channel.id) { FocusRequester() }
     LaunchedEffect(channel.id) { if (programs.isNotEmpty()) requestFocusWhenReady(firstFocus) }
     Column(
@@ -652,6 +673,54 @@ private fun TvEpgColumn(
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
             modifier = Modifier.fillMaxSize()
         ) {
+            if (catchUp.isNotEmpty()) {
+                item(key = "catchup_toggle") {
+                    TvGlassButton(
+                        onClick = { catchUpOpen = !catchUpOpen },
+                        onFocused = onUserActivity,
+                        shape = TvTheme.RowShape,
+                        focusScale = 1.03f,
+                        glassColor = Color(0xFFD946EF).copy(alpha = if (catchUpOpen) 0.18f else 0.08f),
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.fillMaxWidth().then(closeOnLeft).testTag("tv_catchup_toggle")
+                    ) { _ ->
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Icon(Icons.Filled.History, contentDescription = null, tint = Color(0xFFF5D0FB), modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.catchup_header, catchUp.size), color = Color(0xFFF5D0FB), fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, tint = Color(0xFFF5D0FB),
+                                modifier = Modifier.size(18.dp).rotate(if (catchUpOpen) 180f else 0f))
+                        }
+                    }
+                }
+                if (catchUpOpen) {
+                    items(catchUp, key = { "catchup_${it.startMillis}" }) { program ->
+                        TvGlassButton(
+                            onClick = { onWatchCatchUp(program) },
+                            onFocused = onUserActivity,
+                            shape = TvTheme.RowShape,
+                            focusScale = 1.03f,
+                            glassColor = Color.Transparent,
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.fillMaxWidth().then(closeOnLeft).testTag("tv_catchup_${program.startMillis}")
+                        ) { focused ->
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                Column(Modifier.width(64.dp)) {
+                                    Text(com.example.ui.components.catchUpClock(program.startMillis), color = TvTheme.TextSecondary,
+                                        fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                    Text(dayLabel(program.startMillis), color = TvTheme.TextSecondary, fontSize = 11.sp, maxLines = 1)
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Text(program.title, color = TvTheme.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    if (focused) Text(stringResource(R.string.catchup_watch), color = TvTheme.FocusGlow, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             itemsIndexed(programs, key = { _, p -> p.startEpochMillis }) { index, program ->
                 val hasReminder = com.example.reminder.ProgramReminder.key(channel.id, program.startEpochMillis) in reminderKeys
                 TvGlassButton(

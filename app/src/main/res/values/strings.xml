@@ -724,4 +724,8 @@
     <string name="sub_expiry_close">Kapat</string>
     <string name="playlist_expiry_date">Bitiş: %s</string>
     <string name="player_switched_backup">Yayın açılmadı, yedeğe geçildi: %s</string>
+    <string name="catchup_header">Kaçırdıkların (%1$d)</string>
+    <string name="catchup_watch">Baştan izle</string>
+    <string name="catchup_today">Bugün</string>
+    <string name="catchup_yesterday">Dün</string>
 </resources>

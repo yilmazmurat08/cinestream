@@ -725,4 +725,8 @@
     <string name="sub_expiry_close">Close</string>
     <string name="playlist_expiry_date">Expires: %s</string>
     <string name="player_switched_backup">Stream failed, switched to backup: %s</string>
+    <string name="catchup_header">Catch up (%1$d)</string>
+    <string name="catchup_watch">Watch</string>
+    <string name="catchup_today">Today</string>
+    <string name="catchup_yesterday">Yesterday</string>
 </resources>
