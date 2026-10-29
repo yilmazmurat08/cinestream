@@ -23,6 +23,9 @@ android {
     buildConfigField("boolean", "FREE_WATCH_LIMIT", "true")
     // Günlük ücretsiz izleme süresi (saniye): mağazada 60 dakika.
     buildConfigField("long", "FREE_DAILY_WATCH_SECONDS", "3600L")
+    // Deneme özellikleri (abonelik uyarısı, yedek yayına geçiş, catch-up…): mağaza sürümünde kapalı, test
+    // sürümlerinde açık. Test sürümünde satın alma çalışmadığı için PRO deneme özellikleri orada açık denenir.
+    buildConfigField("boolean", "FEATURE_LAB", "false")
 
     // Play lisans anahtarı (herkese açık anahtar; satın alma imzasını doğrulamak için). Depoda tutulmaz, derleme
     // anında ortam değişkeninden okunur. Boşsa uygulama imza denetimi yapmaz (test sürümleri).
@@ -61,6 +64,7 @@ android {
     debug {
       // Uses default Android SDK debug keystore automatically
       buildConfigField("boolean", "FREE_WATCH_LIMIT", "false")
+      buildConfigField("boolean", "FEATURE_LAB", "true")
     }
     // Test sürümü: release ile aynı (küçültülmüş, hızlı) ama debug anahtarıyla imzalı ve izleme sınırı yok.
     // Derleme: ./gradlew assembleQa  → app/build/outputs/apk/qa/app-qa.apk
@@ -69,6 +73,7 @@ android {
       signingConfig = signingConfigs.getByName("debug")
       matchingFallbacks += listOf("release")
       buildConfigField("boolean", "FREE_WATCH_LIMIT", "false")
+      buildConfigField("boolean", "FEATURE_LAB", "true")
     }
     // Süre sınırı testi: qa ile aynı ama ücretsiz süre açık ve yalnızca 2 dakika (süre dolması, saat hilesi,
     // canlı yayının durması hızlıca denenir). Mağaza sürümü etkilenmez (60 dakika).

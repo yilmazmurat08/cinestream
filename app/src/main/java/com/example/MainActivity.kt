@@ -541,6 +541,15 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                     }
+
+                                    // Abonelik bitiş uyarısı (deneme özelliği): ana ekranda, günde en fazla bir kez.
+                                    if (com.example.BuildConfig.FEATURE_LAB && currentScreen is ActiveScreen.Dashboard && selectedItem == null) {
+                                        val account by viewModel.xtreamAccount.collectAsState()
+                                        com.example.ui.components.SubscriptionExpiryBanner(
+                                            account = account,
+                                            modifier = Modifier.align(Alignment.TopCenter)
+                                        )
+                                    }
                                 }
                                 val showPaywallDialog by viewModel.showPaywallDialog.collectAsState()
                                 val paywallReasonMessage by viewModel.paywallReasonMessage.collectAsState()

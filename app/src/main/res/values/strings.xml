@@ -717,4 +717,10 @@
     <string name="player_next_countdown">Sonraki bölüm %d sn içinde</string>
     <string name="player_next_play_now">Şimdi oynat</string>
     <string name="player_next_cancel">İptal</string>
+    <string name="sub_expiry_days">Aboneliğin %1$d gün sonra bitiyor (%2$s).</string>
+    <string name="sub_expiry_today">Aboneliğin bugün bitiyor.</string>
+    <string name="sub_expired">Aboneliğinin süresi doldu (%s).</string>
+    <string name="sub_expiry_hint">Yayınlar kesilmesin diye sağlayıcınla yenile.</string>
+    <string name="sub_expiry_close">Kapat</string>
+    <string name="playlist_expiry_date">Bitiş: %s</string>
 </resources>

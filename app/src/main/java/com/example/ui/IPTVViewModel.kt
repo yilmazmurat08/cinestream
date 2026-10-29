@@ -684,6 +684,31 @@ class IPTVViewModel(
         }
     }
 
+    /** Ekrandaki Xtream listesinin hesap bilgisi (abonelik bitişi). Yalnızca deneme özellikleri açıkken doldurulur. */
+    private val _xtreamAccount = MutableStateFlow<com.example.util.XtreamAccountInfo?>(null)
+    val xtreamAccount: StateFlow<com.example.util.XtreamAccountInfo?> = _xtreamAccount.asStateFlow()
+
+    /** Hesap bilgisini önce cihazdaki kayıttan gösterir; 12 saatten eskiyse sunucudan yeniler. */
+    fun refreshXtreamAccount(force: Boolean = false) {
+        if (!com.example.BuildConfig.FEATURE_LAB) return
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            val playlist = repository.playlistToRefresh() ?: return@launch
+            val creds = repository.xtreamCredentialsOf(playlist)
+            if (creds == null) {
+                _xtreamAccount.value = null
+                return@launch
+            }
+            val app = getApplication<Application>()
+            val cached = com.example.util.XtreamAccount.load(app, playlist.id)
+            _xtreamAccount.value = cached
+            val now = System.currentTimeMillis()
+            if (!force && cached != null && now - cached.fetchedAt < com.example.util.XtreamAccount.REFRESH_MS) return@launch
+            val fresh = com.example.data.api.XtreamAccountApi.fetch(creds.first, creds.second, creds.third, now) ?: return@launch
+            com.example.util.XtreamAccount.save(app, playlist.id, fresh)
+            _xtreamAccount.value = fresh
+        }
+    }
+
     fun setAutoplayNextEpisode(enabled: Boolean) {
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setAutoplayNextEpisode(enabled)
@@ -1021,6 +1046,7 @@ class IPTVViewModel(
                 _isSwitchingPlaylist.value = false
             }
             repository.ensureSeriesCatalogForActive(getApplication())
+            refreshXtreamAccount()
         }
     }
 
@@ -1705,6 +1731,7 @@ class IPTVViewModel(
                     _isLoading.value = false
                 }
                 loadTMDBDiscoverContent()
+                refreshXtreamAccount()
                 prefetchSeriesCovers()
                 // Eski listeden kalan dizi kataloğu (Xtream kaynağı artık yoksa) açılmayan kartlar göstermesin.
                 repository.dropSeriesCatalogIfNoXtreamSource()

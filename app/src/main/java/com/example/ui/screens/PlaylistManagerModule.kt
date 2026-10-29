@@ -69,6 +69,7 @@ fun PlaylistManagerModule(viewModel: IPTVViewModel, modifier: Modifier = Modifie
     val isProUser by viewModel.isProUser.collectAsState()
     val isSwitching by viewModel.isSwitchingPlaylist.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val account by viewModel.xtreamAccount.collectAsState()
 
     var showAdd by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Playlist?>(null) }
@@ -101,6 +102,8 @@ fun PlaylistManagerModule(viewModel: IPTVViewModel, modifier: Modifier = Modifie
                         number = index + 1,
                         playlist = playlist,
                         isActive = playlist.id == activeId,
+                        // Aktif Xtream listesinin abonelik bitişi (deneme özelliği; bilinmiyorsa gösterilmez).
+                        expiresAt = if (playlist.id == activeId) account?.expiresAtMillis else null,
                         locked = IPTVViewModel.isSlotLocked(index, isProUser),
                         isSwitching = isSwitching && playlist.id != activeId,
                         busy = isLoading,
@@ -190,6 +193,7 @@ private fun FilledSlot(
     number: Int,
     playlist: Playlist,
     isActive: Boolean,
+    expiresAt: Long?,
     locked: Boolean,
     isSwitching: Boolean,
     busy: Boolean,
@@ -239,6 +243,17 @@ private fun FilledSlot(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
             )
+            if (expiresAt != null) {
+                Text(
+                    text = stringResource(
+                        R.string.playlist_expiry_date,
+                        java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM).format(java.util.Date(expiresAt))
+                    ),
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 12.sp,
+                    modifier = Modifier.testTag("playlist_expiry_$number")
+                )
+            }
             if (locked) {
                 Spacer(Modifier.height(6.dp))
                 Text(stringResource(R.string.playlist_slot_locked_filled), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)

@@ -718,4 +718,10 @@
     <string name="player_next_countdown">Next episode in %d s</string>
     <string name="player_next_play_now">Play now</string>
     <string name="player_next_cancel">Cancel</string>
+    <string name="sub_expiry_days">Your subscription ends in %1$d days (%2$s).</string>
+    <string name="sub_expiry_today">Your subscription ends today.</string>
+    <string name="sub_expired">Your subscription has expired (%s).</string>
+    <string name="sub_expiry_hint">Renew with your provider to keep streams running.</string>
+    <string name="sub_expiry_close">Close</string>
+    <string name="playlist_expiry_date">Expires: %s</string>
 </resources>
