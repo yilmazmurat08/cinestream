@@ -1,0 +1,31 @@
+# Baseline Profile: uygulamanın en çok kullanılan yolları kurulumda önceden derlenir (açılış, TV ana ekranı,
+# kanal listesi ve oynatıcı). İlk açılışta ve kaydırmada takılma azalır; özellikle düşük güçlü TV kutularında.
+# Compose ve Media3 kendi profillerini zaten getirir; bu dosya yalnızca uygulamanın kendi kodu içindir.
+# Davranışı değiştirmez, yalnızca kodun ne zaman derlendiğini değiştirir. Play sürümünde (release) kullanılır.
+
+# Açılış
+Lcom/example/IPTVApplication;
+HSPLcom/example/IPTVApplication;->**(**)**
+Lcom/example/MainActivity**;
+HSPLcom/example/MainActivity**;->**(**)**
+HSPLcom/example/ui/IPTVViewModel**;->**(**)**
+HSPLcom/example/ui/theme/**;->**(**)**
+
+# Veri (liste, veritabanı, ayarlar)
+HSPLcom/example/data/repository/**;->**(**)**
+HSPLcom/example/data/db/**;->**(**)**
+HSPLcom/example/data/model/**;->**(**)**
+
+# TV: ana ekran, gezinme, afiş kartları, kanal paneli
+HSPLcom/example/ui/tv/TvApp**;->**(**)**
+HSPLcom/example/ui/tv/TvHomeScreen**;->**(**)**
+HSPLcom/example/ui/tv/TvBrowseScreen**;->**(**)**
+HSPLcom/example/ui/tv/TvPosterCard**;->**(**)**
+HSPLcom/example/ui/tv/TvTheme**;->**(**)**
+HSPLcom/example/ui/tv/TvSupport**;->**(**)**
+HSPLcom/example/ui/tv/TvImageGlow**;->**(**)**
+HSPLcom/example/ui/tv/TvPlayerOverlay**;->**(**)**
+
+# Oynatıcı
+HSPLcom/example/ui/screens/PlayerScreen**;->**(**)**
+HSPLcom/example/player/**;->**(**)**
