@@ -5,7 +5,8 @@ Kaynaktan üretilir; ara dosyalar (kareler, ekran görüntüleri, ses) depoya gi
 ## Logo açılış videosu (`logo-video/`)
 
 Neon ışık şeritleri ve lazerler gelir, ışık CineStream logosunu çizer, kıvılcım patlaması olur, cam simge
-çerçevesi belirir, "CineStream · IPTV PLAYER" yazısı çıkar. 8 saniye, sesli.
+çerçevesi belirir, "CineStream · IPTV PLAYER" yazısı ve altında slogan ("İzlemenin daha akıllı hali", açılış
+ekranındaki gibi mor-pembe çizgiyle) çıkar. 8 saniye, sesli.
 
 - `anim.html`: animasyon (her kare zamana göre çizilir; aynı kare her seferinde aynı çıkar).
 - `synth.py`: ses tamamen burada üretilir. Hazır müzik ya da ses dosyası kullanılmadı, telif sorunu yok.
@@ -17,7 +18,8 @@ Neon ışık şeritleri ve lazerler gelir, ışık CineStream logosunu çizer, k
   - `CineStream-logo-640.gif` / `-480.gif`: forumlar için (MP4 yüklenemeyen yerlerde GIF oynar).
 
 Zamanlama: şeritler 0–1,8 sn · lazerler 0,95/1,10 · logo çizimi 1,55–2,5 · patlama 2,62 · çerçeve 3,1–3,9 ·
-yazı 4,0 · parlama 4,85. Görüntü ile ses aynı zamanları kullanır; biri değişirse öbürü de değişmeli.
+yazı 4,0 · parlama 4,85 · slogan 5,0 · çağrı kutusu 5,9. Görüntü ile ses aynı zamanları kullanır; biri
+değişirse öbürü de değişmeli. Slogan uygulamadaki `intro_tagline` metnidir; o değişirse burada da değişmeli.
 
 Tek kareye bakmak için: `node render.js 1920 1080 onizleme 30 2.2,6.0`
 (çağrı kutusuyla: `DUR=10 CTA_TOP="ÇOK YAKINDA" CTA_MAIN="Google Play'de" node render.js 1080 1920 onizleme 30 6.2`)

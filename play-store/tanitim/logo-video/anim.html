@@ -19,7 +19,7 @@ const D2R=Math.PI/180;
 function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
 const rgba=(c,a)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${clamp(a)})`;
 
-let DUR=8.0, CTA=null; const T_BURST=2.62;
+let DUR=8.0, CTA=null, SLOGAN='İzlemenin daha akıllı hali'; const T_BURST=2.62;
 const MAG=[217,70,239], PINK=[244,114,182], VIO=[139,92,246], BLUE=[96,165,250], WHITE=[255,255,255], GOLD=[212,168,83], LILAC=[232,180,255];
 
 let W,H,L,CX,CY,HZ,PORT,S;
@@ -35,10 +35,10 @@ const BURST_C=[590,510];
 function LP(u,v){return [CX+(u-512)*L/1024, CY+(v-512)*L/1024]}
 
 async function init(w,h,src,opts={}){
-  W=w;H=h;PORT=H>W;DUR=opts.dur||8.0;CTA=opts.cta||null;
+  W=w;H=h;PORT=H>W;DUR=opts.dur||8.0;CTA=opts.cta||null;if(opts.slogan!==undefined)SLOGAN=opts.slogan;
   const cv=document.getElementById('c');cv.width=W;cv.height=H;ctx=cv.getContext('2d');
   S=Math.min(W,H)/1080;
-  L=PORT?620:600; CX=W/2; CY=PORT?H*0.42:H*0.385; HZ=CY+L/2;
+  L=PORT?620:560; CX=W/2; CY=PORT?H*0.40:H*0.37; HZ=CY+L/2;
   E=mk(W,H);ex=E.getContext('2d');
   B1=mk(W>>1,H>>1);b1=B1.getContext('2d');
   B2=mk(W>>2,H>>2);b2=B2.getContext('2d');
@@ -381,7 +381,7 @@ function render(t){
 function drawText(t,cam){
   if(t<3.95)return;
   tx.setTransform(1,0,0,1,0,0);tx.globalCompositeOperation='source-over';tx.globalAlpha=1;tx.filter='none';tx.clearRect(0,0,W,H);tx.setTransform(...cam);
-  const F=PORT?150:128,base=HZ+F*1.22;
+  const F=PORT?150:120,base=HZ+F*1.22;
   tx.font=`900 ${F}px 'Inter Display'`;tx.textBaseline='alphabetic';
   const word='CineStream',total=tx.measureText(word).width,x0=CX-total/2;
   const xs=[...word].map((_,i)=>x0+tx.measureText(word.slice(0,i)).width);
@@ -397,13 +397,23 @@ function drawText(t,cam){
     const ws=[...tag].map(c=>tx.measureText(c).width),tw=ws.reduce((a,b)=>a+b,0)+gap*(tag.length-1);let x=CX-tw/2;const y=base+F*0.58;
     tx.fillStyle=rgba(GOLD,ta);[...tag].forEach((c,i)=>{tx.fillText(c,x,y);x+=ws[i]+gap});
     const ll=F*0.9*easeOut((t-4.7)/0.7),ly=y-fs*0.36;if(ll>0){tx.fillStyle=rgba(GOLD,ta*0.75);tx.fillRect(CX-tw/2-fs*0.9-ll,ly,ll,1.6*S);tx.fillRect(CX+tw/2+fs*0.9,ly,ll,1.6*S)}}
+  // Slogan (açılış ekranındaki gibi): ince yazı, altında mordan pembeye büyüyen çizgi
+  const sa=smooth(5.0,5.7,t);
+  if(SLOGAN&&sa>0){
+    const fs=F*0.30;tx.font=`400 ${fs}px 'Inter Display'`;const ls=lerp(fs*0.35,fs*0.05,easeOut((t-5.0)/0.9));
+    const cs=[...SLOGAN],ws=cs.map(c=>tx.measureText(c).width),tw=ws.reduce((a,b)=>a+b,0)+ls*(cs.length-1);
+    let x=CX-tw/2;const y=base+F*1.20;tx.fillStyle=`rgba(216,204,242,${sa})`;cs.forEach((c,i)=>{tx.fillText(c,x,y);x+=ws[i]+ls});
+    const uw=Math.min(tw*0.5,F*1.5)*easeOut((t-5.25)/0.8);
+    if(uw>0){const g=tx.createLinearGradient(CX-uw/2,0,CX+uw/2,0);g.addColorStop(0,'#8B2FC9');g.addColorStop(1,'#DF55F7');
+      tx.globalAlpha=sa;tx.fillStyle=g;rrect(tx,CX-uw/2,y+fs*0.42,uw,Math.max(2,fs*0.08),fs*0.04);tx.fill();tx.globalAlpha=1}
+  }
   // Durum paylaşımı için çağrı kutusu (yalnızca dikeyde; yatayda yer yok): "ÇOK YAKINDA / Google Play'de"
-  const cp=easeOut((t-5.4)/0.6);
+  const cp=easeOut((t-5.9)/0.6);
   if(CTA&&PORT&&cp>0){
     const f1=F*0.17,f2=F*0.30,sp=f1*0.32;
     tx.font=`800 ${f1}px 'Inter Display'`;const c1=[...CTA.top],w1s=c1.map(c=>tx.measureText(c).width),w1=w1s.reduce((a,b)=>a+b,0)+sp*(c1.length-1);
     tx.font=`800 ${f2}px 'Inter Display'`;const w2=tx.measureText(CTA.main).width;
-    const bw=Math.max(w1,w2)+F*0.9,bh=f1+f2+F*0.55,cy=base+F*1.62+(1-cp)*F*0.25,bx=CX-bw/2,by=cy-bh/2;
+    const bw=Math.max(w1,w2)+F*0.9,bh=f1+f2+F*0.55,cy=base+F*2.04+(1-cp)*F*0.25,bx=CX-bw/2,by=cy-bh/2;
     tx.globalAlpha=cp;rrect(tx,bx,by,bw,bh,bh*0.28);tx.fillStyle='rgba(22,12,44,0.82)';tx.fill();
     const bg=tx.createLinearGradient(bx,0,bx+bw,0);bg.addColorStop(0,'#D946EF');bg.addColorStop(1,'#8B5CF6');tx.strokeStyle=bg;tx.lineWidth=2.6*S;tx.stroke();
     tx.font=`800 ${f1}px 'Inter Display'`;tx.fillStyle=rgba(GOLD,1);let x=CX-w1/2;const y1=by+F*0.25+f1*0.8;c1.forEach((c,i)=>{tx.fillText(c,x,y1);x+=w1s[i]+sp});

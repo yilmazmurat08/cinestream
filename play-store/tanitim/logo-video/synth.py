@@ -1,6 +1,6 @@
 """CineStream logo açılışının sesi: tamamen burada üretilir (hazır müzik ya da ses dosyası yok, telif sorunu yok).
 Zamanlama anim.html ile aynıdır: şeritler 0-1.8 sn, lazerler 0.95/1.10, logo çizimi 1.55-2.5, patlama 2.62,
-çerçeve 3.12-3.87, yazı 4.0, parlama 4.85, çağrı kutusu 5.4.
+çerçeve 3.12-3.87, yazı 4.0, parlama 4.85, slogan 5.0, çağrı kutusu 5.9.
 Kullanım: python3 synth.py cikis.wav [süre=8] [cta]
 """
 import math
@@ -181,9 +181,10 @@ svf_noise(4.85, 5.45, 5000, 9000, 0.06, -0.6, 0.6, q=0.5, send=0.6)
 for i in rng(4.85, 5.45):
     u = (i / SR - 4.85) / 0.6
     put(i, 0.015 * math.sin(math.pi * u) * math.sin(TAU * (2000 + 2000 * u) * (i / SR)), -0.5 + u, 0.6)
+svf_noise(5.0, 5.9, 3000, 6000, 0.04, 0.4, -0.4, q=0.5, send=0.7)  # slogan belirirken hafif ışıltı
 if CTA:  # çağrı kutusu belirirken iki kısa zil
-    bell(5.45, 1318.5, 0.08, -0.15)
-    bell(5.60, 1975.5, 0.06, 0.15)
+    bell(5.95, 1318.5, 0.08, -0.15)
+    bell(6.10, 1975.5, 0.06, 0.15)
 
 
 # 9) Basit yankı (Schroeder): 4 tarak + 2 tüm geçiren süzgeç
