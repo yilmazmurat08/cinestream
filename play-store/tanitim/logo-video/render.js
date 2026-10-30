@@ -15,7 +15,10 @@ const LOGO = process.env.LOGO || path.resolve(__dirname, "../../../app/src/main/
   page.on('pageerror', e => console.log('[sayfa hatası]', e.message));
   await page.goto('file://' + path.resolve(__dirname, 'anim.html'));
   const logo = 'data:image/jpeg;base64,' + fs.readFileSync(LOGO).toString('base64');
-  await page.evaluate(async ([a, b, src]) => { await init(a, b, src); }, [W, H, logo]);
+  // İsteğe bağlı: DUR=10 (saniye), CTA_TOP="ÇOK YAKINDA" CTA_MAIN="Google Play'de" (yalnızca dikeyde çizilir)
+  const opts = { dur: process.env.DUR ? +process.env.DUR : undefined,
+    cta: process.env.CTA_MAIN ? { top: process.env.CTA_TOP || '', main: process.env.CTA_MAIN } : null };
+  await page.evaluate(async ([a, b, src, o]) => { await init(a, b, src, o); }, [W, H, logo, opts]);
   const dur = await page.evaluate(() => DUR);
   const times = only ? only.split(',').map(Number) : [...Array(Math.round(dur * fps)).keys()].map(i => i / fps);
   const t0 = Date.now();

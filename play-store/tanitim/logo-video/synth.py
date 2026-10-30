@@ -1,6 +1,7 @@
 """CineStream logo açılışının sesi: tamamen burada üretilir (hazır müzik ya da ses dosyası yok, telif sorunu yok).
 Zamanlama anim.html ile aynıdır: şeritler 0-1.8 sn, lazerler 0.95/1.10, logo çizimi 1.55-2.5, patlama 2.62,
-çerçeve 3.12-3.87, yazı 4.0, parlama 4.85. Kullanım: python3 synth.py cikis.wav
+çerçeve 3.12-3.87, yazı 4.0, parlama 4.85, çağrı kutusu 5.4.
+Kullanım: python3 synth.py cikis.wav [süre=8] [cta]
 """
 import math
 import random
@@ -9,7 +10,8 @@ import sys
 import wave
 
 SR = 48000
-DUR = 8.0
+DUR = float(sys.argv[2]) if len(sys.argv) > 2 else 8.0
+CTA = len(sys.argv) > 3 and sys.argv[3] == "cta"
 N = int(SR * DUR)
 T_BURST = 2.62
 TAU = 2 * math.pi
@@ -44,7 +46,7 @@ def rng(t0, t1):
 for i in range(N):
     t = i / SR
     env = 0.10 * smooth(0, 1.6, t) + 0.04 * smooth(1.6, 2.6, t)
-    env *= 1 - smooth(6.6, 8.0, t)
+    env *= 1 - smooth(DUR - 1.4, DUR, t)
     trem = 1 + 0.15 * math.sin(TAU * 0.2 * t)
     x = smooth(T_BURST, T_BURST + 0.4, t)
     pre = (110.0, 130.81, 164.81)
@@ -70,7 +72,7 @@ for ch, buf in ((0, L), (1, R)):
         fc = 900 + 900 * smooth(T_BURST, T_BURST + 0.5, t)
         a = 1 - math.exp(-TAU * fc / SR)
         lp += a * (rnd.uniform(-1, 1) - lp)
-        buf[i] += lp * 0.035 * smooth(0, 1.0, t) * (1 - smooth(6.8, 8.0, t))
+        buf[i] += lp * 0.035 * smooth(0, 1.0, t) * (1 - smooth(DUR - 1.2, DUR, t))
 
 
 def svf_noise(t0, t1, fc0, fc1, amp, pan0, pan1, q=0.5, send=0.3, shape=None):
@@ -179,6 +181,9 @@ svf_noise(4.85, 5.45, 5000, 9000, 0.06, -0.6, 0.6, q=0.5, send=0.6)
 for i in rng(4.85, 5.45):
     u = (i / SR - 4.85) / 0.6
     put(i, 0.015 * math.sin(math.pi * u) * math.sin(TAU * (2000 + 2000 * u) * (i / SR)), -0.5 + u, 0.6)
+if CTA:  # çağrı kutusu belirirken iki kısa zil
+    bell(5.45, 1318.5, 0.08, -0.15)
+    bell(5.60, 1975.5, 0.06, 0.15)
 
 
 # 9) Basit yankı (Schroeder): 4 tarak + 2 tüm geçiren süzgeç
@@ -220,7 +225,7 @@ for i in range(N):
 # 10) Son: giriş/çıkış yumuşatma, yumuşak sınırlama, -1 dB tepe
 for i in range(N):
     t = i / SR
-    g = min(1.0, t / 0.02) * (1 - smooth(7.0, 8.0, t))
+    g = min(1.0, t / 0.02) * (1 - smooth(DUR - 1.0, DUR, t))
     L[i] = math.tanh(1.2 * L[i] * g) / math.tanh(1.2)
     R[i] = math.tanh(1.2 * R[i] * g) / math.tanh(1.2)
 peak = max(max(abs(v) for v in L), max(abs(v) for v in R)) or 1.0
