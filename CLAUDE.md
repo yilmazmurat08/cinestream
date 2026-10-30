@@ -32,6 +32,14 @@ Mağaza adı: **CineStream IPTV Player**. Paket adı: `com.cinestream.iptv`.
   - Anahtar ortam değişkenlerinden okunur: `CINESTREAM_KEYSTORE_BASE64` ve `CINESTREAM_KEYSTORE_PASSWORD`.
 - Test kullanıcılarının e-posta adresleri yalnızca Play Console'da durur.
 
+## Play politika takvimi (29 Ekim 2026 duyurusundan)
+
+- **Japonya yetkilendirmesi, son gün 1 Aralık 2026 (kullanıcı yapar):** Japonya'ya satış yapan (uygulama 177 ülkede, PRO satılıyor) geliştirici Play Console / Payments Center'daki daveti açıp onaylamalı; yapılmazsa bütün ödemeler dünya genelinde bekletilir.
+- **Tüccar durumu beyanı, Kasım 2026 (kullanıcı yapar):** Play Console'da beyan edilmeli (PRO satıldığı için büyük olasılıkla "tüccar").
+- **Şubat 2027, kalite eşikleri:** bellek (Anonymous RSS + Swap, Bitmap) ve DEX kod optimizasyonu, Android vitals'ta. R8 açık; yayından sonra vitals izlenir.
+- **Hedef API 37'ye (Android 17) geçerken:** TV'deki "Telefondan kolay kurulum" (`PhoneEntryServer`, yerel Wi-Fi'de küçük sunucu) için yerel ağ izni ve Play Console beyanı gerekecek. Bugün hedef 36, etkilenmiyor.
+- Etkilemeyenler: konum, kişiler, SMS/arama kaydı, tüm dosyalara erişim, erişilebilirlik izinleri kullanılmıyor; öğrenci gibi koşullu indirimli abonelik yok.
+
 ## Yol haritası (13 Ekim 2026 kararları)
 
 Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
