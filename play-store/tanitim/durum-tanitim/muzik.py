@@ -1,8 +1,10 @@
-"""CineStream durum tanıtımının arka plan müziği: sinematik elektronik, 120 BPM, La minör.
+"""CineStream tanıtım videolarının arka plan müziği: sinematik elektronik, 120 BPM, La minör.
 Tamamen burada üretilir (hazır müzik ya da örnek ses yok, telif sorunu yok).
-Zamanlama videoya bağlı: logo videosundaki ışık patlaması 2,62 sn'de -> vuruş (drop) orada girer;
-ölçüler 2 sn; uygulama turuna geçişte (10,62) zil; son vuruş 16,62; video 17,6 sn.
-Kullanım: python3 muzik.py cikis.wav
+Zamanlama videoya bağlı: logo videosundaki ışık patlaması 2,62 sn'de -> vuruş (drop) orada girer; ölçüler 2 sn.
+- kisa (17,6 sn): turun başında zil (10,62), son vuruş 16,62.
+- ozet (39,6 sn): sahne geçişleri ölçü başlarında; QR sahnesinde (22,62-28,62) davul susar, 28,62'de yeniden girer;
+  son vuruş 38,62.
+Kullanım: python3 muzik.py cikis.wav [kisa|ozet]
 """
 import math
 import random
@@ -11,12 +13,24 @@ import sys
 import wave
 
 SR = 48000
-DUR = 17.6
+MODE = sys.argv[2] if len(sys.argv) > 2 else "kisa"
+if MODE == "ozet":
+    DUR = 39.6
+    PROG = ["Am", "C", "G", "F", "Am", "F", "C", "G", "Am", "F", "C", "G", "F", "Am", "C", "G", "F", "G"]
+    BREAK = {10, 11, 12}  # QR sahnesi: davulsuz ara
+    CRASH = {0: 0.17, 4: 0.17, 13: 0.19, 6: 0.07, 8: 0.07, 15: 0.07, 17: 0.07}
+    FILLS = [4, 13]  # bu ölçülerden önceki yarım ölçüde trampet dolgusu
+else:
+    DUR = 17.6
+    PROG = ["Am", "C", "G", "F", "Am", "F", "G"]
+    BREAK = set()
+    CRASH = {0: 0.17, 4: 0.17}
+    FILLS = [4]
 N = int(SR * DUR)
 TAU = 2 * math.pi
 DROP = 2.62
 BAR = 2.0
-FINAL = DROP + 7 * BAR  # 16.62
+FINAL = DROP + len(PROG) * BAR
 rnd = random.Random(2026)
 
 L = [0.0] * N
@@ -40,8 +54,11 @@ CHORDS = {
     "G": ([55, 59, 62], 31, [67, 71, 74, 79]),
     "F": ([53, 57, 60], 29, [65, 69, 72, 77]),
 }
-PROG = ["Am", "C", "G", "F", "Am", "F", "G"]
 bars = [(DROP + k * BAR, DROP + (k + 1) * BAR, c) for k, c in enumerate(PROG)]
+
+
+def bar_of(t):
+    return int((t - DROP) // BAR) if t >= DROP else -1
 
 
 def idx(t):
@@ -53,7 +70,7 @@ def smooth(a, b, x):
     return t * t * (3 - 2 * t)
 
 
-kicks = [DROP + 0.5 * k for k in range(int((FINAL - DROP) / 0.5))] + [FINAL]
+kicks = [DROP + 0.5 * k for k in range(int(round((FINAL - DROP) / 0.5))) if bar_of(DROP + 0.5 * k + 1e-6) not in BREAK] + [FINAL]
 
 
 def duck(t):
@@ -114,6 +131,8 @@ def pad_cut(t):
     if t < DROP:
         return 300 + 2200 * smooth(0.0, DROP, t) ** 1.5
     if t < FINAL:
+        if bar_of(t) in BREAK:
+            return 3400
         return 2300 + 400 * math.sin(TAU * (t - DROP) / 8.0)
     return 3200 * math.exp(-(t - FINAL) * 1.2) + 600
 
@@ -129,8 +148,15 @@ for i in range(N):
 
 # ---------- Bas (sekizlik, testere + alt sinüs, süzgeç zarfı)
 bass = [0.0] * N
-for t0, t1, name in bars:
+for bi, (t0, t1, name) in enumerate(bars):
     root = CHORDS[name][1]
+    if bi in BREAK:  # davulsuz arada uzun, yumuşak bas
+        f = mtof(root + 12)
+        for i in range(idx(t0), idx(t1)):
+            tt = i / SR - t0
+            env = smooth(0, 0.08, tt) * (1 - smooth(BAR - 0.1, BAR, tt))
+            bass[i] += math.sin(TAU * f * tt) * 0.7 * env
+        continue
     for k in range(8):
         s = t0 + k * 0.25
         f = mtof(root + (12 if k % 2 else 0))
@@ -266,9 +292,14 @@ def snare(t0, amp):
         add(i, v, v, send=0.3)
 
 
+strong = {DROP, FINAL} | {DROP + b * BAR for b in CRASH if CRASH[b] > 0.1}
 for k in kicks:
-    kick(k, 0.6 if k in (DROP, FINAL, DROP + 4 * BAR) else 0.5)
-for t0, t1, name in bars:
+    kick(k, 0.6 if any(abs(k - s) < 1e-6 for s in strong) else 0.5)
+for bi, (t0, t1, name) in enumerate(bars):
+    if bi in BREAK:
+        for s in range(8):
+            hat(t0 + s * 0.25 + 0.125, 0.025, 0.02, 0.1)
+        continue
     for b in (1, 3):
         clap(t0 + b * 0.5)
     for s in range(16):
@@ -277,11 +308,27 @@ for t0, t1, name in bars:
             hat(tt, 0.085 if s % 4 == 2 - 1 else 0.06, 0.05 if s % 4 == 3 else 0.028, 0.2 if s % 4 == 3 else -0.15)
         else:
             hat(tt, 0.03, 0.02, -0.1)
-# geçişe trampet dolgusu (10,12-10,62), zil vuruşları
-for k in range(8):
-    snare(DROP + 4 * BAR - 0.5 + k * 0.0625, 0.05 + 0.1 * k / 7)
-for t in (DROP, DROP + 4 * BAR, FINAL):
-    crash(t, 0.17 if t != FINAL else 0.2, 1.8 if t != FINAL else 1.0)
+# trampet dolguları ve zil vuruşları
+for b in FILLS:
+    for k in range(8):
+        snare(DROP + b * BAR - 0.5 + k * 0.0625, 0.05 + 0.1 * k / 7)
+for b, a in CRASH.items():
+    crash(DROP + b * BAR, a, 1.8 if a > 0.1 else 0.9)
+crash(FINAL, 0.2, 1.0)
+# aradan çıkışa yükselen gürültü (QR sahnesinin son iki ölçüsü)
+if BREAK:
+    b0, b1 = DROP + (max(BREAK) - 1) * BAR, DROP + (max(BREAK) + 1) * BAR
+    lpr = bpr = 0.0
+    for i in range(idx(b0), idx(b1)):
+        t = i / SR
+        u = (t - b0) / (b1 - b0)
+        fc = 600 * (10 ** u)
+        f = 2 * math.sin(math.pi * min(fc, SR / 6) / SR)
+        hp = rnd.uniform(-1, 1) - lpr - 0.6 * bpr
+        bpr += f * hp
+        lpr += f * bpr
+        v = bpr * 0.08 * u ** 2.4 * min(1.0, (b1 - t) * 200)
+        add(i, v, v * 0.95, send=0.3)
 
 # ---------- Giriş: yükselen gürültü ve ters zil, drop'ta alt düşüş
 lp = bp = 0.0

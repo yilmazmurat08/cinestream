@@ -20,3 +20,12 @@ durum-tanitim/*.wav
 durum-tanitim/*.mp4
 durum-tanitim/logo.jpg
 durum-tanitim/node_modules
+ozet-video/s[0-9]/
+ozet-video/kareler_*/
+ozet-video/onizleme/
+ozet-video/*.wav
+ozet-video/*.mp4
+ozet-video/*.png
+ozet-video/logo.jpg
+ozet-video/telefon-sayfa.html
+ozet-video/node_modules

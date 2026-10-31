@@ -51,3 +51,23 @@ klasörleri, yapay zekâ özeti) ve "ŞİMDİ YAYINDA / Google Play'de" kutusu; 
   turun başında zil (10,62), son vuruş 16,62. Logo efektleri müzikle çakışmasın diye `PAD=0` ile alt tonsuz üretilir.
 - `uret.sh <kayıt.mp4>`: hepsini çalıştırır.
 
+
+## Tanıtım özeti (`ozet-video/`)
+
+Yaklaşık 40 sn, iki biçim: dikey 1080x1920 (durumlar, Shorts) ve yatay 1920x1080 (YouTube, forum). Logo açılışı
+(dikeyde `CineStream-durum-yayinda`, yatayda kutusuz 10 sn'lik sürüm), ardından ekran kaydından bulanık sahneler ve
+"ÖNE ÇIKAN" etiketli **QR ile giriş** sahnesi: TV'deki "Telefonla gir" penceresi ve telefonda açılan sayfa yan
+yana. Sonda "ŞİMDİ YAYINDA / Google Play'de" kutusu ve "Uygulama içerik sağlamaz; kendi listeni eklersin." notu.
+
+- `sahneler.sh`: ekran kaydından altı kısa sahne keser (ana ekran, tür klasörleri, fragman, yapay zekâ özeti,
+  oynatıcı, bölüm listesi). Kanal logoları, afişler, film/dizi adları ve özetleri, oyuncu fotoğrafları, fragman ve
+  yayın görüntüleri bulanık; kayıttaki ses atılır. Kesme yerleri o kayda göredir (kayıt depoda değil).
+- `qr-cekim.kt.txt`: QR penceresini uygulamanın kendi koduyla (Robolectric) çizer ve telefon sayfasını gerçek
+  `PhoneEntryServer`'dan alır. Geçici test olarak kopyalanıp çalıştırılır, sonra silinir (depodaki testlere girmez).
+  Pencerenin düzeni değişirse bu kopya da güncellenmeli.
+- `telefon.js`: telefon sayfasını telefon boyutunda resme çevirir.
+- `ozet.html` + `ozet-render.js`: tek sayfa, iki düzen (TV çerçevesi, sahne başlıkları, telefon, çağrı kutusu).
+- Müzik: `../durum-tanitim/muzik.py muzik.wav ozet` (39,6 sn). Sahne geçişleri ölçü başlarında; QR sahnesinde
+  davul susar, 28,62'de yeniden girer; son vuruş 38,62.
+- `uret.sh <kayıt.mp4>`: hepsini çalıştırır, `CineStream-tanitim-dikey.mp4` ve `-yatay.mp4` üretir. Yazı tipi
+  Inter (yüklü değilse benzer bir yazı tipiyle çıkar).

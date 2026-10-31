@@ -1,0 +1,133 @@
+// Tanıtım videosu için TV'deki "Telefonla gir" QR penceresi ve telefonda açılan sayfa.
+// uret.sh bu dosyayı geçici olarak app/src/test/java/com/example/TvQrPromoShotTmp.kt diye kopyalar, çalıştırır,
+// sonra siler (depodaki testlere girmez). Bu ortamda yerel ağ olmadığı için PhoneEntryDialog'un QR'lı hâli aynı
+// düzen ve metinlerle örnek bir ev ağı adresiyle çizilir; telefon sayfası gerçek PhoneEntryServer'dan alınır.
+// PhoneEntryDialog'un düzeni değişirse buradaki kopya da güncellenmeli.
+package com.example
+
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.example.ui.screens.LoginScreen
+import com.example.ui.theme.AppTheme
+import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.tv.PhoneEntryMode
+import com.example.ui.tv.PhoneEntryServer
+import com.example.ui.tv.QrCodeImage
+import com.example.ui.tv.TvDevice
+import com.github.takahirom.roborazzi.captureScreenRoboImage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowLooper
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.TimeUnit
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], qualifiers = "tr-w960dp-h540dp-land-television-xhdpi")
+class TvQrPromoShotTmp {
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    private val out = File(System.getenv("CINESTREAM_QR_OUT") ?: "/tmp")
+    private val url = "http://192.168.1.35:8765/?t=8kae52pu"
+
+    @Test fun qrDialogAndPhonePage() {
+        out.mkdirs()
+        TvDevice.overrideForTest = true
+        compose.setContent {
+            MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) {
+                Box(Modifier.fillMaxSize().background(Color(0xFF0E071A))) {
+                    LoginScreen(onLoginSuccess = { _, _ -> })
+                    Dialog(onDismissRequest = {}) {
+                        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF160E1E)),
+                            modifier = Modifier.widthIn(max = 460.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Telefonla gir", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.height(6.dp))
+                                Text("M3U ya da Xtream bilgilerini telefonundan gönder.", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, textAlign = TextAlign.Center)
+                                Spacer(Modifier.height(16.dp))
+                                Box(Modifier.size(240.dp).clip(RoundedCornerShape(12.dp)).background(Color.White).padding(10.dp)) {
+                                    QrCodeImage(content = url, modifier = Modifier.size(220.dp))
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                Text("Aynı Wi-Fi ağında olduğunuza emin olun.", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, textAlign = TextAlign.Center)
+                                Spacer(Modifier.height(14.dp))
+                                Text("1. Telefonunun kamerasıyla QR kodu okut.\n2. Açılan sayfada bilgileri yapıştır, \"TV'ye gönder\"e bas.",
+                                    color = Color.White, fontSize = 14.sp, lineHeight = 20.sp)
+                                Spacer(Modifier.height(8.dp))
+                                Text("QR okutamıyorsan tarayıcıya yaz: $url", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace, textAlign = TextAlign.Center)
+                                Spacer(Modifier.height(14.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFE879F9))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Telefondan bekleniyor…", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                                }
+                                Spacer(Modifier.height(16.dp))
+                                TextButton(onClick = {}) { Text("Kapat", color = Color(0xFFE879F9), fontWeight = FontWeight.SemiBold) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        repeat(20) {
+            ShadowLooper.idleMainLooper(100, TimeUnit.MILLISECONDS)
+            compose.mainClock.advanceTimeBy(100)
+            Thread.sleep(20)
+        }
+        compose.waitForIdle()
+        captureScreenRoboImage(File(out, "tv-qr.png").absolutePath)
+
+        // Telefonda açılan sayfa: gerçek sunucudan alınır.
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val server = PhoneEntryServer(PhoneEntryMode.PLAYLIST, english = false) { null }
+        try {
+            check(server.start(scope, "192.168.1.35"))
+            val local = server.url()!!.replace("192.168.1.35", "127.0.0.1")
+            val html = (URL(local).openConnection() as HttpURLConnection).inputStream.bufferedReader().readText()
+            File(out, "telefon-sayfa.html").writeText(html)
+        } finally {
+            server.stop()
+            scope.cancel()
+            TvDevice.overrideForTest = null
+        }
+    }
+}

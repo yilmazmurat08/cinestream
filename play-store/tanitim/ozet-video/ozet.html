@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<title>CineStream tanıtım özeti</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{overflow:hidden;background:#07050f}
+  body{position:relative;font-family:'Inter Display','Inter',sans-serif;color:#fff}
+  .bg{position:absolute;inset:0;background:
+      radial-gradient(ellipse 70% 35% at var(--gx) var(--gy), rgba(124,58,237,.42), transparent 70%),
+      radial-gradient(ellipse 60% 30% at 50% 100%, rgba(139,92,246,.30), transparent 70%),
+      radial-gradient(ellipse 40% 25% at 12% 8%, rgba(217,70,239,.14), transparent 70%),
+      linear-gradient(180deg,#120a2a 0%,#07050f 60%,#0a0618 100%)}
+  .dot{position:absolute;border-radius:50%;background:#e9d5ff}
+  .brand{position:absolute;display:flex;align-items:center;gap:22px}
+  .brand img{border-radius:24px;border:1.5px solid rgba(255,255,255,.22);box-shadow:0 0 40px rgba(217,70,239,.55)}
+  .word{font-weight:900;letter-spacing:-.5px;line-height:1}
+  .grad{background:linear-gradient(90deg,#C27CF5,#E879A8 55%,#F97316);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .slogan{display:block;margin-top:8px;font-weight:400;color:#d8ccf2;letter-spacing:.4px}
+  .label{position:absolute;color:#D4A853;font-weight:800;letter-spacing:9px}
+  .tvwrap{position:absolute;transform-origin:50% 40%}
+  .glow{position:absolute;left:8%;right:8%;top:6%;height:80%;border-radius:50%;background:rgba(217,70,239,.30);filter:blur(70px)}
+  .tv{position:relative;padding:14px;border-radius:22px;background:linear-gradient(160deg,#2f2945,#0d0b14 45%,#07060b);
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.10),0 30px 80px rgba(0,0,0,.7),0 0 0 1px rgba(217,70,239,.25)}
+  .screen{position:relative;overflow:hidden;border-radius:8px;background:#0b0816}
+  .screen img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+  .screen::after{content:'';position:absolute;inset:0;background:linear-gradient(125deg,rgba(255,255,255,.08),rgba(255,255,255,0) 30%);pointer-events:none}
+  .scan{position:absolute;left:30%;width:40%;height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,#E879F9,#fff,#E879F9,transparent);
+      box-shadow:0 0 18px 4px rgba(232,121,249,.7);opacity:0}
+  .neck{margin:0 auto;width:120px;height:30px;background:linear-gradient(180deg,#1b1726,#0c0a12)}
+  .foot{margin:0 auto;width:360px;height:12px;border-radius:8px;background:linear-gradient(90deg,transparent,#2a2440 20%,#3a3352 50%,#2a2440 80%,transparent);box-shadow:0 0 30px rgba(217,70,239,.35)}
+  .phone{position:absolute;padding:9px;border-radius:38px;background:linear-gradient(150deg,#3a3352,#121019 40%,#0a0910);opacity:0;
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.14),0 30px 70px rgba(0,0,0,.75),0 0 60px rgba(217,70,239,.45)}
+  .phone img{display:block;width:100%;box-sizing:border-box;aspect-ratio:390/844;padding-top:26px;border-radius:30px;background:#120d1c;object-fit:cover;object-position:50% 0}
+  .phone::after{content:'';position:absolute;top:20px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#05040a;box-shadow:0 0 0 2px #1c1929}
+  .caps{position:absolute}
+  .cap{position:absolute;left:0;right:0;opacity:0}
+  .cap .tag{display:inline-block;margin-bottom:14px;padding:6px 16px;border-radius:999px;background:linear-gradient(90deg,#D4A853,#F5D78E);color:#2a1a05;font-weight:900;letter-spacing:4px}
+  .cap h2{font-weight:900;letter-spacing:-1px;line-height:1.05;text-shadow:0 6px 30px rgba(0,0,0,.6)}
+  .cap p{display:inline-block;margin-top:14px;padding-bottom:12px;font-weight:500;color:#d8ccf2;background:linear-gradient(90deg,#8B2FC9,#DF55F7) var(--ux) bottom/42% 3px no-repeat}
+  .note{position:absolute;font-weight:500;color:rgba(216,204,242,.62)}
+  .cta{position:absolute;display:flex;align-items:center;gap:20px;padding:16px 38px 16px 18px;border-radius:30px;white-space:nowrap;
+      border:3px solid transparent;background:linear-gradient(rgba(22,12,44,.92),rgba(22,12,44,.92)) padding-box,linear-gradient(90deg,#D946EF,#8B5CF6) border-box}
+  .cta .pl{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#F5D0FE,#D946EF 45%,#701A75);box-shadow:0 0 26px rgba(217,70,239,.7)}
+  .cta .pl svg{width:28px;height:28px;margin-left:5px;fill:#fff}
+  .cta small{display:block;color:#D4A853;font-size:21px;font-weight:800;letter-spacing:6px}
+  .cta b{display:block;font-size:40px;font-weight:800;line-height:1.1}
+
+  /* Dikey (1080x1920): durumlar ve Shorts */
+  body.port{width:1080px;height:1920px;--gx:50%;--gy:36%;--ux:center}
+  .port .brand{left:0;right:0;top:150px;justify-content:center}
+  .port .brand img{width:96px;height:96px}
+  .port .word{font-size:64px}
+  .port .slogan{font-size:26px;text-align:left}
+  .port .label{left:0;right:0;top:322px;text-align:center;font-size:27px}
+  .port .tvwrap{left:26px;top:392px;width:1028px}
+  .port .screen{width:1000px;height:533px}
+  .port .phone{left:792px;top:520px;width:250px}
+  .port .caps{left:0;right:0;top:1060px;height:230px}
+  .port .cap{text-align:center}
+  .port .cap h2{font-size:76px}
+  .port .cap p{font-size:38px}
+  .port .cap .tag{font-size:22px}
+  .port .note{left:0;right:0;top:1318px;text-align:center;font-size:25px}
+  .port .cta{left:50%;top:1392px;transform:translateX(-50%)}
+
+  /* Yatay (1920x1080): YouTube, Facebook, forum */
+  body.land{width:1920px;height:1080px;--gx:70%;--gy:45%;--ux:left}
+  .land .brand{left:100px;top:110px}
+  .land .brand img{width:110px;height:110px}
+  .land .word{font-size:72px}
+  .land .slogan{font-size:27px}
+  .land .label{left:100px;top:290px;font-size:24px}
+  .land .tvwrap{left:772px;top:190px;width:1078px}
+  .land .screen{width:1050px;height:560px}
+  .land .phone{left:1640px;top:400px;width:236px}
+  .land .caps{left:100px;width:640px;top:380px;height:300px}
+  .land .cap{text-align:left}
+  .land .cap h2{font-size:80px}
+  .land .cap p{font-size:36px}
+  .land .cap .tag{font-size:20px}
+  .land .note{left:100px;width:640px;top:745px;font-size:24px}
+  .land .cta{left:100px;top:815px}
+</style></head>
+<body>
+<div class="bg"></div><div id="dots"></div>
+<div class="brand"><img src="logo.jpg" alt=""><div><div class="word">Cine<span class="grad">Stream</span></div><span class="slogan">İzlemenin daha akıllı hali</span></div></div>
+<div class="label">TELEFONDA VE ANDROID TV'DE</div>
+<div class="tvwrap" id="tv"><div class="glow" id="glow"></div>
+  <div class="tv"><div class="screen" id="screen"><div class="scan" id="scan"></div></div></div><div class="neck"></div><div class="foot"></div></div>
+<div class="phone" id="phone"><img src="telefon-sayfa.png" alt=""></div>
+<div class="caps" id="caps"></div>
+<div class="note">Uygulama içerik sağlamaz; kendi listeni eklersin.</div>
+<div class="cta" id="cta"><i class="pl"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></i><div><small>ŞİMDİ YAYINDA</small><b>Google Play'de</b></div></div>
+<script>
+  const PORT=innerHeight>innerWidth;document.body.className=PORT?'port':'land';
+  const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t)};
+  // Sahneler (turun kendi zamanı, sn). Geçişler müzikteki ölçü başlarına denk gelir (0,4 sn çapraz geçiş).
+  const SC=[
+    {id:'s1',a:0.00,b:5.32,n:160,h:'Her şey tek yerde',p:'Canlı TV, film ve dizi'},
+    {id:'s2',a:4.92,b:9.32,n:132,h:'Türlere göre klasörler',p:'Listen kendiliğinden düzenlenir'},
+    {id:'s3',a:8.92,b:13.32,n:132,h:'Uygulama içi fragman',p:"YouTube'a gitmeden, kartın içinde"},
+    {id:'qr',a:12.92,b:19.32,h:'QR ile kolay giriş',p:"Telefonla okut, listen TV'ye gelsin",tag:'ÖNE ÇIKAN'},
+    {id:'s5',a:18.92,b:23.32,n:132,h:'Yapay zekâ ile özet',p:'Kaldığın yere kadar, spoiler yok'},
+    {id:'s6',a:22.92,b:27.32,n:132,h:'Kumandaya uygun oynatıcı',p:'Sar, durdur, kaldığın yerden sürdür'},
+    {id:'s7',a:26.92,b:30.10,n:96,h:'Bölümler elinin altında',p:'İzlerken bölüm listesi'},
+  ];
+  const screen=document.getElementById('screen'),caps=document.getElementById('caps');
+  for(const s of SC){
+    s.img=document.createElement('img');screen.insertBefore(s.img,document.getElementById('scan'));
+    if(s.id==='qr')s.img.src='tv-qr.png';
+    s.cap=document.createElement('div');s.cap.className='cap';
+    s.cap.innerHTML=(s.tag?`<span class="tag">${s.tag}</span><br>`:'')+`<h2>${s.h}</h2><p>${s.p}</p>`;caps.appendChild(s.cap);
+  }
+  let r=5;const rnd=()=>{r|=0;r=r+0x6D2B79F5|0;let t=Math.imul(r^r>>>15,1|r);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const dots=[];for(let i=0;i<60;i++){const d=document.createElement('i');d.className='dot';const z=1+rnd()*3;
+    d.style.cssText=`left:${rnd()*innerWidth}px;top:${rnd()*innerHeight}px;width:${z}px;height:${z}px;box-shadow:0 0 ${4+z*3}px rgba(217,70,239,.8)`;
+    document.getElementById('dots').appendChild(d);dots.push({d,a:.15+rnd()*.5,w:1+rnd()*3,p:rnd()*6.28})}
+  const last=SC.length-1;
+  window.setFrame=async(t)=>{
+    const loads=[];
+    SC.forEach((s,k)=>{
+      const fin=k===0?1:smooth(s.a,s.a+0.4,t),fout=k===last?1:1-smooth(s.b-0.4,s.b,t);
+      const o=(t>=s.a&&t<=s.b)?fin*fout:0;s.img.style.opacity=o;
+      if(o>0&&s.n){const i=clamp(Math.floor((t-s.a)*30)+1,1,s.n);const src=`${s.id}/k${String(i).padStart(4,'0')}.png`;
+        if(!s.img.src.endsWith(src)){s.img.src=src;loads.push(s.img.decode().catch(()=>{}))}}
+      const cin=k===0?smooth(0.25,0.6,t):smooth(s.a+0.2,s.a+0.55,t);
+      s.cap.style.opacity=(t<=s.b?cin*fout:0);s.cap.style.transform=`translateY(${(1-cin)*26}px)`;
+    });
+    const q=SC[3],qo=(t>=q.a&&t<=q.b)?smooth(q.a+0.3,q.a+0.9,t)*(1-smooth(q.b-0.5,q.b-0.1,t)):0;
+    const ph=document.getElementById('phone');ph.style.opacity=qo;
+    ph.style.transform=`translateY(${(1-smooth(q.a+0.3,q.a+1.0,t))*80+Math.sin(t*2)*6}px) rotate(${6-4*smooth(q.a+0.3,q.a+1,t)}deg)`;
+    const sc=document.getElementById('scan'),u=((t-q.a)%1.6)/1.6;sc.style.opacity=qo*0.9;sc.style.top=(22+u*56)+'%';
+    document.getElementById('tv').style.transform=`scale(${0.965+0.035*smooth(0,0.7,t)})`;
+    document.getElementById('glow').style.opacity=0.75+0.25*Math.sin(t*2.4);
+    document.getElementById('cta').style.boxShadow=`0 0 ${36+16*Math.sin(t*3)}px rgba(217,70,239,.5),0 16px 40px rgba(0,0,0,.6)`;
+    dots.forEach(o=>o.d.style.opacity=o.a*(0.55+0.45*Math.sin(o.w*t+o.p)));
+    await Promise.all(loads);
+  };
+</script>
+</body></html>
