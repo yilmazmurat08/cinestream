@@ -4,6 +4,7 @@ Zamanlama anim.html ile aynıdır: şeritler 0-1.8 sn, lazerler 0.95/1.10, logo 
 Kullanım: python3 synth.py cikis.wav [süre=8] [cta]
 """
 import math
+import os
 import random
 import struct
 import sys
@@ -12,6 +13,8 @@ import wave
 SR = 48000
 DUR = float(sys.argv[2]) if len(sys.argv) > 2 else 8.0
 CTA = len(sys.argv) > 3 and sys.argv[3] == "cta"
+# PAD=0: alt ton (pad) ve hava gürültüsü olmadan, yalnızca efektler (üstüne ayrı müzik konacaksa).
+PAD = os.environ.get("PAD", "1") != "0"
 N = int(SR * DUR)
 T_BURST = 2.62
 TAU = 2 * math.pi
@@ -43,7 +46,7 @@ def rng(t0, t1):
 
 
 # 1) Alt pad: patlamadan önce minör (gerilim), sonra majör (aydınlık)
-for i in range(N):
+for i in range(N if PAD else 0):
     t = i / SR
     env = 0.10 * smooth(0, 1.6, t) + 0.04 * smooth(1.6, 2.6, t)
     env *= 1 - smooth(DUR - 1.4, DUR, t)
@@ -65,7 +68,7 @@ for i in range(N):
     R[i] += env * trem * (r + sub)
 
 # 2) Hava (yumuşak gürültü yatağı)
-for ch, buf in ((0, L), (1, R)):
+for ch, buf in (((0, L), (1, R)) if PAD else ()):
     lp = 0.0
     for i in range(N):
         t = i / SR

@@ -13,3 +13,10 @@ afis/CineStream-forum-*.jpg
 logo-video/*.gif
 logo-video/palet.png
 logo-video/uret.log
+durum-tanitim/tur_klip/
+durum-tanitim/tur_kareler/
+durum-tanitim/tur_onizleme/
+durum-tanitim/*.wav
+durum-tanitim/*.mp4
+durum-tanitim/logo.jpg
+durum-tanitim/node_modules

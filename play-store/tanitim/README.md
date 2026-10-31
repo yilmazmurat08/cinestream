@@ -38,3 +38,16 @@ Tek kareye bakmak için: `node render.js 1920 1080 onizleme 30 2.2,6.0`
 
 Play kuralları gereği: hazır içerik vaadi yok ("binlerce kanal" gibi), "Kendi M3U / Xtream listenle" notu var,
 yetişkin klasörü gösterilmez, ünlü yüz ya da marka logosu kullanılmaz.
+
+## Durum tanıtım videosu (`durum-tanitim/`)
+
+Dikey, 17,6 sn: logo açılışı (`CineStream-durum-yayinda`), ardından TV çerçevesinde uygulama turu (ana ekran, film
+klasörleri, yapay zekâ özeti) ve "ŞİMDİ YAYINDA / Google Play'de" kutusu; altında üretilmiş müzik.
+
+- `klip.sh`: kullanıcının ekran kaydından üç kısa sahne keser; kanal logoları, afişler, dizi adı/özeti ve bölüm
+  görselleri bulanık, kayıttaki ses atılır. Kesme yerleri ve bölgeler o kayda göredir (kayıt depoda değil).
+- `tur.html` + `tur-render.js`: dikey düzen (TV çerçevesi, sahne açıklamaları, çağrı kutusu).
+- `muzik.py`: sinematik elektronik müzik (120 BPM, La minör); vuruş logodaki patlamada (2,62 sn) girer,
+  turun başında zil (10,62), son vuruş 16,62. Logo efektleri müzikle çakışmasın diye `PAD=0` ile alt tonsuz üretilir.
+- `uret.sh <kayıt.mp4>`: hepsini çalıştırır.
+

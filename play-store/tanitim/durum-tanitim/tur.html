@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<title>CineStream uygulama turu</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1920px;overflow:hidden;background:#07050f}
+  body{position:relative;font-family:'Inter Display','Inter',sans-serif;color:#fff}
+  .bg{position:absolute;inset:0;background:
+      radial-gradient(ellipse 70% 35% at 50% 36%, rgba(124,58,237,.42), transparent 70%),
+      radial-gradient(ellipse 60% 30% at 50% 100%, rgba(139,92,246,.30), transparent 70%),
+      radial-gradient(ellipse 40% 25% at 15% 10%, rgba(217,70,239,.14), transparent 70%),
+      linear-gradient(180deg,#120a2a 0%,#07050f 60%,#0a0618 100%)}
+  .dot{position:absolute;border-radius:50%;background:#e9d5ff}
+  .brand{position:absolute;left:0;right:0;top:170px;display:flex;justify-content:center;align-items:center;gap:22px}
+  .brand img{width:96px;height:96px;border-radius:24px;border:1.5px solid rgba(255,255,255,.22);box-shadow:0 0 40px rgba(217,70,239,.55)}
+  .word{font-weight:900;font-size:64px;letter-spacing:-.5px;line-height:1}
+  .grad{background:linear-gradient(90deg,#C27CF5,#E879A8 55%,#F97316);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .label{position:absolute;left:0;right:0;top:322px;text-align:center;color:#D4A853;font-weight:800;font-size:27px;letter-spacing:9px}
+  .tvwrap{position:absolute;left:26px;top:392px;width:1028px;transform-origin:50% 40%}
+  .glow{position:absolute;left:60px;right:60px;top:40px;height:480px;border-radius:50%;background:rgba(217,70,239,.30);filter:blur(70px)}
+  .tv{position:relative;padding:14px;border-radius:22px;background:linear-gradient(160deg,#2f2945,#0d0b14 45%,#07060b);
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.10),0 30px 80px rgba(0,0,0,.7),0 0 0 1px rgba(217,70,239,.25)}
+  .tv img{display:block;width:1000px;height:533px;border-radius:8px;background:#0b0816}
+  .tv::after{content:'';position:absolute;inset:14px;border-radius:8px;background:linear-gradient(125deg,rgba(255,255,255,.08),rgba(255,255,255,0) 30%);pointer-events:none}
+  .neck{margin:0 auto;width:120px;height:34px;background:linear-gradient(180deg,#1b1726,#0c0a12)}
+  .foot{margin:0 auto;width:360px;height:12px;border-radius:8px;background:linear-gradient(90deg,transparent,#2a2440 20%,#3a3352 50%,#2a2440 80%,transparent);box-shadow:0 0 30px rgba(217,70,239,.35)}
+  .caps{position:absolute;left:0;right:0;top:1090px;height:180px}
+  .cap{position:absolute;left:0;right:0;text-align:center;opacity:0}
+  .cap h2{font-weight:900;font-size:76px;letter-spacing:-1px;line-height:1.05;text-shadow:0 6px 30px rgba(0,0,0,.6)}
+  .cap p{display:inline-block;margin-top:14px;padding-bottom:12px;font-size:38px;font-weight:500;color:#d8ccf2;
+      background:linear-gradient(90deg,#8B2FC9,#DF55F7) center bottom/42% 3px no-repeat}
+  .note{position:absolute;left:0;right:0;top:1318px;text-align:center;font-size:25px;font-weight:500;color:rgba(216,204,242,.62)}
+  .cta{position:absolute;left:50%;top:1392px;transform:translateX(-50%);display:flex;align-items:center;gap:20px;padding:16px 38px 16px 18px;border-radius:30px;
+      border:3px solid transparent;background:linear-gradient(rgba(22,12,44,.92),rgba(22,12,44,.92)) padding-box,linear-gradient(90deg,#D946EF,#8B5CF6) border-box;
+      box-shadow:0 0 44px rgba(217,70,239,.45),0 16px 40px rgba(0,0,0,.6);white-space:nowrap}
+  .cta .pl{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#F5D0FE,#D946EF 45%,#701A75);box-shadow:0 0 26px rgba(217,70,239,.7)}
+  .cta .pl svg{width:28px;height:28px;margin-left:5px;fill:#fff}
+  .cta small{display:block;color:#D4A853;font-size:21px;font-weight:800;letter-spacing:6px}
+  .cta b{display:block;font-size:40px;font-weight:800;line-height:1.1}
+</style></head>
+<body>
+<div class="bg"></div><div id="dots"></div>
+<div class="brand"><img src="logo.jpg" alt=""><div class="word">Cine<span class="grad">Stream</span></div></div>
+<div class="label">TELEFONDA VE ANDROID TV'DE</div>
+<div class="tvwrap" id="tv"><div class="glow" id="glow"></div><div class="tv"><img id="ekran" alt=""></div><div class="neck"></div><div class="foot"></div></div>
+<div class="caps">
+  <div class="cap" id="c0"><h2>Her şey tek yerde</h2><p>Canlı TV, film ve dizi</p></div>
+  <div class="cap" id="c1"><h2>Türlere göre klasörler</h2><p>Listen kendiliğinden düzenlenir</p></div>
+  <div class="cap" id="c2"><h2>Yapay zekâ ile özet</h2><p>Kaldığın yere kadar, spoiler yok</p></div>
+</div>
+<div class="note">Uygulama içerik sağlamaz; kendi listeni eklersin.</div>
+<div class="cta" id="cta"><i class="pl"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></i><div><small>ŞİMDİ YAYINDA</small><b>Google Play'de</b></div></div>
+<script>
+  const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t)};
+  let s=5;const r=()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const dots=[];for(let i=0;i<60;i++){const d=document.createElement('i');d.className='dot';const z=1+r()*3;
+    d.style.cssText=`left:${r()*1080}px;top:${r()*1920}px;width:${z}px;height:${z}px;box-shadow:0 0 ${4+z*3}px rgba(217,70,239,.8)`;
+    document.getElementById('dots').appendChild(d);dots.push({d,a:.15+r()*.5,w:1+r()*3,p:r()*6.28})}
+  // Altyazı pencereleri (turun kendi zamanı, sn): sahne geçişleri 3.05 ve 5.20'de
+  const caps=[[0.25,3.0,3.3],[3.15,5.15,5.45],[5.30,99,99]];
+  window.setFrame=async(i,t)=>{
+    const img=document.getElementById('ekran');img.src='tur_klip/k'+String(i).padStart(4,'0')+'.png';await img.decode();
+    caps.forEach(([a,b,c],k)=>{const v=smooth(a,a+0.35,t)*(1-smooth(b,c,t));const el=document.getElementById('c'+k);
+      el.style.opacity=v;el.style.transform=`translateY(${(1-smooth(a,a+0.35,t))*26}px)`});
+    const sc=0.965+0.035*smooth(0,0.7,t);document.getElementById('tv').style.transform=`scale(${sc})`;
+    document.getElementById('glow').style.opacity=0.75+0.25*Math.sin(t*2.4);
+    document.getElementById('cta').style.boxShadow=`0 0 ${36+16*Math.sin(t*3)}px rgba(217,70,239,.5),0 16px 40px rgba(0,0,0,.6)`;
+    dots.forEach(o=>o.d.style.opacity=o.a*(0.55+0.45*Math.sin(o.w*t+o.p)));
+  };
+</script>
+</body></html>
