@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Android TV ana ekran afişi (banner). Google: 320x180 px, drawable-xhdpi, alanı tamamen dolduran görsel ve
+     uygulamanın adı. Zemin bilerek belirgin mor: koyu başlatıcıda afişin sınırları görünsün. uret.sh ile PNG olur. -->
+<html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:320px;height:180px;overflow:hidden}
+body{position:relative;font-family:'Inter Display','Inter',sans-serif;
+  background:linear-gradient(135deg,#2E0C58 0%,#5E1890 55%,#8E24AA 100%)}
+.glow{position:absolute;inset:0;background:radial-gradient(circle at 70px 90px,rgba(217,70,239,.48) 0,rgba(217,70,239,0) 95px)}
+.shine{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 45%,rgba(0,0,0,.18))}
+.logo{position:absolute;left:var(--lx);top:44px;width:92px;height:92px;border-radius:20px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(255,255,255,.22),0 6px 18px rgba(0,0,0,.45),0 0 22px rgba(217,70,239,.55)}
+.logo img{width:100%;height:100%;display:block}
+.txt{position:absolute;width:max-content;left:calc(var(--lx) + 104px);top:0;bottom:0;display:flex;flex-direction:column;justify-content:center}
+.word{font-weight:900;font-size:32px;letter-spacing:-.6px;line-height:1;color:#fff;white-space:nowrap}
+.word b{font-weight:900;background:linear-gradient(90deg,#F5B8FF,#FFC08A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{margin-top:9px;font-weight:800;font-size:12.5px;letter-spacing:3.3px;color:#F5D78E;white-space:nowrap}
+</style></head><body>
+<div class="glow"></div><div class="shine"></div>
+<div class="logo"><img src="../../app/src/main/res/drawable-nodpi/img_app_logo_1782414357652.jpg" alt=""></div>
+<div class="txt" id="t"><div class="word">Cine<b>Stream</b></div><div class="sub">IPTV PLAYER</div></div>
+<script>
+// Logo + yazı grubu yatayda ortalanır.
+const w = document.getElementById('t').getBoundingClientRect().width;
+document.body.style.setProperty('--lx', Math.round((320 - (92 + 12 + w)) / 2) + 'px');
+</script>
+</body></html>
