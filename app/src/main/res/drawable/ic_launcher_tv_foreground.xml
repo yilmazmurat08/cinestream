@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android TV simgesinin ön katmanı: logo katmanın %80'i (her kenardan %10 pay). Pay sabit dp değil yüzde:
+     TV başlatıcısı simgeyi hangi boyutta çizerse çizsin görünen alanın tamamını logo kaplar (Play TV incelemesi,
+     "simge alanın tamamını kaplamıyor"). Telefondaki simge değişmedi (ic_launcher_foreground). -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/img_app_logo_1782414357652"
+    android:inset="10%" />
