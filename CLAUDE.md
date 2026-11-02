@@ -94,6 +94,7 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
   - Afiş: koyu zeminli vektör yerine `drawable-xhdpi/tv_banner.png` (320x180, saydamlıksız, belirgin mor zemin, logo + "CineStream" + "IPTV PLAYER"; kaynak `tools/tv-banner/`). Uygulamaya ek olarak `MainActivity`'de de `android:banner`.
   - Yalnızca TV'de simge: `mipmap-television-anydpi-v26` → logo yüzdeyle (%10 pay) büyür, arka plan logonun kenar renginde. Telefondaki simge değişmedi.
   - Test `TvLauncherArtTest`. Ret yalnızca afiş/simgeyle ilgili; testçiler ve 14 günlük test sıfırlanmaz.
+  - Bilinen: eski `mipmap-*/ic_launcher*.webp` dosyaları bozuk (lint IconDipSize uyarısı); minSdk 26 olduğu için hiç kullanılmıyor (simge `mipmap-anydpi-v26`).
 
 **`claude/akici-oynatma` (23 Ekim 2026; takılma ve donmaları azaltma; 25 Ekim'de 1.1.8 dalına birleştirildi). Herkese açık:**
 - Donma bekçisi (`PlaybackStallGuard` + `StallWatchdog`): yayın 8 sn hiç ilerlemezse (veri gelmiyor, süre durdu ya da görüntü dondu) sessizce yeniden bağlanır; canlı en güncel noktadan, film/dizi kaldığı yerden. Veri yavaş da olsa geliyorsa karışmaz. Sarma ve yeniden bağlanmadan sonra 15 sn bekler. 3 denemede düzelmezse sonsuz dönen daire yerine "Yeniden dene" çıkar.
