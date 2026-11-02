@@ -717,4 +717,7 @@
     <string name="player_next_countdown">Sonraki bölüm %d sn içinde</string>
     <string name="player_next_play_now">Şimdi oynat</string>
     <string name="player_next_cancel">İptal</string>
+    <!-- TV'de tarayıcı açılmaz (Android TV kalite yönergesi TV-WB) -->
+    <string name="tv_open_link_on_phone">Bu adresi telefonunda aç: %1$s</string>
+    <string name="tv_manage_subscription_hint">Aboneliğini telefonundaki Google Play uygulamasından yönet: Profil → Ödemeler ve abonelikler → Abonelikler.</string>
 </resources>

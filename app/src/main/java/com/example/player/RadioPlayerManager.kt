@@ -120,6 +120,21 @@ object RadioPlayerManager {
         }
     }
 
+    /**
+     * Uygulama arka plana geçince (yalnızca TV'de çağrılır) radyoyu duraklatır: Android TV kalite yönergesi
+     * TV-NP, sistemde medya kontrolü olmadan arka planda ses çalınmasına izin vermez. Kanal seçili kalır;
+     * kullanıcı dönünce oynat düğmesiyle devam eder.
+     */
+    fun pauseForBackground() {
+        val player = exoPlayer ?: return
+        try {
+            if (player.playWhenReady) player.pause()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        _isPlaying.value = false
+    }
+
     fun stopRadio() {
         exoPlayer?.let { player ->
             try {

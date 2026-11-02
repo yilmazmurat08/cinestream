@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -103,8 +102,10 @@ fun ProPaywallDialog(
     fun openPlaySubscriptions(productId: String?) {
         val query = if (productId != null) "sku=$productId&package=${context.packageName}" else "package=${context.packageName}"
         val uri = Uri.parse("https://play.google.com/store/account/subscriptions?$query")
-        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            .onFailure { toast(R.string.paywall_unavailable) }
+        // TV'de tarayıcı açılmaz (TV-WB); ExternalLink yerini anlatan bir mesaj gösterir.
+        if (!ExternalLink.openPlaySubscriptions(context, uri.toString()) && !com.example.ui.tv.TvDevice.isTv(context)) {
+            toast(R.string.paywall_unavailable)
+        }
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {

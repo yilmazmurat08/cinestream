@@ -129,6 +129,10 @@ class MainActivity : ComponentActivity() {
         if (!isChangingConfigurations && !isInPictureInPictureMode) wentToBackground = true
         // Gezinirken biriken detay bilgilerini (özet, oyuncular) kullanıcı ekranda değilken tek seferde yaz.
         if (!isChangingConfigurations) viewModel.flushPendingMetadata()
+        // TV'de arka planda medya kontrolü olmadan ses çalınmaz (Android TV kalite yönergesi TV-NP).
+        if (!isChangingConfigurations && com.example.ui.tv.TvDevice.isTv(this)) {
+            com.example.player.RadioPlayerManager.pauseForBackground()
+        }
     }
 
     /** Telefon arayüzü dikey, telefonda TV modu yatay; gerçek TV cihazında yöne dokunulmaz. */

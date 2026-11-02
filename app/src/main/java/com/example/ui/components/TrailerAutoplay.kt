@@ -54,16 +54,30 @@ object TrailerEmbedBlocklist {
     }
 }
 
-/** Fragmanı YouTube uygulamasında (yoksa tarayıcıda) açar. Açılamazsa false. */
-fun openTrailerInYouTube(context: android.content.Context, videoId: String): Boolean = try {
-    context.startActivity(
+/**
+ * Fragmanı YouTube uygulamasında (telefonda yoksa tarayıcıda) açar. Açılamazsa false.
+ * TV'de yalnızca YouTube uygulaması denenir; tarayıcı açılmaz (Android TV kalite yönergesi TV-WB).
+ */
+fun openTrailerInYouTube(context: android.content.Context, videoId: String): Boolean {
+    fun intent(pkg: String?) =
         android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$videoId"))
             .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-    )
-    true
-} catch (e: Exception) {
-    false
+            .apply { if (pkg != null) setPackage(pkg) }
+    val candidates: List<String?> = if (com.example.ui.tv.TvDevice.isTv(context)) YOUTUBE_TV_PACKAGES else listOf(null)
+    for (pkg in candidates) {
+        try {
+            context.startActivity(intent(pkg))
+            return true
+        } catch (e: Exception) {
+            // Bu paket yok: sıradakini dene.
+        }
+    }
+    return false
 }
+
+/** TV'deki YouTube uygulamaları (Android TV, Google TV, telefon sürümü). */
+private val YOUTUBE_TV_PACKAGES: List<String?> =
+    listOf("com.google.android.youtube.tv", "com.google.android.youtube.googletv", "com.google.android.youtube")
 
 /**
  * Uygulama içinde oynatılamayan fragman: hatırlanır. Kullanıcı Fragman düğmesiyle başlattıysa YouTube'da açılır

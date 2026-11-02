@@ -718,4 +718,7 @@
     <string name="player_next_countdown">Next episode in %d s</string>
     <string name="player_next_play_now">Play now</string>
     <string name="player_next_cancel">Cancel</string>
+    <!-- No web browser on TV (Android TV quality guideline TV-WB) -->
+    <string name="tv_open_link_on_phone">Open this address on your phone: %1$s</string>
+    <string name="tv_manage_subscription_hint">Manage your subscription in the Google Play app on your phone: Profile → Payments &amp; subscriptions → Subscriptions.</string>
 </resources>

@@ -2,8 +2,6 @@ package com.example.ui.legal
 
 import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material3.AlertDialog
@@ -161,11 +159,8 @@ fun LegalSettingsCard(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier,
 private const val YOUTUBE_TERMS_URL = "https://www.youtube.com/t/terms"
 
 private fun openUrl(context: Context, url: String) {
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    } catch (e: Exception) {
-        // Tarayıcı yoksa (bazı TV'ler) sessizce geçilir.
-    }
+    // TV'de tarayıcı açılmaz (TV-WB): adres mesajla gösterilir. Tarayıcı yoksa sessizce geçilir.
+    com.example.ui.components.ExternalLink.open(context, url)
 }
 
 @Composable

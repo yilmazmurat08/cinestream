@@ -26,7 +26,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -737,7 +736,7 @@ fun GeminiApiHelpSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uriHandler = LocalUriHandler.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
 
@@ -894,7 +893,7 @@ fun GeminiApiHelpSheet(
                     val AppleAccentBlue = Color(0xFF007AFF)
                     Button(
                         onClick = {
-                            uriHandler.openUri("https://aistudio.google.com")
+                            com.example.ui.components.ExternalLink.open(context, "https://aistudio.google.com")
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppleAccentBlue,
