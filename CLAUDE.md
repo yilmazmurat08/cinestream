@@ -29,7 +29,7 @@ Mağaza adı: **CineStream IPTV Player**. Paket adı: `com.cinestream.iptv`.
 - Anahtar, şifre ve keystore asla depoya, kayıtlara ya da sohbete girmez.
 - Kullanıcıdan gizli bilgiyi sohbete yazmasını isteme.
 - İmzalı AAB: `tools/build_release_aab.sh`.
-  - Anahtar ortam değişkenlerinden okunur: `CINESTREAM_KEYSTORE_BASE64` ve `CINESTREAM_KEYSTORE_PASSWORD`.
+  - Anahtar ortam değişkenlerinden okunur: `CINESTREAM_KEYSTORE_BASE64`, `CINESTREAM_KEYSTORE_PASSWORD` ve `CINESTREAM_PLAY_LICENSE_KEY` (Play lisans anahtarı; yoksa betik paket üretmez).
 - Test kullanıcılarının e-posta adresleri yalnızca Play Console'da durur.
 
 ## Play politika takvimi (29 Ekim 2026 duyurusundan)
@@ -78,7 +78,7 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
 - Oynatıcı (telefon, yatay): sağdan açılan dar kanal paneli; dikeyde alttaki liste sistem tuşlarının üstünde.
 - TV: kanal panelinde Sağ tuşu akışı yanda açar, OK hatırlatma kurar, Sol kapatır.
 
-**Sonraki sürüme (1.1.8) bekleyenler — kodda hazır, paketlenmedi (kullanıcı 1.1.7'yi test ediyor; hata çıkarsa düzeltmeyle birlikte 1.1.8 üretilir):**
+**1.1.8 (sürüm kodu 19) — sürüm 2 Kasım 2026'da yükseltildi (kullanıcı onayı), AAB henüz üretilmedi: o oturumda imza anahtarları ortamda yoktu. Paketten önce `./gradlew testDebugUnitTest lintRelease`; sürüm notları `docs/release/surum-notlari.md`. 1.1.7 Play'de TV afişi/simgesi yüzünden reddedildi (aşağıda). İçindekiler:**
 - Ayarlar'daki "Çökme Günlükleri (Tanılama)" gizli; Ayarlar altındaki sürüm satırına 7 kez dokununca açılır (`DiagnosticsUnlock`). Çökme sonrası hata ekranı her zaman görünür.
 - Oynatıcıdaki ücretsiz "kalan süre" sayacı sistem gezinme tuşlarının altında kalmıyor (tablette yatayken görünmüyordu).
 - Kapsamlı denetim (20 Ekim 2026): açılışta tüm liste belleğe yüklenmiyor (yalnızca sayım); EPG belleği küçüldü (26 saatlik pencere, açıklama saklanmaz); dizi ayrıştırma önbelleği sınırlı; önbellek temizliği resim önbelleğini korur; ağır liste/grup hesapları ana iş parçacığı dışında (Mi TV Stick'te donma/ANR riski azalır).

@@ -1,22 +1,24 @@
-# Sürüm notları — 1.1.7 (18)
+# Sürüm notları — 1.1.8 (19)
 
 Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
 
 ```
 <tr-TR>
-• Yeni: Kanal kartında yayın akışı! EPG'ye dokun, 12 saatlik akışı gör; programa "Hatırlat" de, başlamadan 5 dk önce bildirim gelsin.
-• Eksik fragmanlar otomatik bulunuyor (resmî fragman önce).
-• Puanlar TMDB'den: daha doğru ve tutarlı.
-• Çocuk kilidi yalnızca yetişkin klasörlerini kilitliyor.
-• Oynatıcıda kanal listesi yanda dar panel; liste günde bir kez güncelleniyor, açılışta donma yok.
-• TV: yerinde arama, çubukla ileri/geri sarma, kanal panelinde yayın akışı.
+• Daha akıcı izleme: donan yayın kendiliğinden yeniden bağlanıyor, takılmalar azaldı.
+• Kaydedilenler'de "Nerede kalmıştık": yarım kalan son filmler ve diziler.
+• Klasörler türüne göre görselle geliyor.
+• Ayarlar yenilendi; "Fragmanı otomatik oynat" seçeneği eklendi.
+• Uygulamada oynatılamayan fragmanlar YouTube'da açılıyor.
+• TV: yeni ana ekran afişi ve simgesi.
+• Daha az bellek, daha hızlı açılış; hata düzeltmeleri.
 </tr-TR>
 <en-US>
-• New: Program guide on every channel card! Tap EPG to see the next 12 hours; tap "Remind me" to get a notification 5 min before it starts.
-• Missing trailers are found automatically (official trailer first).
-• Ratings now come from TMDB: more accurate and consistent.
-• Parental lock only locks adult folders.
-• Slim side channel list in the player; playlist refreshes once a day, no freeze at startup.
-• TV: in-place search, scrub with the progress bar, program guide in the channel panel.
+• Smoother playback: frozen streams reconnect automatically, fewer stalls.
+• "Where you left off" in Saved: your unfinished movies and series.
+• Folders now get artwork based on their genre.
+• Redesigned Settings; new "Autoplay trailers" option.
+• Trailers that can't play in the app open in YouTube.
+• TV: new home screen banner and icon.
+• Lower memory use, faster startup; bug fixes.
 </en-US>
 ```
