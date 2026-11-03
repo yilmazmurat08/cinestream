@@ -80,7 +80,7 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
 - Oynatıcı (telefon, yatay): sağdan açılan dar kanal paneli; dikeyde alttaki liste sistem tuşlarının üstünde.
 - TV: kanal panelinde Sağ tuşu akışı yanda açar, OK hatırlatma kurar, Sol kapatır.
 
-**1.1.8 (sürüm kodu 19) — sürüm 2 Kasım 2026'da yükseltildi (kullanıcı onayı), AAB henüz üretilmedi: o oturumda imza anahtarları ortamda yoktu. Paketten önce `./gradlew testDebugUnitTest lintRelease`; sürüm notları `docs/release/surum-notlari.md`. 1.1.7 Play'de TV afişi/simgesi yüzünden reddedildi (aşağıda). İçindekiler:**
+**1.1.8 (sürüm kodu 19) — sürüm 2 Kasım 2026'da yükseltildi (kullanıcı onayı); imzalı AAB 3 Kasım 2026'da üretildi ve kullanıcıya gönderildi (boyut, SHA-256, test sonucu: `docs/release/surum-teslim.md`). Play'e yükleme kullanıcıda; 19 artık kullanılmış sayılır, yeni AAB gerekirse sürüm kodu sorulur. Paketten önce `./gradlew testDebugUnitTest lintRelease`; sürüm notları `docs/release/surum-notlari.md`. 1.1.7 Play'de TV afişi/simgesi yüzünden reddedildi (aşağıda). İçindekiler:**
 - Ayarlar'daki "Çökme Günlükleri (Tanılama)" gizli; Ayarlar altındaki sürüm satırına 7 kez dokununca açılır (`DiagnosticsUnlock`). Çökme sonrası hata ekranı her zaman görünür.
 - Oynatıcıdaki ücretsiz "kalan süre" sayacı sistem gezinme tuşlarının altında kalmıyor (tablette yatayken görünmüyordu).
 - Kapsamlı denetim (20 Ekim 2026): açılışta tüm liste belleğe yüklenmiyor (yalnızca sayım); EPG belleği küçüldü (26 saatlik pencere, açıklama saklanmaz); dizi ayrıştırma önbelleği sınırlı; önbellek temizliği resim önbelleğini korur; ağır liste/grup hesapları ana iş parçacığı dışında (Mi TV Stick'te donma/ANR riski azalır).
