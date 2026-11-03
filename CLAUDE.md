@@ -16,6 +16,7 @@ Mağaza adı: **CineStream IPTV Player**. Paket adı: `com.cinestream.iptv`.
 - Uygulamanın bozulmasına asla izin verme; en önemli kriter budur.
 - Önce test: Paketten önce tüm testleri ve lint'i çalıştır.
   - Komut: `./gradlew testDebugUnitTest lintRelease`.
+  - Bulut ortamında Android SDK yoksa: ortamın Setup script'i SDK'yı `/opt/android-sdk`'ya kurar, `local.properties` yazar ve Maven Central "429 Too Many Requests" verdiğinde önce Google'ın aynası denensin diye Gradle ayarı ekler (Gradle ve Robolectric). Betik 3 Kasım 2026'da kullanıcıya verildi (ortam menüsü → Edit → Setup script). İlk turda Robolectric her Android sürümü için ~130 MB indirir; tur ~25 dk sürer.
 - **APK ya da AAB'yi sormadan üretme.**
 - **Sürümü sormadan yükseltme.** Play aynı sürüm kodunu iki kez kabul etmez; gerekirse sor.
 - Telefon tasarımını istenmeden değiştirme. TMDB anahtarlarına, adreslerine ve eşleştirmeye dokunma.
@@ -30,6 +31,7 @@ Mağaza adı: **CineStream IPTV Player**. Paket adı: `com.cinestream.iptv`.
 - Kullanıcıdan gizli bilgiyi sohbete yazmasını isteme.
 - İmzalı AAB: `tools/build_release_aab.sh`.
   - Anahtar ortam değişkenlerinden okunur: `CINESTREAM_KEYSTORE_BASE64`, `CINESTREAM_KEYSTORE_PASSWORD` ve `CINESTREAM_PLAY_LICENSE_KEY` (Play lisans anahtarı; yoksa betik paket üretmez).
+  - İmza değişkenleri 'Default' ortamının (3 Eylül 2026'da oluşturulan; aynı adlı iki ortam daha var) ayarlarında kalıcı (2 Kasım 2026'da eklendi); scratchpad'e değil oraya güvenilir. Eksik görünürse kullanıcıya sor, kendin başka yerden alma.
 - Test kullanıcılarının e-posta adresleri yalnızca Play Console'da durur.
 
 ## Play politika takvimi (29 Ekim 2026 duyurusundan)
@@ -95,6 +97,10 @@ Test süreci bitip uygulama yayına girince **ilk güncellemede** yapılacaklar:
   - Yalnızca TV'de simge: `mipmap-television-anydpi-v26` → logo yüzdeyle (%10 pay) büyür, arka plan logonun kenar renginde. Telefondaki simge değişmedi.
   - Test `TvLauncherArtTest`. Ret yalnızca afiş/simgeyle ilgili; testçiler ve 14 günlük test sıfırlanmaz.
   - Bilinen: eski `mipmap-*/ic_launcher*.webp` dosyaları bozuk (lint IconDipSize uyarısı); minSdk 26 olduğu için hiç kullanılmıyor (simge `mipmap-anydpi-v26`).
+- **TV kalite denetimi (3 Kasım 2026, ret sonrası; kullanıcı "artık red yemek istemiyorum" dedi):** Play'in Android TV kalite listesi koda karşı tarandı; ret mailindeki dört madde (320x180 afiş, 512x512 simge, simge alanı doldurur, afişte ad) zaten karşılanıyordu. Ek olarak düzeltilen iki ret riski (telefonda davranış aynı):
+  - TV-WB (TV'de tarayıcı açılmaz): YouTube koşulları, Gemini anahtar sayfası ve Play abonelik yönetimi TV'de adres/yol mesajı gösterir (`ExternalLink`); fragman TV'de yalnızca YouTube uygulamasında açılır.
+  - TV-NP (arka planda medya kontrolü olmadan ses yok): TV'de uygulama arka plana geçince radyo duraklar (`RadioPlayerManager.pauseForBackground`). Arka planda çalma (PRO) yapılırken TV'de MediaSession bildirimi/kartı eklenince bu duraklatma kaldırılmalı.
+  - Test `TvNoBrowserTest`. Play Console'da kullanıcı kontrol eder: Uygulama erişimi'nde deneme listesi talimatı (TV-G5) ve güncel TV ekran görüntüleri (TV-G4).
 
 **`claude/akici-oynatma` (23 Ekim 2026; takılma ve donmaları azaltma; 25 Ekim'de 1.1.8 dalına birleştirildi). Herkese açık:**
 - Donma bekçisi (`PlaybackStallGuard` + `StallWatchdog`): yayın 8 sn hiç ilerlemezse (veri gelmiyor, süre durdu ya da görüntü dondu) sessizce yeniden bağlanır; canlı en güncel noktadan, film/dizi kaldığı yerden. Veri yavaş da olsa geliyorsa karışmaz. Sarma ve yeniden bağlanmadan sonra 15 sn bekler. 3 denemede düzelmezse sonsuz dönen daire yerine "Yeniden dene" çıkar.
