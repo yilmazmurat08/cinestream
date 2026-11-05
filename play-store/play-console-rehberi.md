@@ -9,8 +9,8 @@ Bu rehber, uygulamayı Google Play'e ilk kez yüklerken Play Console'un sorduğu
 | Uygulama paketi | CineStream-1.0.aab | İmzalı AAB |
 | Uygulama simgesi | uygulama-simgesi-512.png | 512×512, 32 bit PNG |
 | Öne çıkan görsel | one-cikan-gorsel-1024x500.jpg | 1024×500, JPG veya 24 bit PNG |
-| Telefon ekran görüntüleri | telefon/01…07 (7 adet) | 2–8 adet, 9:16 |
-| Android TV ekran görüntüleri | tv/02, 03, 06, 08, 10 (5 adet) | En az 1, 16:9 |
+| Telefon ekran görüntüleri | telefon/01…08 (8 adet) | 2–8 adet, 9:16 |
+| Android TV ekran görüntüleri | tv/02, 03, 04, 06, 08, 09 (6 adet) | En az 1, 16:9 |
 | Android TV banner'ı | tv/tv-banner-1280x720.png | 1280×720 |
 | Mağaza metinleri | magaza-metinleri.md | Ad, kısa ve tam açıklama |
 | İncelemeci için deneme listesi | demo-playlist.m3u (depoda) | Uygulama erişimi talimatı |
@@ -34,9 +34,9 @@ Bu rehber, uygulamayı Google Play'e ilk kez yüklerken Play Console'un sorduğu
 - İngilizce eklemek istersen: **Çeviri ekle > English (United States) – en-US**, İngilizce metinleri yapıştır.
 - Uygulama simgesi: `uygulama-simgesi-512.png`
 - Öne çıkan görsel: `one-cikan-gorsel-1024x500.jpg`
-- Telefon ekran görüntüleri: `telefon` klasöründeki 7 görsel (sırasıyla).
+- Telefon ekran görüntüleri: `telefon` klasöründeki 8 görsel (sırasıyla). Üretimi: `gorseller/uret/uret.sh`.
 - Tablet ekran görüntüleri: isteğe bağlı; boş bırakabilirsin.
-- Android TV: banner olarak `tv-banner-1280x720.png`, ekran görüntüleri olarak `tv` klasöründeki 5 görsel.
+- Android TV: banner olarak `tv-banner-1280x720.png`, ekran görüntüleri olarak `tv` klasöründeki 6 görsel (uygulamanın değiştirilmemiş TV ekranları).
 
 **Mağaza ayarları**
 
