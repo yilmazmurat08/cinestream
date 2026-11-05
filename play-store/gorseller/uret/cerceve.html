@@ -38,9 +38,9 @@
   .kumanda::before { content: ''; position: absolute; left: 50%; top: 50px; transform: translateX(-50%); width: 76px; height: 76px; border-radius: 50%; border: 8px solid #7c3aed; box-shadow: 0 0 30px #a855f7; }
   .kumanda::after { content: ''; position: absolute; left: 50%; top: 175px; transform: translateX(-50%); width: 26px; height: 26px; border-radius: 50%; background: #fb923c; box-shadow: 0 0 20px #fb923c; }
   /* açılış: eğik afiş duvarı */
-  .duvar { position: absolute; inset: -300px; display: grid; grid-template-columns: repeat(7, 240px); gap: 24px; transform: rotate(-12deg); opacity: .55; }
+  .duvar { position: absolute; inset: -300px; display: grid; grid-template-columns: repeat(7, 240px); gap: 24px; transform: rotate(-12deg); opacity: .9; }
   .duvar img { width: 240px; height: 360px; border-radius: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
-  .perde { position: absolute; inset: 0; background: radial-gradient(620px 520px at 50% 50%, rgba(11,8,20,.92), rgba(11,8,20,.55) 70%, rgba(11,8,20,.85)); }
+  .perde { position: absolute; inset: 0; background: radial-gradient(640px 820px at 50% 52%, rgba(11,8,20,.95), rgba(11,8,20,.75) 55%, rgba(11,8,20,.35)), linear-gradient(rgba(11,8,20,.35), rgba(11,8,20,.1) 40%, rgba(11,8,20,.55)); }
   .logo { position: absolute; left: 50%; top: 600px; transform: translateX(-50%); width: 300px; height: 300px; border-radius: 70px;
     box-shadow: 0 0 0 3px #3b2f5c, 0 0 140px rgba(192, 132, 252, .6); overflow: hidden; }
   .logo img { width: 100%; height: 100%; object-fit: cover; }
@@ -66,7 +66,7 @@ const AFISLER = ['gece-yarisi-treni', 'tas-kale', 'mavi-dalga', 'kayip-harita', 
 if (tip === 'telefon') icerik.innerHTML = baslik + `<div class="telefon"><img src="${esc(q.get('ekran'))}"></div>`;
 else if (tip === 'tv') icerik.innerHTML = baslik + `<div class="tv"><img src="${esc(q.get('ekran'))}"></div><div class="ayak"></div><div class="kumanda"></div>`;
 else if (tip === 'acilis' || tip === 'kapanis') {
-  const duvar = Array.from({ length: 49 }, (_, k) => `<img src="afisler/${AFISLER[(k * 5) % AFISLER.length]}.jpg">`).join('');
+  const duvar = Array.from({ length: 49 }, (_, k) => `<img src="afisler/${AFISLER[(k * 4 + Math.floor(k / 7) * 3) % AFISLER.length]}.jpg">`).join('');
   icerik.innerHTML = `<div class="duvar">${duvar}</div><div class="perde"></div>
     <div class="logo"><img src="logo.jpg"></div>
     <div class="ad">Cine<span class="r">Stream</span></div>
