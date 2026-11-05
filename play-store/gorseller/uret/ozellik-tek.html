@@ -1,0 +1,127 @@
+<!doctype html>
+<!-- Her özellik için ayrı tanıtım görseli (1080x1920). ?n=0..7. Ekran varsa uygulamanın gerçek ekranı (ekranlar/), yoksa çizim.
+     Afişler ve kanallar hayalidir; gerçek içerik, marka ya da kişi yoktur. -->
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --zemin: #0b0814; --mor: #c084fc; --pembe: #e879f9; --turuncu: #fb923c; --kart: rgba(28,22,44,.9); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: var(--zemin); font-family: Poppins, sans-serif; color: #fff; }
+  .zemin { position: absolute; inset: 0; background:
+      radial-gradient(900px 700px at 12% 4%, rgba(124,58,237,.6), transparent 60%),
+      radial-gradient(800px 800px at 96% 96%, rgba(234,88,12,.35), transparent 60%),
+      radial-gradient(700px 600px at 90% 40%, rgba(192,38,211,.2), transparent 60%), var(--zemin); }
+  .ust { position: absolute; top: 90px; left: 80px; display: flex; align-items: center; gap: 20px; }
+  .ust img { width: 72px; height: 72px; border-radius: 20px; box-shadow: 0 0 0 2px #3b2f5c; }
+  .ust div { font-weight: 800; font-size: 40px; letter-spacing: -1px; }
+  .sayac { position: absolute; top: 108px; right: 80px; font-size: 26px; font-weight: 600; color: #c4b5fd; letter-spacing: 3px; }
+  .r { background: linear-gradient(90deg, var(--mor), var(--pembe) 45%, var(--turuncu)); -webkit-background-clip: text; color: transparent; }
+  .baslik { position: absolute; top: 240px; left: 80px; right: 80px; }
+  .etiket { display: inline-block; font-size: 24px; font-weight: 700; letter-spacing: 4px; color: #d4a853; margin-bottom: 18px; }
+  h1 { margin: 0; font-weight: 800; font-size: 88px; line-height: 1.04; letter-spacing: -2.5px; }
+  .baslik p { margin: 28px 0 0; font-size: 36px; line-height: 1.4; color: #ddd6fe; font-weight: 500; }
+  .sahne { position: absolute; left: 0; right: 0; top: 760px; bottom: 150px; display: flex; justify-content: center; align-items: flex-start; }
+  .alt { position: absolute; bottom: 70px; left: 0; right: 0; text-align: center; font-size: 26px; color: #a78bfa; }
+  .telefon { width: 560px; padding: 16px; border-radius: 76px 76px 0 0; background: #14101f; height: 1010px; overflow: hidden;
+    box-shadow: 0 0 0 3px #2a2340, 0 0 120px rgba(192,132,252,.35), 0 40px 120px rgba(0,0,0,.6); }
+  .telefon img { width: 100%; border-radius: 62px 62px 0 0; display: block; }
+  .kart { background: var(--kart); border: 1.5px solid rgba(255,255,255,.13); border-radius: 36px; box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 100px rgba(192,132,252,.18); }
+  .dugme { display: inline-flex; align-items: center; gap: 12px; padding: 18px 30px; border-radius: 999px; font-weight: 700; font-size: 28px; background: linear-gradient(90deg, #a855f7, #d946ef); }
+  .rozet { display: inline-block; padding: 8px 18px; border-radius: 999px; font-size: 22px; font-weight: 700; background: rgba(16,185,129,.18); color: #6ee7b7; border: 1.5px solid rgba(110,231,183,.5); }
+  .ince { color: #bdb4d8; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div class="zemin"></div>
+<div class="ust"><img src="logo.jpg"><div>Cine<span class="r">Stream</span></div></div>
+<div class="sayac" id="sayac"></div>
+<div class="baslik" id="baslik"></div>
+<div class="sahne" id="sahne"></div>
+<div class="alt">Kendi M3U / Xtream listenle · İçerik sağlamaz</div>
+<script>
+const n = +(new URLSearchParams(location.search).get('n') || 0);
+const af = (s) => `afisler/${s}.jpg`;
+const kanal = (s) => `kanallar/${s}.jpg`;
+
+function qr(boyut) {            // QR'a benzeyen desen (gerçek bir adres içermez)
+  let r = 7, s = '';
+  const N = 25, h = boyut / N;
+  const rnd = () => (r = (r * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const goz = (x, y) => `<rect x="${x*h}" y="${y*h}" width="${7*h}" height="${7*h}" fill="#111"/><rect x="${(x+1)*h}" y="${(y+1)*h}" width="${5*h}" height="${5*h}" fill="#fff"/><rect x="${(x+2)*h}" y="${(y+2)*h}" width="${3*h}" height="${3*h}" fill="#111"/>`;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const kose = (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
+    if (!kose && rnd() < 0.48) s += `<rect x="${x*h}" y="${y*h}" width="${h}" height="${h}" fill="#111"/>`;
+  }
+  return `<svg width="${boyut}" height="${boyut}"><rect width="${boyut}" height="${boyut}" fill="#fff"/>${s}${goz(0,0)}${goz(N-7,0)}${goz(0,N-7)}</svg>`;
+}
+
+const O = [
+  { e: 'YAPAY ZEKÂ', b1: 'Sahneyi anlat,', b2: 'filmi bulsun', p: 'Adını unuttuğun filmi tarif et; asistan kendi kütüphanende arar. TV\'de sesle de sorabilirsin.',
+    s: () => `<div class="telefon"><img src="tek-ekran/p04-asistan.png"></div>` },
+  { e: 'DİZİLER', b1: 'Spoilersiz', b2: 'bölüm özeti', p: 'Aradan zaman geçtiyse, kaldığın yere kadar olanları kısaca oku. Sonrasını asla söylemez.',
+    s: () => `<div class="kart" style="width:900px;padding:44px;display:flex;gap:38px">
+      <img src="${af('daglarin-kizi')}" style="width:240px;height:360px;border-radius:22px;flex:none">
+      <div style="flex:1"><div style="font-size:40px;font-weight:800">Dağların Kızı</div>
+        <div class="ince" style="font-size:26px;margin:6px 0 26px">Sezon 1 · Bölüm 3 öncesi</div>
+        <div style="font-size:25px;line-height:1.5;color:#e9e3ff">Köye dönen Elif, babasından kalan konağın borçlarını öğrenir. Kardeşiyle arası açılır; eski bir mektup, ailenin sakladığı bir sırrı işaret eder.</div>
+        <div style="margin-top:28px"><span class="rozet">✓ Spoiler yok</span></div></div></div>
+      <div style="position:absolute;top:560px;left:50%;transform:translateX(-50%)" class="dugme">✦ Önceki bölümleri özetle</div>` },
+  { e: 'ANDROID TV', b1: 'TV\'de kurulum', b2: 'QR ile saniyeler', p: 'TV\'deki kodu telefonunla okut, liste bilgilerini telefondan gir. Kumandayla uzun adres yazmak yok.',
+    s: () => `<div style="position:relative;width:960px;height:900px">
+      <div class="kart" style="position:absolute;left:0;top:0;width:640px;height:470px;padding:40px;display:flex;flex-direction:column;justify-content:center;gap:24px;border-radius:26px">
+        <div style="display:flex;gap:30px;align-items:center"><div style="background:#fff;padding:16px;border-radius:18px">${qr(250)}</div><div style="font-size:34px;font-weight:800;line-height:1.2">Telefonla<br>gir</div></div><div class="ince" style="font-size:23px;line-height:1.4">Kodu okut, açılan sayfaya listeni yaz.</div>
+        </div>
+      <div style="position:absolute;left:200px;top:480px;width:240px;height:16px;border-radius:8px;background:#2a2340"></div>
+      <div style="position:absolute;right:0;top:160px;width:330px;height:640px;border-radius:52px;background:#14101f;box-shadow:0 0 0 3px #2a2340,0 30px 80px rgba(0,0,0,.6);padding:26px">
+        <div style="height:100%;border-radius:34px;background:#1b1430;padding:30px 24px">
+          <div style="font-size:24px;font-weight:800">CineStream</div><div class="ince" style="font-size:18px;margin:6px 0 26px">TV'ye liste gönder</div>
+          ${['M3U adresi', 'Kullanıcı adı', 'Şifre'].map((t) => `<div style="height:62px;border-radius:16px;border:1.5px solid rgba(255,255,255,.18);margin-bottom:16px;padding:18px;font-size:19px;color:#8f86ad">${t}</div>`).join('')}
+          <div class="dugme" style="font-size:21px;padding:16px 26px;margin-top:14px">TV'ye gönder</div></div></div></div>` },
+  { e: 'OYNATICI', b1: 'Donmaya karşı', b2: 'akıllı oynatma', p: 'Yayın takılırsa uygulama kendiliğinden yeniden bağlanır; canlıda en güncel noktadan, filmde kaldığın yerden devam eder.',
+    s: () => `<div class="kart" style="width:940px;overflow:hidden;border-radius:30px">
+      <div style="position:relative;height:528px;background:url(${af('mavi-dalga')}) center/cover">
+        <div style="position:absolute;inset:0;background:rgba(5,3,10,.45)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:20px;background:rgba(20,16,31,.88);padding:22px 34px;border-radius:999px;border:1.5px solid rgba(255,255,255,.16)">
+          <svg width="44" height="44" viewBox="0 0 40 40"><path d="M33 20a13 13 0 1 1-4-9.4" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/><path d="M30 4v8h-8" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/></svg>
+          <span style="font-size:30px;font-weight:700">Yeniden bağlanılıyor…</span></div></div>
+      <div style="padding:30px 40px 36px"><div style="font-size:34px;font-weight:800">Mavi Dalga</div>
+        <div style="height:10px;border-radius:5px;background:rgba(255,255,255,.15);margin:22px 0 14px"><div style="width:62%;height:100%;border-radius:5px;background:linear-gradient(90deg,#a855f7,#fb923c)"></div></div>
+        <div class="ince" style="font-size:24px;display:flex;justify-content:space-between"><span>1:12:40</span><span>Kaldığın yerden devam</span></div></div></div>` },
+  { e: 'CANLI TV', b1: 'Yayın akışı ve', b2: 'hatırlatıcı', p: 'Kanal kartında 12 saatlik akış. Programı seç; başlamadan 5 dakika önce bildirim gelir, dokununca kanal açılır.',
+    s: () => `<div style="width:920px">
+      <div class="kart" style="padding:36px 40px;border-radius:30px">
+        <div style="display:flex;align-items:center;gap:24px;margin-bottom:26px"><img src="${kanal('belgesel-dunya')}" style="width:150px;height:94px;border-radius:14px"><div><div style="font-size:34px;font-weight:800">Belgesel Dünya</div><div class="ince" style="font-size:23px">Ulusal</div></div></div>
+        ${[['20:00', 'Okyanusun Derinlikleri', 1], ['21:00', 'Göçmen Kuşlar', 0], ['22:15', 'Buzulların Sesi', 0], ['23:30', 'Gece Gökyüzü', 0]].map(([t, a, c]) => `
+          <div style="display:flex;align-items:center;gap:26px;padding:20px 22px;border-radius:20px;margin-top:10px;${c ? 'background:rgba(168,85,247,.22);border:1.5px solid rgba(232,121,249,.6)' : 'background:rgba(255,255,255,.04)'}">
+            <span style="font-size:27px;font-weight:700;color:${c ? '#f0abfc' : '#c4b5fd'};width:90px">${t}</span><span style="font-size:27px;flex:1">${a}</span>
+            ${c ? '<span style="font-size:20px;font-weight:700;color:#6ee7b7">ŞİMDİ</span>' : ''}${t === '21:00' ? '<span class="dugme" style="font-size:20px;padding:10px 20px">🔔 Hatırlat</span>' : ''}</div>`).join('')}
+      </div>
+      <div class="kart" style="margin:34px auto 0;width:760px;padding:24px 30px;display:flex;gap:20px;align-items:center;border-radius:26px">
+        <img src="logo.jpg" style="width:60px;height:60px;border-radius:16px"><div><div style="font-size:24px;font-weight:700">Göçmen Kuşlar 5 dakika sonra</div><div class="ince" style="font-size:21px">Belgesel Dünya · dokun ve izle</div></div></div></div>` },
+  { e: 'KÜTÜPHANE', b1: 'Klasörlerin', b2: 'türüne göre', p: 'Film, dizi ve canlı TV klasörleri görsellerle düzenli. Afiş, özet, puan ve fragman tek yerde.',
+    s: () => `<div class="telefon"><img src="tek-ekran/p14-film-klasorleri.png"></div>` },
+  { e: 'İZLEME', b1: 'Kaldığın yerden', b2: 'devam et', p: 'Yarım kalan film ve bölümler seni bekler. İzlediğin bölümler "İzlendi" diye işaretlenir.',
+    s: () => `<div style="width:940px"><div style="font-size:30px;font-weight:700;margin:0 0 22px 6px">Nerede kalmıştık</div>
+      <div style="display:flex;gap:26px">${[['mavi-fener', 'Mavi Fener', 'S1 · B2', 34], ['kayip-harita', 'Kayıp Harita', '60 dk kaldı', 62], ['sonsuz-yorunge', 'Sonsuz Yörünge', '25 dk kaldı', 80]].map(([s, a, t, y]) => `
+        <div style="width:296px"><div style="position:relative"><img src="${af(s)}" style="width:296px;height:444px;border-radius:24px;display:block;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+          <div style="position:absolute;left:16px;right:16px;bottom:16px;height:9px;border-radius:5px;background:rgba(255,255,255,.25)"><div style="width:${y}%;height:100%;border-radius:5px;background:#e879f9"></div></div></div>
+          <div style="font-size:27px;font-weight:700;margin-top:16px">${a}</div><div class="ince" style="font-size:22px">${t}</div></div>`).join('')}</div>
+      <div class="kart" style="margin-top:44px;padding:26px 30px;display:flex;gap:22px;border-radius:26px">${[1, 2, 3].map((k) => `<div style="flex:1"><div style="position:relative;height:150px;border-radius:16px;background:url(${af('mavi-fener')}) center 30%/cover">${k < 3 ? '<span class="rozet" style="position:absolute;top:10px;right:10px;font-size:17px;padding:5px 12px">✓ İzlendi</span>' : ''}</div><div style="font-size:21px;margin-top:10px">${k}. Bölüm</div></div>`).join('')}</div></div>` },
+  { e: 'GÜVENLİK', b1: 'Ebeveyn kilidi,', b2: 'reklam yok', p: 'Yetişkin kategorileri varsayılan olarak PIN ile kilitli. Hesap açmak yok; listen ve geçmişin yalnızca cihazında.',
+    s: () => `<div class="kart" style="width:640px;padding:50px 54px;text-align:center;border-radius:40px">
+      <svg width="90" height="90" viewBox="0 0 40 40" style="margin:0 auto"><rect x="7" y="17" width="26" height="19" rx="4" fill="none" stroke="#e879f9" stroke-width="3"/><path d="M13 17v-5a7 7 0 0 1 14 0v5" fill="none" stroke="#e879f9" stroke-width="3"/><circle cx="20" cy="26" r="3" fill="#e879f9"/></svg>
+      <div style="font-size:36px;font-weight:800;margin-top:18px">PIN kodunu gir</div><div class="ince" style="font-size:23px;margin-top:6px">Bu kategori kilitli</div>
+      <div style="display:flex;justify-content:center;gap:22px;margin:34px 0 40px">${[1, 1, 0, 0].map((d) => `<span style="width:28px;height:28px;border-radius:50%;${d ? 'background:#e879f9' : 'border:3px solid #6b5f8a'}"></span>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">${['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k) => `<div style="height:96px;border-radius:24px;${k ? 'background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12)' : ''};display:grid;place-items:center;font-size:36px;font-weight:600">${k}</div>`).join('')}</div></div>` },
+];
+
+const o = O[n];
+document.getElementById('sayac').textContent = `${n + 1} / ${O.length}`;
+document.getElementById('baslik').innerHTML = `<div class="etiket">${o.e}</div><h1>${o.b1}<br><span class="r">${o.b2}</span></h1><p>${o.p}</p>`;
+document.getElementById('sahne').innerHTML = o.s();
+</script>
+</body>
+</html>
