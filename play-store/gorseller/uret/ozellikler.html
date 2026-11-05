@@ -1,0 +1,88 @@
+<!doctype html>
+<!-- Öne çıkan özellikler görseli. ?yon=dikey (1080x1920) | ?yon=yatay (1920x1080). Hayali afişler arka planda. -->
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --zemin: #0b0814; --mor: #c084fc; --pembe: #e879f9; --turuncu: #fb923c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; overflow: hidden; background: var(--zemin); font-family: Poppins, sans-serif; color: #fff; }
+  .zemin { position: absolute; inset: 0;
+    background: radial-gradient(900px 700px at 10% 0%, rgba(124,58,237,.55), transparent 60%),
+                radial-gradient(800px 800px at 100% 100%, rgba(234,88,12,.32), transparent 60%), var(--zemin); }
+  .duvar { position: absolute; inset: -200px; display: grid; grid-template-columns: repeat(9, 200px); gap: 20px; transform: rotate(-12deg); opacity: .18; }
+  .duvar img { width: 200px; height: 300px; border-radius: 14px; }
+  .icerik { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .ust { display: flex; align-items: center; gap: 26px; }
+  .ust img { width: 110px; height: 110px; border-radius: 28px; box-shadow: 0 0 0 2px #3b2f5c, 0 0 60px rgba(192,132,252,.5); }
+  .ust .ad { font-weight: 800; font-size: 66px; letter-spacing: -2px; line-height: 1; }
+  .r { background: linear-gradient(90deg, var(--mor), var(--pembe) 45%, var(--turuncu)); -webkit-background-clip: text; color: transparent; }
+  .ust .alt { font-size: 28px; color: #c4b5fd; margin-top: 8px; }
+  h1 { font-weight: 800; letter-spacing: -1.5px; margin: 0; }
+  .izgara { display: grid; gap: 22px; }
+  .kart { background: rgba(28, 22, 44, .78); border: 1.5px solid rgba(255,255,255,.12); border-radius: 30px; padding: 30px 30px 28px;
+          box-shadow: 0 20px 50px rgba(0,0,0,.35); display: flex; gap: 22px; align-items: flex-start; }
+  .ikon { flex: none; width: 74px; height: 74px; border-radius: 22px; display: grid; place-items: center;
+          background: linear-gradient(135deg, #7c3aed, #c026d3); box-shadow: 0 0 30px rgba(192,38,211,.45); }
+  .ikon svg { width: 40px; height: 40px; }
+  .kart b { display: block; font-size: 32px; font-weight: 700; line-height: 1.15; }
+  .kart span { display: block; font-size: 23px; color: #cbc3e3; margin-top: 8px; line-height: 1.3; }
+  .pro { display: inline-block; font-size: 17px; font-weight: 800; color: #1a1205; background: #d4a853; padding: 3px 10px; border-radius: 8px; margin-left: 8px; vertical-align: 4px; }
+  .not { color: #a78bfa; font-size: 26px; text-align: center; }
+  /* dikey */
+  .dikey .icerik { padding: 110px 70px 80px; }
+  .dikey h1 { font-size: 72px; line-height: 1.08; margin: 50px 0 40px; }
+  .dikey .not { padding-top: 30px; }
+  .dikey .izgara { grid-template-columns: 1fr 1fr; }
+  .dikey .kart { flex-direction: column; min-height: 268px; }
+  .dikey .not { margin-top: auto; }
+  /* yatay */
+  .yatay .icerik { padding: 70px 90px 56px; }
+  .yatay .bas { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
+  .yatay h1 { font-size: 60px; text-align: right; line-height: 1.05; }
+  .yatay .izgara { grid-template-columns: repeat(4, 1fr); }
+  .yatay .kart { flex-direction: column; min-height: 330px; }
+  .yatay .not { margin-top: auto; }
+</style>
+</head>
+<body>
+<div class="zemin"></div>
+<div class="duvar" id="duvar"></div>
+<div class="icerik" id="icerik"></div>
+<script>
+const yon = new URLSearchParams(location.search).get('yon') || 'dikey';
+document.body.className = yon;
+document.body.style.width = yon === 'dikey' ? '1080px' : '1920px';
+document.body.style.height = yon === 'dikey' ? '1920px' : '1080px';
+const AF = ['gece-yarisi-treni','tas-kale','mavi-dalga','kayip-harita','sonsuz-yorunge','sessiz-sehir','kizil-sinir','ruzgarin-oglu','golge-avcisi','beyaz-sessizlik','altin-vadi','karanlik-orman','mavi-fener','daglarin-kizi','eski-konak'];
+document.getElementById('duvar').innerHTML = Array.from({ length: 81 }, (_, k) => `<img src="afisler/${AF[(k * 4 + Math.floor(k / 9) * 3) % AF.length]}.jpg">`).join('');
+const I = {
+  ai: '<path d="M20 4l3.5 9.5L33 17l-9.5 3.5L20 30l-3.5-9.5L7 17l9.5-3.5z" fill="#fff"/><path d="M33 26l1.6 4.4L39 32l-4.4 1.6L33 38l-1.6-4.4L27 32l4.4-1.6z" fill="#fff"/>',
+  ozet: '<rect x="6" y="5" width="28" height="32" rx="5" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M12 14h16M12 21h16M12 28h9" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>',
+  qr: '<rect x="4" y="4" width="13" height="13" rx="2" fill="none" stroke="#fff" stroke-width="3.5"/><rect x="23" y="4" width="13" height="13" rx="2" fill="none" stroke="#fff" stroke-width="3.5"/><rect x="4" y="23" width="13" height="13" rx="2" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M24 24h5v5h-5zM31 31h5v5h-5zM31 23h5M23 33h4" stroke="#fff" stroke-width="3.5"/>',
+  donma: '<path d="M33 20a13 13 0 1 1-4-9.4" fill="none" stroke="#fff" stroke-width="3.8" stroke-linecap="round"/><path d="M30 4v8h-8" fill="none" stroke="#fff" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 14l9 6-9 6z" fill="#fff"/>',
+  akis: '<rect x="4" y="7" width="32" height="28" rx="5" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M4 15h32M13 4v7M27 4v7" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><circle cx="27" cy="26" r="3.5" fill="#fff"/>',
+  klasor: '<path d="M4 11a4 4 0 0 1 4-4h8l4 4h12a4 4 0 0 1 4 4v15a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M15 19l8 4.5-8 4.5z" fill="#fff"/>',
+  devam: '<circle cx="20" cy="20" r="15" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M20 11v9l6 4" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+  kilit: '<rect x="7" y="17" width="26" height="19" rx="4" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M13 17v-5a7 7 0 0 1 14 0v5" fill="none" stroke="#fff" stroke-width="3.5"/><circle cx="20" cy="26" r="3" fill="#fff"/>',
+};
+const K = [
+  ['ai', 'Yapay zekâ film asistanı', 'Sahneyi anlat, filmi kütüphanende bulsun. TV\'de sesle.'],
+  ['ozet', 'Spoilersiz bölüm özeti', 'Kaldığın yere kadar olanı kısaca oku.'],
+  ['qr', 'TV\'de QR ile kurulum', 'Liste bilgilerini telefondan gir, kumandayla yazma.'],
+  ['donma', 'Donmaya karşı akıllı oynatma', 'Takılan yayına kendiliğinden yeniden bağlanır.'],
+  ['akis', 'Yayın akışı ve hatırlatıcı', 'Programı seç, başlamadan 5 dakika önce haber verir.'],
+  ['klasor', 'Türüne göre klasörler', 'Film, dizi ve canlı TV düzenli; afiş, puan, fragman.'],
+  ['devam', 'Kaldığın yerden devam', 'Yarım kalan film ve bölümler, "İzlendi" işareti.'],
+  ['kilit', 'Ebeveyn kilidi, reklamsız', 'Yetişkin kategorileri PIN\'li. Hesap yok, veriler cihazda.'],
+];
+const kartlar = K.map(([i, b, s]) => `<div class="kart"><div class="ikon"><svg viewBox="0 0 40 40">${I[i]}</svg></div><div><b>${b}</b><span>${s}</span></div></div>`).join('');
+const ust = `<div class="ust"><img src="logo.jpg"><div><div class="ad">Cine<span class="r">Stream</span></div><div class="alt">IPTV Player · Telefon ve Android TV</div></div></div>`;
+const not = `<div class="not">Kendi M3U / Xtream listenle · İçerik sağlamaz · Her gün 60 dk ücretsiz, sınırsız izleme <span class="pro">PRO</span></div>`;
+document.getElementById('icerik').innerHTML = yon === 'dikey'
+  ? `${ust}<h1>Öne çıkan<br><span class="r">özellikler</span></h1><div class="izgara">${kartlar}</div>${not}`
+  : `<div class="bas">${ust}<h1>Öne çıkan<br><span class="r">özellikler</span></h1></div><div class="izgara">${kartlar}</div>${not}`;
+</script>
+</body>
+</html>
