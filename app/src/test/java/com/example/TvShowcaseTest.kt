@@ -76,6 +76,7 @@ class TvShowcaseTest {
 
     /** Örnek poster: degrade + başlık (gerçek içerik yerine önizleme görseli). */
     private fun poster(name: String, index: Int, w: Int = 400, h: Int = 600): String {
+        PromoArt.uri(app, name, kanal = w > h)?.let { return it }
         val file = File(app.cacheDir, "shot_${name.hashCode()}_${w}x$h.png")
         if (file.exists()) return file.toURI().toString()
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -106,8 +107,8 @@ class TvShowcaseTest {
         TvDevice.overrideForTest = true
         val db = AppDatabase.getDatabase(app)
         val titles = listOf(
-            "Gece Yarısı Treni", "Son Kale", "Mavi Dalga", "Kayıp Harita", "Yıldız Tozu", "Sessiz Şehir",
-            "Kırmızı Çizgi", "Rüzgarın Oğlu", "Gölge Avcısı", "Buzul Çağı", "Altın Vadi", "Karanlık Orman"
+            "Gece Yarısı Treni", "Taş Kale", "Mavi Dalga", "Kayıp Harita", "Sonsuz Yörünge", "Sessiz Şehir",
+            "Kızıl Sınır", "Rüzgarın Oğlu", "Gölge Avcısı", "Beyaz Sessizlik", "Altın Vadi", "Karanlık Orman"
         )
         val cats = listOf("Aksiyon", "Yeni Filmler", "Komedi")
         movies = titles.mapIndexed { i, t ->
@@ -116,7 +117,7 @@ class TvShowcaseTest {
                 .copy(isFavorite = i % 4 == 0)
         }
         val series = (1..3).flatMap { s ->
-            listOf("Kuzey Yıldızı", "Dağların Kızı", "Eski Konak").mapIndexed { k, show ->
+            listOf("Mavi Fener", "Dağların Kızı", "Eski Konak").mapIndexed { k, show ->
                 IPTVItem(
                     id = 8100 + k * 10 + s, playlistId = 1, name = "$show S01E0$s", cleanedName = "$show S01E0$s",
                     logoUrl = poster(show, 20 + k), streamUrl = "http://10.255.255.1/s/${k}_$s.mp4", category = "Yerli Diziler",
@@ -137,7 +138,7 @@ class TvShowcaseTest {
         runBlocking {
             db.iptvDao().insertItems(movies + series + live)
             db.iptvDao().insertContinueWatching(
-                ContinueWatching(itemId = 8112, itemName = "Kuzey Yıldızı S01E02", itemType = "SERIES", itemLogo = poster("Kuzey Yıldızı", 20),
+                ContinueWatching(itemId = 8112, itemName = "Mavi Fener S01E02", itemType = "SERIES", itemLogo = poster("Mavi Fener", 20),
                     streamUrl = "http://10.255.255.1/s/0_2.mp4", category = "Yerli Diziler", progressSeconds = 900, totalSeconds = 2700)
             )
             db.iptvDao().insertContinueWatching(

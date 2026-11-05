@@ -1,0 +1,318 @@
+<!doctype html>
+<!--
+  Mağaza ve tanıtım ekranları için HAYALİ film/dizi afişleri ve kanal logoları.
+  Gerçek film, kanal, marka ya da kişi yoktur; her şey burada kodla çizilir (telif sorunu yok).
+  Kullanım: ?tur=afis&i=0  (480x720)   ?tur=kanal&i=0  (320x200)   — uret.js hepsini sırayla çeker.
+-->
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Cinzel:wght@700;900&family=Playfair+Display:ital,wght@1,800&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #000; }
+  #sahne { position: relative; overflow: hidden; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div id="sahne"></div>
+<script>
+// Tohumlu rastgele sayı: aynı afiş her seferinde aynı çıkar.
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+const AFISLER = [
+  { ad: 'Gece Yarısı Treni', slug: 'gece-yarisi-treni', sahne: 'tren', gok: ['#020617', '#0f2a4a', '#1e5a7a'], isik: '#e2f3ff', ay: true, font: 'Bebas Neue', vurgu: '#7dd3fc', slogan: 'SON DURAK ŞAFAK' },
+  { ad: 'Taş Kale', slug: 'tas-kale', sahne: 'kale', gok: ['#1c0a02', '#7c2d12', '#f97316'], isik: '#ffd8a8', ay: false, font: 'Cinzel', vurgu: '#fdba74', slogan: 'KUŞATMA BAŞLIYOR' },
+  { ad: 'Mavi Dalga', slug: 'mavi-dalga', sahne: 'dalga', gok: ['#082f49', '#0369a1', '#7dd3fc'], isik: '#ffffff', ay: false, font: 'Anton', vurgu: '#e0f2fe', slogan: 'DENİZ HİÇ UYUMAZ' },
+  { ad: 'Kayıp Harita', slug: 'kayip-harita', sahne: 'col', gok: ['#3b1d05', '#b45309', '#fcd34d'], isik: '#fff7d6', ay: false, font: 'Cinzel', vurgu: '#fde68a', slogan: 'KUMUN ALTINDA BİR SIR' },
+  { ad: 'Sonsuz Yörünge', slug: 'sonsuz-yorunge', sahne: 'uzay', gok: ['#05010f', '#2e1065', '#7c3aed'], isik: '#f5d0fe', ay: false, font: 'Bebas Neue', vurgu: '#e879f9', slogan: 'EVE DÖNÜŞ 400 GÜN' },
+  { ad: 'Sessiz Şehir', slug: 'sessiz-sehir', sahne: 'sehir', gok: ['#0b1220', '#334155', '#94a3b8'], isik: '#fef3c7', ay: false, font: 'Anton', vurgu: '#cbd5e1', slogan: 'HERKES GİTTİ. O KALDI.' },
+  { ad: 'Kızıl Sınır', slug: 'kizil-sinir', sahne: 'kizil', gok: ['#1a0202', '#7f1d1d', '#ef4444'], isik: '#fecaca', ay: false, font: 'Bebas Neue', vurgu: '#fca5a5', slogan: 'GERİ DÖNÜŞ YOK' },
+  { ad: 'Rüzgarın Oğlu', slug: 'ruzgarin-oglu', sahne: 'tepe', gok: ['#3b0764', '#db2777', '#fdba74'], isik: '#fff1e6', ay: false, font: 'Playfair Display', vurgu: '#fde2e4', slogan: 'BİR YAZ, BİR SÖZ' },
+  { ad: 'Gölge Avcısı', slug: 'golge-avcisi', sahne: 'sokak', gok: ['#0a0414', '#3b0764', '#c026d3'], isik: '#f0abfc', ay: false, font: 'Anton', vurgu: '#f0abfc', slogan: 'KARANLIK ONUN EVİ' },
+  { ad: 'Beyaz Sessizlik', slug: 'beyaz-sessizlik', sahne: 'kar', gok: ['#0c1a2e', '#3b5b82', '#cfe3f5'], isik: '#ffe7b0', ay: true, font: 'Cinzel', vurgu: '#e0f2fe', slogan: 'KIŞ UZUN SÜRECEK' },
+  { ad: 'Altın Vadi', slug: 'altin-vadi', sahne: 'vadi', gok: ['#422006', '#ca8a04', '#fef08a'], isik: '#fffbe6', ay: false, font: 'Playfair Display', vurgu: '#fef3c7', slogan: 'TOPRAK HER ŞEYİ HATIRLAR' },
+  { ad: 'Karanlık Orman', slug: 'karanlik-orman', sahne: 'orman', gok: ['#020a06', '#064e3b', '#34d399'], isik: '#fde68a', ay: true, font: 'Cinzel', vurgu: '#a7f3d0', slogan: 'IŞIĞI SÖNDÜRME' },
+  // Diziler
+  { ad: 'Mavi Fener', slug: 'mavi-fener', sahne: 'fener', gok: ['#020617', '#1e3a8a', '#38bdf8'], isik: '#fef9c3', ay: true, font: 'Playfair Display', vurgu: '#bae6fd', slogan: 'YENİ SEZON', dizi: true },
+  { ad: 'Dağların Kızı', slug: 'daglarin-kizi', sahne: 'koy', gok: ['#1e1b4b', '#9d174d', '#fb923c'], isik: '#fff1e6', ay: false, font: 'Playfair Display', vurgu: '#fecdd3', slogan: 'HER PAZAR', dizi: true },
+  { ad: 'Eski Konak', slug: 'eski-konak', sahne: 'konak', gok: ['#0c0a09', '#44403c', '#a8a29e'], isik: '#fcd34d', ay: true, font: 'Cinzel', vurgu: '#fde68a', slogan: 'KAPILAR KAPANINCA', dizi: true },
+];
+
+const KANALLAR = [
+  { ad: 'Yıldız TV', renk: ['#7c3aed', '#c026d3'], sekil: 'yildiz' },
+  { ad: 'Kanal Mavi', renk: ['#0284c7', '#38bdf8'], sekil: 'daire' },
+  { ad: 'Film Plus', renk: ['#dc2626', '#f97316'], sekil: 'oynat' },
+  { ad: 'Aile TV', renk: ['#16a34a', '#84cc16'], sekil: 'ev' },
+  { ad: 'Belgesel Dünya', renk: ['#0f766e', '#2dd4bf'], sekil: 'kure' },
+  { ad: 'Çocuk Kulübü', renk: ['#f59e0b', '#ec4899'], sekil: 'balon' },
+  { ad: 'Haber 24', renk: ['#b91c1c', '#ef4444'], sekil: 'kare' },
+  { ad: 'Gündem TV', renk: ['#1d4ed8', '#6366f1'], sekil: 'dalga' },
+  { ad: 'Ekonomi Hattı', renk: ['#047857', '#10b981'], sekil: 'grafik' },
+  { ad: 'Spor Arena', renk: ['#ea580c', '#facc15'], sekil: 'top' },
+  { ad: 'Spor Max', renk: ['#4338ca', '#06b6d4'], sekil: 'simsek' },
+  { ad: 'Maç Saati', renk: ['#be123c', '#fb7185'], sekil: 'saat' },
+];
+
+const q = new URLSearchParams(location.search);
+const tur = q.get('tur') || 'afis';
+const i = +(q.get('i') || 0);
+
+// Dağ sırtı: rastgele yürüyüşle yumuşak bir yol
+function sirt(r, W, taban, yuk, puruz, adim = 24) {
+  let y = taban - yuk * (0.4 + r() * 0.6), d = `M0 ${taban + 400} L0 ${y}`;
+  for (let x = 0; x <= W + adim; x += adim) { y += (r() - 0.5) * puruz; y = Math.max(taban - yuk, Math.min(taban - yuk * 0.15, y)); d += ` L${x} ${y.toFixed(1)}`; }
+  return d + ` L${W} ${taban + 400} Z`;
+}
+function agaclar(r, W, taban, n, h0, renk) {
+  let s = '';
+  for (let k = 0; k < n; k++) { const x = r() * W, h = h0 * (0.6 + r() * 0.8), w = h * 0.38; s += `<path d="M${x} ${taban - h} L${x - w / 2} ${taban} L${x + w / 2} ${taban} Z" fill="${renk}"/>`; }
+  return s;
+}
+function insan(x, y, s, renk, pelerin = false) {
+  return `<g transform="translate(${x} ${y}) scale(${s})" fill="${renk}">
+    <circle cx="0" cy="-62" r="9"/>
+    <path d="M-10 -52 Q0 -56 10 -52 L14 -18 L8 -18 L7 0 L2 0 L0 -20 L-2 0 L-7 0 L-8 -18 L-14 -18 Z"/>
+    ${pelerin ? '<path d="M-10 -50 Q-30 -10 -24 4 L-4 -16 Z"/>' : ''}
+  </g>`;
+}
+
+function afisSahne(a, W, H, r) {
+  const sil = '#05030a';
+  let s = '';
+  const gun = a.ay ? `<circle cx="${W * 0.7}" cy="${H * 0.2}" r="46" fill="${a.isik}" opacity="0.95"/><circle cx="${W * 0.7}" cy="${H * 0.2}" r="110" fill="${a.isik}" opacity="0.08"/>`
+                   : `<circle cx="${W * 0.5}" cy="${H * 0.5}" r="90" fill="${a.isik}" opacity="0.9"/><circle cx="${W * 0.5}" cy="${H * 0.5}" r="200" fill="${a.isik}" opacity="0.12"/>`;
+  const yildizlar = (n) => Array.from({ length: n }, () => `<circle cx="${r() * W}" cy="${r() * H * 0.55}" r="${(r() * 1.3 + 0.3).toFixed(2)}" fill="#fff" opacity="${(0.3 + r() * 0.7).toFixed(2)}"/>`).join('');
+  switch (a.sahne) {
+    case 'tren': {
+      s += yildizlar(90) + gun;
+      s += `<path d="${sirt(r, W, H * 0.62, 120, 40)}" fill="#0b2236" opacity="0.9"/>`;
+      // köprü ve tren
+      const by = H * 0.6;
+      s += `<rect x="0" y="${by}" width="${W}" height="10" fill="${sil}"/>`;
+      for (let x = 10; x < W; x += 60) s += `<path d="M${x} ${by + 10} L${x + 30} ${by + 70} L${x + 60} ${by + 10}" stroke="${sil}" stroke-width="6" fill="none"/>`;
+      s += `<rect x="${W * 0.18}" y="${by - 34}" width="${W * 0.64}" height="34" rx="6" fill="${sil}"/>`;
+      for (let x = W * 0.2; x < W * 0.8; x += 26) s += `<rect x="${x}" y="${by - 27}" width="15" height="11" rx="2" fill="${a.isik}" opacity="0.85"/>`;
+      s += `<circle cx="${W * 0.83}" cy="${by - 18}" r="7" fill="#fff8c4"/><path d="M${W * 0.84} ${by - 18} L${W} ${by - 44} L${W} ${by + 8} Z" fill="#fff8c4" opacity="0.18"/>`;
+      s += `<path d="M0 ${H} L0 ${H * 0.72} Q${W * 0.5} ${H * 0.66} ${W} ${H * 0.74} L${W} ${H} Z" fill="${sil}"/>`;
+      break;
+    }
+    case 'kale': {
+      s += gun;
+      s += `<path d="${sirt(r, W, H * 0.66, 90, 30)}" fill="#431407" opacity="0.8"/>`;
+      const cx = W * 0.5, by = H * 0.56;
+      s += `<path d="M${cx - 170} ${H} L${cx - 120} ${by + 30} L${cx + 130} ${by + 30} L${cx + 190} ${H} Z" fill="${sil}"/>`;
+      s += `<rect x="${cx - 110}" y="${by - 40}" width="220" height="80" fill="${sil}"/>`;
+      [[-110, 120], [-20, 170], [70, 135]].forEach(([dx, h]) => {
+        s += `<rect x="${cx + dx}" y="${by - h}" width="40" height="${h}" fill="${sil}"/>`;
+        for (let k = 0; k < 4; k++) s += `<rect x="${cx + dx + k * 11}" y="${by - h - 10}" width="7" height="10" fill="${sil}"/>`;
+      });
+      s += `<rect x="${cx - 6}" y="${by - 120}" width="10" height="14" fill="${a.isik}"/><rect x="${cx + 82}" y="${by - 90}" width="9" height="12" fill="${a.isik}"/>`;
+      s += `<path d="M${cx + 4} ${by - 170} L${cx + 4} ${by - 215} L${cx + 40} ${by - 205} L${cx + 4} ${by - 195}" fill="${sil}" stroke="${sil}" stroke-width="3"/>`;
+      for (let k = 0; k < 14; k++) s += `<path d="M${r() * W} ${r() * H * 0.4} q8 -6 16 0 q8 -6 16 0" stroke="${sil}" stroke-width="2" fill="none" opacity="0.7"/>`;
+      break;
+    }
+    case 'dalga': {
+      s += gun.replace(`cy="${H * 0.5}"`, `cy="${H * 0.28}"`).replace(`cy="${H * 0.5}"`, `cy="${H * 0.28}"`);
+      const wy = H * 0.45;
+      s += `<path d="M0 ${H} L0 ${wy + 60} C ${W * 0.2} ${wy + 20}, ${W * 0.35} ${wy - 140}, ${W * 0.7} ${wy - 160} C ${W * 0.95} ${wy - 165}, ${W * 1.05} ${wy - 60}, ${W * 0.82} ${wy - 20} C ${W * 0.7} ${wy}, ${W * 0.75} ${wy + 40}, ${W} ${wy + 30} L${W} ${H} Z" fill="#075985"/>`;
+      s += `<path d="M${W * 0.55} ${wy - 150} C ${W * 0.85} ${wy - 170}, ${W * 1.02} ${wy - 80}, ${W * 0.84} ${wy - 30}" stroke="#e0f2fe" stroke-width="10" fill="none" opacity="0.85"/>`;
+      for (let k = 0; k < 40; k++) s += `<circle cx="${W * 0.55 + r() * W * 0.45}" cy="${wy - 180 + r() * 60}" r="${r() * 3 + 1}" fill="#fff" opacity="0.8"/>`;
+      s += `<path d="M0 ${H} L0 ${H * 0.7} C ${W * 0.3} ${H * 0.66}, ${W * 0.6} ${H * 0.76}, ${W} ${H * 0.68} L${W} ${H} Z" fill="#0c4a6e"/>`;
+      s += `<g transform="rotate(-18 ${W * 0.42} ${wy - 20})"><ellipse cx="${W * 0.42}" cy="${wy - 18}" rx="48" ry="7" fill="${sil}"/></g>` + insan(W * 0.42, wy - 22, 0.9, sil);
+      break;
+    }
+    case 'col': {
+      s += gun.replace(`cy="${H * 0.5}"`, `cy="${H * 0.42}"`).replace(`cy="${H * 0.5}"`, `cy="${H * 0.42}"`);
+      [['#92400e', 0.55, 70], ['#78350f', 0.64, 90], ['#451a03', 0.74, 80]].forEach(([c, t, h]) => {
+        const y = H * t; s += `<path d="M0 ${H} L0 ${y} Q${W * 0.3} ${y - h} ${W * 0.55} ${y - h * 0.3} T${W} ${y - h * 0.5} L${W} ${H} Z" fill="${c}"/>`;
+      });
+      s += insan(W * 0.36, H * 0.69, 1.15, sil, true);
+      s += `<line x1="${W * 0.36 + 14}" y1="${H * 0.69 - 70}" x2="${W * 0.36 + 18}" y2="${H * 0.69}" stroke="${sil}" stroke-width="3"/>`;
+      for (let k = 0; k < 7; k++) s += `<path d="M${W * 0.36 - 20 - k * 22} ${H * 0.7 + k * 3} l8 -3" stroke="${sil}" stroke-width="3" opacity="${0.8 - k * 0.1}"/>`;
+      break;
+    }
+    case 'uzay': {
+      s += yildizlar(220);
+      s += `<circle cx="${W * 0.52}" cy="${H * 0.4}" r="130" fill="url(#gezegen)"/>`;
+      s += `<ellipse cx="${W * 0.52}" cy="${H * 0.4}" rx="230" ry="38" fill="none" stroke="#f0abfc" stroke-width="7" opacity="0.6" transform="rotate(-16 ${W * 0.52} ${H * 0.4})"/>`;
+      s += `<circle cx="${W * 0.18}" cy="${H * 0.18}" r="18" fill="#c4b5fd" opacity="0.8"/>`;
+      s += `<g transform="translate(${W * 0.72} ${H * 0.66}) rotate(18)"><rect x="-14" y="-30" width="28" height="40" rx="12" fill="#e9d5ff"/><circle cx="0" cy="-40" r="14" fill="#e9d5ff"/><circle cx="0" cy="-40" r="8" fill="#1e1b4b"/><rect x="-24" y="-24" width="10" height="26" rx="5" fill="#e9d5ff"/><rect x="14" y="-24" width="10" height="26" rx="5" fill="#e9d5ff"/><rect x="-12" y="8" width="9" height="22" rx="4" fill="#e9d5ff"/><rect x="3" y="8" width="9" height="22" rx="4" fill="#e9d5ff"/></g>`;
+      s += `<path d="M${W * 0.72} ${H * 0.62} C ${W * 0.5} ${H * 0.75}, ${W * 0.3} ${H * 0.6}, ${W * 0.1} ${H * 0.72}" stroke="#e9d5ff" stroke-width="1.5" fill="none" stroke-dasharray="4 6" opacity="0.6"/>`;
+      break;
+    }
+    case 'sehir': case 'sokak': {
+      if (a.sahne === 'sehir') s += gun.replace(/cy="[\d.]+"/g, `cy="${H * 0.36}"`);
+      const katman = a.sahne === 'sehir' ? [['#1e293b', 0.62, 0.5], ['#0f172a', 0.72, 0.8], [sil, 0.86, 1]] : [['#2e1065', 0.6, 0.6], ['#1a0b2e', 0.74, 0.85], [sil, 0.9, 1]];
+      katman.forEach(([c, t, op]) => {
+        let x = -10; const base = H * t;
+        while (x < W) { const w = 30 + r() * 60, h = 80 + r() * 230 * (1.2 - t); s += `<rect x="${x}" y="${base - h}" width="${w}" height="${h + H}" fill="${c}"/>`;
+          for (let yy = base - h + 10; yy < base - 10; yy += 16) for (let xx = x + 6; xx < x + w - 8; xx += 12) if (r() < 0.16 * op) s += `<rect x="${xx}" y="${yy}" width="5" height="7" fill="${a.isik}" opacity="${0.5 + r() * 0.5}"/>`;
+          x += w + 4; }
+      });
+      s += `<rect x="0" y="${H * 0.55}" width="${W}" height="${H * 0.2}" fill="#fff" opacity="0.05"/>`;
+      if (a.sahne === 'sokak') {
+        s += `<rect x="${W * 0.12}" y="${H * 0.42}" width="70" height="26" rx="4" fill="none" stroke="#f0abfc" stroke-width="3" opacity="0.9"/><rect x="${W * 0.72}" y="${H * 0.36}" width="16" height="70" rx="3" fill="none" stroke="#67e8f9" stroke-width="3" opacity="0.8"/>`;
+        s += `<g transform="translate(${W * 0.5} ${H * 0.86}) scale(2.1)" fill="${sil}"><path d="M-16 -70 Q0 -96 16 -70 L20 -30 L24 0 L-24 0 L-20 -30 Z"/><path d="M-6 -72 Q0 -78 6 -72 L5 -64 L-5 -64 Z" fill="#c026d3" opacity="0.6"/></g>`;
+      } else {
+        s += insan(W * 0.5, H * 0.86, 1.3, sil);
+        s += `<line x1="${W * 0.5 - 30}" y1="${H * 0.86}" x2="${W * 0.5 + 120}" y2="${H * 0.87}" stroke="#000" stroke-width="6" opacity="0.4"/>`;
+      }
+      break;
+    }
+    case 'kizil': {
+      s += gun.replace(/cy="[\d.]+"/g, `cy="${H * 0.44}"`);
+      s += `<path d="${sirt(r, W, H * 0.62, 110, 50)}" fill="#450a0a"/>`;
+      s += `<path d="${sirt(r, W, H * 0.74, 80, 30)}" fill="#1f0303"/>`;
+      for (let x = 20; x < W; x += 58) s += `<rect x="${x}" y="${H * 0.66}" width="5" height="60" fill="${sil}"/>`;
+      s += `<path d="M0 ${H * 0.69} Q${W * 0.5} ${H * 0.66} ${W} ${H * 0.7}" stroke="${sil}" stroke-width="2" fill="none"/><path d="M0 ${H * 0.71} Q${W * 0.5} ${H * 0.69} ${W} ${H * 0.72}" stroke="${sil}" stroke-width="2" fill="none"/>`;
+      s += insan(W * 0.52, H * 0.78, 1.5, sil, true);
+      break;
+    }
+    case 'tepe': {
+      s += gun.replace(/cy="[\d.]+"/g, `cy="${H * 0.5}"`);
+      s += `<path d="M0 ${H} L0 ${H * 0.62} Q${W * 0.35} ${H * 0.5} ${W * 0.7} ${H * 0.6} T${W} ${H * 0.58} L${W} ${H} Z" fill="#6b2155"/>`;
+      s += `<path d="M0 ${H} L0 ${H * 0.75} Q${W * 0.4} ${H * 0.62} ${W} ${H * 0.72} L${W} ${H} Z" fill="#2a0a26"/>`;
+      s += insan(W * 0.32, H * 0.69, 1.2, sil);
+      s += `<line x1="${W * 0.32 + 10}" y1="${H * 0.69 - 50}" x2="${W * 0.66}" y2="${H * 0.28}" stroke="${sil}" stroke-width="1.5"/>`;
+      s += `<path d="M${W * 0.66} ${H * 0.25} l18 -20 l18 20 l-18 26 Z" fill="${sil}"/>`;
+      for (let k = 0; k < 6; k++) s += `<path d="M${W * 0.66 + 18} ${H * 0.25 + 26 + k * 12} q6 4 0 8" stroke="${sil}" stroke-width="2" fill="none"/>`;
+      break;
+    }
+    case 'kar': {
+      s += yildizlar(70) + gun;
+      s += `<path d="${sirt(r, W, H * 0.58, 230, 70, 30)}" fill="#cfe3f5" opacity="0.9"/>`;
+      s += `<path d="${sirt(r, W, H * 0.66, 140, 40)}" fill="#7da2c7"/>`;
+      s += `<path d="M0 ${H} L0 ${H * 0.74} Q${W * 0.5} ${H * 0.68} ${W} ${H * 0.75} L${W} ${H} Z" fill="#e8f1fa"/>`;
+      s += agaclar(r, W, H * 0.78, 16, 70, '#0f2238');
+      const kx = W * 0.6, ky = H * 0.77;
+      s += `<path d="M${kx - 40} ${ky - 30} L${kx} ${ky - 62} L${kx + 40} ${ky - 30} Z" fill="#0f2238"/><rect x="${kx - 32}" y="${ky - 30}" width="64" height="32" fill="#0f2238"/><rect x="${kx - 10}" y="${ky - 22}" width="14" height="12" fill="${a.isik}"/><circle cx="${kx - 3}" cy="${ky - 16}" r="30" fill="${a.isik}" opacity="0.12"/>`;
+      for (let k = 0; k < 120; k++) s += `<circle cx="${r() * W}" cy="${r() * H}" r="${r() * 2 + 0.6}" fill="#fff" opacity="${0.4 + r() * 0.5}"/>`;
+      break;
+    }
+    case 'vadi': {
+      s += gun.replace(/cy="[\d.]+"/g, `cy="${H * 0.46}"`);
+      s += `<path d="${sirt(r, W, H * 0.56, 120, 40)}" fill="#a16207" opacity="0.8"/>`;
+      s += `<path d="M0 ${H} L0 ${H * 0.58} Q${W * 0.2} ${H * 0.54} ${W * 0.38} ${H * 0.62} L${W * 0.46} ${H} Z" fill="#422006"/>`;
+      s += `<path d="M${W} ${H} L${W} ${H * 0.56} Q${W * 0.78} ${H * 0.54} ${W * 0.62} ${H * 0.64} L${W * 0.56} ${H} Z" fill="#3a1c05"/>`;
+      s += `<path d="M${W * 0.46} ${H} Q${W * 0.44} ${H * 0.75} ${W * 0.5} ${H * 0.6} Q${W * 0.56} ${H * 0.75} ${W * 0.56} ${H} Z" fill="#fef08a" opacity="0.75"/>`;
+      for (let k = 0; k < 18; k++) s += `<path d="M${r() * W} ${H * 0.25 + r() * H * 0.15} q6 -5 12 0 q6 -5 12 0" stroke="#422006" stroke-width="2" fill="none" opacity="0.7"/>`;
+      s += insan(W * 0.24, H * 0.6, 0.8, sil) + insan(W * 0.3, H * 0.6, 0.7, sil);
+      break;
+    }
+    case 'orman': {
+      s += yildizlar(50) + gun;
+      s += agaclar(r, W, H * 0.62, 30, 160, '#052e22');
+      s += `<rect x="0" y="${H * 0.5}" width="${W}" height="${H * 0.2}" fill="#a7f3d0" opacity="0.07"/>`;
+      s += agaclar(r, W, H * 0.78, 22, 260, '#021a12');
+      s += `<rect x="0" y="${H * 0.78}" width="${W}" height="${H}" fill="#010b07"/>`;
+      s += insan(W * 0.5, H * 0.84, 1.1, sil);
+      s += `<circle cx="${W * 0.5 + 16}" cy="${H * 0.84 - 40}" r="6" fill="${a.isik}"/><circle cx="${W * 0.5 + 16}" cy="${H * 0.84 - 40}" r="70" fill="${a.isik}" opacity="0.13"/>`;
+      for (let k = 0; k < 4; k++) { const x = r() * W, y = H * 0.55 + r() * H * 0.15; s += `<circle cx="${x}" cy="${y}" r="2.2" fill="#facc15"/><circle cx="${x + 9}" cy="${y}" r="2.2" fill="#facc15"/>`; }
+      break;
+    }
+    case 'fener': {
+      s += yildizlar(110) + gun;
+      s += `<path d="M0 ${H} L0 ${H * 0.66} Q${W * 0.3} ${H * 0.64} ${W * 0.5} ${H * 0.7} T${W} ${H * 0.68} L${W} ${H} Z" fill="#0c1e4a"/>`;
+      const fx = W * 0.32, fy = H * 0.66;
+      s += `<path d="M${fx - 110} ${H} L${fx - 70} ${fy} L${fx + 90} ${fy + 10} L${fx + 150} ${H} Z" fill="${sil}"/>`;
+      s += `<path d="M${fx - 22} ${fy} L${fx - 14} ${fy - 180} L${fx + 14} ${fy - 180} L${fx + 22} ${fy} Z" fill="#0b1024"/>`;
+      for (let k = 0; k < 4; k++) s += `<rect x="${fx - 21 + k * 1.5}" y="${fy - 40 - k * 42}" width="${42 - k * 3}" height="12" fill="#1d2b5c"/>`;
+      s += `<rect x="${fx - 18}" y="${fy - 210}" width="36" height="30" fill="${a.isik}"/><path d="M${fx - 22} ${fy - 210} L${fx} ${fy - 232} L${fx + 22} ${fy - 210} Z" fill="#0b1024"/>`;
+      s += `<path d="M${fx} ${fy - 195} L${W + 40} ${fy - 290} L${W + 40} ${fy - 120} Z" fill="${a.isik}" opacity="0.2"/>`;
+      for (let k = 0; k < 7; k++) s += `<path d="M${r() * W} ${H * 0.75 + r() * H * 0.2} q20 -6 40 0" stroke="#7dd3fc" stroke-width="2" fill="none" opacity="0.35"/>`;
+      break;
+    }
+    case 'koy': {
+      s += gun.replace(/cy="[\d.]+"/g, `cy="${H * 0.36}"`);
+      s += `<path d="${sirt(r, W, H * 0.6, 240, 60, 30)}" fill="#4c1d95" opacity="0.75"/>`;
+      s += `<path d="${sirt(r, W, H * 0.7, 150, 40)}" fill="#2e1065"/>`;
+      for (let k = 0; k < 7; k++) { const x = W * 0.1 + k * W * 0.12, y = H * 0.66 + (k % 2) * 12; s += `<rect x="${x}" y="${y - 20}" width="28" height="22" fill="#1a0b33"/><path d="M${x - 4} ${y - 20} L${x + 14} ${y - 34} L${x + 32} ${y - 20} Z" fill="#1a0b33"/><rect x="${x + 10}" y="${y - 14}" width="7" height="7" fill="${a.isik}" opacity="0.9"/>`; }
+      s += `<path d="M0 ${H} L0 ${H * 0.8} Q${W * 0.5} ${H * 0.74} ${W} ${H * 0.82} L${W} ${H} Z" fill="${sil}"/>`;
+      s += `<g transform="translate(${W * 0.62} ${H * 0.86}) scale(1.6)" fill="${sil}"><circle cx="0" cy="-62" r="9"/><path d="M-9 -54 Q0 -58 9 -54 L22 0 L-22 0 Z"/><path d="M6 -66 Q26 -60 30 -30 Q20 -50 6 -56 Z"/></g>`;
+      break;
+    }
+    case 'konak': {
+      s += yildizlar(60) + gun;
+      s += agaclar(r, W, H * 0.7, 10, 180, '#0a0908');
+      const kx = W * 0.5, ky = H * 0.72;
+      s += `<rect x="${kx - 150}" y="${ky - 150}" width="300" height="150" fill="#14110f"/><path d="M${kx - 170} ${ky - 150} L${kx} ${ky - 240} L${kx + 170} ${ky - 150} Z" fill="#0c0a09"/><rect x="${kx + 70}" y="${ky - 260}" width="26" height="70" fill="#0c0a09"/>`;
+      for (let rr = 0; rr < 2; rr++) for (let c = 0; c < 5; c++) { const lit = (rr * 5 + c) % 3 === 1; s += `<rect x="${kx - 130 + c * 56}" y="${ky - 130 + rr * 62}" width="24" height="36" fill="${lit ? a.isik : '#26211d'}" opacity="${lit ? 0.9 : 1}"/>`; }
+      s += `<rect x="${kx - 16}" y="${ky - 50}" width="32" height="50" fill="#0c0a09"/>`;
+      s += `<rect x="0" y="${ky}" width="${W}" height="${H}" fill="${sil}"/>`;
+      s += `<path d="M${kx - 200} ${ky + 10} Q${kx} ${ky - 20} ${kx + 220} ${ky + 14}" stroke="#a8a29e" stroke-width="40" opacity="0.06" fill="none"/>`;
+      break;
+    }
+  }
+  return s;
+}
+
+function afis(a, W = 480, H = 720) {
+  const r = rng(a.slug.split('').reduce((t, c) => t * 31 + c.charCodeAt(0), 7));
+  const baslikBoy = a.font === 'Cinzel' ? 54 : a.font === 'Playfair Display' ? 58 : 74;
+  const satirlar = a.ad.toLocaleUpperCase('tr').split(' ');
+  const yaz = a.font === 'Playfair Display' ? a.ad.split(' ') : satirlar;
+  const tekSatir = yaz.join(' ').length <= 12;
+  const baslik = tekSatir ? [yaz.join(' ')] : [yaz.slice(0, Math.ceil(yaz.length / 2)).join(' '), yaz.slice(Math.ceil(yaz.length / 2)).join(' ')];
+  const by = H - 118 - (baslik.length - 1) * baslikBoy * 0.95;
+  const stil = a.font === 'Playfair Display' ? 'font-style:italic;font-weight:800' : a.font === 'Cinzel' ? 'font-weight:900;letter-spacing:2px' : 'letter-spacing:1.5px';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <defs>
+      <linearGradient id="gok" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a.gok[0]}"/><stop offset="0.55" stop-color="${a.gok[1]}"/><stop offset="1" stop-color="${a.gok[2]}"/></linearGradient>
+      <radialGradient id="gezegen" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#f5d0fe"/><stop offset="0.45" stop-color="#a855f7"/><stop offset="1" stop-color="#1e0a3c"/></radialGradient>
+      <radialGradient id="vinyet" cx="0.5" cy="0.45" r="0.75"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.75"/></radialGradient>
+      <linearGradient id="alt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.92"/></linearGradient>
+      <filter id="gren"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.09 0"/></filter>
+      <filter id="parla"><feGaussianBlur stdDeviation="6"/></filter>
+    </defs>
+    <rect width="${W}" height="${H}" fill="url(#gok)"/>
+    ${afisSahne(a, W, H, r)}
+    <rect width="${W}" height="${H}" fill="url(#vinyet)"/>
+    <rect y="${H * 0.55}" width="${W}" height="${H * 0.45}" fill="url(#alt)"/>
+    <rect width="${W}" height="${H}" filter="url(#gren)"/>
+    <text x="${W / 2}" y="44" text-anchor="middle" font-family="Poppins" font-weight="600" font-size="13" letter-spacing="5" fill="${a.vurgu}" opacity="0.9">${a.slogan}</text>
+    ${baslik.map((t, k) => `<text x="${W / 2}" y="${by + k * baslikBoy * 0.95}" text-anchor="middle" font-family="${a.font}" font-size="${baslikBoy}" style="${stil}" fill="${a.vurgu}" opacity="0.35" filter="url(#parla)">${t}</text>
+    <text x="${W / 2}" y="${by + k * baslikBoy * 0.95}" text-anchor="middle" font-family="${a.font}" font-size="${baslikBoy}" style="${stil}" fill="#fff">${t}</text>`).join('')}
+    <text x="${W / 2}" y="${H - 66}" text-anchor="middle" font-family="Bebas Neue" font-size="11.5" letter-spacing="1.2" fill="#fff" opacity="0.55">YAPIM DENİZ ARSLAN · SENARYO ADA YILDIZ · MÜZİK CEM DEMİR · GÖRÜNTÜ ECE AK · KURGU BORA KAYA</text>
+    <text x="${W / 2}" y="${H - 38}" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" letter-spacing="4" fill="${a.vurgu}">${a.dizi ? 'YENİ BÖLÜM' : 'YAKINDA'}</text>
+  </svg>`;
+}
+
+function ikon(k, renk) {
+  const c = `fill="#fff"`;
+  switch (k.sekil) {
+    case 'yildiz': return `<path ${c} d="M40 8 L49 30 L73 31 L54 46 L61 70 L40 56 L19 70 L26 46 L7 31 L31 30 Z"/>`;
+    case 'daire': return `<circle cx="40" cy="40" r="30" fill="none" stroke="#fff" stroke-width="9"/><circle ${c} cx="40" cy="40" r="11"/>`;
+    case 'oynat': return `<rect x="8" y="32" width="64" height="40" rx="5" fill="#fff"/><path d="M8 18 L70 6 L72 22 L10 34 Z" fill="#fff"/><path d="M22 16 L30 30 M40 12 L48 26 M58 9 L64 21" stroke="${renk}" stroke-width="5"/>`;
+    case 'ev': return `<path ${c} d="M40 8 L74 38 L64 38 L64 70 L48 70 L48 50 L32 50 L32 70 L16 70 L16 38 L6 38 Z"/>`;
+    case 'kure': return `<circle cx="40" cy="40" r="30" fill="none" stroke="#fff" stroke-width="6"/><ellipse cx="40" cy="40" rx="13" ry="30" fill="none" stroke="#fff" stroke-width="5"/><line x1="10" y1="40" x2="70" y2="40" stroke="#fff" stroke-width="5"/>`;
+    case 'balon': return `<ellipse ${c} cx="32" cy="32" rx="20" ry="24"/><ellipse ${c} cx="54" cy="38" rx="16" ry="20" opacity="0.8"/><path d="M32 56 q-4 10 4 18" stroke="#fff" stroke-width="3" fill="none"/>`;
+    case 'kare': return `<rect ${c} x="8" y="8" width="64" height="64" rx="10"/><text x="40" y="54" text-anchor="middle" font-family="Anton" font-size="38" fill="${renk}">24</text>`;
+    case 'dalga': return `<path d="M6 30 q11 -14 22 0 t22 0 t22 0" stroke="#fff" stroke-width="8" fill="none"/><path d="M6 52 q11 -14 22 0 t22 0 t22 0" stroke="#fff" stroke-width="8" fill="none" opacity="0.7"/>`;
+    case 'grafik': return `<path d="M8 66 L28 40 L44 52 L72 14" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path ${c} d="M60 10 L76 10 L76 26 Z"/>`;
+    case 'top': return `<circle cx="40" cy="40" r="30" fill="#fff"/><path d="M40 26 L52 35 L48 50 L32 50 L28 35 Z" fill="${renk}"/>`;
+    case 'simsek': return `<path ${c} d="M46 4 L14 46 L36 46 L30 76 L66 30 L44 30 Z"/>`;
+    case 'saat': return `<circle cx="40" cy="40" r="30" fill="none" stroke="#fff" stroke-width="8"/><path d="M40 22 L40 42 L54 50" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+  }
+}
+function kanal(k, W = 320, H = 200) {
+  const kelime = k.ad.split(' ');
+  const ust = kelime[0].toLocaleUpperCase('tr'), alt = kelime.slice(1).join(' ').toLocaleUpperCase('tr');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <defs><linearGradient id="z" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${k.renk[0]}"/><stop offset="1" stop-color="${k.renk[1]}"/></linearGradient>
+    <radialGradient id="p" cx="0.2" cy="0.1" r="1"><stop offset="0" stop-color="#fff" stop-opacity="0.35"/><stop offset="0.6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#z)"/><rect width="${W}" height="${H}" fill="url(#p)"/>
+    <circle cx="${W - 30}" cy="${H + 10}" r="120" fill="#fff" opacity="0.07"/>
+    <g transform="translate(26 ${H / 2 - 40})">${ikon(k, k.renk[0])}</g>
+    <text x="122" y="${alt ? H / 2 - 4 : H / 2 + 16}" font-family="Anton" font-size="${ust.length > 7 ? 38 : 46}" fill="#fff" letter-spacing="1">${ust}</text>
+    ${alt ? `<text x="124" y="${H / 2 + 36}" font-family="Poppins" font-weight="800" font-size="24" letter-spacing="3" fill="#fff" opacity="0.9">${alt}</text>` : ''}
+  </svg>`;
+}
+
+const sahne = document.getElementById('sahne');
+if (tur === 'kanal') { sahne.innerHTML = kanal(KANALLAR[i]); sahne.style.width = '320px'; sahne.style.height = '200px'; }
+else { sahne.innerHTML = afis(AFISLER[i]); sahne.style.width = '480px'; sahne.style.height = '720px'; }
+window.LISTE = { afis: AFISLER.map(a => a.slug), kanal: KANALLAR.map(k => k.ad) };
+</script>
+</body>
+</html>
