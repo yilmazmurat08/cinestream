@@ -463,7 +463,11 @@ fun LegacyExoPlayerScreen(
                     hide(WindowInsetsCompat.Type.systemBars())
                     systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 } else {
-                    show(WindowInsetsCompat.Type.systemBars())
+                    // Dikey: saat/batarya çubuğu gizli (oynatıcı tam ekran görünür), gezinme tuşları görünür kalır.
+                    // Üstten kaydırınca çubuk kısa süre görünür.
+                    show(WindowInsetsCompat.Type.navigationBars())
+                    hide(WindowInsetsCompat.Type.statusBars())
+                    systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 }
             }
         }
@@ -1750,11 +1754,19 @@ fun LegacyExoPlayerScreen(
 
                         Spacer(modifier = Modifier.height(if (layout.isLandscape) 6.dp else 10.dp))
 
-                        // C. Alt Satır: Sadece İkon İçeren Dengeli Kontrol Butonları
+                        // C. Alt Satır: Sadece İkon İçeren Dengeli Kontrol Butonları — yarı saydam, köşeleri yuvarlak
+                        // bir kapsül içinde (uygulamanın buzlu bar rengi: koyu mor-gri zemin, ince açık çerçeve).
+                        val capsuleShape = RoundedCornerShape(28.dp)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 2.dp),
+                                .padding(top = 2.dp)
+                                .clip(capsuleShape)
+                                .background(PlayerCapsuleColor)
+                                .background(PlayerCapsuleTint)
+                                .border(1.dp, PlayerCapsuleBorder, capsuleShape)
+                                .padding(horizontal = 6.dp, vertical = 8.dp)
+                                .testTag("player_bottom_capsule"),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -3263,3 +3275,8 @@ private fun Modifier.trackRowFocus(): Modifier {
             } else Modifier
         )
 }
+
+/** Oynatıcının alt tuş kapsülü: buzlu bar rengi rgba(42,40,56,0.62) + hafif mor ışık + 1 px açık çerçeve. */
+private val PlayerCapsuleColor = Color(0x9E2A2838)
+private val PlayerCapsuleTint = Brush.horizontalGradient(listOf(Color(0x387C3AED), Color(0x29D946EF)))
+private val PlayerCapsuleBorder = Color(0x2EFFFFFF)
