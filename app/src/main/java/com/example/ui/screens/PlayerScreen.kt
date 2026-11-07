@@ -1759,7 +1759,8 @@ fun LegacyExoPlayerScreen(
                         val capsuleShape = RoundedCornerShape(28.dp)
                         Row(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                // Yatayda ekran boyu uzanmaz: dikeydeki genişliğe yakın, ortada toplu durur.
+                                .then(if (layout.isLandscape) Modifier.widthIn(max = 420.dp).fillMaxWidth() else Modifier.fillMaxWidth())
                                 .padding(top = 2.dp)
                                 .clip(capsuleShape)
                                 .background(PlayerCapsuleColor)
