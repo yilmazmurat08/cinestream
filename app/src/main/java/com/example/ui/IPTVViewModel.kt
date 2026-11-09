@@ -2640,6 +2640,46 @@ class IPTVViewModel(
     private val _isLoadingLiveShow = MutableStateFlow(false)
     val isLoadingLiveShow: StateFlow<Boolean> = _isLoadingLiveShow.asStateFlow()
 
+    /**
+     * Oynatıcı açılırken (ör. "Nerede kalmıştık" ya da "Devam et"ten) Xtream dizi bölümünün dizisi henüz yüklenmemişse
+     * bölümleri çekilir; oynatıcının "Bölümler ve Sezonlar" paneli ve önceki/sonraki bölüm bunlarla dolar. Detay sayfası
+     * açılmaz, seçili öğe değişmez. Dizi katalogda adıyla bulunur (bölüm kaydında dizinin numarası saklanmıyor).
+     */
+    fun loadShowForEpisode(item: IPTVItem) {
+        if (item.type != "SERIES" || item.id >= 0) return
+        if (_liveFetchedShow.value?.seasons?.any { s -> s.episodes.any { it.item.id == item.id } } == true) return
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            try {
+                val title = com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName.ifBlank { item.name })
+                    ?.showTitle?.trim()?.takeIf { it.isNotBlank() }
+                    ?: item.cleanedName.ifBlank { item.name }.trim()
+                val entity = repository.dao.findCatalogShow(episodeToSeries[item.id] ?: 0, title) ?: return@launch
+                val show = catalogShowOf(entity)
+                val credSource = tvCatalog.firstItemWithStream() ?: return@launch
+                val fetched = com.example.data.api.MetadataEnricher.fetchSeriesInfoLive(
+                    context = getApplication(),
+                    seriesId = show.id,
+                    showTitle = show.title,
+                    showCover = show.logoUrl,
+                    showRating = show.rating,
+                    showSummary = show.summary,
+                    showCast = show.cast,
+                    showDirector = show.director,
+                    anyItemForCredentials = credSource,
+                    showCategory = show.platformName.takeIf { it.isNotBlank() && it != "Diğer" } ?: show.category
+                ) ?: return@launch
+                // Yanlış diziye bağlanmasın: oynayan bölüm gelen listede olmalı.
+                if (fetched.seasons.none { s -> s.episodes.any { it.item.id == item.id } }) return@launch
+                fetched.seasons.forEach { season -> season.episodes.forEach { episodeToSeries[it.item.id] = fetched.id } }
+                _liveFetchedShow.value = fetched
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w("IPTVViewModel", "loadShowForEpisode: ${e.message}")
+            }
+        }
+    }
+
     /** [fallbackItem]: dizi sağlayıcıdan çekilemezse eskisi gibi bu öğenin sayfası açılır. */
     fun openCatalogShow(catalogShow: com.example.data.model.TvShow, fallbackItem: IPTVItem? = null) {
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {

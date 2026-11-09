@@ -123,10 +123,26 @@ class TvResumeAndShelfTest {
                 )
             }
         }
+        runBlocking {
+            db.iptvDao().insertItems((1..8).map { i ->
+                IPTVItem(
+                    id = 8950 + i, playlistId = 1, name = "Kayıtlı $i", cleanedName = "Kayıtlı $i", logoUrl = null,
+                    streamUrl = "http://s/k$i.mp4", category = "Film", type = "MOVIE", isFavorite = true
+                )
+            })
+        }
         val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
         var played: IPTVItem? = null
         compose.setContent { TvSavedScreen(viewModel = vm, onPlayItem = { played = it }) }
-        compose.waitUntil(10_000) { count("tv_resume_8902") > 0 }
+        compose.waitUntil(10_000) { count("tv_resume_8902") > 0 && count("tv_saved_8951") > 0 }
+        // Şerit ve kayıtlı liste aynı kaydırılan ızgarada (eskiden şerit sabitti, liste altta kesik görünüyordu).
+        assertEquals(
+            1,
+            compose.onAllNodes(
+                hasTestTag("tv_resume_shelf") and androidx.compose.ui.test.hasAnyAncestor(hasTestTag("tv_saved_grid")),
+                useUnmergedTree = true
+            ).fetchSemanticsNodes().size
+        )
 
         // Kısa OK: oynatır.
         compose.onNodeWithTag("tv_resume_8902").requestFocus()
@@ -156,5 +172,26 @@ class TvResumeAndShelfTest {
         assertEquals(1, count("tv_resume_8901"))
         // İzleme kaydı silinmedi (kaldığı yer korunur).
         assertTrue(runBlocking { db.iptvDao().getContinueWatchingForItem(8902) } != null)
+    }
+
+    @Test
+    fun seriesPanelTitle_isEpisodesAndSeasons() {
+        TvDevice.overrideForTest = true
+        fun ep(n: Int) = IPTVItem(
+            id = -(77000 + n), playlistId = 1, name = "Panel Dizi - Bölüm $n", cleanedName = "Panel Dizi", logoUrl = null,
+            streamUrl = "http://10.255.255.1/series/u/p/${77000 + n}.mp4", category = "Dizi", type = "SERIES", season = 1, episode = n
+        )
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val ui = com.example.ui.tv.TvPlayerUiState().apply { panelOpen = true }
+        compose.setContent {
+            PlayerScreen(
+                item = ep(1), siblingItems = listOf(ep(1), ep(2)), onBack = {}, onPlayItem = {},
+                onProgressUpdate = { _, _, _ -> }, iptvViewModel = vm, tvMode = true, tvUiState = ui
+            )
+        }
+        advance(1_000)
+        val title = app.getString(R.string.player_episodes_seasons)
+        assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText(title), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+        assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText(app.getString(R.string.player_lists)), useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
     }
 }

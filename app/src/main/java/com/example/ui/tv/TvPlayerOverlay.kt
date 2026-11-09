@@ -281,7 +281,11 @@ fun TvPlayerOverlay(
                 }
                 TvChannelPanel(
                     viewModel = viewModel,
-                    title = if (isLive) category.ifBlank { stringResource(R.string.tv_live) } else stringResource(R.string.player_lists),
+                    title = when {
+                        isLive -> category.ifBlank { stringResource(R.string.tv_live) }
+                        item.type == "SERIES" -> stringResource(R.string.player_episodes_seasons)
+                        else -> stringResource(R.string.player_lists)
+                    },
                     items = list,
                     playingId = item.id,
                     isLive = isLive,
@@ -871,7 +875,13 @@ private fun TvControlBar(
             if (!compact) {
             Spacer(Modifier.weight(1f))
             if (!isLive) TvBarButton(Icons.Filled.Replay, stringResource(R.string.player_start_over), "tv_bar_start_over", onClick = onStartOver, onUserActivity = onUserActivity)
-            TvBarButton(Icons.Filled.FormatListBulleted, stringResource(if (isLive) R.string.player_channel_list else R.string.player_lists), "tv_bar_list", onClick = onOpenPanel, onUserActivity = onUserActivity)
+            TvBarButton(Icons.Filled.FormatListBulleted, stringResource(
+                    when {
+                        isLive -> R.string.player_channel_list
+                        item.type == "SERIES" -> R.string.player_episodes_seasons
+                        else -> R.string.player_lists
+                    }
+                ), "tv_bar_list", onClick = onOpenPanel, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.Subtitles, stringResource(R.string.player_audio_subtitle_desc), "tv_bar_tracks", onClick = onOpenTracks, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.AspectRatio, stringResource(R.string.player_aspect_ratio_desc), "tv_bar_aspect", onClick = onCycleAspect, onUserActivity = onUserActivity)
             if (isLive) TvBarButton(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, stringResource(if (isSaved) R.string.tv_remove_favorite else R.string.tv_add_favorite), "tv_bar_save", onClick = onToggleSaved, onUserActivity = onUserActivity)

@@ -411,6 +411,9 @@ class MainActivity : ComponentActivity() {
                                                 val liveFetchedShow by viewModel.liveFetchedShow.collectAsState()
                                                 val continueWatchingList by viewModel.continueWatching.collectAsState()
                                                 val activeItem = screen.item
+                                                // "Nerede kalmıştık"/"Devam et"ten açılan Xtream bölümü: dizinin bölümleri yüklenir
+                                                // (yoksa oynatıcının bölüm paneli boş kalıyordu).
+                                                LaunchedEffect(activeItem.id) { viewModel.loadShowForEpisode(activeItem) }
 
                                                 // Büyük listelerde (40.000+ kanal/bölüm) ana iş parçacığını kilitlememek için arka planda hesaplanır.
                                                 val siblingWorkSize = when (activeItem.type) {

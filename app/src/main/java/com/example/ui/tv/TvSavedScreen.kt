@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyRow
@@ -100,69 +102,77 @@ fun TvSavedScreen(
         }
         Spacer(Modifier.height(6.dp))
         Text(stringResource(R.string.tv_saved_hint), color = TvTheme.TextMuted, fontSize = 13.sp)
-        // "Nerede kalmıştık": yarım kalan son 5 film/dizi; OK kaldığı yerden oynatır.
-        if (resumeShelf.isNotEmpty()) {
-            Spacer(Modifier.height(14.dp))
-            Text(stringResource(R.string.resume_shelf_title), color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-                contentPadding = PaddingValues(top = 10.dp, bottom = 4.dp),
-                modifier = Modifier.testTag("tv_resume_shelf")
-            ) {
-                // Anahtar kaydın kendi numarası: aynı itemId iki kayıtta olabilir (liste yenilenince eşleştirme), çakışma çökertir.
-                lazyItems(resumeShelf, key = { it.id }) { cw ->
-                    val longFired = remember { BooleanArray(1) }
-                    val play = { onPlayItem(com.example.continueWatchingItem(cw)) }
-                    TvPosterCard(
-                        title = cw.itemName,
-                        posterUrl = cw.itemLogo,
-                        onClick = play, // dokunma
-                        subtitle = com.example.util.ResumeShelf.minutesLeft(cw)?.let { stringResource(R.string.resume_minutes_left, it) },
-                        tag = "tv_resume_${cw.itemId}",
-                        // OK: kaldığı yerden oynat. OK'e basılı tut: şeritten kaldır (izleme kaydı ve kaldığı yer silinmez).
-                        focusRequester = if (cw.id == resumeShelf.firstOrNull()?.id) shelfFirstFocus else null,
-                        modifier = Modifier.width(104.dp).tvOkLongPress(longFired, onClick = play) {
-                            removeTarget = cw.itemName to {
-                                viewModel.hideFromResumeShelf(cw)
-                                Toast.makeText(context, resumeRemovedText, Toast.LENGTH_SHORT).show()
+        // Şerit ve kayıtlı liste TEK kaydırılan ızgarada: eskiden şerit sabit duruyor, altındaki liste kalan dar
+        // alanda kayıyordu; ilk satırın posterleri şeridin altında kalıp yalnızca adları görünüyordu (kesik görünüm).
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(6),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth().testTag("tv_saved_grid")
+        ) {
+            // "Nerede kalmıştık": yarım kalan son 5 film/dizi; OK kaldığı yerden oynatır.
+            if (resumeShelf.isNotEmpty()) {
+                item(key = "resume_shelf", span = { GridItemSpan(maxLineSpan) }) {
+                    Column {
+                        Text(stringResource(R.string.resume_shelf_title), color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(18.dp),
+                            contentPadding = PaddingValues(top = 10.dp, bottom = 4.dp),
+                            modifier = Modifier.testTag("tv_resume_shelf")
+                        ) {
+                            lazyItems(resumeShelf, key = { it.id }) { cw ->
+                                val longFired = remember { BooleanArray(1) }
+                                val play = { onPlayItem(com.example.continueWatchingItem(cw)) }
+                                TvPosterCard(
+                                    title = cw.itemName,
+                                    posterUrl = cw.itemLogo,
+                                    onClick = play, // dokunma
+                                    subtitle = com.example.util.ResumeShelf.minutesLeft(cw)?.let { stringResource(R.string.resume_minutes_left, it) },
+                                    tag = "tv_resume_${cw.itemId}",
+                                    // OK: kaldığı yerden oynat. OK'e basılı tut: şeritten kaldır (izleme kaydı ve kaldığı yer silinmez).
+                                    focusRequester = if (cw.id == resumeShelf.firstOrNull()?.id) shelfFirstFocus else null,
+                                    modifier = Modifier.width(104.dp).tvOkLongPress(longFired, onClick = play) {
+                                        removeTarget = cw.itemName to {
+                                            viewModel.hideFromResumeShelf(cw)
+                                            Toast.makeText(context, resumeRemovedText, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
                             }
                         }
-                    )
-                }
-            }
-        }
-        Box(Modifier.weight(1f)) {
-            if (shown.isEmpty()) {
-                Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.watchlist_empty_title), color = TvTheme.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-                }
-            }
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(6),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(shown, key = { "${it.type}_${it.playlistId}_${it.id}" }) { item ->
-                    val longFired = remember { BooleanArray(1) }
-                    val open = {
-                        if (item.type == "LIVE" || item.type == "LIVE_TV" || item.type == "RADIO") onPlayItem(item) else viewModel.selectItem(item)
                     }
-                    TvPosterCard(
-                        title = item.cleanedName.ifBlank { item.name },
-                        posterUrl = item.logoUrl,
-                        onClick = open, // dokunma
-                        tag = "tv_saved_${item.id}",
-                        focusRequester = if (item === shown.firstOrNull()) gridFirstFocus else null,
-                        modifier = Modifier.tvOkLongPress(longFired, onClick = open) {
-                            removeTarget = (item.cleanedName.ifBlank { item.name }) to {
-                                viewModel.toggleFavorite(item)
-                                Toast.makeText(context, removedText, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    )
                 }
+                // Alttaki liste: kullanıcının kaydettikleri (Kaydet düğmesi ya da oyunda "Listeme ekle").
+                item(key = "saved_title", span = { GridItemSpan(maxLineSpan) }) {
+                    Text(stringResource(R.string.profile_menu_my_list), color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            if (shown.isEmpty()) {
+                item(key = "saved_empty", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.watchlist_empty_title), color = TvTheme.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+            items(shown, key = { "${it.type}_${it.playlistId}_${it.id}" }) { item ->
+                val longFired = remember { BooleanArray(1) }
+                val open = {
+                    if (item.type == "LIVE" || item.type == "LIVE_TV" || item.type == "RADIO") onPlayItem(item) else viewModel.selectItem(item)
+                }
+                TvPosterCard(
+                    title = item.cleanedName.ifBlank { item.name },
+                    posterUrl = item.logoUrl,
+                    onClick = open, // dokunma
+                    tag = "tv_saved_${item.id}",
+                    focusRequester = if (item === shown.firstOrNull()) gridFirstFocus else null,
+                    modifier = Modifier.tvOkLongPress(longFired, onClick = open) {
+                        removeTarget = (item.cleanedName.ifBlank { item.name }) to {
+                            viewModel.toggleFavorite(item)
+                            Toast.makeText(context, removedText, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
             }
         }
     }

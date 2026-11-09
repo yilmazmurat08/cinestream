@@ -801,4 +801,5 @@
     <string name="game_wheel_cancel">Vazgeç</string>
     <string name="resume_removed">Nerede kalmıştık\'tan kaldırıldı</string>
     <string name="tv_remove_from_list">Listeden kaldır</string>
+    <string name="player_episodes_seasons">Bölümler ve Sezonlar</string>
 </resources>

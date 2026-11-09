@@ -802,4 +802,5 @@
     <string name="game_wheel_cancel">Cancel</string>
     <string name="resume_removed">Removed from Where you left off</string>
     <string name="tv_remove_from_list">Remove from list</string>
+    <string name="player_episodes_seasons">Episodes &amp; Seasons</string>
 </resources>
