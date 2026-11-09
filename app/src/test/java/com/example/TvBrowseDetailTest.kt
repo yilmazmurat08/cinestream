@@ -193,4 +193,40 @@ class TvBrowseDetailTest {
         compose.onNodeWithTag("tv_poster_MOVIE_9002").assertIsFocused()
         compose.onNodeWithTag("tv_poster_MOVIE_9001").assertExists()
     }
+
+    /**
+     * Kullanıcı (9 Kasım 2026): kumandayla hızlı gezinirken uygulama kapandı. Kategori listesinde hızla aşağı inip
+     * (seçim oturmadan) Sağ ile ızgaraya, sonra Sol ile geri dönmek: Sol'un hedefi ekran dışına kaymış seçili
+     * kategoriydi.
+     */
+    @Test
+    fun fastNavigation_downManyThenRightLeft_doesNotCrash() {
+        runBlocking {
+            db.iptvDao().insertItems((1..40).flatMap { c ->
+                (1..8).map { movie(20000 + c * 10 + it, "Hızlı Film $c-$it", "Hızlı Kat %02d".format(c)) }
+            })
+        }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val state = TvAppState("MOVIE", "MOVIE", "Hızlı Kat 01", null, null)
+        compose.setContent { TvBrowseScreen(viewModel = vm, type = "MOVIE", state = state) }
+        waitForTag("tv_poster_MOVIE_20011")
+        compose.onNodeWithTag("tv_category_Hızlı Kat 01").assertIsFocused()
+        compose.mainClock.autoAdvance = false
+        @OptIn(ExperimentalTestApi::class)
+        fun quick(key: Key) {
+            compose.onRoot().performKeyInput { pressKey(key) }
+            compose.mainClock.advanceTimeBy(60)
+        }
+        repeat(25) { quick(Key.DirectionDown) }
+        quick(Key.DirectionRight)
+        quick(Key.DirectionLeft)
+        quick(Key.DirectionRight)
+        repeat(6) { quick(Key.DirectionDown) }
+        quick(Key.DirectionLeft)
+        repeat(10) { quick(Key.DirectionUp) }
+        quick(Key.DirectionRight)
+        quick(Key.DirectionLeft)
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+    }
 }

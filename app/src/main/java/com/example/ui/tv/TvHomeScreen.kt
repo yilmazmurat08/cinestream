@@ -139,6 +139,9 @@ fun TvHomeScreen(
     val starFocus = remember { FocusRequester() }
     val searchFocus = remember { FocusRequester() }
     val continueFocus = remember { FocusRequester() } // şeridin ilk kartı
+    // Şerit sağa kaydırılınca ilk kart çizilmez; Aşağı ona yönlendirilirse uygulama kapanırdı. Çiziliyse ona, değilse
+    // en yakın karta gidilir.
+    val firstResumeAttached = remember { BooleanArray(1) }
     var focused by remember { mutableStateOf(initialFocus) }
     var lastCard by remember { mutableStateOf(initialFocus.takeIf { it in TvSection.cards } ?: TvSection.LIVE) }
 
@@ -282,7 +285,7 @@ fun TvHomeScreen(
                             .height(cardHeight)
                             .focusProperties {
                                 up = askFocus
-                                if (resumeShelf.isNotEmpty()) down = continueFocus
+                                if (resumeShelf.isNotEmpty() && firstResumeAttached[0]) down = continueFocus
                             }
                     )
                 }
@@ -303,6 +306,12 @@ fun TvHomeScreen(
                         items(resumeShelf.size, key = { resumeShelf[it].id }) { index ->
                             val cw = resumeShelf[index]
                             val longFired = remember { BooleanArray(1) }
+                            if (index == 0) {
+                                androidx.compose.runtime.DisposableEffect(Unit) {
+                                    firstResumeAttached[0] = true
+                                    onDispose { firstResumeAttached[0] = false }
+                                }
+                            }
                             TvResumeCard(
                                 item = cw,
                                 focusRequester = if (index == 0) continueFocus else null,
@@ -328,7 +337,7 @@ fun TvHomeScreen(
             menuFor = null
             menuScope.launch {
                 kotlinx.coroutines.delay(200)
-                requestFocusWhenReady(if (resumeShelf.isNotEmpty()) continueFocus else cardFocus.getValue(lastCard))
+                requestFocusWhenReady(if (resumeShelf.isNotEmpty() && firstResumeAttached[0]) continueFocus else cardFocus.getValue(lastCard))
             }
         }
         TvItemMenuDialog(

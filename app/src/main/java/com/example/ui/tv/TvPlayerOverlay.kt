@@ -27,7 +27,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -245,6 +247,15 @@ fun TvPlayerOverlay(
     val favoriteSeriesIds by viewModel.favoriteSeriesIds.collectAsState()
     val epg = remember(item.id, positionSec / 30) { if (isLive) viewModel.tvEpgNowNext(item) else null to null }
     var pinCategory by remember { mutableStateOf<String?>(null) }
+    // Film: paneldeki öneriler (detay sayfasındaki "AI Önerileri" ile aynı kaynak: aynı klasör/tür, yetişkin yok) başta,
+    // ardından diğer filmler. Panel açılmadan hazırlanır.
+    val movieRecs by androidx.compose.runtime.produceState<List<IPTVItem>>(emptyList(), item.id) {
+        if (item.type == "MOVIE") {
+            value = runCatching {
+                viewModel.getSimilarItemsFlow(item).first().filter { it.type == "MOVIE" && it.id != item.id }
+            }.getOrDefault(emptyList())
+        }
+    }
 
     // Geri: önce kategori listesi, sonra kanal paneli kapanır (sonra kontroller, sonra çıkış).
     BackHandler(enabled = ui.categoriesOpen) { ui.categoriesOpen = false }
@@ -277,6 +288,10 @@ fun TvPlayerOverlay(
             AnimatedVisibility(ui.panelOpen, enter = fadeIn() + slideInHorizontally { -it }, exit = fadeOut() + slideOutHorizontally { -it }) {
                 val category = ui.panelCategory ?: item.category
                 val list = when {
+                    item.type == "MOVIE" && movieRecs.isNotEmpty() -> remember(movieRecs, vodList) {
+                        val ids = movieRecs.mapTo(HashSet()) { it.id }
+                        (movieRecs + vodList.filter { it.id !in ids }).take(300)
+                    }
                     !isLive -> vodList.take(300)
                     ui.panelCategory == null || ui.panelCategory == item.category -> ring
                     else -> remember(allLive, category) {
@@ -288,8 +303,10 @@ fun TvPlayerOverlay(
                     title = when {
                         isLive -> category.ifBlank { stringResource(R.string.tv_live) }
                         item.type == "SERIES" -> stringResource(R.string.player_episodes_seasons)
+                        item.type == "MOVIE" -> stringResource(R.string.detail_ai_recommendations)
                         else -> stringResource(R.string.player_lists)
                     },
+                    titleIcon = if (item.type == "MOVIE") Icons.Filled.AutoAwesome else null,
                     items = list,
                     playingId = item.id,
                     isLive = isLive,
@@ -469,6 +486,7 @@ private fun TvPlayerCategories(
 private fun TvChannelPanel(
     viewModel: IPTVViewModel,
     title: String,
+    titleIcon: ImageVector? = null,
     items: List<IPTVItem>,
     playingId: Int,
     isLive: Boolean,
@@ -518,8 +536,14 @@ private fun TvChannelPanel(
                 .then(if (isLive) Modifier.pointerInput(Unit) { detectTapGestures { openCategories() } } else Modifier)
                 .testTag("tv_panel_header")
         ) {
-            Text(title, color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 20.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 20.dp)) {
+                if (titleIcon != null) {
+                    Icon(titleIcon, contentDescription = null, tint = TvTheme.Accent, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(title, color = TvTheme.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("tv_panel_title"))
+            }
             if (isLive) {
                 Text(
                     stringResource(if (touchDevice) R.string.tv_panel_tap_hint else R.string.tv_panel_left_hint),
@@ -879,13 +903,18 @@ private fun TvControlBar(
             if (!compact) {
             Spacer(Modifier.weight(1f))
             if (!isLive) TvBarButton(Icons.Filled.Replay, stringResource(R.string.player_start_over), "tv_bar_start_over", onClick = onStartOver, onUserActivity = onUserActivity)
-            TvBarButton(Icons.Filled.FormatListBulleted, stringResource(
+            TvBarButton(
+                if (item.type == "MOVIE") Icons.Filled.AutoAwesome else Icons.Filled.FormatListBulleted,
+                stringResource(
                     when {
                         isLive -> R.string.player_channel_list
                         item.type == "SERIES" -> R.string.player_episodes_seasons
+                        item.type == "MOVIE" -> R.string.detail_ai_recommendations
                         else -> R.string.player_lists
                     }
-                ), "tv_bar_list", onClick = onOpenPanel, onUserActivity = onUserActivity)
+                ),
+                "tv_bar_list", onClick = onOpenPanel, onUserActivity = onUserActivity
+            )
             TvBarButton(Icons.Filled.Subtitles, stringResource(R.string.player_audio_subtitle_desc), "tv_bar_tracks", onClick = onOpenTracks, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.AspectRatio, stringResource(R.string.player_aspect_ratio_desc), "tv_bar_aspect", onClick = onCycleAspect, onUserActivity = onUserActivity)
             if (isLive) TvBarButton(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, stringResource(if (isSaved) R.string.tv_remove_favorite else R.string.tv_add_favorite), "tv_bar_save", onClick = onToggleSaved, onUserActivity = onUserActivity)

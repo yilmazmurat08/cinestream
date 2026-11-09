@@ -261,4 +261,59 @@ class TvResumeAndShelfTest {
         assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText(title), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
         assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText(app.getString(R.string.player_lists)), useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
     }
+
+    @Test
+    fun moviePanelTitle_isAiRecommendations() {
+        TvDevice.overrideForTest = true
+        fun film(n: Int) = IPTVItem(
+            id = 78000 + n, playlistId = 1, name = "Panel Film $n", cleanedName = "Panel Film $n", logoUrl = null,
+            streamUrl = "http://10.255.255.1/movie/${78000 + n}.mp4", category = "Panel Kat", type = "MOVIE"
+        )
+        runBlocking { db.iptvDao().insertItems((1..6).map { film(it) }) }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val ui = com.example.ui.tv.TvPlayerUiState().apply { panelOpen = true }
+        compose.setContent {
+            PlayerScreen(
+                item = film(1), siblingItems = (2..6).map { film(it) }, onBack = {}, onPlayItem = {},
+                onProgressUpdate = { _, _, _ -> }, iptvViewModel = vm, tvMode = true, tvUiState = ui
+            )
+        }
+        advance(1_000)
+        val title = app.getString(R.string.detail_ai_recommendations)
+        assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText(title), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+        assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText(app.getString(R.string.player_lists)), useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
+    }
+
+    /** Şerit sağa kaydırılıp ilk kart çizilmez olunca kartlardan Aşağı uygulamayı kapatmamalı. */
+    @Test
+    fun homeResumeRow_scrolledRight_thenDownFromCards_doesNotCrash() {
+        TvDevice.overrideForTest = true
+        runBlocking {
+            (1..5).forEach { i ->
+                db.iptvDao().insertContinueWatching(
+                    ContinueWatching(
+                        itemId = 8700 + i, itemName = "Şerit Film $i", itemType = "MOVIE", itemLogo = null,
+                        streamUrl = "http://s/r$i.mp4", category = "Film", progressSeconds = 600, totalSeconds = 6000,
+                        lastPlayedAt = 2_000L + i
+                    )
+                )
+            }
+        }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        compose.setContent {
+            com.example.ui.tv.TvHomeScreen(
+                viewModel = vm, initialFocus = com.example.ui.tv.TvSection.LIVE, onFocusChanged = {}, onOpenSection = {},
+                onOpenAssistant = {}, onSearchResult = {}, onPlayContinue = {}
+            )
+        }
+        compose.waitUntil(10_000) { count("tv_home_resume_8705") > 0 }
+        compose.waitForIdle()
+        press(Key.DirectionDown)
+        repeat(4) { press(Key.DirectionRight) }
+        compose.onNodeWithTag("tv_home_resume_8701").assertIsFocused()
+        press(Key.DirectionUp)
+        press(Key.DirectionDown)
+        press(Key.DirectionUp)
+        press(Key.DirectionDown)
+    }
 }

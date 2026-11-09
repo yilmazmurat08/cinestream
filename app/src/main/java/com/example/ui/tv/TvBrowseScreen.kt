@@ -31,6 +31,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -107,6 +113,10 @@ fun TvBrowseScreen(
     var detailWasOpen by remember { mutableStateOf(false) }
     var restoringFocus by remember { mutableStateOf(false) }
     val focusedKey = remember { arrayOfNulls<String>(1) }
+    // Şu an çizili (ekranda ya da hemen kenarında) kategori satırları ve posterler. Kaydırılıp çizilmeyen bir satıra
+    // odak yönlendirilirse Compose "FocusRequester is not initialized" ile uygulamayı kapatıyordu (kumandayla hızlı
+    // gezinirken: listede hızla inip Sağ, sonra Sol). Yönlendirme yalnızca çizili hedefe yapılır.
+    val attached = remember(type) { HashSet<String>() }
     fun categoryRequester(key: String) = categoryFocus.getOrPut(key) { FocusRequester() }
     fun posterRequester(key: String) = posterFocus.getOrPut(key) { FocusRequester() }
 
@@ -218,10 +228,9 @@ fun TvBrowseScreen(
         }
     }
 
-    // Kategori satırında Sağ: son odaklanan poster, yoksa ilk poster (en yakın satır değil). Hedef burada
-    // (kompozisyonda) hesaplanır; liste içeriği ve odak özellikleri içinde değişken liste okunmaz.
-    val rightTargetKey = lastPosterKey?.takeIf { k -> posters.any { it.key == k } } ?: posters.firstOrNull()?.key
-    val rightTarget = remember(rightTargetKey) { rightTargetKey?.let { posterRequester(it) } }
+    // Kategori satırında Sağ: son odaklanan poster, yoksa ilk poster (en yakın satır değil). Adaylar burada
+    // (kompozisyonda) hesaplanır; odak özellikleri içinde değişken liste okunmaz, yalnızca çizili mi diye bakılır.
+    val rightCandidates = listOfNotNull(lastPosterKey?.takeIf { k -> posters.any { it.key == k } }, posters.firstOrNull()?.key)
 
     Row(
         modifier = modifier
@@ -253,6 +262,10 @@ fun TvBrowseScreen(
             } else {
                 items(list, key = { it.key.ifEmpty { "__empty" } }) { category ->
                     val selected = category.key == selectedKey
+                    DisposableEffect(category.key) {
+                        attached += "cat:${category.key}"
+                        onDispose { attached -= "cat:${category.key}" }
+                    }
                     TvGlassButton(
                         onClick = { select(category, focusGrid = true) },
                         shape = TvTheme.RowShape,
@@ -270,7 +283,12 @@ fun TvBrowseScreen(
                             .fillMaxWidth()
                             .height(46.dp)
                             // Sağ: ızgarada son odaklanan postere, yoksa ilk postere (en yakın satıra değil).
-                            .focusProperties { if (rightTarget != null && selected) right = rightTarget }
+                            .focusProperties {
+                                if (selected) {
+                                    val target = rightCandidates.firstOrNull { it in attached }
+                                    if (target != null) right = posterRequester(target)
+                                }
+                            }
                             .testTag("tv_category_${category.key}")
                     ) { focused ->
                         // Telefondaki klasör kartlarıyla aynı tür görseli, satırın arkasında koyulaştırılmış (bkz. CategoryArt).
@@ -345,7 +363,10 @@ fun TvBrowseScreen(
                 modifier = Modifier.fillMaxSize().testTag("tv_poster_grid")
             ) {
                 itemsIndexed(posters, key = { _, p -> p.key }) { index, poster ->
-                    val leftTarget = category?.let { categoryRequester(it.key) }
+                    DisposableEffect(poster.key) {
+                        attached += poster.key
+                        onDispose { attached -= poster.key }
+                    }
                     TvPosterCard(
                         title = poster.title,
                         posterUrl = poster.posterUrl,
@@ -362,9 +383,27 @@ fun TvBrowseScreen(
                             if (show != null) viewModel.openCatalogShow(show) else viewModel.selectItem(poster.item)
                         },
                         tag = "tv_poster_${poster.key}",
-                        modifier = Modifier.focusProperties {
-                            if (index % GRID_COLUMNS == 0 && leftTarget != null) left = leftTarget
-                        }
+                        modifier = Modifier
+                            .onPreviewKeyEvent { event ->
+                                // İlk sütundan Sol: seçili kategori listede kaydırılıp çizilmiyorsa önce listeyi ona kaydır,
+                                // sonra odağı ver (doğrudan yönlendirme çökertiyordu).
+                                val key = category?.key
+                                if (event.key != Key.DirectionLeft || event.type != KeyEventType.KeyDown ||
+                                    index % GRID_COLUMNS != 0 || key == null || "cat:$key" in attached
+                                ) {
+                                    return@onPreviewKeyEvent false
+                                }
+                                scope.launch {
+                                    val listIndex = categories?.indexOfFirst { it.key == key } ?: -1
+                                    if (listIndex >= 0) listState.scrollToItem((listIndex + 1 - 3).coerceAtLeast(0))
+                                    requestFocusWhenReady(categoryRequester(key))
+                                }
+                                true
+                            }
+                            .focusProperties {
+                                val key = category?.key
+                                if (index % GRID_COLUMNS == 0 && key != null && "cat:$key" in attached) left = categoryRequester(key)
+                            }
                     )
                 }
             }
