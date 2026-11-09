@@ -61,6 +61,8 @@ fun SearchPopupDialog(
     ) {
         // Alttan açılan panel: üstte tutma çubuğu, tam genişlikte sade arama alanı, nötr gri tonlar.
         // Panelin üstündeki karartılmış alana dokununca kapanır; TV'de Geri tuşuyla.
+        // Panel alt bar gibi yarı saydam; arkadaki ekran bulanıklaşır (Android 12+).
+        val blurred = rememberDialogBackdropBlur()
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -72,7 +74,9 @@ fun SearchPopupDialog(
             contentAlignment = Alignment.BottomCenter
         ) {
             SearchSheet(
-                searchQuery, onQueryChange, onSearchSubmit, onAISearchClick, isAILoading, searchResults, onItemClick, onDismiss
+                searchQuery, onQueryChange, onSearchSubmit, onAISearchClick, isAILoading, searchResults, onItemClick, onDismiss,
+                color = frostedPanelColor(blurred),
+                border = androidx.compose.foundation.BorderStroke(1.dp, FrostedPanelBorder)
             )
         }
     }
@@ -88,12 +92,15 @@ internal fun SearchSheet(
     isAILoading: Boolean,
     searchResults: List<IPTVItem>,
     onItemClick: (IPTVItem) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    color: Color = SearchSheetColor,
+    border: androidx.compose.foundation.BorderStroke? = null
 ) {
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
     Surface(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        color = SearchSheetColor,
+        color = color,
+        border = border,
         modifier = Modifier
             // Yatayda (TV, tablet) panel ortada ve sınırlı genişlikte; telefonda tam genişlik.
             .then(if (layout.isLandscape) Modifier.widthIn(max = 640.dp) else Modifier)

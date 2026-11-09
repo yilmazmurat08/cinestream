@@ -87,6 +87,11 @@ fun TvApp(
                             val channel = viewModel.tvStartChannel()
                             if (channel != null) onPlayItem(channel) else destination = TvSection.LIVE
                         }
+                    } else if ((section == TvSection.GAMES || section == TvSection.SPORTS) &&
+                        !viewModel.isProUser.value && !com.example.BuildConfig.PREVIEW_UNLOCK_PRO
+                    ) {
+                        // Oyunlar ve Spor PRO: ücretsizde PRO ekranı açılır.
+                        viewModel.openPaywall()
                     } else {
                         destination = section
                     }
@@ -112,6 +117,12 @@ fun TvApp(
             TvSection.MOVIE -> TvBrowseScreen(viewModel = viewModel, type = "MOVIE", state = state)
             TvSection.SERIES -> TvBrowseScreen(viewModel = viewModel, type = "SERIES", state = state)
             TvSection.SAVED -> TvSavedScreen(viewModel = viewModel, onPlayItem = onPlayItem)
+            TvSection.GAMES -> com.example.ui.features.games.GamesHost(
+                viewModel = viewModel,
+                tvMode = true,
+                onGoSeriesFolders = { destination = TvSection.SERIES }
+            )
+            TvSection.SPORTS -> com.example.ui.features.SportsHost(viewModel = viewModel, onPlayItem = onPlayItem, tvMode = true)
             else -> TvSettingsScreen(viewModel = viewModel)
         }
 

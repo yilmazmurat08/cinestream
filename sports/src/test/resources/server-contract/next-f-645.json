@@ -1,0 +1,59 @@
+{
+ "leagues": [
+  {
+   "id": "f-2",
+   "sport": "football",
+   "name": "UEFA Champions League",
+   "country": {
+    "code": "Europe",
+    "name": "Avrupa"
+   },
+   "major": true,
+   "priority": 2
+  }
+ ],
+ "teams": [
+  {
+   "id": "f-40",
+   "name": "Liverpool",
+   "short": "LIV",
+   "league": "f-2",
+   "leagueName": "UEFA Champions League",
+   "sport": "football",
+   "colors": {
+    "primary": "#C8102E",
+    "secondary": "#F6EB61",
+    "pattern": "SOLID"
+   }
+  },
+  {
+   "id": "f-645",
+   "name": "Galatasaray",
+   "short": "GAL",
+   "league": "f-2",
+   "leagueName": "UEFA Champions League",
+   "sport": "football",
+   "colors": {
+    "primary": "#FDB913",
+    "secondary": "#A90432",
+    "pattern": "HALVES"
+   }
+  }
+ ],
+ "matches": [
+  {
+   "id": "f-2001",
+   "league": "f-2",
+   "home": "f-40",
+   "away": "f-645",
+   "kickoff": "2026-10-13T16:45:00Z",
+   "status": "SCHEDULED",
+   "minute": null,
+   "period": null,
+   "score": null,
+   "broadcasts": [],
+   "round": "4. Hafta",
+   "venue": null
+  }
+ ]
+}

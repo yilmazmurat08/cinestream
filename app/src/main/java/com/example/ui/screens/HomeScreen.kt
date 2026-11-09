@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -258,6 +259,48 @@ fun HomeScreen(
         }
     }
 
+    // Yeni alt bar: profil menüsü ve profil düzenleme (Ayarlar'daki ile aynı pencere).
+    var isProfileMenuOpen by remember { mutableStateOf(false) }
+    var isProfileEditOpen by remember { mutableStateOf(false) }
+    val homeUserProfile by viewModel.userProfile.collectAsState()
+    val homeUserName by viewModel.userName.collectAsState()
+    val homeUserEmail by viewModel.userEmail.collectAsState()
+    val homeUserPhotoUrl by viewModel.userPhotoUrl.collectAsState()
+    val profilePhotoUrl = homeUserProfile?.photoUrl ?: homeUserPhotoUrl
+    val profileDisplayName = homeUserProfile?.displayName ?: homeUserName ?: stringResource(R.string.profile_menu_guest)
+
+    if (isProfileMenuOpen) {
+        com.example.ui.components.FrostedProfileMenu(
+            displayName = profileDisplayName,
+            photoUrl = profilePhotoUrl,
+            onDismiss = { isProfileMenuOpen = false },
+            onSettings = { isProfileMenuOpen = false; viewModel.setSelectedTypeFilter("SETTINGS") },
+            onProfile = { isProfileMenuOpen = false; isProfileEditOpen = true },
+            // Oyunlar ve Spor PRO: ücretsizde PRO ekranı açılır (önizleme sürümünde satın almadan açık).
+            onGames = {
+                isProfileMenuOpen = false
+                if (isProUser || com.example.BuildConfig.PREVIEW_UNLOCK_PRO) viewModel.setSelectedTypeFilter("GAMES") else viewModel.openPaywall()
+            },
+            onSport = {
+                isProfileMenuOpen = false
+                if (isProUser || com.example.BuildConfig.PREVIEW_UNLOCK_PRO) viewModel.setSelectedTypeFilter("SPORTS") else viewModel.openPaywall()
+            },
+            showGames = com.example.BuildConfig.FEATURE_GAMES,
+            showSport = com.example.BuildConfig.FEATURE_SPORTS,
+            onMyList = { isProfileMenuOpen = false; viewModel.setSelectedTypeFilter("WATCHLIST") }
+        )
+    }
+    if (isProfileEditOpen) {
+        EditProfileDialog(
+            currentName = homeUserProfile?.displayName ?: homeUserName ?: stringResource(R.string.profile_menu_guest),
+            currentEmail = homeUserProfile?.email ?: homeUserEmail ?: "",
+            currentPhotoUrl = profilePhotoUrl,
+            onDismiss = { isProfileEditOpen = false },
+            onSave = { newName, newEmail, newPhoto -> viewModel.updateUserProfile(newName, newEmail, newPhoto) },
+            onLogout = { viewModel.logout() }
+        )
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -267,6 +310,7 @@ fun HomeScreen(
                 isProUser = isProUser,
                 isScrolled = isScrolled,
                 transparent = barOverHero,
+                frosted = com.example.BuildConfig.NEW_BOTTOM_BAR,
                 onLogoClick = { viewModel.setSelectedTypeFilter("ALL") },
                 onProClick = { viewModel.openPaywall() },
                 onSearchClick = { isSearchPopupOpen = true },
@@ -275,6 +319,15 @@ fun HomeScreen(
             )
         },
         bottomBar = {
+            if (com.example.BuildConfig.NEW_BOTTOM_BAR) {
+                com.example.ui.components.FrostedBottomBar(
+                    selectedTypeFilter = selectedTypeFilter,
+                    photoUrl = profilePhotoUrl,
+                    menuOpen = isProfileMenuOpen,
+                    onSelectTab = { viewModel.setSelectedTypeFilter(it) },
+                    onToggleMenu = { isProfileMenuOpen = !isProfileMenuOpen }
+                )
+            } else {
             Surface(
                 color = Color(0xFF141218).copy(alpha = 0.95f),
                 modifier = Modifier
@@ -425,16 +478,33 @@ fun HomeScreen(
                     }
                 }
             }
+            }
         }
     ) { innerPadding ->
         val heroTopInset = innerPadding.calculateTopPadding()
+        // Yeni alt bar içeriğin üstünde yüzer: içerik barın altına kadar uzanır ve kaydırılırken barın arkasında
+        // görünür. Listeler sonda bar yüksekliği kadar boşluk bırakır (LocalFloatingBarInset), son öğe barın altında kalmaz.
+        // Üst bar da buzlu ve içeriğin üstünde yüzer: listeler başta üst bar kadar boşluk bırakır (LocalFloatingTopBarInset).
+        val floatingBarInset = if (com.example.BuildConfig.NEW_BOTTOM_BAR) innerPadding.calculateBottomPadding() else 0.dp
+        // Vitrin en üstteyken afiş barın arkasına uzanır: listeye üst boşluk verilmez (vitrin kendi payını heroTopInset ile alır).
+        val floatingTopBarInset = if (com.example.BuildConfig.NEW_BOTTOM_BAR && !heroOnTop) innerPadding.calculateTopPadding() else 0.dp
+        CompositionLocalProvider(
+            com.example.ui.components.LocalFloatingBarInset provides floatingBarInset,
+            com.example.ui.components.LocalFloatingTopBarInset provides floatingTopBarInset
+        ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Vitrin varken içerik üst barın altından başlar (afiş barın arkasında görünür).
                 .padding(
-                    top = if (heroOnTop) 0.dp else innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding()
+                    if (com.example.BuildConfig.NEW_BOTTOM_BAR) {
+                        PaddingValues(0.dp)
+                    } else {
+                        // Vitrin varken içerik üst barın altından başlar (afiş barın arkasında görünür).
+                        PaddingValues(
+                            top = if (heroOnTop) 0.dp else innerPadding.calculateTopPadding(),
+                            bottom = innerPadding.calculateBottomPadding()
+                        )
+                    }
                 )
                 .background(backgroundBrush)
                 .testTag("home_screen")
@@ -452,7 +522,9 @@ fun HomeScreen(
                     PullToRefreshDefaults.Indicator(
                         state = pullState,
                         isRefreshing = isLoading,
-                        modifier = Modifier.align(Alignment.TopCenter),
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = com.example.ui.components.LocalFloatingTopBarInset.current),
                         color = CineOrange,
                         containerColor = Color(0xFF1E1E24)
                     )
@@ -462,7 +534,10 @@ fun HomeScreen(
                     LazyColumn(
                         state = homeLazyListState,
                         verticalArrangement = Arrangement.Top,
-                        contentPadding = PaddingValues(bottom = 24.dp),
+                        contentPadding = PaddingValues(
+                            top = com.example.ui.components.LocalFloatingTopBarInset.current,
+                            bottom = 24.dp + com.example.ui.components.LocalFloatingBarInset.current
+                        ),
                         modifier = Modifier
                             .fillMaxSize()
                     ) {
@@ -1328,6 +1403,7 @@ fun HomeScreen(
                             }
                             LazyColumn(
                                 modifier = Modifier
+                                    .padding(top = com.example.ui.components.LocalFloatingTopBarInset.current)
                                     .fillMaxWidth()
                                     .height(600.dp)
                             ) {
@@ -1415,7 +1491,11 @@ fun HomeScreen(
                                 }
                             }
                         } else {
-                            Column(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(top = com.example.ui.components.LocalFloatingTopBarInset.current)
+                                    .fillMaxWidth()
+                            ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -1463,6 +1543,10 @@ fun HomeScreen(
                 } else if (selectedTypeFilter == "RADIO") {
                     val chunkedRadio = remember(radioChannels) { radioChannels.chunked(2) }
                     LazyColumn(
+                        contentPadding = PaddingValues(
+                            top = com.example.ui.components.LocalFloatingTopBarInset.current,
+                            bottom = com.example.ui.components.LocalFloatingBarInset.current
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
@@ -1527,6 +1611,22 @@ fun HomeScreen(
                     )
                 } else if (selectedTypeFilter == "SETTINGS") {
                     SettingsScreen(viewModel = viewModel)
+                } else if (selectedTypeFilter == "GAMES") {
+                    com.example.ui.features.games.GamesHost(
+                        viewModel = viewModel,
+                        tvMode = false,
+                        onGoSeriesFolders = { viewModel.setSelectedTypeFilter("SERIES") }
+                    )
+                } else if (selectedTypeFilter == "SPORTS") {
+                    com.example.ui.features.SportsHost(
+                        viewModel = viewModel,
+                        onPlayItem = onPlayItem,
+                        tvMode = false,
+                        modifier = Modifier.padding(
+                            top = com.example.ui.components.LocalFloatingTopBarInset.current,
+                            bottom = com.example.ui.components.LocalFloatingBarInset.current
+                        )
+                    )
                 }
 
                 // Bottom padding for edge-to-edge comfort (Requirement 2: Universal Responsive UI)
@@ -1560,6 +1660,7 @@ fun HomeScreen(
                 viewModel.updateSearchQuery("")
             }
         )
+    }
     }
 }
 }
@@ -2989,7 +3090,9 @@ fun CineStreamTopBar(
     onChatClick: () -> Unit = {},
     onCalendarClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    transparent: Boolean = false
+    transparent: Boolean = false,
+    // Yeni tasarım: alt bar gibi hafif buzlu (yarı saydam, az mor); altta mor çizgi yerine ince açık çizgi.
+    frosted: Boolean = false
 ) {
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
     val isNarrowScreen = layout.screenWidthDp < 380
@@ -2997,6 +3100,7 @@ fun CineStreamTopBar(
     val barColor by androidx.compose.animation.animateColorAsState(
         when {
             transparent -> Color.Transparent
+            frosted -> com.example.ui.components.FrostedTopBarColor
             isScrolled -> MidPurpleBg.copy(alpha = 0.98f)
             else -> DeepPurpleBg.copy(alpha = 0.94f)
         },
@@ -3005,8 +3109,21 @@ fun CineStreamTopBar(
 
     Surface(
         color = barColor,
-        border = if (transparent) null else BorderStroke(0.5.dp, if (isScrolled) AccentNeonPurple.copy(alpha = 0.2f) else AccentNeonPurple.copy(alpha = 0.08f)),
-        modifier = modifier.fillMaxWidth()
+        border = if (transparent || frosted) null else BorderStroke(0.5.dp, if (isScrolled) AccentNeonPurple.copy(alpha = 0.2f) else AccentNeonPurple.copy(alpha = 0.08f)),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (frosted && !transparent) {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        val y = size.height - 0.5.dp.toPx()
+                        drawLine(com.example.ui.components.FrostedTopBarLine, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                    }
+                } else {
+                    Modifier
+                }
+            )
+            .testTag("home_top_bar")
     ) {
         Column(
             modifier = Modifier

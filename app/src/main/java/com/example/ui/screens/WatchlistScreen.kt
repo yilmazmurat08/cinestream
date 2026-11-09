@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
+import com.example.ui.components.LocalFloatingBarInset
+import com.example.ui.components.LocalFloatingTopBarInset
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.integerResource
 import androidx.compose.ui.res.dimensionResource
@@ -97,6 +99,8 @@ fun WatchlistScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            // Başlık sabit kalır; sayfa üst barın altından başlar.
+            .padding(top = LocalFloatingTopBarInset.current)
             .padding(horizontal = adaptiveLayout.screenPadding)
             .testTag("watchlist_screen_container")
     ) {
@@ -329,7 +333,7 @@ fun WatchlistScreen(
                 columns = GridCells.Fixed(adaptiveLayout.gridColumns),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(bottom = 120.dp),
+                contentPadding = PaddingValues(bottom = maxOf(120.dp, 24.dp + LocalFloatingBarInset.current)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)

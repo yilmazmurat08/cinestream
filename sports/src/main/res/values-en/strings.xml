@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sports_title">Sports</string>
+    <string name="sports_sport_football">Football</string>
+    <string name="sports_sport_basketball">Basketball</string>
+    <string name="sports_sport_volleyball">Volleyball</string>
+    <string name="sports_sport_tennis">Tennis</string>
+
+    <string name="sports_search">Search</string>
+    <string name="sports_search_hint">Search team or league</string>
+    <string name="sports_close_search">Close search</string>
+    <string name="sports_filters">Filters</string>
+    <string name="sports_more">More options</string>
+    <string name="sports_close">Close</string>
+    <string name="sports_back">Back</string>
+
+    <string name="sports_yesterday">Yesterday</string>
+    <string name="sports_today">Today</string>
+    <string name="sports_tomorrow">Tomorrow</string>
+    <string name="sports_prev_day">Previous day</string>
+    <string name="sports_next_day">Next day</string>
+
+    <string name="sports_live_only">Live only</string>
+    <string name="sports_my_channels_only">Only my channels</string>
+    <string name="sports_my_channels_only_desc">Matches on channels in your IPTV list</string>
+    <string name="sports_leagues">LEAGUES</string>
+    <string name="sports_major_leagues">Major leagues</string>
+    <string name="sports_all_matches">All matches</string>
+    <string name="sports_pick_leagues">Or tick the leagues you want to see:</string>
+
+    <string name="sports_notification_history">Notification history</string>
+    <string name="sports_followed_teams">Teams I follow</string>
+    <string name="sports_customize">Customise sports section</string>
+
+    <string name="sports_live">LIVE</string>
+    <string name="sports_half_time">HT</string>
+    <string name="sports_full_time">FT</string>
+    <string name="sports_postponed">PP</string>
+    <string name="sports_minute">%1$d\'</string>
+    <string name="sports_quarter">Q%1$d</string>
+    <string name="sports_quarter_short">Q%1$d</string>
+    <string name="sports_set">Set %1$d</string>
+    <string name="sports_not_started">Not started</string>
+    <string name="sports_finished">Full time</string>
+    <string name="sports_half_time_long">Half time</string>
+
+    <string name="sports_watch">Watch</string>
+    <string name="sports_watch_on">Watch · %1$s</string>
+    <string name="sports_backups">+%1$d more</string>
+    <string name="sports_followed_section">Teams you follow</string>
+    <string name="sports_no_matches">No matches on this day</string>
+    <string name="sports_no_matches_filtered">No matches in the selected leagues</string>
+    <string name="sports_show_all">Show all matches (%1$d)</string>
+    <string name="sports_no_results">No results for “%1$s”</string>
+    <string name="sports_load_error">Couldn\'t load matches</string>
+    <string name="sports_retry">Try again</string>
+
+    <string name="sports_tab_summary">Summary</string>
+    <string name="sports_tab_stats">Stats</string>
+    <string name="sports_tab_table">Table</string>
+    <string name="sports_tab_broadcast">Broadcast</string>
+    <string name="sports_no_events">No events yet</string>
+    <string name="sports_no_stats">No stats for this match</string>
+    <string name="sports_no_table">No table for this competition</string>
+    <string name="sports_own_goal">o.g.</string>
+    <string name="sports_penalty">pen.</string>
+    <string name="sports_sub_out">Off: %1$s</string>
+
+    <string name="sports_stat_possession">Possession</string>
+    <string name="sports_stat_shots">Shots</string>
+    <string name="sports_stat_shots_on_target">Shots on target</string>
+    <string name="sports_stat_corners">Corners</string>
+    <string name="sports_stat_fouls">Fouls</string>
+    <string name="sports_stat_offsides">Offsides</string>
+
+    <string name="sports_table_team">Team</string>
+    <string name="sports_table_played">P</string>
+    <string name="sports_table_won">W</string>
+    <string name="sports_table_drawn">D</string>
+    <string name="sports_table_lost">L</string>
+    <string name="sports_table_gd">GD</string>
+    <string name="sports_table_points">Pts</string>
+
+    <string name="sports_in_your_list">In your list: %1$s</string>
+    <string name="sports_not_in_list">Not in your list</string>
+    <string name="sports_assign_channel">Assign channel</string>
+    <string name="sports_change_channel">Change</string>
+    <string name="sports_assign_text">Pick a channel from your list for “%1$s” matches. Your choice is remembered for future matches.</string>
+    <string name="sports_assign_search">Search your list</string>
+    <string name="sports_suggested">Similar</string>
+    <string name="sports_remove_mapping">Remove mapping</string>
+    <string name="sports_manual_mapping">Your mapping</string>
+    <string name="sports_epg_verified">Also in the TV guide</string>
+    <string name="sports_epg_found">Found in the TV guide</string>
+    <string name="sports_no_broadcast">No broadcast info</string>
+    <string name="sports_similar">Similar: %1$s</string>
+    <string name="sports_no_channels">No live channels in your list</string>
+    <string name="sports_disclaimer">CineStream provides no streams; it only opens channels in your own IPTV list.</string>
+
+    <string name="sports_remind">Remind me</string>
+    <string name="sports_reminder_on">Reminder set</string>
+    <string name="sports_reminder_minutes">%1$d min before</string>
+    <string name="sports_follow">Follow</string>
+    <string name="sports_unfollow">Unfollow</string>
+    <string name="sports_team_search_hint">Search teams to follow</string>
+    <string name="sports_no_followed">You don\'t follow any team yet. Search above and tap the star.</string>
+    <string name="sports_next_match">Next: %1$s</string>
+    <string name="sports_no_next_match">No upcoming match</string>
+    <string name="sports_live_now">Live now · %1$s</string>
+    <string name="sports_clear">Clear</string>
+    <string name="sports_no_notifications">No notifications yet. Match reminders are listed here.</string>
+
+    <string name="sports_customize_sports">Sports shown</string>
+    <string name="sports_customize_sports_desc">Reorder with the arrows; at least one sport stays on.</string>
+    <string name="sports_customize_default_leagues">League view</string>
+    <string name="sports_customize_notifications">Notifications</string>
+    <string name="sports_notify_reminder">Match reminder</string>
+    <string name="sports_notify_kickoff">Kick-off</string>
+    <string name="sports_notify_goals">Goals</string>
+    <string name="sports_notify_full_time">Full time</string>
+    <string name="sports_notify_live_note">Goal and result alerts need the live data service.</string>
+    <string name="sports_reminder_time">Reminder time</string>
+    <string name="sports_customize_channels">Channels</string>
+    <string name="sports_show_my_channel">Show my channel on match cards</string>
+    <string name="sports_mappings_count">Manual mappings: %1$d</string>
+    <string name="sports_reset">Reset</string>
+    <string name="sports_move_up">Move up</string>
+    <string name="sports_move_down">Move down</string>
+
+    <string name="sports_details">Details</string>
+    <string name="sports_tv_ok_watch">OK: Watch</string>
+    <string name="sports_tv_hint_follow">Long press: follow</string>
+
+    <string name="sports_channel_name">Match reminders</string>
+    <string name="sports_reminder_body">Starts in %1$d minutes · %2$s</string>
+    <string name="sports_kickoff_title">Kick-off</string>
+    <string name="sports_goal_title">GOAL!</string>
+    <string name="sports_full_time_title">Full time</string>
+</resources>
