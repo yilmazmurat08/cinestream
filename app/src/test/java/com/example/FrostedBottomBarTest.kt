@@ -114,9 +114,15 @@ class FrostedBottomBarTest {
         assertTrue(vm.showPaywallDialog.value)
         compose.runOnUiThread { vm.closePaywall() }
         click("bottom_nav_profile_menu")
-        click("menu_sport")
-        assertTrue(vm.showPaywallDialog.value)
-        compose.runOnUiThread { vm.closePaywall() }
+        if (BuildConfig.FEATURE_SPORTS) {
+            click("menu_sport")
+            assertTrue(vm.showPaywallDialog.value)
+            compose.runOnUiThread { vm.closePaywall() }
+        } else {
+            // Spor anahtarı kapalıyken menüde görünmez.
+            assertTrue(!exists("menu_sport"))
+            click("bottom_nav_profile_menu")
+        }
         assertEquals("WATCHLIST", vm.selectedTypeFilter.value)
         assertTrue(!exists("frosted_profile_menu"))
 
