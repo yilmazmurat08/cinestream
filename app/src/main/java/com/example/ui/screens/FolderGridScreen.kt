@@ -788,6 +788,16 @@ fun FolderDetailLayout(
         val realEpgPrograms by viewModel.realEpgPrograms.collectAsState()
         val reminderKeys by viewModel.reminderKeys.collectAsState()
         var openEpgChannelId by androidx.compose.runtime.saveable.rememberSaveable(group.id) { mutableStateOf<Int?>(null) }
+        // Catch-up (deneme, PRO): açık EPG'nin kanalı için arşivdeki geçmiş programlar.
+        val isProForCatchUp by viewModel.isProUser.collectAsState()
+        val catchUpOn = com.example.util.LabFeatures.proFeature(isProForCatchUp)
+        val openCatchUp by androidx.compose.runtime.produceState(emptyList<com.example.util.CatchUpProgram>() to -1, openEpgChannelId, catchUpOn) {
+            val id = openEpgChannelId
+            value = emptyList<com.example.util.CatchUpProgram>() to -1
+            if (!catchUpOn || id == null) return@produceState
+            val channel = group.items.firstOrNull { it.id == id } ?: return@produceState
+            value = viewModel.catchUpPrograms(channel) to id
+        }
         var epgMinute by remember { mutableStateOf(System.currentTimeMillis() / 60_000L) }
         LaunchedEffect(Unit) {
             viewModel.refreshReminders()
@@ -978,7 +988,9 @@ fun FolderDetailLayout(
                         epgOpen = openEpgChannelId == item.id,
                         onToggleEpg = { openEpgChannelId = if (openEpgChannelId == item.id) null else item.id },
                         reminderKeys = reminderKeys,
-                        onToggleReminder = { program -> toggleReminder(item, program) }
+                        onToggleReminder = { program -> toggleReminder(item, program) },
+                        catchUp = if (openCatchUp.second == item.id) openCatchUp.first else emptyList(),
+                        onWatchCatchUp = { program -> viewModel.catchUpItem(item, program)?.let(onPlayItem) }
                     )
                 }
             }
@@ -1590,7 +1602,10 @@ fun LiveChannelCard(
     epgOpen: Boolean = false,
     onToggleEpg: () -> Unit = {},
     reminderKeys: Set<String> = emptySet(),
-    onToggleReminder: (com.example.data.model.EPGProgram) -> Unit = {}
+    onToggleReminder: (com.example.data.model.EPGProgram) -> Unit = {},
+    /** Arşivde izlenebilen geçmiş programlar (catch-up); boşsa bölüm görünmez. */
+    catchUp: List<com.example.util.CatchUpProgram> = emptyList(),
+    onWatchCatchUp: (com.example.util.CatchUpProgram) -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -1712,6 +1727,8 @@ fun LiveChannelCard(
                 reminderKeys = reminderKeys,
                 onToggleReminder = onToggleReminder,
                 onWatch = onClick,
+                catchUp = catchUp,
+                onWatchCatchUp = onWatchCatchUp,
                 modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
             )
         }

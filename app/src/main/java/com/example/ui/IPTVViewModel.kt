@@ -684,6 +684,76 @@ class IPTVViewModel(
         }
     }
 
+    /** Ekrandaki Xtream listesinin hesap bilgisi (abonelik bitişi). Yalnızca deneme özellikleri açıkken doldurulur. */
+    private val _xtreamAccount = MutableStateFlow<com.example.util.XtreamAccountInfo?>(null)
+    val xtreamAccount: StateFlow<com.example.util.XtreamAccountInfo?> = _xtreamAccount.asStateFlow()
+
+    /** Hesap bilgisini önce cihazdaki kayıttan gösterir; 12 saatten eskiyse sunucudan yeniler. */
+    fun refreshXtreamAccount(force: Boolean = false) {
+        if (!com.example.BuildConfig.FEATURE_LAB) return
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            val playlist = repository.playlistToRefresh() ?: return@launch
+            val creds = repository.xtreamCredentialsOf(playlist)
+            if (creds == null) {
+                _xtreamAccount.value = null
+                return@launch
+            }
+            val app = getApplication<Application>()
+            val cached = com.example.util.XtreamAccount.load(app, playlist.id)
+            _xtreamAccount.value = cached
+            val now = System.currentTimeMillis()
+            if (!force && cached != null && now - cached.fetchedAt < com.example.util.XtreamAccount.REFRESH_MS) return@launch
+            val fresh = com.example.data.api.XtreamAccountApi.fetch(creds.first, creds.second, creds.third, now) ?: return@launch
+            com.example.util.XtreamAccount.save(app, playlist.id, fresh)
+            _xtreamAccount.value = fresh
+        }
+    }
+
+    // Kesintisiz izleme: aynı kanal için denenen yayın adresleri (döngüye girmesin diye).
+    private var backupChainBase: String? = null
+    private val backupTried = mutableSetOf<String>()
+
+    /**
+     * Açılamayan canlı yayının yedeği (aynı kanalın HD/FHD/yedek sürümü). Yoksa ya da hepsi denendiyse null.
+     * Çağrılan kanal "denendi" sayılır; başka bir kanala geçilince liste sıfırlanır.
+     */
+    suspend fun findBackupStream(failed: IPTVItem): IPTVItem? = withContext(Dispatchers.IO) {
+        if (failed.type != "LIVE") return@withContext null
+        val base = com.example.util.BackupStreams.baseName(failed.cleanedName.ifBlank { failed.name })
+        synchronized(backupTried) {
+            if (base != backupChainBase) {
+                backupChainBase = base
+                backupTried.clear()
+            }
+            backupTried += failed.streamUrl
+        }
+        val token = com.example.util.BackupStreams.searchToken(failed.cleanedName.ifBlank { failed.name }) ?: return@withContext null
+        val pool = try { repository.dao.liveItemsLike("%$token%") } catch (e: Exception) { emptyList() }
+        val tried = synchronized(backupTried) { backupTried.toSet() }
+        com.example.util.BackupStreams.candidates(failed, pool, tried).firstOrNull { !isAdultContent(it) || isAdultContent(failed) }
+    }
+
+    // Catch-up: kanal başına arşiv listesi 10 dk saklanır (EPG her açıldığında sunucuya gidilmesin).
+    private val catchUpCache = java.util.concurrent.ConcurrentHashMap<Int, Pair<Long, List<com.example.util.CatchUpProgram>>>()
+
+    /** Kanalın arşivde izlenebilen geçmiş programları (yalnızca deneme sürümünde; Xtream olmayan kanalda boş). */
+    suspend fun catchUpPrograms(channel: IPTVItem): List<com.example.util.CatchUpProgram> {
+        if (!com.example.util.LabFeatures.enabled) return emptyList()
+        val c = com.example.util.CatchUp.credentialsOf(channel) ?: return emptyList()
+        val now = System.currentTimeMillis()
+        catchUpCache[channel.id]?.let { (at, list) -> if (now - at < 10 * 60_000L) return list }
+        val zone = _xtreamAccount.value?.serverTimezone?.let { java.util.TimeZone.getTimeZone(it) } ?: java.util.TimeZone.getDefault()
+        val list = com.example.data.api.XtreamCatchUpApi.fetch(c, now, zone)
+        catchUpCache[channel.id] = now to list
+        return list
+    }
+
+    /** Arşivdeki programı oynatılacak öğeye çevirir. */
+    fun catchUpItem(channel: IPTVItem, program: com.example.util.CatchUpProgram): IPTVItem? {
+        val c = com.example.util.CatchUp.credentialsOf(channel) ?: return null
+        return com.example.util.CatchUp.itemFor(channel, c, program)
+    }
+
     fun setAutoplayNextEpisode(enabled: Boolean) {
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setAutoplayNextEpisode(enabled)
@@ -1021,6 +1091,7 @@ class IPTVViewModel(
                 _isSwitchingPlaylist.value = false
             }
             repository.ensureSeriesCatalogForActive(getApplication())
+            refreshXtreamAccount()
         }
     }
 
@@ -1705,6 +1776,7 @@ class IPTVViewModel(
                     _isLoading.value = false
                 }
                 loadTMDBDiscoverContent()
+                refreshXtreamAccount()
                 prefetchSeriesCovers()
                 // Eski listeden kalan dizi kataloğu (Xtream kaynağı artık yoksa) açılmayan kartlar göstermesin.
                 repository.dropSeriesCatalogIfNoXtreamSource()
@@ -3286,6 +3358,8 @@ class IPTVViewModel(
 
     // Save Progress Action (Continue Watching)
     fun saveProgress(item: IPTVItem, progressSeconds: Long, totalSeconds: Long) {
+        // Arşivden izlenen program izleme geçmişine yazılmaz (adresi zamana bağlı, sonra açılmaz).
+        if (item.type == com.example.util.CatchUp.TYPE) return
         viewModelScope.launch(coroutineExceptionHandler) {
             repository.saveContinueWatching(item, progressSeconds, totalSeconds)
         }

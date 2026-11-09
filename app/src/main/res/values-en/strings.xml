@@ -721,4 +721,15 @@
     <!-- No web browser on TV (Android TV quality guideline TV-WB) -->
     <string name="tv_open_link_on_phone">Open this address on your phone: %1$s</string>
     <string name="tv_manage_subscription_hint">Manage your subscription in the Google Play app on your phone: Profile → Payments &amp; subscriptions → Subscriptions.</string>
+    <string name="sub_expiry_days">Your subscription ends in %1$d days (%2$s).</string>
+    <string name="sub_expiry_today">Your subscription ends today.</string>
+    <string name="sub_expired">Your subscription has expired (%s).</string>
+    <string name="sub_expiry_hint">Renew with your provider to keep streams running.</string>
+    <string name="sub_expiry_close">Close</string>
+    <string name="playlist_expiry_date">Expires: %s</string>
+    <string name="player_switched_backup">Stream failed, switched to backup: %s</string>
+    <string name="catchup_header">Catch up (%1$d)</string>
+    <string name="catchup_watch">Watch</string>
+    <string name="catchup_today">Today</string>
+    <string name="catchup_yesterday">Yesterday</string>
 </resources>

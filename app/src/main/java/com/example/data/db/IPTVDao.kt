@@ -164,6 +164,10 @@ interface IPTVDao {
     @Query("SELECT * FROM iptv_items WHERE type = :type")
     suspend fun getItemsByTypeDirect(type: String): List<IPTVItem>
 
+    /** Kesintisiz izleme: adında [pattern] geçen canlı kanallar (yedek yayın adayları). */
+    @Query("SELECT * FROM iptv_items WHERE type = 'LIVE' AND (cleanedName LIKE :pattern OR name LIKE :pattern) LIMIT :limit")
+    suspend fun liveItemsLike(pattern: String, limit: Int = 300): List<IPTVItem>
+
     @Transaction
     @Query("SELECT * FROM iptv_items WHERE type = :type ORDER BY id DESC")
     fun getItemsByTypeFlow(type: String): Flow<List<IPTVItem>>

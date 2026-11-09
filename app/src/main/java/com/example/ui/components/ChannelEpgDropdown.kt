@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
@@ -115,9 +116,12 @@ fun ChannelEpgDropdown(
     reminderKeys: Set<String>,
     onToggleReminder: (EPGProgram) -> Unit,
     onWatch: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    catchUp: List<com.example.util.CatchUpProgram> = emptyList(),
+    onWatchCatchUp: (com.example.util.CatchUpProgram) -> Unit = {}
 ) {
     var picked by remember(channelId) { mutableStateOf<Long?>(null) }
+    var catchUpOpen by remember(channelId) { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -134,7 +138,16 @@ fun ChannelEpgDropdown(
             letterSpacing = 2.sp,
             modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 6.dp)
         )
-        Column(
+        if (catchUp.isNotEmpty()) {
+            CatchUpSection(
+                channelId = channelId,
+                programs = catchUp,
+                open = catchUpOpen,
+                onToggle = { catchUpOpen = !catchUpOpen },
+                onWatch = onWatchCatchUp
+            )
+        }
+        if (!catchUpOpen || catchUp.isEmpty()) Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 280.dp)
@@ -240,6 +253,114 @@ fun ChannelEpgDropdown(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Kaçırılan programlar (catch-up): başlığa dokununca açılır; her programda "Baştan izle". */
+@Composable
+private fun CatchUpSection(
+    channelId: Int,
+    programs: List<com.example.util.CatchUpProgram>,
+    open: Boolean,
+    onToggle: () -> Unit,
+    onWatch: (com.example.util.CatchUpProgram) -> Unit
+) {
+    val dayLabel = rememberCatchUpDayLabel()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 6.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(EpgAccent.copy(alpha = if (open) 0.14f else 0.06f))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 10.dp, vertical = 9.dp)
+            .testTag("catchup_toggle_$channelId")
+    ) {
+        Icon(Icons.Filled.History, contentDescription = null, tint = EpgAccentSoft, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            stringResource(R.string.catchup_header, programs.size),
+            color = Color(0xFFF5D0FB),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            Icons.Filled.KeyboardArrowDown, contentDescription = null, tint = Color(0xFFF5D0FB),
+            modifier = Modifier.size(16.dp).rotate(if (open) 180f else 0f)
+        )
+    }
+    if (!open) {
+        Spacer(Modifier.height(4.dp))
+        return
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 280.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        programs.forEach { program ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onWatch(program) }
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .testTag("catchup_program_${channelId}_${program.startMillis}")
+            ) {
+                Column(Modifier.width(52.dp)) {
+                    Text(catchUpClock(program.startMillis), color = Color(0xFFC9C3D3), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(dayLabel(program.startMillis), color = EpgMuted, fontSize = 10.sp, maxLines = 1)
+                }
+                Text(
+                    program.title,
+                    color = Color(0xFFF4F1F8),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                EpgActionChip(
+                    icon = { Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(14.dp)) },
+                    label = stringResource(R.string.catchup_watch),
+                    active = true,
+                    tag = "catchup_watch_${channelId}_${program.startMillis}",
+                    onClick = { onWatch(program) }
+                )
+            }
+        }
+    }
+}
+
+internal fun catchUpClock(millis: Long): String =
+    java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(millis))
+
+/** "Bugün", "Dün" ya da "29.10". */
+@Composable
+internal fun rememberCatchUpDayLabel(): (Long) -> String {
+    val today = stringResource(R.string.catchup_today)
+    val yesterday = stringResource(R.string.catchup_yesterday)
+    return remember(today, yesterday) {
+        { millis ->
+            val day = java.util.Calendar.getInstance()
+            val d = java.util.Calendar.getInstance().apply { timeInMillis = millis }
+            val sameDay = { a: java.util.Calendar, b: java.util.Calendar ->
+                a.get(java.util.Calendar.YEAR) == b.get(java.util.Calendar.YEAR) &&
+                    a.get(java.util.Calendar.DAY_OF_YEAR) == b.get(java.util.Calendar.DAY_OF_YEAR)
+            }
+            when {
+                sameDay(day, d) -> today
+                sameDay(day.apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }, d) -> yesterday
+                else -> java.text.SimpleDateFormat("dd.MM", java.util.Locale.getDefault()).format(java.util.Date(millis))
             }
         }
     }
