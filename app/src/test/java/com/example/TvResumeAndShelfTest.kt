@@ -316,4 +316,45 @@ class TvResumeAndShelfTest {
         press(Key.DirectionUp)
         press(Key.DirectionDown)
     }
+
+    /** Bölüm bitince şeritte o dizinin SIRADAKİ bölümü çıkar; OK onu (sorusuz) açar. */
+    @Test
+    fun homeResumeRow_finishedEpisode_showsUpNext() {
+        TvDevice.overrideForTest = true
+        runBlocking {
+            db.iptvDao().insertItems((1..3).map { e ->
+                IPTVItem(
+                    id = 8600 + e, playlistId = 1, name = "Sonraki Dizi S01E0$e", cleanedName = "Sonraki Dizi S01E0$e", logoUrl = null,
+                    streamUrl = "http://s/se$e.mp4", category = "Dizi", type = "SERIES"
+                )
+            })
+            db.iptvDao().insertContinueWatching(
+                ContinueWatching(
+                    itemId = 8601, itemName = "Sonraki Dizi S01E01", itemType = "SERIES", itemLogo = null,
+                    streamUrl = "http://s/se1.mp4", category = "Dizi", progressSeconds = 2390, totalSeconds = 2400, lastPlayedAt = 5_000L
+                )
+            )
+        }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val resumed = mutableListOf<Pair<ContinueWatching, Boolean>>()
+        compose.setContent {
+            com.example.ui.tv.TvHomeScreen(
+                viewModel = vm, initialFocus = com.example.ui.tv.TvSection.LIVE, onFocusChanged = {}, onOpenSection = {},
+                onOpenAssistant = {}, onSearchResult = {}, onPlayContinue = {},
+                onResume = { cw, startOver -> resumed += cw to startOver }
+            )
+        }
+        compose.waitUntil(10_000) { count("tv_home_resume_8602") > 0 }
+        compose.waitForIdle()
+        assertEquals(0, count("tv_home_resume_8601"))
+        val upNext = app.getString(R.string.resume_up_next)
+        assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText(upNext, substring = true), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+        press(Key.DirectionDown)
+        compose.onNodeWithTag("tv_home_resume_8602").assertIsFocused()
+        sendOk(0, down = true)
+        sendOk(0, down = false)
+        assertEquals(8602, resumed.single().first.itemId)
+        assertEquals("http://s/se2.mp4", resumed.single().first.streamUrl)
+        assertEquals(0L, resumed.single().first.progressSeconds)
+    }
 }

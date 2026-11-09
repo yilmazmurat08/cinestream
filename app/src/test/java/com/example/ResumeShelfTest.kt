@@ -50,4 +50,35 @@ class ResumeShelfTest {
         val again = history.map { if (it.itemId == 2) it.copy(lastPlayedAt = 40) else it }
         assertEquals(listOf(2, 1), ResumeShelf.from(again, hidden = hidden).map { it.itemId })
     }
+
+    @Test fun plan_latestRecordPerShowDecides_finishedEpisodeNeedsNext_finishedMovieDrops() {
+        val history = listOf(
+            cw(1, "Dizi S01E01", type = "SERIES", progress = 2000, total = 2400, at = 10), // eski bölüm yarım
+            cw(2, "Dizi S01E02", type = "SERIES", progress = 2390, total = 2400, at = 20), // son bölüm bitti
+            cw(3, "Film Bitti", progress = 5990, total = 6000, at = 30),
+            cw(4, "Film Yarım", at = 40)
+        )
+        val plan = ResumeShelf.plan(history)
+        assertEquals(listOf(4 to false, 2 to true), plan.map { it.cw.itemId to it.needsNext })
+    }
+
+    @Test fun nextEpisode_followsSeasonsInOrder_lastEpisodeHasNone() {
+        fun ep(id: Int, s: Int, e: Int) = com.example.data.model.Episode(
+            id = id, name = "B$e", seasonNumber = s, episodeNumber = e,
+            item = com.example.data.model.IPTVItem(id = id, playlistId = 1, name = "Dizi S0${s}E0$e", cleanedName = "Dizi", logoUrl = null, streamUrl = "u$id", category = "", type = "SERIES")
+        )
+        val show = com.example.data.model.TvShow(
+            id = 1, title = "Dizi", logoUrl = null, category = "", rating = 0.0, summary = "", cast = "", director = "", isFavorite = false,
+            seasons = listOf(
+                com.example.data.model.Season(2, listOf(ep(21, 2, 1))),
+                com.example.data.model.Season(1, listOf(ep(12, 1, 2), ep(11, 1, 1)))
+            )
+        )
+        assertEquals(12, ResumeShelf.nextEpisode(show, cw(11, "Dizi S01E01", type = "SERIES"))?.id)
+        // Sezon sonu: sonraki sezonun ilk bölümü
+        assertEquals(21, ResumeShelf.nextEpisode(show, cw(12, "Dizi S01E02", type = "SERIES"))?.id)
+        // Numarası değişmiş kayıt: sezon/bölümden bulunur
+        assertEquals(12, ResumeShelf.nextEpisode(show, cw(999, "Dizi S01E01", type = "SERIES"))?.id)
+        assertNull(ResumeShelf.nextEpisode(show, cw(21, "Dizi S02E01", type = "SERIES")))
+    }
 }

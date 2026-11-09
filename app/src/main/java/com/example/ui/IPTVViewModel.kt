@@ -1230,6 +1230,56 @@ class IPTVViewModel(
         resumeHidden.value = resumeHidden.value + (key to cw.lastPlayedAt)
     }
 
+    /**
+     * TV ana ekranı "Nerede kalmıştık": yarım kalanlar ve bölümü bitmiş dizilerde SIRADAKİ bölüm (bkz. ResumeShelf.plan).
+     * Önce yarım kalanlar hemen gösterilir; sıradaki bölümler bulununca (Xtream'de sağlayıcıdan çekilir) şerit tamamlanır.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val tvResumeRow: StateFlow<List<com.example.util.ResumeEntry>> = repository.continueWatchingFlow
+        .combine(resumeHidden) { history, hidden -> com.example.util.ResumeShelf.plan(history, hidden = hidden) }
+        .distinctUntilChanged()
+        .transformLatest { plans ->
+            emit(plans.filter { !it.needsNext }.map { com.example.util.ResumeEntry(it.cw) })
+            if (plans.any { it.needsNext }) {
+                emit(plans.mapNotNull { p ->
+                    if (!p.needsNext) com.example.util.ResumeEntry(p.cw)
+                    else nextEpisodeEntry(p.cw)?.let { com.example.util.ResumeEntry(it, isNext = true) }
+                })
+            }
+        }
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Bitmiş bölümden sonraki bölüm, şerit kartı olarak (ilerleme 0; kaldırılırsa dizi şeritten kalkar). */
+    private suspend fun nextEpisodeEntry(finished: ContinueWatching): ContinueWatching? = try {
+        val info = com.example.data.model.SeriesParser.parseEpisodeInfo(finished.itemName)
+        val title = info?.showTitle?.trim().orEmpty()
+        val asItem = com.example.continueWatchingItem(finished)
+        val show = if (finished.itemId < 0) {
+            fetchCatalogShowForEpisode(asItem)
+        } else {
+            tvCatalog.showForEpisode(asItem, emptyMap())
+        }
+        show?.let { com.example.util.ResumeShelf.nextEpisode(it, finished) }?.let { next ->
+            ContinueWatching(
+                itemId = next.item.id,
+                itemName = "%s S%02dE%02d".format(title.ifBlank { show.title }, next.seasonNumber, next.episodeNumber),
+                itemType = "SERIES",
+                itemLogo = next.logoUrl?.takeIf { it.isNotBlank() } ?: next.item.logoUrl ?: finished.itemLogo,
+                streamUrl = next.streamUrl.ifBlank { next.item.streamUrl },
+                category = finished.category,
+                progressSeconds = 0,
+                totalSeconds = 0,
+                lastPlayedAt = finished.lastPlayedAt
+            )
+        }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w("IPTVViewModel", "nextEpisodeEntry: ${e.message}")
+        null
+    }
+
     /** Kaydedilenler'deki "Nerede kalmıştık": yarım kalan son 5 film/dizi (bkz. ResumeShelf). */
     val resumeShelf: StateFlow<List<ContinueWatching>> = repository.continueWatchingFlow
         .combine(resumeHidden) { history, hidden -> com.example.util.ResumeShelf.from(history, hidden = hidden) }
@@ -2650,34 +2700,47 @@ class IPTVViewModel(
         if (_liveFetchedShow.value?.seasons?.any { s -> s.episodes.any { it.item.id == item.id } } == true) return
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             try {
-                val title = com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName.ifBlank { item.name })
-                    ?.showTitle?.trim()?.takeIf { it.isNotBlank() }
-                    ?: item.cleanedName.ifBlank { item.name }.trim()
-                val entity = repository.dao.findCatalogShow(episodeToSeries[item.id] ?: 0, title) ?: return@launch
-                val show = catalogShowOf(entity)
-                val credSource = tvCatalog.firstItemWithStream() ?: return@launch
-                val fetched = com.example.data.api.MetadataEnricher.fetchSeriesInfoLive(
-                    context = getApplication(),
-                    seriesId = show.id,
-                    showTitle = show.title,
-                    showCover = show.logoUrl,
-                    showRating = show.rating,
-                    showSummary = show.summary,
-                    showCast = show.cast,
-                    showDirector = show.director,
-                    anyItemForCredentials = credSource,
-                    showCategory = show.platformName.takeIf { it.isNotBlank() && it != "Diğer" } ?: show.category
-                ) ?: return@launch
-                // Yanlış diziye bağlanmasın: oynayan bölüm gelen listede olmalı.
-                if (fetched.seasons.none { s -> s.episodes.any { it.item.id == item.id } }) return@launch
-                fetched.seasons.forEach { season -> season.episodes.forEach { episodeToSeries[it.item.id] = fetched.id } }
-                _liveFetchedShow.value = fetched
+                fetchCatalogShowForEpisode(item)?.let { _liveFetchedShow.value = it }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.w("IPTVViewModel", "loadShowForEpisode: ${e.message}")
             }
         }
+    }
+
+    // Oturum boyunca çekilen Xtream dizileri (dizi adı → bölümler): şerit ve oynatıcı aynı diziyi tekrar çekmez.
+    private val catalogShowCache = java.util.concurrent.ConcurrentHashMap<String, com.example.data.model.TvShow>()
+
+    /** Xtream bölümünün dizisi (katalogda adıyla bulunur, sağlayıcıdan çekilir). Oynayan bölüm listede yoksa null. */
+    private suspend fun fetchCatalogShowForEpisode(item: IPTVItem): com.example.data.model.TvShow? {
+        val title = com.example.data.model.SeriesParser.parseEpisodeInfo(item.cleanedName.ifBlank { item.name })
+            ?.showTitle?.trim()?.takeIf { it.isNotBlank() }
+            ?: item.cleanedName.ifBlank { item.name }.trim()
+        val cacheKey = title.lowercase(java.util.Locale.ROOT)
+        catalogShowCache[cacheKey]?.let { cached ->
+            if (cached.seasons.any { s -> s.episodes.any { it.item.id == item.id } }) return cached
+        }
+        val entity = repository.dao.findCatalogShow(episodeToSeries[item.id] ?: 0, title) ?: return null
+        val show = catalogShowOf(entity)
+        val credSource = tvCatalog.firstItemWithStream() ?: return null
+        val fetched = com.example.data.api.MetadataEnricher.fetchSeriesInfoLive(
+            context = getApplication(),
+            seriesId = show.id,
+            showTitle = show.title,
+            showCover = show.logoUrl,
+            showRating = show.rating,
+            showSummary = show.summary,
+            showCast = show.cast,
+            showDirector = show.director,
+            anyItemForCredentials = credSource,
+            showCategory = show.platformName.takeIf { it.isNotBlank() && it != "Diğer" } ?: show.category
+        ) ?: return null
+        // Yanlış diziye bağlanmasın: bölüm gelen listede olmalı.
+        if (fetched.seasons.none { s -> s.episodes.any { it.item.id == item.id } }) return null
+        fetched.seasons.forEach { season -> season.episodes.forEach { episodeToSeries[it.item.id] = fetched.id } }
+        catalogShowCache[cacheKey] = fetched
+        return fetched
     }
 
     /** [fallbackItem]: dizi sağlayıcıdan çekilemezse eskisi gibi bu öğenin sayfası açılır. */

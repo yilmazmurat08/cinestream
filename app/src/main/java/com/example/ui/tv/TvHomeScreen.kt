@@ -126,9 +126,11 @@ fun TvHomeScreen(
     val isProUser by viewModel.isProUser.collectAsState()
     // Nerede kalmıştık: yarım kalan son film ve diziler (bkz. ResumeShelf). Eskiden burada yalnızca son izlenen tek
     // kayıt (canlı kanal da olabiliyordu) vardı; şerit Kaydedilenler'deydi ve orada kesik görünüyordu.
-    val resumeShelf by viewModel.resumeShelf.collectAsState()
+    // Yarım kalanlar + bölümü bitmiş dizilerde sıradaki bölüm (bkz. IPTVViewModel.tvResumeRow).
+    val resumeRow by viewModel.tvResumeRow.collectAsState()
+    val resumeShelf = remember(resumeRow) { resumeRow.map { it.cw } }
     var focusedResume by remember { mutableStateOf<ContinueWatching?>(null) }
-    var menuFor by remember { mutableStateOf<ContinueWatching?>(null) }
+    var menuFor by remember { mutableStateOf<com.example.util.ResumeEntry?>(null) }
     val resumeRemovedText = stringResource(R.string.resume_removed)
     val context = LocalContext.current
     val menuScope = androidx.compose.runtime.rememberCoroutineScope()
@@ -173,7 +175,7 @@ fun TvHomeScreen(
         TvHero(
             viewModel = viewModel,
             section = focused,
-            continueItem = focusedResume?.takeIf { f -> resumeShelf.any { it.id == f.id } } ?: resumeShelf.firstOrNull(),
+            continueItem = focusedResume?.takeIf { f -> resumeShelf.any { it.itemId == f.itemId } } ?: resumeShelf.firstOrNull(),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(heroHeight)
@@ -303,8 +305,9 @@ fun TvHomeScreen(
                         modifier = Modifier.fillMaxWidth().testTag("tv_home_resume_row")
                     ) {
                         // Anahtar kaydın kendi numarası: aynı itemId iki kayıtta olabilir.
-                        items(resumeShelf.size, key = { resumeShelf[it].id }) { index ->
-                            val cw = resumeShelf[index]
+                        items(resumeRow.size, key = { i -> resumeRow[i].let { e -> if (e.isNext) "next_${e.cw.itemId}" else "cw_${e.cw.id}" } }) { index ->
+                            val entry = resumeRow[index]
+                            val cw = entry.cw
                             val longFired = remember { BooleanArray(1) }
                             if (index == 0) {
                                 androidx.compose.runtime.DisposableEffect(Unit) {
@@ -314,6 +317,7 @@ fun TvHomeScreen(
                             }
                             TvResumeCard(
                                 item = cw,
+                                isNext = entry.isNext,
                                 focusRequester = if (index == 0) continueFocus else null,
                                 onFocused = {
                                     focusedResume = cw
@@ -323,7 +327,7 @@ fun TvHomeScreen(
                                 modifier = Modifier
                                     .focusProperties { up = cardFocus.getValue(lastCard) }
                                     // OK: kaldığı yerden. Basılı tut: Listeden kaldır / Baştan başlat / Vazgeç.
-                                    .tvOkLongPress(longFired, onClick = { onResume(cw, false) }) { menuFor = cw }
+                                    .tvOkLongPress(longFired, onClick = { onResume(cw, false) }) { menuFor = entry }
                             )
                         }
                     }
@@ -332,7 +336,8 @@ fun TvHomeScreen(
         }
     }
 
-    menuFor?.let { cw ->
+    menuFor?.let { entry ->
+        val cw = entry.cw
         val close: () -> Unit = {
             menuFor = null
             menuScope.launch {
@@ -348,10 +353,13 @@ fun TvHomeScreen(
                     android.widget.Toast.makeText(context, resumeRemovedText, android.widget.Toast.LENGTH_SHORT).show()
                     close()
                 },
+            ) + (if (entry.isNext) emptyList() else listOf(
+                // Sıradaki bölüm zaten baştan başlar: "Baştan başlat" yalnızca yarım kalanlarda.
                 TvMenuAction(stringResource(R.string.player_start_over), "tv_resume_menu_start_over") {
                     menuFor = null
                     onResume(cw, true)
-                },
+                }
+            )) + listOf(
                 TvMenuAction(stringResource(R.string.game_wheel_cancel), "tv_resume_menu_cancel") { close() }
             ),
             onDismiss = close,
@@ -370,15 +378,18 @@ private fun resumeTitle(item: ContinueWatching): String =
 @Composable
 private fun TvResumeCard(
     item: ContinueWatching,
+    isNext: Boolean,
     focusRequester: FocusRequester?,
     onFocused: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier
 ) {
     val episode = remember(item.itemName) { SeriesParser.parseEpisodeInfo(item.itemName) }
-    val progress = com.example.util.ResumeShelf.progress(item)
-    val left = com.example.util.ResumeShelf.minutesLeft(item)
+    // Sıradaki bölüm: "Sıradaki · S1 B3", ilerleme çubuğu yok.
+    val progress = if (isNext) null else com.example.util.ResumeShelf.progress(item)
+    val left = if (isNext) null else com.example.util.ResumeShelf.minutesLeft(item)
     val detail = listOfNotNull(
+        if (isNext) stringResource(R.string.resume_up_next) else null,
         episode?.let { stringResource(R.string.tv_season_episode_short, it.season, it.episode) },
         left?.let { stringResource(R.string.resume_minutes_left, it) }
     ).joinToString(" · ")

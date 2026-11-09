@@ -3,6 +3,12 @@ package com.example.util
 import com.example.data.model.ContinueWatching
 import com.example.data.model.SeriesParser
 
+/** TV "Nerede kalmıştık" kartı: yarım kalan kayıt ya da ([isNext]) bitmiş bölümden sonraki bölüm. */
+data class ResumeEntry(val cw: ContinueWatching, val isNext: Boolean = false)
+
+/** [ResumeShelf.plan] çıktısı: [needsNext] ise kaydın bölümü bitmiş, yerine sıradaki bölüm aranır. */
+data class ResumePlan(val cw: ContinueWatching, val needsNext: Boolean)
+
 /**
  * Kaydedilenler'deki "Nerede kalmıştık" şeridi: yarım kalan son film ve diziler (en yenisi başta).
  * Kayıtlar izleme geçmişinden (continue_watching) gelir; yeni bir izleme eklenince en eskisi şeritten düşer.
@@ -31,6 +37,41 @@ object ResumeShelf {
             .distinctBy { key(it) }
             .take(limit)
             .toList()
+
+    /**
+     * TV şeridi: her yapımın EN SON izlenen kaydı karar verir (en yenisi başta). Yarım kalmışsa kendisi; dizi
+     * bölümü bitmişse yerine sıradaki bölüm aranır ([ResumePlan.needsNext]); bitmiş film şeritte yer almaz.
+     * Kaldırılanlar ([hidden]) [from] ile aynı kurala uyar.
+     */
+    fun plan(history: List<ContinueWatching>, limit: Int = LIMIT, hidden: Map<String, Long> = emptyMap()): List<ResumePlan> =
+        history.asSequence()
+            .filter { it.itemType == "MOVIE" || it.itemType == "SERIES" }
+            .filter { it.progressSeconds >= MIN_PROGRESS_SECONDS }
+            .filter { cw -> hidden[key(cw)]?.let { cw.lastPlayedAt > it } ?: true }
+            .sortedByDescending { it.lastPlayedAt }
+            .distinctBy { key(it) }
+            .mapNotNull { cw ->
+                when {
+                    isUnfinished(cw) -> ResumePlan(cw, needsNext = false)
+                    cw.itemType == "SERIES" && SeriesParser.parseEpisodeInfo(cw.itemName) != null -> ResumePlan(cw, needsNext = true)
+                    else -> null
+                }
+            }
+            .take(limit)
+            .toList()
+
+    /**
+     * Dizinin bölümleri içinde [finished] bölümden sonraki bölüm (sezon/bölüm sırasıyla). Bölüm numarayla ya da
+     * sezon-bölüm numarasıyla bulunur; son bölümse ya da bulunamazsa null.
+     */
+    fun nextEpisode(show: com.example.data.model.TvShow, finished: ContinueWatching): com.example.data.model.Episode? {
+        val info = SeriesParser.parseEpisodeInfo(finished.itemName)
+        val episodes = show.seasons.sortedBy { it.seasonNumber }.flatMap { s -> s.episodes.sortedBy { it.episodeNumber } }
+        val index = episodes.indexOfFirst { it.item.id == finished.itemId }.takeIf { it >= 0 }
+            ?: info?.let { i -> episodes.indexOfFirst { it.seasonNumber == i.season && it.episodeNumber == i.episode } }
+            ?: -1
+        return if (index < 0) null else episodes.getOrNull(index + 1)
+    }
 
     fun isUnfinished(cw: ContinueWatching): Boolean {
         if (cw.progressSeconds < MIN_PROGRESS_SECONDS) return false
