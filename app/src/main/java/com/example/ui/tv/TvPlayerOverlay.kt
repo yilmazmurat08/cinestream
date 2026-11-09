@@ -112,6 +112,10 @@ class TvPlayerUiState {
         const val LAUNCH_ZAP = "ZAP"
         /** Kontrol çubuğundaki önceki/sonraki: kontroller açık kalır. */
         const val LAUNCH_CONTROLS = "CONTROLS"
+        /** Nerede kalmıştık (OK): "İzlemeye devam et?" sorulmadan kaldığı yerden; kontroller kısa süre açık. */
+        const val LAUNCH_RESUME = "RESUME"
+        /** Nerede kalmıştık menüsü "Baştan başlat": soru sorulmadan baştan. */
+        const val LAUNCH_START_OVER = "START_OVER"
     }
 }
 

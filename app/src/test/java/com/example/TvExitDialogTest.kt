@@ -69,7 +69,7 @@ open class TvExitDialogTest {
             )
         }
         compose.waitUntil(10_000) { has("tv_card_LIVE") }
-        if (withHistory) compose.waitUntil(10_000) { has("tv_continue_bar") }
+        if (withHistory) compose.waitUntil(10_000) { has("tv_home_resume_42") }
         compose.waitForIdle()
     }
 

@@ -79,6 +79,7 @@ import com.example.data.repository.ShelfContent
 import com.example.data.repository.ShelfImageKind
 import com.example.ui.IPTVViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /** TV ana sayfasındaki bölümler (kartlar) ve hero'yu etkileyen odak alanları. */
 object TvSection {
@@ -118,25 +119,33 @@ fun TvHomeScreen(
     onOpenAssistant: () -> Unit,
     onSearchResult: (IPTVItem) -> Unit,
     onPlayContinue: (ContinueWatching) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // "Nerede kalmıştık" şeridi: (kayıt, baştan mı). OK soru sormadan kaldığı yerden oynatır.
+    onResume: (ContinueWatching, Boolean) -> Unit = { cw, _ -> onPlayContinue(cw) }
 ) {
     val isProUser by viewModel.isProUser.collectAsState()
-    val continueWatching by viewModel.continueWatching.collectAsState()
-    val lastWatched = continueWatching.firstOrNull()
+    // Nerede kalmıştık: yarım kalan son film ve diziler (bkz. ResumeShelf). Eskiden burada yalnızca son izlenen tek
+    // kayıt (canlı kanal da olabiliyordu) vardı; şerit Kaydedilenler'deydi ve orada kesik görünüyordu.
+    val resumeShelf by viewModel.resumeShelf.collectAsState()
+    var focusedResume by remember { mutableStateOf<ContinueWatching?>(null) }
+    var menuFor by remember { mutableStateOf<ContinueWatching?>(null) }
+    val resumeRemovedText = stringResource(R.string.resume_removed)
+    val context = LocalContext.current
+    val menuScope = androidx.compose.runtime.rememberCoroutineScope()
 
     val cardFocus = remember { TvSection.cards.associateWith { FocusRequester() } }
     val askFocus = remember { FocusRequester() }
     val proFocus = remember { FocusRequester() }
     val starFocus = remember { FocusRequester() }
     val searchFocus = remember { FocusRequester() }
-    val continueFocus = remember { FocusRequester() }
+    val continueFocus = remember { FocusRequester() } // şeridin ilk kartı
     var focused by remember { mutableStateOf(initialFocus) }
     var lastCard by remember { mutableStateOf(initialFocus.takeIf { it in TvSection.cards } ?: TvSection.LIVE) }
 
     LaunchedEffect(Unit) {
         val target = when (initialFocus) {
             in TvSection.cards -> cardFocus.getValue(initialFocus)
-            TvSection.CONTINUE -> if (lastWatched != null) continueFocus else cardFocus.getValue(TvSection.LIVE)
+            TvSection.CONTINUE -> if (resumeShelf.isNotEmpty()) continueFocus else cardFocus.getValue(TvSection.LIVE)
             TvSection.ASSISTANT -> askFocus
             else -> cardFocus.getValue(TvSection.LIVE)
         }
@@ -156,11 +165,12 @@ fun TvHomeScreen(
             .testTag("tv_home_screen")
     ) {
         val heroHeight = maxHeight * 0.56f
-        val cardHeight = maxHeight * 0.2f
+        // Şerit varken bölüm kartları biraz alçalır (şerit başlığına yer açılır).
+        val cardHeight = maxHeight * (if (resumeShelf.isNotEmpty()) 0.18f else 0.2f)
         TvHero(
             viewModel = viewModel,
             section = focused,
-            continueItem = lastWatched,
+            continueItem = focusedResume?.takeIf { f -> resumeShelf.any { it.id == f.id } } ?: resumeShelf.firstOrNull(),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(heroHeight)
@@ -257,8 +267,8 @@ fun TvHomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(start = 48.dp, end = 48.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(start = 48.dp, end = 48.dp, bottom = if (resumeShelf.isNotEmpty()) 24.dp else 32.dp),
+            verticalArrangement = Arrangement.spacedBy(if (resumeShelf.isNotEmpty()) 16.dp else 20.dp)
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
                 TvSection.cards.forEach { section ->
@@ -272,19 +282,159 @@ fun TvHomeScreen(
                             .height(cardHeight)
                             .focusProperties {
                                 up = askFocus
-                                if (lastWatched != null) down = continueFocus
+                                if (resumeShelf.isNotEmpty()) down = continueFocus
                             }
                     )
                 }
             }
-            if (lastWatched != null) {
-                TvContinueBar(
-                    item = lastWatched,
-                    focusRequester = continueFocus,
-                    onFocused = { onFocus(TvSection.CONTINUE) },
-                    onClick = { onPlayContinue(lastWatched) },
-                    modifier = Modifier.focusProperties { up = cardFocus.getValue(lastCard) }
+            if (resumeShelf.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.resume_shelf_title),
+                        color = TvTheme.TextSecondary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("tv_home_resume_row")
+                    ) {
+                        // Anahtar kaydın kendi numarası: aynı itemId iki kayıtta olabilir.
+                        items(resumeShelf.size, key = { resumeShelf[it].id }) { index ->
+                            val cw = resumeShelf[index]
+                            val longFired = remember { BooleanArray(1) }
+                            TvResumeCard(
+                                item = cw,
+                                focusRequester = if (index == 0) continueFocus else null,
+                                onFocused = {
+                                    focusedResume = cw
+                                    onFocus(TvSection.CONTINUE)
+                                },
+                                onClick = { onResume(cw, false) },
+                                modifier = Modifier
+                                    .focusProperties { up = cardFocus.getValue(lastCard) }
+                                    // OK: kaldığı yerden. Basılı tut: Listeden kaldır / Baştan başlat / Vazgeç.
+                                    .tvOkLongPress(longFired, onClick = { onResume(cw, false) }) { menuFor = cw }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    menuFor?.let { cw ->
+        val close: () -> Unit = {
+            menuFor = null
+            menuScope.launch {
+                kotlinx.coroutines.delay(200)
+                requestFocusWhenReady(if (resumeShelf.isNotEmpty()) continueFocus else cardFocus.getValue(lastCard))
+            }
+        }
+        TvItemMenuDialog(
+            title = resumeTitle(cw),
+            actions = listOf(
+                TvMenuAction(stringResource(R.string.tv_remove_from_list), "tv_resume_menu_remove", primary = true) {
+                    viewModel.hideFromResumeShelf(cw)
+                    android.widget.Toast.makeText(context, resumeRemovedText, android.widget.Toast.LENGTH_SHORT).show()
+                    close()
+                },
+                TvMenuAction(stringResource(R.string.player_start_over), "tv_resume_menu_start_over") {
+                    menuFor = null
+                    onResume(cw, true)
+                },
+                TvMenuAction(stringResource(R.string.game_wheel_cancel), "tv_resume_menu_cancel") { close() }
+            ),
+            onDismiss = close,
+            tag = "tv_resume_menu"
+        )
+    }
+}
+
+/** Kartta görünen ad: dizide dizinin adı (bölüm etiketi ayrı satırda), filmde filmin adı. */
+private fun resumeTitle(item: ContinueWatching): String =
+    SeriesParser.parseEpisodeInfo(item.itemName)?.showTitle?.takeIf { it.isNotBlank() } ?: item.itemName
+
+/**
+ * Nerede kalmıştık kartı: yatay küçük resim, ad, "Sezon 1 · Bölüm 3 · 38 dk kaldı" ve ilerleme çubuğu.
+ */
+@Composable
+private fun TvResumeCard(
+    item: ContinueWatching,
+    focusRequester: FocusRequester?,
+    onFocused: () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier
+) {
+    val episode = remember(item.itemName) { SeriesParser.parseEpisodeInfo(item.itemName) }
+    val progress = com.example.util.ResumeShelf.progress(item)
+    val left = com.example.util.ResumeShelf.minutesLeft(item)
+    val detail = listOfNotNull(
+        episode?.let { stringResource(R.string.tv_season_episode_short, it.season, it.episode) },
+        left?.let { stringResource(R.string.resume_minutes_left, it) }
+    ).joinToString(" · ")
+    TvGlassButton(
+        onClick = onClick,
+        shape = TvTheme.RowShape,
+        focusRequester = focusRequester,
+        onFocused = onFocused,
+        focusScale = 1.04f,
+        contentAlignment = Alignment.CenterStart,
+        modifier = modifier
+            .width(300.dp)
+            .height(76.dp)
+            .testTag("tv_home_resume_${item.itemId}")
+    ) { f ->
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp)) {
+            Box {
+                AsyncImage(
+                    model = item.itemLogo,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .height(56.dp)
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(TvTheme.GlassDark)
                 )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(26.dp)
+                        .clip(TvTheme.PillShape)
+                        .background(if (f) TvTheme.FocusGlow else Color.Black.copy(alpha = 0.55f))
+                ) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.tv_resume), tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    resumeTitle(item),
+                    color = TvTheme.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+                if (detail.isNotEmpty()) {
+                    Text(detail, color = TvTheme.TextSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                if (progress != null) {
+                    Spacer(Modifier.height(6.dp))
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .clip(TvTheme.PillShape)
+                            .background(Color.White.copy(alpha = 0.15f))
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(progress.coerceIn(0.02f, 1f))
+                                .fillMaxHeight()
+                                .background(TvTheme.Accent)
+                        )
+                    }
+                }
             }
         }
     }
@@ -348,63 +498,6 @@ private fun TvSectionCard(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 lineHeight = if (crowded) 17.sp else androidx.compose.ui.unit.TextUnit.Unspecified
             )
-        }
-    }
-}
-
-@Composable
-private fun TvContinueBar(
-    item: ContinueWatching,
-    focusRequester: FocusRequester,
-    onFocused: () -> Unit,
-    onClick: () -> Unit,
-    modifier: Modifier
-) {
-    val episode = remember(item.itemName) { SeriesParser.parseEpisodeInfo(item.itemName) }
-    TvGlassButton(
-        onClick = onClick,
-        shape = TvTheme.RowShape,
-        focusRequester = focusRequester,
-        onFocused = onFocused,
-        focusScale = 1.03f,
-        contentAlignment = Alignment.CenterStart,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(76.dp)
-            .testTag("tv_continue_bar")
-    ) { f ->
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp)) {
-            AsyncImage(
-                model = item.itemLogo,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .height(56.dp)
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(TvTheme.GlassDark)
-            )
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.tv_continue_watching), color = TvTheme.TextMuted, fontSize = 13.sp)
-                Text(
-                    episode?.showTitle?.takeIf { it.isNotBlank() } ?: item.itemName,
-                    color = TvTheme.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-                if (episode != null) {
-                    Text(stringResource(R.string.tv_season_episode, episode.season, episode.episode), color = TvTheme.TextSecondary, fontSize = 14.sp)
-                }
-            }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(TvTheme.PillShape)
-                    .background(if (f) TvTheme.FocusGlow else TvTheme.Accent.copy(alpha = 0.85f))
-            ) {
-                Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.tv_resume), tint = Color.White, modifier = Modifier.size(26.dp))
-            }
         }
     }
 }

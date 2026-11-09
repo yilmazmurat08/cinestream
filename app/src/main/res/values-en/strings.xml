@@ -803,4 +803,5 @@
     <string name="resume_removed">Removed from Where you left off</string>
     <string name="tv_remove_from_list">Remove from list</string>
     <string name="player_episodes_seasons">Episodes &amp; Seasons</string>
+    <string name="tv_season_episode_short">S%1$d E%2$d</string>
 </resources>

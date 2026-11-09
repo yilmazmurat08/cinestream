@@ -55,7 +55,9 @@ fun TvApp(
     onPlayItem: (IPTVItem) -> Unit,
     onPlayContinue: (ContinueWatching) -> Unit,
     onOpenAssistant: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // "Nerede kalmıştık" şeridi (ana ekran): (kayıt, baştan mı).
+    onResume: (ContinueWatching, Boolean) -> Unit = { cw, _ -> onPlayContinue(cw) }
 ) {
     // Dil için LocalContext Activity'den türetilmiş ayrı bir bağlamdır; çıkış için Activity görünümden bulunur.
     val hostActivity = com.example.ui.components.rememberHostActivity()
@@ -102,7 +104,8 @@ fun TvApp(
                     val target = if (matched.streamUrl.isNotEmpty()) matched else item
                     if (target.type == "LIVE" || target.type == "LIVE_TV") onPlayItem(target) else viewModel.selectItem(target)
                 },
-                onPlayContinue = onPlayContinue
+                onPlayContinue = onPlayContinue,
+                onResume = onResume
             )
             TvSection.LIVE -> {
                 val groups by viewModel.liveGroups.collectAsState()

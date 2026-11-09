@@ -256,8 +256,14 @@ fun LegacyExoPlayerScreen(
     // Double tap feedback
     var showDoubleTapFeedback by remember { mutableStateOf<String?>(null) } // "geri" or "ileri"
 
+    // TV'de oynatıcının neden açıldığı (ilk çizimde okunur; aşağıda sıfırlanır). Nerede kalmıştık'tan açılınca
+    // "İzlemeye devam et?" sorulmaz: kullanıcı zaten kaldığı yerden (ya da menüden baştan) seçti.
+    val launchReason = remember { if (tvMode) tvUi.launch else null }
+    val startOver = launchReason == com.example.ui.tv.TvPlayerUiState.LAUNCH_START_OVER
+    val skipResumeQuestion = startOver || launchReason == com.example.ui.tv.TvPlayerUiState.LAUNCH_RESUME
+
     // Resume playback dialog state
-    var showResumeDialog by remember { mutableStateOf(initialProgressSeconds > 0L) }
+    var showResumeDialog by remember { mutableStateOf(initialProgressSeconds > 0L && !skipResumeQuestion) }
     var aiRecapText by remember { mutableStateOf<String?>(null) }
     var isAILoadingRecap by remember { mutableStateOf(false) }
 
@@ -316,7 +322,7 @@ fun LegacyExoPlayerScreen(
 
     // Handle initial seek & release
     LaunchedEffect(player) {
-        if (initialProgressSeconds > 0) {
+        if (initialProgressSeconds > 0 && !startOver) {
             player.seekTo(initialProgressSeconds * 1000)
         }
     }
@@ -961,7 +967,9 @@ fun LegacyExoPlayerScreen(
                 controlsVisible = false
                 tvInfoTick++
             }
-            com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS -> controlsVisible = true
+            com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS,
+            com.example.ui.tv.TvPlayerUiState.LAUNCH_RESUME,
+            com.example.ui.tv.TvPlayerUiState.LAUNCH_START_OVER -> controlsVisible = true
             else -> if (!tvUi.panelOpen) tvUi.panelCategory = null
         }
         tvUi.launch = null

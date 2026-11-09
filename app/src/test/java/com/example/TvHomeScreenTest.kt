@@ -60,7 +60,7 @@ open class TvHomeScreenTest {
     }
 
     @Test
-    fun focusStartsOnLive_downGoesToContinue_upGoesToAskThenTopBar() {
+    fun focusStartsOnLive_downGoesToResumeRow_upGoesToAskThenTopBar() {
         val vm = viewModel(withHistory = true)
         var opened: String? = null
         var resumed: ContinueWatching? = null
@@ -75,7 +75,7 @@ open class TvHomeScreenTest {
                 onPlayContinue = { resumed = it }
             )
         }
-        compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("tv_continue_bar")).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("tv_home_resume_42")).fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
         compose.onNodeWithTag("tv_card_LIVE").assertIsFocused()
 
@@ -83,7 +83,7 @@ open class TvHomeScreenTest {
         compose.onNodeWithTag("tv_card_MOVIE").assertIsFocused()
 
         press(Key.DirectionDown)
-        compose.onNodeWithTag("tv_continue_bar").assertIsFocused()
+        compose.onNodeWithTag("tv_home_resume_42").assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(42, resumed?.itemId)
 

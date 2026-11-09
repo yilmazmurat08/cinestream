@@ -109,20 +109,96 @@ class TvResumeAndShelfTest {
         compose.waitForIdle()
     }
 
-    @Test
-    fun resumeShelf_shortOkPlays_longOkRemovesFromShelfOnly() {
-        TvDevice.overrideForTest = true
-        runBlocking {
-            listOf(1, 2).forEach { i ->
-                db.iptvDao().insertContinueWatching(
-                    ContinueWatching(
-                        itemId = 8900 + i, itemName = "Yarım Film $i", itemType = "MOVIE", itemLogo = null,
-                        streamUrl = "http://s/$i.mp4", category = "Film", progressSeconds = 600, totalSeconds = 6000,
-                        lastPlayedAt = 1_000L + i
-                    )
+    private fun holdOk() {
+        sendOk(0, down = true)
+        sendOk(1, down = true)
+        sendOk(2, down = true)
+        sendOk(0, down = false)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    private fun pressOn(tag: String, key: Key) {
+        compose.onNodeWithTag(tag).performKeyInput { pressKey(key) }
+        compose.waitForIdle()
+    }
+
+    private fun insertHistory() = runBlocking {
+        listOf(1, 2).forEach { i ->
+            db.iptvDao().insertContinueWatching(
+                ContinueWatching(
+                    itemId = 8900 + i, itemName = if (i == 1) "Yarım Dizi S02E05" else "Yarım Film $i",
+                    itemType = if (i == 1) "SERIES" else "MOVIE", itemLogo = null,
+                    streamUrl = "http://s/$i.mp4", category = "Film", progressSeconds = 600, totalSeconds = 6000,
+                    lastPlayedAt = 1_000L + i
                 )
-            }
+            )
         }
+    }
+
+    /**
+     * "Nerede kalmıştık" artık TV ana ekranında (bölüm kartlarının altında) yatay şerit: kısa OK soru sormadan kaldığı
+     * yerden oynatır; basılı tutunca menü (Listeden kaldır / Baştan başlat / Vazgeç). Kaldırmak izleme kaydını silmez.
+     */
+    @Test
+    fun homeResumeRow_okResumes_holdOpensMenu_removeAndStartOver() {
+        TvDevice.overrideForTest = true
+        insertHistory()
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val resumed = mutableListOf<Pair<Int, Boolean>>()
+        compose.setContent {
+            com.example.ui.tv.TvHomeScreen(
+                viewModel = vm,
+                initialFocus = com.example.ui.tv.TvSection.LIVE,
+                onFocusChanged = {},
+                onOpenSection = {},
+                onOpenAssistant = {},
+                onSearchResult = {},
+                onPlayContinue = { resumed += it.itemId to false },
+                onResume = { cw, startOver -> resumed += cw.itemId to startOver }
+            )
+        }
+        compose.waitUntil(10_000) { count("tv_home_resume_8902") > 0 && count("tv_home_resume_8901") > 0 }
+        compose.waitForIdle()
+        // Dizide ad ve bölüm ayrı: "Yarım Dizi" / "Sezon 2 · Bölüm 5 · 90 dk kaldı".
+        assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasText("Yarım Dizi"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+
+        // Bölüm kartlarından Aşağı: şeridin ilk kartı (en son izlenen).
+        press(Key.DirectionDown)
+        compose.onNodeWithTag("tv_home_resume_8902").assertIsFocused()
+
+        // Kısa OK: kaldığı yerden.
+        sendOk(0, down = true)
+        sendOk(0, down = false)
+        assertEquals(listOf(8902 to false), resumed)
+
+        // Basılı tut: menü açılır, oynatmaz; ilk odak "Listeden kaldır".
+        holdOk()
+        compose.waitUntil(5_000) { count("tv_resume_menu") > 0 }
+        assertEquals(1, resumed.size)
+        compose.waitUntil(5_000) { runCatching { compose.onNodeWithTag("tv_resume_menu_remove").assertIsFocused() }.isSuccess }
+        pressOn("tv_resume_menu", Key.DirectionCenter)
+        compose.waitUntil(5_000) { count("tv_home_resume_8902") == 0 }
+        assertEquals(0, count("tv_resume_menu"))
+        assertEquals(1, resumed.size)
+        // İzleme kaydı silinmedi (kaldığı yer korunur).
+        assertTrue(runBlocking { db.iptvDao().getContinueWatchingForItem(8902) } != null)
+
+        // Kalan kartta menüden "Baştan başlat".
+        compose.waitUntil(5_000) { runCatching { compose.onNodeWithTag("tv_home_resume_8901").assertIsFocused() }.isSuccess }
+        holdOk()
+        compose.waitUntil(5_000) { count("tv_resume_menu") > 0 }
+        compose.waitUntil(5_000) { runCatching { compose.onNodeWithTag("tv_resume_menu_remove").assertIsFocused() }.isSuccess }
+        pressOn("tv_resume_menu", Key.DirectionDown)
+        compose.onNodeWithTag("tv_resume_menu_start_over").assertIsFocused()
+        pressOn("tv_resume_menu", Key.DirectionCenter)
+        assertEquals(8901 to true, resumed.last())
+    }
+
+    /** Kaydedilenler yalnızca kullanıcının kaydettikleri; basılı tutunca "Listeden kaldır". */
+    @Test
+    fun savedScreen_onlySavedItems_holdRemoves() {
+        TvDevice.overrideForTest = true
+        insertHistory()
         runBlocking {
             db.iptvDao().insertItems((1..8).map { i ->
                 IPTVItem(
@@ -132,46 +208,37 @@ class TvResumeAndShelfTest {
             })
         }
         val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
-        var played: IPTVItem? = null
-        compose.setContent { TvSavedScreen(viewModel = vm, onPlayItem = { played = it }) }
-        compose.waitUntil(10_000) { count("tv_resume_8902") > 0 && count("tv_saved_8951") > 0 }
-        // Şerit ve kayıtlı liste aynı kaydırılan ızgarada (eskiden şerit sabitti, liste altta kesik görünüyordu).
-        assertEquals(
-            1,
-            compose.onAllNodes(
-                hasTestTag("tv_resume_shelf") and androidx.compose.ui.test.hasAnyAncestor(hasTestTag("tv_saved_grid")),
-                useUnmergedTree = true
-            ).fetchSemanticsNodes().size
-        )
-
-        // Kısa OK: oynatır.
-        compose.onNodeWithTag("tv_resume_8902").requestFocus()
+        compose.setContent { TvSavedScreen(viewModel = vm, onPlayItem = {}) }
+        compose.waitUntil(10_000) { count("tv_saved_8951") > 0 }
+        assertEquals(0, count("tv_resume_8902"))
+        compose.onNodeWithTag("tv_saved_8951").requestFocus()
         compose.waitForIdle()
-        sendOk(0, down = true)
-        sendOk(0, down = false)
-        assertEquals(8902, played?.id)
-
-        // Basılı tut (tuş tekrarı): "Listeden kaldır" penceresi açılır, oynatmaz; kart henüz durur.
-        played = null
-        sendOk(0, down = true)
-        sendOk(1, down = true)
-        sendOk(2, down = true)
-        sendOk(0, down = false)
+        holdOk()
         compose.waitUntil(5_000) { count("tv_remove_dialog") > 0 }
-        assertNull(played)
-        assertEquals(1, count("tv_resume_8902"))
-        // Pencerede OK (odak "Listeden kaldır"da): kart şeritten kalkar.
-        compose.waitUntil(5_000) {
-            runCatching { compose.onNodeWithTag("tv_remove_confirm").assertIsFocused() }.isSuccess
+        compose.waitUntil(5_000) { runCatching { compose.onNodeWithTag("tv_remove_confirm").assertIsFocused() }.isSuccess }
+        pressOn("tv_remove_dialog", Key.DirectionCenter)
+        compose.waitUntil(5_000) { count("tv_saved_8951") == 0 }
+    }
+
+    /** Nerede kalmıştık'tan açılınca "İzlemeye devam et?" sorulmaz. */
+    @Test
+    fun resumeLaunch_skipsQuestion() {
+        TvDevice.overrideForTest = true
+        val movie = IPTVItem(
+            id = 8802, playlistId = 1, name = "Soru Yok", cleanedName = "Soru Yok", logoUrl = null,
+            streamUrl = "http://10.255.255.1/movie/8802.mp4", category = "Film", type = "MOVIE"
+        )
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val ui = com.example.ui.tv.TvPlayerUiState().apply { launch = com.example.ui.tv.TvPlayerUiState.LAUNCH_RESUME }
+        compose.setContent {
+            PlayerScreen(
+                item = movie, siblingItems = emptyList(), onBack = {}, onPlayItem = {},
+                onProgressUpdate = { _, _, _ -> }, iptvViewModel = vm,
+                initialProgressSeconds = 60L, tvMode = true, tvUiState = ui
+            )
         }
-        @OptIn(ExperimentalTestApi::class)
-        compose.onNodeWithTag("tv_remove_dialog").performKeyInput { pressKey(Key.DirectionCenter) }
-        compose.waitUntil(5_000) { count("tv_resume_8902") == 0 }
-        assertEquals(0, count("tv_remove_dialog"))
-        assertNull(played)
-        assertEquals(1, count("tv_resume_8901"))
-        // İzleme kaydı silinmedi (kaldığı yer korunur).
-        assertTrue(runBlocking { db.iptvDao().getContinueWatchingForItem(8902) } != null)
+        advance(1_000)
+        assertEquals(0, count("resume_continue"))
     }
 
     @Test

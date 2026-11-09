@@ -378,7 +378,16 @@ class MainActivity : ComponentActivity() {
                                                         if (cw.itemType == "LIVE") tvPlayerUi.launch = com.example.ui.tv.TvPlayerUiState.LAUNCH_ENTER
                                                         navigateTo(ActiveScreen.Player(continueWatchingItem(cw)))
                                                     },
-                                                    onOpenAssistant = { navigateTo(ActiveScreen.MovieFinderChat) }
+                                                    onOpenAssistant = { navigateTo(ActiveScreen.MovieFinderChat) },
+                                                    onResume = { cw, startOver ->
+                                                        // Nerede kalmıştık: "İzlemeye devam et?" sorulmaz; ya kaldığı yerden ya baştan.
+                                                        tvPlayerUi.launch = if (startOver) {
+                                                            com.example.ui.tv.TvPlayerUiState.LAUNCH_START_OVER
+                                                        } else {
+                                                            com.example.ui.tv.TvPlayerUiState.LAUNCH_RESUME
+                                                        }
+                                                        navigateTo(ActiveScreen.Player(continueWatchingItem(cw)))
+                                                    }
                                                 )
                                             } else {
                                                 HomeScreen(
