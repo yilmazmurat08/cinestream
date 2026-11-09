@@ -61,6 +61,8 @@ import kotlinx.coroutines.launch
 private const val PAGE_SIZE = 60
 private const val GRID_COLUMNS = 6
 private const val CATEGORY_SETTLE_MS = 400L
+// Detay paneli kayarak kapanır; panel ekrandayken odak arkadaki ekrana geçemez. Bu süre sonunda odak geri verilir.
+private const val DETAIL_CLOSE_SETTLE_MS = 450L
 
 /**
  * TV Filmler / Diziler: solda dar kategori listesi (en üstte Top 10 ve En yüksek puanlılar), sağda 6 sütunlu
@@ -101,6 +103,10 @@ fun TvBrowseScreen(
     val listState = remember(type, categories != null) { androidx.compose.foundation.lazy.LazyListState(initialListIndex) }
 
     var lastPosterKey by remember(type) { mutableStateOf<String?>(null) }
+    // Detaydan dönüş (aşağıda): odak geri verilene kadar kategori satırlarına düşen odak seçimi değiştirmez.
+    var detailWasOpen by remember { mutableStateOf(false) }
+    var restoringFocus by remember { mutableStateOf(false) }
+    val focusedKey = remember { arrayOfNulls<String>(1) }
     fun categoryRequester(key: String) = categoryFocus.getOrPut(key) { FocusRequester() }
     fun posterRequester(key: String) = posterFocus.getOrPut(key) { FocusRequester() }
 
@@ -134,6 +140,7 @@ fun TvBrowseScreen(
         val key = pendingKey ?: return@LaunchedEffect
         delay(CATEGORY_SETTLE_MS)
         val category = categories?.firstOrNull { it.key == key } ?: return@LaunchedEffect
+        if (restoringFocus || detailWasOpen || selectedDetail != null) return@LaunchedEffect
         if (!(category.isAdult && parentalLock && !safeSession)) select(category, focusGrid = false)
     }
 
@@ -184,14 +191,30 @@ fun TvBrowseScreen(
             }
     }
 
-    // Detay kapanınca odak açılan postere döner.
-    var detailWasOpen by remember { mutableStateOf(false) }
+    // Detay kapanınca odak açılan postere döner (poster yoksa seçili kategoriye). Panel kapanırken odak bir an
+    // boşta kalıp listenin ilk satırına (Top 10) düşebiliyordu; o satır da seçilmiş sayılıp kullanıcı kategorinin
+    // başına atılıyordu. Geri dönüş sürerken kategori satırlarına gelen odak seçimi DEĞİŞTİRMEZ ve odak, gerçekten
+    // hedefe oturana kadar (en çok ~2 sn; yavaş cihazda animasyon uzayabilir) yeniden istenir.
     LaunchedEffect(selectedDetail == null) {
         if (selectedDetail != null) {
             detailWasOpen = true
         } else if (detailWasOpen) {
-            detailWasOpen = false
-            lastPosterKey?.let { key -> if (posters.any { it.key == key }) requestFocusWhenReady(posterRequester(key)) }
+            restoringFocus = true
+            try {
+                delay(DETAIL_CLOSE_SETTLE_MS)
+                repeat(16) {
+                    val posterKey = lastPosterKey?.takeIf { k -> posters.any { it.key == k } }
+                    val wanted = posterKey ?: selectedKey?.let { "cat:$it" } ?: return@repeat
+                    if (focusedKey[0] == wanted) return@repeat
+                    requestFocusWhenReady(if (posterKey != null) posterRequester(posterKey) else categoryRequester(selectedKey!!))
+                    delay(100)
+                }
+            } finally {
+                detailWasOpen = false
+                restoringFocus = false
+                // Geri dönüş sırasında başka bir kategoriye düşen odağın bıraktığı bekleyen seçim iptal edilir.
+                pendingKey = null
+            }
         }
     }
 
@@ -234,7 +257,12 @@ fun TvBrowseScreen(
                         onClick = { select(category, focusGrid = true) },
                         shape = TvTheme.RowShape,
                         focusRequester = categoryRequester(category.key),
-                        onFocused = { pendingKey = category.key },
+                        onFocused = {
+                            focusedKey[0] = "cat:${category.key}"
+                            // Detay açıkken ya da detaydan dönülürken gelen odak, seçili kategoriyi değiştirmez.
+                            // (detailWasOpen, panel kapandığı anda henüz true: odak o arada düşerse de yok sayılır.)
+                            if (!restoringFocus && !detailWasOpen && selectedDetail == null) pendingKey = category.key
+                        },
                         focusScale = 1.03f,
                         glassColor = if (selected) TvTheme.Accent.copy(alpha = 0.3f) else TvTheme.Glass.copy(alpha = 0.5f),
                         contentAlignment = Alignment.CenterStart,
@@ -323,6 +351,7 @@ fun TvBrowseScreen(
                         posterUrl = poster.posterUrl,
                         focusRequester = posterRequester(poster.key),
                         onFocused = {
+                            focusedKey[0] = poster.key
                             lastPosterKey = poster.key
                             state.browseFocus = null
                         },

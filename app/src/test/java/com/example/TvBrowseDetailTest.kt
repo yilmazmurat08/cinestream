@@ -144,4 +144,53 @@ class TvBrowseDetailTest {
         press(Key.DirectionCenter)
         assertEquals(9100, played?.id)
     }
+
+    /**
+     * Kullanıcı videosu (9 Kasım 2026): kategoride bir film açılıp Geri ile dönülünce uygulama listenin başına (Top 10)
+     * atıyordu. Detay paneli uygulamadaki gibi kayarak kapanır; dönüşte aynı kategori seçili kalmalı, odak açılan
+     * posterde olmalı.
+     */
+    @Test
+    fun backFromDetail_staysInSameCategory_focusOnOpenedPoster() {
+        runBlocking {
+            db.iptvDao().insertItems((1..8).map { movie(9000 + it, "Tv Test Film $it", "TvTest Kategori") } +
+                (1..12).map { movie(9500 + it, "Aa Film $it", "Aa Film Kat %02d".format(it)) })
+        }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val state = TvAppState("MOVIE", "MOVIE", "TvTest Kategori", null, null)
+        compose.setContent {
+            androidx.compose.foundation.layout.Box {
+                TvBrowseScreen(viewModel = vm, type = "MOVIE", state = state)
+                val selected by vm.selectedItem.collectAsState()
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = selected != null,
+                    modifier = com.example.ui.tv.tvModalFocus(selected?.id),
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
+                ) {
+                    val item = selected
+                    if (item != null) TvDetailScreen(viewModel = vm, item = item, onPlay = {})
+                }
+            }
+        }
+        waitForTag("tv_poster_MOVIE_9001")
+        press(Key.DirectionRight)
+        press(Key.DirectionRight)
+        compose.onNodeWithTag("tv_poster_MOVIE_9002").assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.waitUntil(5_000) { vm.selectedItem.value != null }
+        waitForTag("tv_detail_play")
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.waitForIdle()
+
+        // Geri: detay kapanır (MainActivity'deki Geri işleyicisi selectItem(null) çağırır).
+        compose.runOnUiThread { vm.selectItem(null) }
+        repeat(30) {
+            compose.mainClock.advanceTimeBy(100)
+            compose.waitForIdle()
+        }
+        assertEquals("TvTest Kategori", state.movieCategory)
+        compose.onNodeWithTag("tv_poster_MOVIE_9002").assertIsFocused()
+        compose.onNodeWithTag("tv_poster_MOVIE_9001").assertExists()
+    }
 }
