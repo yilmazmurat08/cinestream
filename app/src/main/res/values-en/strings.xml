@@ -800,4 +800,6 @@
     <string name="game_wheel_choose_desc">Pick at least 2 and at most 8 categories. Your choice is saved. (%1$d/8)</string>
     <string name="game_wheel_save">Save</string>
     <string name="game_wheel_cancel">Cancel</string>
+    <string name="resume_removed">Removed from Where you left off</string>
+    <string name="tv_remove_from_list">Remove from list</string>
 </resources>

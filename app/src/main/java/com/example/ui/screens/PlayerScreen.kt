@@ -46,6 +46,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -842,7 +844,8 @@ fun LegacyExoPlayerScreen(
     // gizler, ikinci basışta oynatıcıdan çıkar.
     val tvKeyFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(controlsVisible) {
-        if (!controlsVisible && !(tvMode && tvUi.panelOpen)) {
+        // "İzlemeye devam et?" penceresi açıkken odak penceredeki düğmelerde kalır.
+        if (!controlsVisible && !(tvMode && tvUi.panelOpen) && !showResumeDialog) {
             delay(150)
             try {
                 tvKeyFocusRequester.requestFocus()
@@ -854,6 +857,7 @@ fun LegacyExoPlayerScreen(
         delay(300)
         // TV modunda kontroller/panel açıksa odak onlarda kalır (oynatıcıya alınmaz).
         if (tvMode && (controlsVisible || tvUi.panelOpen)) return@LaunchedEffect
+        if (showResumeDialog) return@LaunchedEffect
         try {
             tvKeyFocusRequester.requestFocus()
         } catch (_: Exception) {
@@ -984,9 +988,10 @@ fun LegacyExoPlayerScreen(
     // Odak: kontroller açık (panel kapalı) → oynat/duraklat; hepsi gizli → oynatıcı (tuşlar).
     LaunchedEffect(controlsVisible, tvUi.panelOpen) {
         if (!tvMode) return@LaunchedEffect
+        if (showResumeDialog) return@LaunchedEffect
         if (controlsVisible && !tvUi.panelOpen) {
             com.example.ui.tv.requestFocusWhenReady(tvPlayPauseFocus)
-        } else if (!controlsVisible && !tvUi.panelOpen) {
+        } else if (!controlsVisible && !tvUi.panelOpen && !showResumeDialog) {
             delay(120)
             try {
                 tvKeyFocusRequester.requestFocus()
@@ -1071,7 +1076,7 @@ fun LegacyExoPlayerScreen(
                     // Kilit açma düğmesi görünürken tuşlar ona gider (OK = kilidi aç).
                     isOverlayHidden = {
                         // Hata penceresi açıkken tuşlar pencerenin düğmelerine gider.
-                        !showTray && !streamFailed &&
+                        !showTray && !streamFailed && !showResumeDialog &&
                             if (isScreenLocked) !showUnlockButtonBriefly else !controlsVisible
                     },
                     onShowControls = {
@@ -2300,260 +2305,6 @@ fun LegacyExoPlayerScreen(
                 )
             }
 
-            // 7.5. Kaldığın Yerden Devam Et Dialog Overlay
-            if (showResumeDialog) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.75f))
-                        .pointerInput(Unit) { detectTapGestures { } },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .widthIn(max = 420.dp)
-                            .fillMaxWidth(0.85f)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color(0xFF0F082B).copy(alpha = 0.95f))
-                            .border(
-                                width = 1.dp,
-                                brush = Brush.linearGradient(listOf(NeonPink.copy(alpha = 0.5f), ElectricBlue.copy(alpha = 0.5f))),
-                                shape = RoundedCornerShape(24.dp)
-                            )
-                            .padding(28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(CineOrange.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                tint = CineOrange,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Text(
-                            text = stringResource(R.string.player_continue_watching_question),
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        val seriesInfo = remember(item) {
-                            if (item.type == "SERIES") {
-                                com.example.data.model.SeriesParser.episodeInfoOf(item)
-                            } else {
-                                null
-                            }
-                        }
-
-                        val detailText = remember(item, initialProgressSeconds, seriesInfo, context) {
-                            val timeStr = formatTime(initialProgressSeconds)
-                            if (seriesInfo != null) {
-                                context.getString(R.string.player_resume_episode, seriesInfo.season, seriesInfo.episode, timeStr)
-                            } else {
-                                context.getString(R.string.player_resume_position, timeStr)
-                            }
-                        }
-
-                        Text(
-                            text = detailText,
-                            color = SlateGray,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 20.sp
-                        )
-
-                        if (seriesInfo != null && iptvViewModel != null) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            if (aiRecapText == null) {
-                                OutlinedButton(
-                                    onClick = {
-                                        isAILoadingRecap = true
-                                        aiRecapText = "Yapay zeka bülteni hazırlanıyor..."
-                                        scope.launch {
-                                            try {
-                                                iptvViewModel.getSpoilerFreePreviousEpisodesSummary(
-                                                    showTitle = seriesInfo.showTitle,
-                                                    season = seriesInfo.season,
-                                                    episode = seriesInfo.episode
-                                                ).collect { result ->
-                                                    aiRecapText = result
-                                                    if (result != "Yapay zeka bülteni hazırlanıyor...") {
-                                                        isAILoadingRecap = false
-                                                    }
-                                                }
-                                            } catch (e: Exception) {
-                                                aiRecapText = "Özet hazırlanamadı. Lütfen tekrar deneyin."
-                                                isAILoadingRecap = false
-                                            }
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = CineOrange
-                                    ),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, CineOrange.copy(alpha = 0.5f)),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = null,
-                                            tint = CineOrange,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = stringResource(R.string.player_ai_summarize_spoiler_free),
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
-                                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-                                        .padding(14.dp)
-                                ) {
-                                    if (isAILoadingRecap) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center,
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            CircularProgressIndicator(
-                                                color = CineOrange,
-                                                modifier = Modifier.size(20.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Text(
-                                                text = stringResource(R.string.player_ai_analyzing),
-                                                color = SlateGray,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    } else {
-                                        Column {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.AutoAwesome,
-                                                    contentDescription = null,
-                                                    tint = CineOrange,
-                                                    modifier = Modifier.size(14.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(
-                                                    text = stringResource(R.string.player_ai_previous_summary_title),
-                                                    color = CineOrange,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            com.example.ui.components.AiReportableContent(response = aiRecapText ?: "", screen = "player_recap") {
-                                                Text(
-                                                    text = aiRecapText ?: "",
-                                                    color = Color.White.copy(alpha = 0.85f),
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Medium,
-                                                    lineHeight = 18.sp
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(28.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    showResumeDialog = false
-                                    player.seekTo(0L)
-                                    player.playWhenReady = true
-                                    player.play()
-                                },
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color.White,
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.player_start_over),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Button(
-                                onClick = {
-                                    showResumeDialog = false
-                                    player.playWhenReady = true
-                                    player.play()
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                                contentPadding = PaddingValues(),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .shadow(8.dp, shape = RoundedCornerShape(14.dp), spotColor = NeonPink)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.horizontalGradient(
-                                                colors = listOf(NeonPink, CineOrange)
-                                            )
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.player_continue),
-                                        color = Color.White,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // 7.6. Yayın açılamadı penceresi ("Kaldığın yerden devam" penceresiyle aynı görünüm)
             if (streamFailed) {
                 Box(
@@ -2947,9 +2698,11 @@ fun LegacyExoPlayerScreen(
                         colors = CardDefaults.cardColors(
                             containerColor = Color(0xFF130C1E).copy(alpha = 0.94f)
                         ),
+                        // Genişlik sınırı fillMaxWidth'ten ÖNCE: ters sırada sınır uygulanmıyor, kart TV'de ve yatay
+                        // telefonda ekranın %85'ine yayılıyordu. TV'de kart daha dar ve toplu.
                         modifier = Modifier
+                            .widthIn(max = if (tvMode) 380.dp else 420.dp)
                             .fillMaxWidth(0.85f)
-                            .widthIn(max = 420.dp)
                             .padding(16.dp)
                             .border(
                                 width = 1.2.dp,
@@ -2963,16 +2716,16 @@ fun LegacyExoPlayerScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(if (tvMode) 20.dp else 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = stringResource(R.string.player_play_desc),
                                 tint = CineOrange,
-                                modifier = Modifier.size(56.dp)
+                                modifier = Modifier.size(if (tvMode) 40.dp else 56.dp)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(if (tvMode) 8.dp else 16.dp))
 
                             Text(
                                 text = stringResource(R.string.player_continue_watching_question),
@@ -3008,6 +2761,177 @@ fun LegacyExoPlayerScreen(
                             )
                             Spacer(modifier = Modifier.height(24.dp))
 
+                            // Dizi: kaldığın bölüme kadar olanların spoilersiz özeti (yapay zekâ). Eskiden ayrı, arkada kalan
+                            // ikinci bir pencerede duruyordu (iki pencere üst üste açılıyor, TV'de odak arkadakinde kalıyordu).
+                        val seriesInfo = remember(item) {
+                            if (item.type == "SERIES") {
+                                com.example.data.model.SeriesParser.episodeInfoOf(item)
+                            } else {
+                                null
+                            }
+                        }
+
+                        val detailText = remember(item, initialProgressSeconds, seriesInfo, context) {
+                            val timeStr = formatTime(initialProgressSeconds)
+                            if (seriesInfo != null) {
+                                context.getString(R.string.player_resume_episode, seriesInfo.season, seriesInfo.episode, timeStr)
+                            } else {
+                                context.getString(R.string.player_resume_position, timeStr)
+                            }
+                        }
+
+                        Text(
+                            text = detailText,
+                            color = SlateGray,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp
+                        )
+
+                        if (seriesInfo != null && iptvViewModel != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            if (aiRecapText == null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        isAILoadingRecap = true
+                                        aiRecapText = "Yapay zeka bülteni hazırlanıyor..."
+                                        scope.launch {
+                                            try {
+                                                iptvViewModel.getSpoilerFreePreviousEpisodesSummary(
+                                                    showTitle = seriesInfo.showTitle,
+                                                    season = seriesInfo.season,
+                                                    episode = seriesInfo.episode
+                                                ).collect { result ->
+                                                    aiRecapText = result
+                                                    if (result != "Yapay zeka bülteni hazırlanıyor...") {
+                                                        isAILoadingRecap = false
+                                                    }
+                                                }
+                                            } catch (e: Exception) {
+                                                aiRecapText = "Özet hazırlanamadı. Lütfen tekrar deneyin."
+                                                isAILoadingRecap = false
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = CineOrange
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CineOrange.copy(alpha = 0.5f)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = CineOrange,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.player_ai_summarize_spoiler_free),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
+                                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                                        .padding(14.dp)
+                                ) {
+                                    if (isAILoadingRecap) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            CircularProgressIndicator(
+                                                color = CineOrange,
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = stringResource(R.string.player_ai_analyzing),
+                                                color = SlateGray,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    } else {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = CineOrange,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = stringResource(R.string.player_ai_previous_summary_title),
+                                                    color = CineOrange,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            com.example.ui.components.AiReportableContent(response = aiRecapText ?: "", screen = "player_recap") {
+                                                Text(
+                                                    text = aiRecapText ?: "",
+                                                    color = Color.White.copy(alpha = 0.85f),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    lineHeight = 18.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                            if (seriesInfo != null && iptvViewModel != null) Spacer(modifier = Modifier.height(20.dp))
+
+
+                            // Kumanda: pencere açılınca odak "Devam Et"te; odaktaki düğmenin çevresinde beyaz çerçeve.
+                            val resumeContinueFocus = remember { FocusRequester() }
+                            var startOverFocused by remember { mutableStateOf(false) }
+                            var continueFocused by remember { mutableStateOf(false) }
+                            LaunchedEffect(Unit) {
+                                // Açılışta oynatıcının başka parçaları da odak isteyebiliyor: pencere düğmeleri odağı
+                                // alana kadar birkaç kez denenir.
+                                repeat(6) {
+                                    if (!continueFocused && !startOverFocused) {
+                                        com.example.ui.tv.requestFocusWhenReady(resumeContinueFocus)
+                                    }
+                                    delay(250)
+                                }
+                            }
+                            DisposableEffect(Unit) {
+                                onDispose {
+                                    // Pencere kapanınca kumanda tuşları yeniden oynatıcıya gelsin.
+                                    scope.launch {
+                                        delay(150)
+                                        if (!controlsVisible || !tvMode) {
+                                            try {
+                                                tvKeyFocusRequester.requestFocus()
+                                            } catch (_: Exception) {
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -3023,8 +2947,14 @@ fun LegacyExoPlayerScreen(
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = Color.White
                                     ),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                                    modifier = Modifier.weight(1f)
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        if (startOverFocused) 2.dp else 1.dp,
+                                        if (startOverFocused) Color.White else Color.White.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .onFocusChanged { startOverFocused = it.isFocused }
+                                        .testTag("resume_start_over")
                                 ) {
                                     Text(
                                         text = stringResource(R.string.player_start_over),
@@ -3045,7 +2975,12 @@ fun LegacyExoPlayerScreen(
                                         containerColor = CineOrange,
                                         contentColor = Color.White
                                     ),
-                                    modifier = Modifier.weight(1f)
+                                    border = if (continueFocused) androidx.compose.foundation.BorderStroke(2.dp, Color.White) else null,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .focusRequester(resumeContinueFocus)
+                                        .onFocusChanged { continueFocused = it.isFocused }
+                                        .testTag("resume_continue")
                                 ) {
                                     Text(
                                         text = stringResource(R.string.player_continue),

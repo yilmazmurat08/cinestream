@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -60,6 +61,12 @@ fun TvSavedScreen(
     var tab by rememberSaveable { mutableStateOf("ALL") }
     val firstFocus = remember { FocusRequester() }
     val removedText = stringResource(R.string.tv_removed_from_saved)
+    val resumeRemovedText = stringResource(R.string.resume_removed)
+    // OK'e basılı tutunca açılan "Listeden kaldır" penceresi (kart adı + kaldırma işi).
+    var removeTarget by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    var refocusTick by remember { mutableStateOf(0) }
+    val shelfFirstFocus = remember { FocusRequester() }
+    val gridFirstFocus = remember { FocusRequester() }
     val shown = favorites.filter { tab == "ALL" || it.type == tab || (tab == "LIVE" && it.type == "LIVE_TV") }
 
     LaunchedEffect(Unit) { requestFocusWhenReady(firstFocus) }
@@ -104,13 +111,22 @@ fun TvSavedScreen(
             ) {
                 // Anahtar kaydın kendi numarası: aynı itemId iki kayıtta olabilir (liste yenilenince eşleştirme), çakışma çökertir.
                 lazyItems(resumeShelf, key = { it.id }) { cw ->
+                    val longFired = remember { BooleanArray(1) }
+                    val play = { onPlayItem(com.example.continueWatchingItem(cw)) }
                     TvPosterCard(
                         title = cw.itemName,
                         posterUrl = cw.itemLogo,
-                        onClick = { onPlayItem(com.example.continueWatchingItem(cw)) },
+                        onClick = play, // dokunma
                         subtitle = com.example.util.ResumeShelf.minutesLeft(cw)?.let { stringResource(R.string.resume_minutes_left, it) },
                         tag = "tv_resume_${cw.itemId}",
-                        modifier = Modifier.width(104.dp)
+                        // OK: kaldığı yerden oynat. OK'e basılı tut: şeritten kaldır (izleme kaydı ve kaldığı yer silinmez).
+                        focusRequester = if (cw.id == resumeShelf.firstOrNull()?.id) shelfFirstFocus else null,
+                        modifier = Modifier.width(104.dp).tvOkLongPress(longFired, onClick = play) {
+                            removeTarget = cw.itemName to {
+                                viewModel.hideFromResumeShelf(cw)
+                                Toast.makeText(context, resumeRemovedText, Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
                 }
             }
@@ -138,28 +154,127 @@ fun TvSavedScreen(
                         posterUrl = item.logoUrl,
                         onClick = open, // dokunma
                         tag = "tv_saved_${item.id}",
-                        modifier = Modifier.onPreviewKeyEvent { event ->
-                            val ok = event.key == Key.DirectionCenter || event.key == Key.Enter || event.key == Key.NumPadEnter
-                            if (!ok) return@onPreviewKeyEvent false
-                            when (event.type) {
-                                KeyEventType.KeyDown -> {
-                                    if (event.nativeKeyEvent.repeatCount == 0) longFired[0] = false
-                                    else if (!longFired[0]) {
-                                        longFired[0] = true
-                                        viewModel.toggleFavorite(item)
-                                        Toast.makeText(context, removedText, Toast.LENGTH_SHORT).show()
-                                    }
-                                    true
-                                }
-                                KeyEventType.KeyUp -> {
-                                    if (!longFired[0]) open()
-                                    longFired[0] = false
-                                    true
-                                }
-                                else -> false
+                        focusRequester = if (item === shown.firstOrNull()) gridFirstFocus else null,
+                        modifier = Modifier.tvOkLongPress(longFired, onClick = open) {
+                            removeTarget = (item.cleanedName.ifBlank { item.name }) to {
+                                viewModel.toggleFavorite(item)
+                                Toast.makeText(context, removedText, Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
+                }
+            }
+        }
+    }
+
+    removeTarget?.let { (title, remove) ->
+        TvRemoveDialog(
+            title = title,
+            onRemove = {
+                remove()
+                removeTarget = null
+                refocusTick++
+            },
+            onDismiss = {
+                removeTarget = null
+                refocusTick++
+            }
+        )
+    }
+    // Pencere kapanınca odak listede kalsın (kaldırılan kart yoksa şeridin ya da listenin ilk kartına).
+    LaunchedEffect(refocusTick) {
+        if (refocusTick == 0) return@LaunchedEffect
+        kotlinx.coroutines.delay(200)
+        val target = when {
+            resumeShelf.isNotEmpty() -> shelfFirstFocus
+            shown.isNotEmpty() -> gridFirstFocus
+            else -> firstFocus
+        }
+        requestFocusWhenReady(target)
+    }
+}
+
+/**
+ * Kumanda OK tuşu: kısa basış [onClick], basılı tutma (tuş tekrarı) [onLongPress]. Uzun basıştan sonra tuş bırakılınca
+ * [onClick] çalışmaz. [longFired] kartın kendi durumudur (remember ile).
+ */
+private fun Modifier.tvOkLongPress(longFired: BooleanArray, onClick: () -> Unit, onLongPress: () -> Unit): Modifier =
+    onPreviewKeyEvent { event ->
+        val ok = event.key == Key.DirectionCenter || event.key == Key.Enter || event.key == Key.NumPadEnter
+        if (!ok) return@onPreviewKeyEvent false
+        when (event.type) {
+            KeyEventType.KeyDown -> {
+                val native = event.nativeKeyEvent
+                if (native.repeatCount == 0 && !native.isLongPress) {
+                    longFired[0] = false
+                } else if (!longFired[0]) {
+                    longFired[0] = true
+                    onLongPress()
+                }
+                true
+            }
+            KeyEventType.KeyUp -> {
+                if (!longFired[0]) onClick()
+                longFired[0] = false
+                true
+            }
+            else -> false
+        }
+    }
+
+/**
+ * OK'e basılı tutunca açılan küçük pencere: kartın adı, "Listeden kaldır" ve "Vazgeç". Basılı tutulan OK tuşu
+ * bırakılana kadar (tuş tekrarları ve bırakma) pencerede yok sayılır; yanlışlıkla kaldırma olmaz.
+ */
+@Composable
+private fun TvRemoveDialog(title: String, onRemove: () -> Unit, onDismiss: () -> Unit) {
+    val removeFocus = remember { FocusRequester() }
+    val armed = remember { BooleanArray(1) }
+    LaunchedEffect(Unit) { requestFocusWhenReady(removeFocus) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .widthIn(max = 520.dp)
+                .tvGlass(color = TvTheme.Background.copy(alpha = 0.96f))
+                .padding(horizontal = 32.dp, vertical = 26.dp)
+                .onPreviewKeyEvent { event ->
+                    val ok = event.key == Key.DirectionCenter || event.key == Key.Enter || event.key == Key.NumPadEnter
+                    if (!ok || armed[0]) return@onPreviewKeyEvent false
+                    if (event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0) {
+                        armed[0] = true
+                        false
+                    } else {
+                        true
+                    }
+                }
+                .testTag("tv_remove_dialog")
+        ) {
+            Text(
+                title,
+                color = TvTheme.TextPrimary,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TvGlassButton(
+                    onClick = onRemove,
+                    shape = TvTheme.PillShape,
+                    focusRequester = removeFocus,
+                    glassColor = TvTheme.Accent.copy(alpha = 0.85f),
+                    modifier = Modifier.width(210.dp).height(52.dp).testTag("tv_remove_confirm")
+                ) {
+                    Text(stringResource(R.string.tv_remove_from_list), color = TvTheme.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+                TvGlassButton(
+                    onClick = onDismiss,
+                    shape = TvTheme.PillShape,
+                    modifier = Modifier.width(160.dp).height(52.dp).testTag("tv_remove_cancel")
+                ) {
+                    Text(stringResource(R.string.game_wheel_cancel), color = TvTheme.TextSecondary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

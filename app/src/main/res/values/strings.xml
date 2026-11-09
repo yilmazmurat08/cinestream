@@ -799,4 +799,6 @@
     <string name="game_wheel_choose_desc">En az 2, en çok 8 kategori seç. Seçimin kaydedilir. (%1$d/8)</string>
     <string name="game_wheel_save">Kaydet</string>
     <string name="game_wheel_cancel">Vazgeç</string>
+    <string name="resume_removed">Nerede kalmıştık\'tan kaldırıldı</string>
+    <string name="tv_remove_from_list">Listeden kaldır</string>
 </resources>

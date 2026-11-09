@@ -16,10 +16,16 @@ object ResumeShelf {
     /** Birkaç saniyelik açıp kapatmalar "yarım kalan" sayılmaz. */
     private const val MIN_PROGRESS_SECONDS = 30L
 
-    fun from(history: List<ContinueWatching>, limit: Int = LIMIT): List<ContinueWatching> =
+    /**
+     * [hidden]: kullanıcının şeritten kaldırdığı yapımlar (anahtar → kaldırıldığı andaki son izleme zamanı). Kayıt
+     * silinmez (kaldığı yer korunur); yalnızca o zamana kadarki izlemeler şeritte görünmez. Yapım yeniden izlenince
+     * şeride geri gelir.
+     */
+    fun from(history: List<ContinueWatching>, limit: Int = LIMIT, hidden: Map<String, Long> = emptyMap()): List<ContinueWatching> =
         history.asSequence()
             .filter { it.itemType == "MOVIE" || it.itemType == "SERIES" }
             .filter { isUnfinished(it) }
+            .filter { cw -> hidden[key(cw)]?.let { cw.lastPlayedAt > it } ?: true }
             .sortedByDescending { it.lastPlayedAt }
             // Aynı dizinin birden çok bölümü tek kart: en son izlenen bölüm.
             .distinctBy { key(it) }
@@ -40,7 +46,7 @@ object ResumeShelf {
     fun progress(cw: ContinueWatching): Float? =
         if (cw.totalSeconds <= 0L) null else (cw.progressSeconds.toFloat() / cw.totalSeconds).coerceIn(0f, 1f)
 
-    private fun key(cw: ContinueWatching): String =
+    fun key(cw: ContinueWatching): String =
         if (cw.itemType == "SERIES") {
             "S:" + (SeriesParser.parseEpisodeInfo(cw.itemName)?.showTitle ?: cw.itemName).trim().lowercase(java.util.Locale.ROOT)
         } else "M:${cw.itemId}"

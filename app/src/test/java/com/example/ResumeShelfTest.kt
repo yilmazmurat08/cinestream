@@ -40,4 +40,14 @@ class ResumeShelfTest {
         assertEquals(0.5f, ResumeShelf.progress(c)!!, 0.001f)
         assertNull(ResumeShelf.minutesLeft(cw(2, "Süresiz", total = 0)))
     }
+
+    @Test fun hiddenItemsLeaveTheShelf_andComeBackWhenWatchedAgain() {
+        val history = listOf(cw(1, "Film 1", at = 10), cw(2, "Film 2", at = 20), cw(3, "Dizi S01E02", type = "SERIES", at = 30), cw(4, "Dizi S01E01", type = "SERIES", at = 5))
+        val hidden = mapOf(ResumeShelf.key(history[1]) to 20L, ResumeShelf.key(history[2]) to 30L)
+        // Film 2 ve dizinin tamamı (eski bölüm de) şeritte görünmez.
+        assertEquals(listOf(1), ResumeShelf.from(history, hidden = hidden).map { it.itemId })
+        // Film 2 sonradan yeniden izlenince şeride döner.
+        val again = history.map { if (it.itemId == 2) it.copy(lastPlayedAt = 40) else it }
+        assertEquals(listOf(2, 1), ResumeShelf.from(again, hidden = hidden).map { it.itemId })
+    }
 }

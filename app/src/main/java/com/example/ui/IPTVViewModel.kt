@@ -1216,9 +1216,23 @@ class IPTVViewModel(
     val continueWatching: StateFlow<List<ContinueWatching>> = repository.continueWatchingFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // "Nerede kalmıştık"tan kaldırılanlar (TV'de OK'e basılı tutunca). İzleme kaydı silinmez; bkz. ResumeShelf.from.
+    private val resumeHiddenPrefs by lazy {
+        getApplication<Application>().getSharedPreferences("resume_shelf_hidden", android.content.Context.MODE_PRIVATE)
+    }
+    private val resumeHidden = MutableStateFlow(
+        resumeHiddenPrefs.all.mapNotNull { (k, v) -> (v as? Long)?.let { k to it } }.toMap()
+    )
+
+    fun hideFromResumeShelf(cw: ContinueWatching) {
+        val key = com.example.util.ResumeShelf.key(cw)
+        resumeHiddenPrefs.edit().putLong(key, cw.lastPlayedAt).apply()
+        resumeHidden.value = resumeHidden.value + (key to cw.lastPlayedAt)
+    }
+
     /** Kaydedilenler'deki "Nerede kalmıştık": yarım kalan son 5 film/dizi (bkz. ResumeShelf). */
     val resumeShelf: StateFlow<List<ContinueWatching>> = repository.continueWatchingFlow
-        .map { com.example.util.ResumeShelf.from(it) }
+        .combine(resumeHidden) { history, hidden -> com.example.util.ResumeShelf.from(history, hidden = hidden) }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
