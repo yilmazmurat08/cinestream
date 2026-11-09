@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.db.AppDatabase
@@ -185,10 +186,14 @@ class TvBrowseDetailTest {
 
         // Geri: detay kapanır (MainActivity'deki Geri işleyicisi selectItem(null) çağırır).
         compose.runOnUiThread { vm.selectItem(null) }
+        compose.mainClock.autoAdvance = false
         repeat(30) {
             compose.mainClock.advanceTimeBy(100)
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
             compose.waitForIdle()
         }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
         assertEquals("TvTest Kategori", state.movieCategory)
         compose.onNodeWithTag("tv_poster_MOVIE_9002").assertIsFocused()
         compose.onNodeWithTag("tv_poster_MOVIE_9001").assertExists()
@@ -211,22 +216,17 @@ class TvBrowseDetailTest {
         compose.setContent { TvBrowseScreen(viewModel = vm, type = "MOVIE", state = state) }
         waitForTag("tv_poster_MOVIE_20011")
         compose.onNodeWithTag("tv_category_Hızlı Kat 01").assertIsFocused()
-        compose.mainClock.autoAdvance = false
-        @OptIn(ExperimentalTestApi::class)
-        fun quick(key: Key) {
-            compose.onRoot().performKeyInput { pressKey(key) }
-            compose.mainClock.advanceTimeBy(60)
-        }
-        repeat(25) { quick(Key.DirectionDown) }
-        quick(Key.DirectionRight)
-        quick(Key.DirectionLeft)
-        quick(Key.DirectionRight)
-        repeat(6) { quick(Key.DirectionDown) }
-        quick(Key.DirectionLeft)
-        repeat(10) { quick(Key.DirectionUp) }
-        quick(Key.DirectionRight)
-        quick(Key.DirectionLeft)
-        compose.mainClock.autoAdvance = true
+        // Izgaraya geç, sonra kategori listesini (odağa dokunmadan) en alta kaydır: seçili kategori satırı artık çizilmiyor.
+        press(Key.DirectionRight)
+        compose.onNodeWithTag("tv_poster_MOVIE_20011").assertIsFocused()
+        compose.onNodeWithTag("tv_categories").performScrollToIndex(40)
         compose.waitForIdle()
+        assertEquals(0, compose.onAllNodes(hasTestTag("tv_category_Hızlı Kat 01")).fetchSemanticsNodes().size)
+        // İlk sütundan Sol: eskiden "FocusRequester is not initialized" ile çöküyordu. Artık liste kaydırılır, odak
+        // seçili kategoriye gelir.
+        press(Key.DirectionLeft)
+        compose.waitUntil(5_000) {
+            runCatching { compose.onNodeWithTag("tv_category_Hızlı Kat 01").assertIsFocused() }.isSuccess
+        }
     }
 }

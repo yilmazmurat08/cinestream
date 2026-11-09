@@ -98,6 +98,9 @@ fun TvGlassButton(
     focusScale: Float = TvTheme.FocusScale,
     glassColor: Color = TvTheme.Glass,
     contentAlignment: Alignment = Alignment.Center,
+    // Odakta mor gölge yüksekliği. Ekranın en altındaki kartlarda gölge aşağı uzayıp kenarda kesik bir bant gibi
+    // görünüyordu; oralarda küçük verilir.
+    focusElevation: androidx.compose.ui.unit.Dp = 18.dp,
     content: @Composable BoxScope.(focused: Boolean) -> Unit
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -108,7 +111,7 @@ fun TvGlassButton(
         modifier = modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .shadow(
-                elevation = if (focused) 18.dp else 0.dp,
+                elevation = if (focused) focusElevation else 0.dp,
                 shape = shape,
                 clip = false,
                 ambientColor = TvTheme.FocusGlow,

@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -171,7 +173,7 @@ fun TvHomeScreen(
     ) {
         val heroHeight = maxHeight * 0.56f
         // Şerit varken bölüm kartları biraz alçalır (şerit başlığına yer açılır).
-        val cardHeight = maxHeight * (if (resumeShelf.isNotEmpty()) 0.18f else 0.2f)
+        val cardHeight = maxHeight * (if (resumeShelf.isNotEmpty()) 0.17f else 0.2f)
         TvHero(
             viewModel = viewModel,
             section = focused,
@@ -253,7 +255,8 @@ fun TvHomeScreen(
             onFocused = { onFocus(TvSection.ASSISTANT) },
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 48.dp, top = heroHeight - 64.dp)
+                // Şerit varken bölüm kartları yukarı çıkar; düğme de onlarla çakışmasın diye biraz yukarıda.
+                .padding(start = 48.dp, top = heroHeight - if (resumeShelf.isNotEmpty()) 78.dp else 64.dp)
                 .height(48.dp)
                 .focusProperties {
                     up = proFocus
@@ -272,8 +275,9 @@ fun TvHomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(start = 48.dp, end = 48.dp, bottom = if (resumeShelf.isNotEmpty()) 24.dp else 32.dp),
-            verticalArrangement = Arrangement.spacedBy(if (resumeShelf.isNotEmpty()) 16.dp else 20.dp)
+                // Alt pay: TV'lerde ekran kenarı biraz taşar (Android TV güvenli alanı ~27 dp); şerit kenara yapışmaz.
+                .padding(start = 48.dp, end = 48.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(if (resumeShelf.isNotEmpty()) 12.dp else 20.dp)
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
                 TvSection.cards.forEach { section ->
@@ -293,16 +297,32 @@ fun TvHomeScreen(
                 }
             }
             if (resumeShelf.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         stringResource(R.string.resume_shelf_title),
                         color = TvTheme.TextSecondary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
                     )
+                    // Ekrana tam 3 kart sığar (yarım kart kalmaz; kaydırınca bir kart kayar). Şerit, büyüyen odaklı kartın
+                    // kenarı ve parıltısı kesilmesin diye her yandan RESUME_ROW_PAD kadar taşar; kartlar yukarıdaki bölüm
+                    // kartlarıyla aynı hizada başlar.
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val resumeCardWidth = (maxWidth - RESUME_ROW_GAP * 2) / 3
+                    // Odaklanan kart görünür yapılırken kenar payı (RESUME_ROW_PAD) da hesaba katılır: varsayılan kaydırma
+                    // payı yok saydığı için son kartta sağ kenar kesiliyor, solda önceki karttan ince bir parça kalıyordu.
+                    val edgePx = with(androidx.compose.ui.platform.LocalDensity.current) { RESUME_ROW_PAD.toPx() }
+                    val paddedBringIntoView = remember(edgePx) { ResumeRowBringIntoView(edgePx) }
+                    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides paddedBringIntoView
+                    ) {
                     androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxWidth().testTag("tv_home_resume_row")
+                        horizontalArrangement = Arrangement.spacedBy(RESUME_ROW_GAP),
+                        contentPadding = PaddingValues(horizontal = RESUME_ROW_PAD, vertical = RESUME_ROW_PAD),
+                        modifier = Modifier
+                            .requiredWidth(maxWidth + RESUME_ROW_PAD * 2)
+                            .testTag("tv_home_resume_row")
                     ) {
                         // Anahtar kaydın kendi numarası: aynı itemId iki kayıtta olabilir.
                         items(resumeRow.size, key = { i -> resumeRow[i].let { e -> if (e.isNext) "next_${e.cw.itemId}" else "cw_${e.cw.id}" } }) { index ->
@@ -318,6 +338,7 @@ fun TvHomeScreen(
                             TvResumeCard(
                                 item = cw,
                                 isNext = entry.isNext,
+                                width = resumeCardWidth,
                                 focusRequester = if (index == 0) continueFocus else null,
                                 onFocused = {
                                     focusedResume = cw
@@ -330,6 +351,8 @@ fun TvHomeScreen(
                                     .tvOkLongPress(longFired, onClick = { onResume(cw, false) }) { menuFor = entry }
                             )
                         }
+                    }
+                    }
                     }
                 }
             }
@@ -368,6 +391,23 @@ fun TvHomeScreen(
     }
 }
 
+/** Kartı, şeridin iki yanındaki paydan içeride tutacak kadar kaydırır (bkz. "Nerede kalmıştık" şeridi). */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private class ResumeRowBringIntoView(private val edge: Float) : androidx.compose.foundation.gestures.BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+        val start = offset
+        val end = offset + size
+        return when {
+            start < edge -> start - edge
+            end > containerSize - edge -> end - (containerSize - edge)
+            else -> 0f
+        }
+    }
+}
+
+private val RESUME_ROW_GAP = 16.dp
+private val RESUME_ROW_PAD = 10.dp
+
 /** Kartta görünen ad: dizide dizinin adı (bölüm etiketi ayrı satırda), filmde filmin adı. */
 private fun resumeTitle(item: ContinueWatching): String =
     SeriesParser.parseEpisodeInfo(item.itemName)?.showTitle?.takeIf { it.isNotBlank() } ?: item.itemName
@@ -379,6 +419,7 @@ private fun resumeTitle(item: ContinueWatching): String =
 private fun TvResumeCard(
     item: ContinueWatching,
     isNext: Boolean,
+    width: androidx.compose.ui.unit.Dp,
     focusRequester: FocusRequester?,
     onFocused: () -> Unit,
     onClick: () -> Unit,
@@ -400,8 +441,9 @@ private fun TvResumeCard(
         onFocused = onFocused,
         focusScale = 1.04f,
         contentAlignment = Alignment.CenterStart,
+        focusElevation = 0.dp, // ekranın altında: gölge bant gibi uzamasın (odak çerçeve ve renkle belli)
         modifier = modifier
-            .width(300.dp)
+            .width(width)
             .height(76.dp)
             .testTag("tv_home_resume_${item.itemId}")
     ) { f ->
