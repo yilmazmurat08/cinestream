@@ -119,6 +119,7 @@ Sonraya kalanlar:
 - İzlerken açılan mini kanal listesi.
 - Profiller ve cihazlar arası eşitleme.
 
+**Spor — kullanıcı 10 Kasım 2026'da çalışmaya devam edecek (9 Kasım kararı; önceki "Spor bekler" kararının yerine).** Nerede kalındı: modül `claude/yeni-alt-bar` dalında `:sports` olarak var ve `claude/test-tum-ozellikler` dalına da birleşik; orada `FEATURE_SPORTS=false` (menüde gizli). Maçlar örnek veriyle çalışıyor (`SPORTS_SERVER_URL` boş). Veri kaynağı kararı API-Sports; aracı sunucu Cloudflare Workers'ta, anahtar yalnızca Cloudflare gizli ayarında (henüz kurulmadı / adres verilmedi). Sıradaki adımlar: aracı sunucuyu kurmak (kullanıcı Cloudflare + API-Sports hesabı açar, anahtarı sohbete yazmaz), adresi `SPORTS_SERVER_URL`'e koymak, gerçek veriyle telefon/TV testi, PRO kilidi.
 **Spor modülü:** Yazıldı ve test edildi ama bu depoda değil. Yayından sonra **PRO özellik** olarak eklenecek (kullanıcı kararı, 16 Ekim 2026). Tüm kaynak kod ve ayrıntılı not (`kaynak/HAFIZA.md`) şu sayfada:
 https://claude.ai/artifact/3v9FABLB6e6763tUZwYTPd
 
