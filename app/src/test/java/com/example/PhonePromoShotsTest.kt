@@ -318,6 +318,24 @@ class PhonePromoShotsTest {
         }
     }
 
+    /** Oynatıcı: dikey ve yatay, kontroller açık (alt tuş kapsülü). Yayın yok, görüntü siyah. */
+    private fun playerShot(name: String) {
+        val live = movies.first().copy(id = 8300, name = "5 - Yıldız TV", cleanedName = "5 - Yıldız TV", type = "LIVE",
+            category = "Ulusal", streamUrl = "http://10.255.255.1/l/5.ts", logoUrl = PromoArt.uri(app, "Yıldız TV", kanal = true))
+        compose.setContent {
+            MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) {
+                com.example.ui.screens.PlayerScreen(item = live, siblingItems = emptyList(), onBack = {}, onPlayItem = {},
+                    onProgressUpdate = { _, _, _ -> })
+            }
+        }
+        settle(800)
+        compose.onRoot().captureRoboImage(filePath = File(outDir, "$name.png").absolutePath)
+    }
+
+    @Test fun p23_playerPortrait() = playerShot("p23-oynatici-dikey")
+
+    @Test @Config(qualifiers = "+w780dp-h360dp-land") fun p24_playerLandscape() = playerShot("p24-oynatici-yatay")
+
     @Test fun p22_playerSettings() {
         compose.setContent { MyApplicationTheme(appTheme = AppTheme.PURE_BLACK, dynamicColor = false) { com.example.ui.screens.SettingsScreen(viewModel = vm) } }
         settle(2_000)
