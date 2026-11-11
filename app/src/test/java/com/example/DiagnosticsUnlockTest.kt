@@ -25,7 +25,7 @@ import org.robolectric.annotation.Config
  * dokununca açılır ve bu cihazda açık kalır.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "tr")
+@Config(sdk = [34], qualifiers = "tr-w360dp-h800dp-port-xxhdpi")
 class DiagnosticsUnlockTest {
 
     @get:Rule
