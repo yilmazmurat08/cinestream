@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -228,11 +229,13 @@ internal fun PaywallContent(
         color = Color(0xFF120A24)
     ) {
         Box(Modifier.fillMaxWidth()) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(230.dp)
-                    .background(Brush.verticalGradient(listOf(CineOrange.copy(alpha = 0.32f), Color(0xFF9D00FF).copy(alpha = 0.16f), Color.Transparent)))
+            // Üst görsel: yelpaze gibi açılmış hayali film afişleri, patlamış mısır ve film makarası. Uygulama için
+            // üretilmiştir (kaynak: tools/pro-hero/); gerçek film afişi ya da başka markaya ait görsel içermez.
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(R.drawable.pro_paywall_hero),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().aspectRatio(1080f / 600f)
             )
             // İnce yeşil neon ışık (sağ alt)
             Box(
@@ -258,14 +261,15 @@ internal fun PaywallContent(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.1f))
+                            .background(Color.Black.copy(alpha = 0.55f)) // afişlerin üstünde de seçilsin
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                             .then(if (focusOnClose) Modifier.focusRequester(firstFocus) else Modifier)
                             .testTag("paywall_close")
                     ) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.paywall_close), tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
-                ProCrownEmblem(size = if (layout.isLandscape) 56.dp else 78.dp, modifier = Modifier.offset(y = (-18).dp))
+                ProCrownEmblem(size = if (layout.isLandscape) 56.dp else 74.dp, modifier = Modifier.offset(y = (-22).dp))
                 // Başlıkta "PRO" altın renkte.
                 val titleText = stringResource(if (isPro) R.string.paywall_pro_active_title else R.string.paywall_title)
                 Text(
@@ -280,7 +284,7 @@ internal fun PaywallContent(
                         }
                     },
                     fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center,
-                    modifier = Modifier.offset(y = (-10).dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 )
                 Spacer(Modifier.height(6.dp))
                 if (!isPro && !reasonMessage.isNullOrEmpty()) {

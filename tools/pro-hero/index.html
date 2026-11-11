@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box}html,body{margin:0}
+body{width:1080px;height:600px;position:relative;overflow:hidden;background:#120A24}
+.bg{position:absolute;inset:0;background:
+ radial-gradient(520px 380px at 50% 46%, rgba(217,70,239,.75), rgba(124,58,237,.35) 45%, transparent 72%),
+ radial-gradient(360px 260px at 50% 40%, rgba(255,197,61,.35), transparent 70%),
+ radial-gradient(500px 300px at 100% 100%, rgba(124,255,107,.16), transparent 70%),
+ radial-gradient(500px 300px at 0% 100%, rgba(124,255,107,.10), transparent 70%),
+ linear-gradient(#2a0f52,#120A24)}
+.p{position:absolute;width:190px;height:285px;border-radius:14px;background-size:cover;background-position:center;
+   box-shadow:0 18px 40px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.14),0 0 34px rgba(217,70,239,.45)}
+.p::after{content:'';position:absolute;inset:0;border-radius:14px;background:linear-gradient(rgba(18,10,36,0) 40%,rgba(18,10,36,.55))}
+.l1{left:28px;top:70px;transform:perspective(700px) rotateY(38deg) rotate(-7deg)}
+.l2{left:176px;top:44px;transform:perspective(700px) rotateY(30deg) rotate(-4deg) scale(.96)}
+.l3{left:312px;top:36px;transform:perspective(700px) rotateY(22deg) rotate(-2deg) scale(.9);opacity:.85}
+.r1{right:28px;top:70px;transform:perspective(700px) rotateY(-38deg) rotate(7deg)}
+.r2{right:176px;top:44px;transform:perspective(700px) rotateY(-30deg) rotate(4deg) scale(.96)}
+.r3{right:312px;top:36px;transform:perspective(700px) rotateY(-22deg) rotate(2deg) scale(.9);opacity:.85}
+.fade{position:absolute;left:0;right:0;bottom:0;height:170px;background:linear-gradient(transparent,#120A24 96%)}
+.center{position:absolute;left:50%;top:46%;width:560px;height:560px;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,197,61,.38) 0,rgba(217,70,239,.55) 26%,rgba(124,58,237,.30) 48%,transparent 70%)}
+.ring{position:absolute;left:50%;top:48%;width:520px;height:150px;transform:translate(-50%,-50%) rotate(-14deg);border-radius:50%;
+  border:3px solid rgba(255,197,61,.55);box-shadow:0 0 30px rgba(255,197,61,.55), inset 0 0 30px rgba(255,197,61,.25)}
+svg{position:absolute}
+.sp{position:absolute;border-radius:50%}
+</style></head><body>
+<div class="bg"></div>
+<div class="p l3" style="background-image:url(golge-avcisi.jpg)"></div>
+<div class="p r3" style="background-image:url(kizil-sinir.jpg)"></div>
+<div class="p l2" style="background-image:url(sonsuz-yorunge.jpg)"></div>
+<div class="p r2" style="background-image:url(eski-konak.jpg)"></div>
+<div class="p l1" style="background-image:url(gece-yarisi-treni.jpg)"></div>
+<div class="p r1" style="background-image:url(mavi-dalga.jpg)"></div>
+<div class="center"></div><div class="ring"></div>
+<div class="fade"></div>
+<!-- patlamış mısır -->
+<svg style="left:10px;bottom:0" width="205" height="222" viewBox="0 0 250 270">
+ <defs><linearGradient id="k" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e9dcc8"/></linearGradient>
+ <radialGradient id="m" cx=".35" cy=".3"><stop offset="0" stop-color="#fffbe6"/><stop offset=".6" stop-color="#ffe08a"/><stop offset="1" stop-color="#f5b942"/></radialGradient></defs>
+ <g>
+  <circle cx="62" cy="96" r="30" fill="url(#m)"/><circle cx="104" cy="70" r="34" fill="url(#m)"/><circle cx="150" cy="78" r="32" fill="url(#m)"/><circle cx="190" cy="100" r="28" fill="url(#m)"/>
+  <circle cx="84" cy="112" r="28" fill="url(#m)"/><circle cx="128" cy="106" r="32" fill="url(#m)"/><circle cx="168" cy="118" r="27" fill="url(#m)"/><circle cx="126" cy="50" r="24" fill="url(#m)"/>
+ </g>
+ <path d="M38 118 L212 118 L188 262 L62 262 Z" fill="url(#k)"/>
+ <g fill="#e11d48"><path d="M38 118 L67 118 L80 262 L62 262Z"/><path d="M96 118 L125 118 L125 262 L104 262Z"/><path d="M154 118 L183 118 L165 262 L146 262Z"/><path d="M204 118 L212 118 L188 262 L186 262Z"/></g>
+ <path d="M38 118 L212 118 L209 136 L41 136Z" fill="rgba(0,0,0,.18)"/>
+</svg>
+<!-- film makarası -->
+<svg style="right:6px;bottom:-6px" width="215" height="215" viewBox="0 0 270 270">
+ <defs><radialGradient id="r" cx=".4" cy=".35"><stop offset="0" stop-color="#9a93ad"/><stop offset=".55" stop-color="#4a4460"/><stop offset="1" stop-color="#1f1a30"/></radialGradient></defs>
+ <path d="M150 232 C200 250 240 240 270 214 L270 262 C230 280 190 276 150 262Z" fill="#2a2440"/>
+ <g fill="#ffc53d" opacity=".85"><rect x="166" y="244" width="14" height="10" rx="2"/><rect x="192" y="246" width="14" height="10" rx="2"/><rect x="218" y="242" width="14" height="10" rx="2"/><rect x="244" y="234" width="14" height="10" rx="2"/></g>
+ <circle cx="130" cy="150" r="112" fill="url(#r)" stroke="#c9c3da" stroke-width="5"/>
+ <circle cx="130" cy="150" r="96" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
+ <g fill="#120A24"><circle cx="130" cy="88" r="27"/><circle cx="189" cy="131" r="27"/><circle cx="166" cy="200" r="27"/><circle cx="94" cy="200" r="27"/><circle cx="71" cy="131" r="27"/></g>
+ <circle cx="130" cy="150" r="17" fill="#c9c3da"/><circle cx="130" cy="150" r="7" fill="#120A24"/>
+</svg>
+<div class="sp" style="left:300px;top:150px;width:8px;height:8px;background:#ffc53d;box-shadow:0 0 14px #ffc53d"></div>
+<div class="sp" style="left:760px;top:110px;width:7px;height:7px;background:#7cff6b;box-shadow:0 0 14px #7cff6b"></div>
+<div class="sp" style="left:700px;top:330px;width:6px;height:6px;background:#ffc53d;box-shadow:0 0 12px #ffc53d"></div>
+<div class="sp" style="left:360px;top:340px;width:6px;height:6px;background:#7cff6b;box-shadow:0 0 12px #7cff6b"></div>
+<div class="sp" style="left:540px;top:30px;width:5px;height:5px;background:#fff;box-shadow:0 0 12px #fff"></div>
+</body></html>
