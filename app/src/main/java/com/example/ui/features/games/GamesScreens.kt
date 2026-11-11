@@ -1072,11 +1072,12 @@ private fun QuizGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> Un
                             model = r.show.logoUrl,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            // Hafif bulanık: renkler ve yüzler sezilir, ipucu verir ama adı okunmaz.
-                            modifier = Modifier.fillMaxSize().then(if (state.won) Modifier else Modifier.blur(6.dp))
+                            // Telefonda poster net (kullanıcı kararı, 11 Kasım 2026). TV'de hafif bulanık: renkler ve yüzler
+                            // sezilir, ipucu verir ama adı okunmaz.
+                            modifier = Modifier.fillMaxSize().then(if (state.won || !tvMode) Modifier else Modifier.blur(6.dp))
                         )
                         // Android 12 altında bulanıklık çalışmaz (Mi TV Stick): orada yalnızca yarı saydam bir örtü.
-                        if (!state.won && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+                        if (tvMode && !state.won && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
                             Box(Modifier.fillMaxSize().background(Color(0x990E071A)).testTag("quiz_poster_hidden"))
                         }
                     }
