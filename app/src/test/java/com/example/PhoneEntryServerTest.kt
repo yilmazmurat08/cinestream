@@ -158,4 +158,36 @@ class PhoneEntryServerTest {
         assertEquals("liste.example.com", PhoneEntryData.defaultName("http://www.liste.example.com/get.php"))
         assertEquals("IPTV", PhoneEntryData.defaultName("bozuk adres"))
     }
+
+    private fun rawGet(port: Int, target: String): String =
+        Socket("127.0.0.1", port).use { socket ->
+            socket.soTimeout = 10_000
+            socket.getOutputStream().apply {
+                write("GET $target HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n".toByteArray())
+                flush()
+            }
+            socket.getInputStream().readBytes().toString(Charsets.UTF_8)
+        }
+
+    @Test
+    fun responses_carrySecurityHeaders() {
+        val (s, port) = startServer()
+        val response = rawGet(port, "/?t=${s.token}")
+        assertTrue(response.contains("X-Content-Type-Options: nosniff"))
+        assertTrue(response.contains("X-Frame-Options: DENY"))
+        assertTrue(response.contains("Referrer-Policy: no-referrer"))
+        assertTrue(response.contains("Cache-Control: no-store"))
+    }
+
+    /** Aynı ağdan kod deneme: 50 yanlış koddan sonra sunucu kapanır. Tarayıcının kodsuz favicon isteği sayılmaz. */
+    @Test
+    fun tooManyWrongTokens_stopTheServer_faviconDoesNotCount() {
+        val (s, port) = startServer()
+        repeat(60) { http(port, "GET", "/favicon.ico") }
+        assertTrue(http(port, "GET", "/?t=${s.token}").first.contains("200"))
+        repeat(51) { runCatching { http(port, "GET", "/?t=yanlis$it") } }
+        Thread.sleep(200)
+        val stillServing = runCatching { http(port, "GET", "/?t=${s.token}").first.contains("200") }.getOrDefault(false)
+        assertTrue("sunucu kapanmış olmalı", !stillServing)
+    }
 }

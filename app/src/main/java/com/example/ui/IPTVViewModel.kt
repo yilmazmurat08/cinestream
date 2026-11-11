@@ -742,6 +742,7 @@ class IPTVViewModel(
         val c = com.example.util.CatchUp.credentialsOf(channel) ?: return emptyList()
         val now = System.currentTimeMillis()
         catchUpCache[channel.id]?.let { (at, list) -> if (now - at < 10 * 60_000L) return list }
+        if (catchUpCache.size > 40) catchUpCache.clear() // bellek: uzun oturumda sınırsız büyümesin
         val zone = _xtreamAccount.value?.serverTimezone?.let { java.util.TimeZone.getTimeZone(it) } ?: java.util.TimeZone.getDefault()
         val list = com.example.data.api.XtreamCatchUpApi.fetch(c, now, zone)
         catchUpCache[channel.id] = now to list
@@ -1263,7 +1264,7 @@ class IPTVViewModel(
         show?.let { com.example.util.ResumeShelf.nextEpisode(it, finished) }?.let { next ->
             ContinueWatching(
                 itemId = next.item.id,
-                itemName = "%s S%02dE%02d".format(title.ifBlank { show.title }, next.seasonNumber, next.episodeNumber),
+                itemName = "%s S%02dE%02d".format(java.util.Locale.ROOT, title.ifBlank { show.title }, next.seasonNumber, next.episodeNumber),
                 itemType = "SERIES",
                 itemLogo = next.logoUrl?.takeIf { it.isNotBlank() } ?: next.item.logoUrl ?: finished.itemLogo,
                 streamUrl = next.streamUrl.ifBlank { next.item.streamUrl },
@@ -1307,13 +1308,10 @@ class IPTVViewModel(
 
     // TMDB Carousel and Hero Banner States
     private val _trendingList = MutableStateFlow<List<IPTVItem>>(emptyList())
-    val trendingList: StateFlow<List<IPTVItem>> = _trendingList.asStateFlow()
 
     private val _popularMoviesList = MutableStateFlow<List<IPTVItem>>(emptyList())
-    val popularMoviesList: StateFlow<List<IPTVItem>> = _popularMoviesList.asStateFlow()
 
     private val _popularSeriesList = MutableStateFlow<List<IPTVItem>>(emptyList())
-    val popularSeriesList: StateFlow<List<IPTVItem>> = _popularSeriesList.asStateFlow()
 
     /** TMDB'de bugün popüler olup kullanıcının dizi kataloğunda bulunan dizilerin kimlikleri (popülerlik sırasıyla). */
     private val _popularSeriesInLibraryIds = MutableStateFlow<List<Int>>(emptyList())
@@ -1354,9 +1352,6 @@ class IPTVViewModel(
 
     private val _isTMDBLoading = MutableStateFlow(false)
     val isTMDBLoading: StateFlow<Boolean> = _isTMDBLoading.asStateFlow()
-
-    private val _heroBannerItem = MutableStateFlow<IPTVItem?>(null)
-    val heroBannerItem: StateFlow<IPTVItem?> = _heroBannerItem.asStateFlow()
 
     // 12 Saatte bir güncellenen öne çıkan M3U filmi
     private val _featuredMovie = MutableStateFlow<com.example.data.repository.FeaturedMovie?>(null)
@@ -1946,13 +1941,13 @@ class IPTVViewModel(
                     val poster = selectedMovie.logoUrl
                     val backdrop = selectedMovie.logoUrl
                     var overview = selectedMovie.summary
-                    var rating = if (selectedMovie.rating > 0) String.format("%.1f", selectedMovie.rating) else null
+                    var rating = if (selectedMovie.rating > 0) String.format(java.util.Locale.US, "%.1f", selectedMovie.rating) else null
 
                     try {
                         val tmdbDetails = tmdbRepository.fetchDetailsByTitle(selectedMovie.cleanedName.ifEmpty { selectedMovie.name }, type = "MOVIE", tmdbApiKey = tmdbApiKey.value)
                         if (tmdbDetails != null) {
                             if (tmdbDetails.overview.isNotBlank() && tmdbDetails.overview != "Açıklama bulunamadı.") overview = tmdbDetails.overview
-                            if (tmdbDetails.rating > 0.0) rating = String.format("%.1f", tmdbDetails.rating)
+                            if (tmdbDetails.rating > 0.0) rating = String.format(java.util.Locale.US, "%.1f", tmdbDetails.rating)
                         }
                     } catch (e: Exception) {
                         Log.w("IPTVViewModel", "TMDB search fallback for featured movie", e)
@@ -2058,7 +2053,7 @@ class IPTVViewModel(
                     ) ?: return@forEachIndexed
                     val current = slides[index]
                     val overview = if (details.overview.isNotBlank() && details.overview != "Açıklama bulunamadı.") details.overview else current.overview
-                    val rating = if (details.rating > 0.0) String.format("%.1f", details.rating) else current.imdbRating
+                    val rating = if (details.rating > 0.0) String.format(java.util.Locale.US, "%.1f", details.rating) else current.imdbRating
                     slides = slides.toMutableList().also { it[index] = current.copy(overview = overview, imdbRating = rating) }
                     _featuredCarousel.value = slides
                 } catch (e: kotlinx.coroutines.CancellationException) {
@@ -2075,7 +2070,7 @@ class IPTVViewModel(
         posterUrl = logoUrl,
         backdropUrl = logoUrl,
         overview = summary.ifBlank { null },
-        imdbRating = if (rating > 0) String.format("%.1f", rating) else null,
+        imdbRating = if (rating > 0) String.format(java.util.Locale.US, "%.1f", rating) else null,
         releaseDate = releaseDate,
         category = category,
         streamUrl = streamUrl,
@@ -2247,7 +2242,6 @@ class IPTVViewModel(
                 val geminiPicks = com.example.data.api.MetadataEnricher.getGeminiDailyPicks(getApplication())
                 val finalTrending = if (tmdbTrending.isNotEmpty()) tmdbTrending else geminiPicks
                 _trendingList.value = finalTrending.filterNot { isAdultContent(it) }
-                _heroBannerItem.value = finalTrending.firstOrNull { !isAdultContent(it) }
 
                 // 2. Fetch popular movies & series from TMDB or fallback
                 val popularMovies = tmdbRepository.getPopularMoviesList(key)
@@ -2739,6 +2733,7 @@ class IPTVViewModel(
         // Yanlış diziye bağlanmasın: bölüm gelen listede olmalı.
         if (fetched.seasons.none { s -> s.episodes.any { it.item.id == item.id } }) return null
         fetched.seasons.forEach { season -> season.episodes.forEach { episodeToSeries[it.item.id] = fetched.id } }
+        if (catalogShowCache.size >= 8) catalogShowCache.clear() // bellek: dizi başına yüzlerce bölüm olabilir
         catalogShowCache[cacheKey] = fetched
         return fetched
     }

@@ -77,7 +77,7 @@ fun FeaturedMovieCard(
         category = featuredMovie.category ?: "Öne Çıkan",
         type = "MOVIE",
         summary = featuredMovie.overview ?: "",
-        rating = featuredMovie.imdbRating?.toDoubleOrNull() ?: 8.0,
+        rating = featuredMovie.imdbRating?.replace(',', '.')?.toDoubleOrNull() ?: 8.0,
         releaseDate = featuredMovie.releaseDate ?: ""
     )
 

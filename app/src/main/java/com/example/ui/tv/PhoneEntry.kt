@@ -116,6 +116,8 @@ class PhoneEntryServer(
     private var serverSocket: ServerSocket? = null
     private var acceptJob: Job? = null
     private var address: String? = null
+    // Yanlış kodla gelen istek sayısı: sınır aşılırsa sunucu kapanır (aynı ağdan kod deneme saldırısına karşı).
+    private val wrongTokenCount = java.util.concurrent.atomic.AtomicInteger(0)
 
     /**
      * Sunucuyu başlatır. Ağ yoksa ya da port açılamazsa false döner.
@@ -180,7 +182,9 @@ class PhoneEntryServer(
                 val path = target.substringBefore('?')
                 val query = parseForm(target.substringAfter('?', ""))
 
-                if (query["t"] != token) {
+                if (!java.security.MessageDigest.isEqual(query["t"].orEmpty().toByteArray(), token.toByteArray())) {
+                    // Tarayıcılar kodsuz /favicon.ico ister: sayılmaz.
+                    if (path != "/favicon.ico" && wrongTokenCount.incrementAndGet() > MAX_WRONG_TOKENS) stop()
                     respond(output, "403 Forbidden", simplePage(tr(english, "Bu bağlantının süresi dolmuş. TV'deki QR kodu yeniden okut.", "This link has expired. Scan the QR code on the TV again.")))
                     return@use
                 }
@@ -291,6 +295,7 @@ class PhoneEntryServer(
     companion object {
         private const val PREFERRED_PORT = 8765
         private const val MAX_BODY_BYTES = 16 * 1024
+        private const val MAX_WRONG_TOKENS = 50
 
         fun errorMessage(error: PhoneEntryError, english: Boolean): String = when (error) {
             PhoneEntryError.INVALID_KEY -> tr(english, "Anahtar geçersiz görünüyor. Tamamını kopyalayıp tekrar gönder.", "The key looks invalid. Copy the whole key and send it again.")
@@ -371,6 +376,9 @@ class PhoneEntryServer(
                 "Content-Type: text/html; charset=utf-8\r\n" +
                 "Content-Length: ${bytes.size}\r\n" +
                 "Cache-Control: no-store\r\n" +
+                "X-Content-Type-Options: nosniff\r\n" +
+                "X-Frame-Options: DENY\r\n" +
+                "Referrer-Policy: no-referrer\r\n" +
                 "Connection: close\r\n\r\n"
             output.write(header.toByteArray(Charsets.US_ASCII))
             output.write(bytes)

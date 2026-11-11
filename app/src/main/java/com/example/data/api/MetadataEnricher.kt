@@ -211,7 +211,7 @@ object MetadataEnricher {
 
         val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_vod_info&vod_id=${creds.streamId}"
 
-        Log.d(TAG, "Calling Xtream API GET request: $apiUrl")
+        Log.d(TAG, "Calling Xtream API GET request: ${com.example.util.DiagnosticLog.redact(apiUrl)}")
 
         try {
             val request = Request.Builder()
@@ -321,7 +321,7 @@ object MetadataEnricher {
         }
         try {
             val apiUrl = "${creds.baseUrl}/player_api.php?username=${com.example.util.XtreamUrls.queryValue(creds.user)}&password=${com.example.util.XtreamUrls.queryValue(creds.pass)}&action=get_series"
-            Log.d(TAG, "Xtream toplu dizi listesi çağrılıyor: $apiUrl")
+            Log.d(TAG, "Xtream toplu dizi listesi çağrılıyor: ${com.example.util.DiagnosticLog.redact(apiUrl)}")
 
             val request = Request.Builder().url(apiUrl).get().build()
             val response = clientByTimeout.newCall(request).execute()
@@ -1719,6 +1719,7 @@ object MetadataEnricher {
         if (sanitized.isBlank()) return@withContext null
 
         val cacheKey = sanitized.lowercase(java.util.Locale.ROOT)
+        if (seriesOverviewMemoryCache.size > 300) seriesOverviewMemoryCache.clear() // bellek sınırı
         seriesOverviewMemoryCache[cacheKey]?.let { cached ->
             return@withContext cached.ifBlank { null }
         }

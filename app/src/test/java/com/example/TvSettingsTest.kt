@@ -88,4 +88,50 @@ class TvSettingsTest {
         }
         assertEquals(ViewMode.PHONE, mode)
     }
+
+    /**
+     * Hızlı gezinme: liste aşağı kayıp ilk satır (panelin hâlâ gösterdiği ayar) ekran dışına çıkınca panele girip
+     * Sol / Geri ile dönmek uygulamayı kapatıyordu ("FocusRequester is not initialized": satır tembel listede
+     * çizilmiyordu). Satırlar artık her zaman çizili.
+     */
+    @Test
+    fun fastDown_thenIntoPanel_leftAndBack_doNotCrash() {
+        runBlocking { SettingsRepository(app).setViewMode(ViewMode.TV) }
+        val db = AppDatabase.getDatabase(app)
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        compose.setContent { TvSettingsScreen(viewModel = vm) }
+        compose.waitUntil(5_000) { compose.onAllNodes(hasTestTag("tv_setting_PLAYLISTS")).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitForIdle()
+        compose.onNodeWithTag("tv_setting_PLAYLISTS").assertIsFocused()
+
+        // En alttaki ayara in ve bekle: panel artık onu gösteriyor.
+        repeat(12) { press(Key.DirectionDown) }
+        compose.onNodeWithTag("tv_setting_LEGAL").assertIsFocused()
+        compose.mainClock.advanceTimeBy(400)
+        compose.waitForIdle()
+
+        // Seçim (panelin gösterdiği ayar) odağı 250 ms geriden izler: saat durdurulup hızla en üste çıkılır; panelin
+        // gösterdiği satır (en alttaki) ekran dışında kalır.
+        compose.mainClock.autoAdvance = false
+        @OptIn(ExperimentalTestApi::class)
+        fun quick(key: Key) {
+            compose.onRoot().performKeyInput { pressKey(key) }
+            compose.mainClock.advanceTimeBy(16)
+        }
+        repeat(12) { quick(Key.DirectionUp) }
+        quick(Key.DirectionRight) // panele gir (panel hâlâ en alttaki ayarı gösteriyor)
+        val focusedTags = compose.onAllNodes(isFocused(), useUnmergedTree = true).fetchSemanticsNodes().map {
+            it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }
+        }
+        assertEquals("odak panelde olmalı: $focusedTags", true, focusedTags.none { it?.startsWith("tv_setting_") == true })
+        quick(Key.DirectionLeft)  // eskiden burada çöküyordu
+        quick(Key.DirectionRight)
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        compose.mainClock.advanceTimeBy(16)
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        // Bütün satırlar çizili: en üstteki ve en alttaki ayar da ağaçta.
+        compose.onNodeWithTag("tv_setting_PROFILE").assertExists()
+        compose.onNodeWithTag("tv_setting_LEGAL").assertExists()
+    }
 }

@@ -507,7 +507,6 @@
     <string name="tv_series">Diziler</string>
     <string name="tv_saved">Kaydedilenler</string>
     <string name="tv_profile_settings">Profil / Ayarlar</string>
-    <string name="tv_continue_watching">İzlemeye Devam Et</string>
     <string name="tv_ask_assistant">Asistana sor</string>
     <string name="tv_seek_bar_desc">İlerleme çubuğu: Sol ve Sağ ile sar, OK ile git</string>
     <string name="tv_search">Ara</string>

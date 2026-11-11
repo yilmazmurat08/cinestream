@@ -153,6 +153,7 @@ class PersonCreditsRepository(private val context: Context) {
         val name = PersonWorksMatcher.primaryName(personName)
         val key = name.lowercase(java.util.Locale.ROOT).trim()
         if (key.isBlank()) return@withContext null
+        if (photoCache.size > 2000) photoCache.clear() // bellek sınırı
         photoCache[key]?.let { return@withContext it.ifEmpty { null } }
 
         val dao = com.example.data.db.AppDatabase.getDatabase(context).iptvDao()
