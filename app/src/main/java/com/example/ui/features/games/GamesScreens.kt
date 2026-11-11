@@ -67,7 +67,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -1072,14 +1071,9 @@ private fun QuizGame(viewModel: IPTVViewModel, tvMode: Boolean, onBack: () -> Un
                             model = r.show.logoUrl,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            // Telefonda poster net (kullanıcı kararı, 11 Kasım 2026). TV'de hafif bulanık: renkler ve yüzler
-                            // sezilir, ipucu verir ama adı okunmaz.
-                            modifier = Modifier.fillMaxSize().then(if (state.won || !tvMode) Modifier else Modifier.blur(6.dp))
+                            // Poster net (telefon ve TV; kullanıcı kararı, 11 Kasım 2026). Eskiden bulanıktı.
+                            modifier = Modifier.fillMaxSize()
                         )
-                        // Android 12 altında bulanıklık çalışmaz (Mi TV Stick): orada yalnızca yarı saydam bir örtü.
-                        if (tvMode && !state.won && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
-                            Box(Modifier.fillMaxSize().background(Color(0x990E071A)).testTag("quiz_poster_hidden"))
-                        }
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         when {
