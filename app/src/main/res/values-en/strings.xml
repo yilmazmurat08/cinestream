@@ -816,4 +816,17 @@
     <string name="pro_banner_b2">Add up to 3 playlists</string>
     <string name="pro_banner_b3">Games</string>
     <string name="pro_banner_cta">Upgrade to PRO</string>
+    <string name="agenda_label">AGENDA</string>
+    <string name="agenda_title">Cinema Agenda</string>
+    <string name="agenda_subtitle">Refreshed every day</string>
+    <string name="agenda_now_playing">“%1$s” is in cinemas this week</string>
+    <string name="agenda_upcoming">Coming soon: “%1$s” · %2$s</string>
+    <string name="agenda_upcoming_no_date">Coming soon: “%1$s”</string>
+    <string name="agenda_trending">Most talked about today: “%1$s”</string>
+    <string name="agenda_new_season">“%1$s” season %2$d starts on %3$s</string>
+    <string name="agenda_season_started">“%1$s” is back with season %2$d</string>
+    <string name="agenda_in_library">IN YOUR LIST</string>
+    <string name="agenda_movie">MOVIE</string>
+    <string name="agenda_series">SERIES</string>
+    <string name="agenda_rating">Rating %1$s</string>
 </resources>

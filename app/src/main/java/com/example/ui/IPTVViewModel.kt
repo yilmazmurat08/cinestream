@@ -3040,6 +3040,29 @@ class IPTVViewModel(
         }
     }
 
+    // ------------------------------------------------------------------
+    // Ana sayfa: Sinema Gündemi (bkz. CinemaAgendaRepository)
+    // ------------------------------------------------------------------
+    private val _cinemaAgenda = MutableStateFlow<List<com.example.data.repository.AgendaEntry>>(emptyList())
+    val cinemaAgenda: StateFlow<List<com.example.data.repository.AgendaEntry>> = _cinemaAgenda.asStateFlow()
+    private var cinemaAgendaKey = ""
+    private var cinemaAgendaJob: kotlinx.coroutines.Job? = null
+
+    /** Gündemi alır (12 saat önbellekli, cihazda saklı) ve kütüphaneyle eşleştirir. Yetişkin içerik gösterilmez. */
+    fun loadCinemaAgenda() {
+        if (!com.example.BuildConfig.FEATURE_CINEMA_AGENDA || cinemaAgendaJob?.isActive == true) return
+        cinemaAgendaJob = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            val lines = com.example.data.repository.CinemaAgendaRepository.fetch(getApplication())
+            if (lines.isEmpty()) return@launch
+            val pool = personWorksLibraryPool()
+            val key = "${lines.map { it.kind to it.tmdbId }}_${pool.size}"
+            if (key == cinemaAgendaKey && _cinemaAgenda.value.isNotEmpty()) return@launch
+            _cinemaAgenda.value = com.example.data.repository.CinemaAgendaRepository.matchToLibrary(lines, pool)
+                .filterNot { isAdultContent(it.tmdbItem) || (it.libraryItem?.let { item -> isAdultContent(item) } ?: false) }
+            cinemaAgendaKey = key
+        }
+    }
+
     /** Sinema ülkesini değiştirir; null = otomatik (cihazın bulunduğu ülke). */
     fun setNowPlayingRegion(code: String?) {
         com.example.data.repository.NowPlayingRepository.setRegionOverride(getApplication(), code)

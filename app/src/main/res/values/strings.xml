@@ -815,4 +815,17 @@
     <string name="pro_banner_b2">3 listeye kadar ekle</string>
     <string name="pro_banner_b3">Oyunlar</string>
     <string name="pro_banner_cta">PRO\'ya yükselt</string>
+    <string name="agenda_label">GÜNDEM</string>
+    <string name="agenda_title">Sinema Gündemi</string>
+    <string name="agenda_subtitle">Her gün yenilenir</string>
+    <string name="agenda_now_playing">“%1$s” bu hafta vizyonda</string>
+    <string name="agenda_upcoming">Yakında: “%1$s” · %2$s</string>
+    <string name="agenda_upcoming_no_date">Yakında: “%1$s”</string>
+    <string name="agenda_trending">Bugün en çok konuşulan: “%1$s”</string>
+    <string name="agenda_new_season">“%1$s” %2$d. sezon %3$s tarihinde başlıyor</string>
+    <string name="agenda_season_started">“%1$s” %2$d. sezonuyla yayında</string>
+    <string name="agenda_in_library">LİSTENDE VAR</string>
+    <string name="agenda_movie">FİLM</string>
+    <string name="agenda_series">DİZİ</string>
+    <string name="agenda_rating">Puan %1$s</string>
 </resources>

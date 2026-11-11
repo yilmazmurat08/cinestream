@@ -33,6 +33,8 @@ android {
     // Spor ve Oyunlar (PRO). Açma/kapama anahtarı: "false" yapılınca menüde görünmez.
     buildConfigField("boolean", "FEATURE_SPORTS", "false")
     buildConfigField("boolean", "FEATURE_GAMES", "true")
+    // Ana sayfada "Sinema Gündemi" (TMDB verisinden günlük satırlar). "false": eski yapay zekâ bülteni görünür.
+    buildConfigField("boolean", "FEATURE_CINEMA_AGENDA", "true")
     // Spor aracı sunucusunun adresi (Cloudflare Workers; gizli değildir). Boşsa Spor örnek veriyle çalışır.
     buildConfigField("String", "SPORTS_SERVER_URL", "\"\"")
     // Yalnızca önizleme (test) sürümünde: satın alma olmadan PRO özellikleri açılır. Mağazada her zaman false.
