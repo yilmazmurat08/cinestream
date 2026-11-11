@@ -2652,46 +2652,6 @@ private fun SettingsProfileRow(displayName: String?, email: String, photoUrl: St
 
 @Composable
 private fun SettingsProRow(isProUser: Boolean, onClick: () -> Unit) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Brush.linearGradient(listOf(CineOrange, Color(0xFF7C3AED))), RoundedCornerShape(16.dp))
-            .testTag("settings_pro_row")
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Brush.horizontalGradient(listOf(CineOrange.copy(alpha = 0.18f), Color(0xFF7C3AED).copy(alpha = 0.10f))))
-                .then(com.example.ui.tv.tvRestorableFocus())
-                .clickable(onClick = onClick)
-                .padding(14.dp)
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(40.dp).clip(CircleShape).background(CineOrange)
-            ) {
-                Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text("CineStream PRO", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    stringResource(if (isProUser) R.string.pro_card_title_active else R.string.settings_pro_row_free),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-            }
-            if (isProUser) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(24.dp))
-            } else {
-                Text(
-                    stringResource(R.string.settings_pro_row_cta),
-                    color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(CineOrange).padding(horizontal = 14.dp, vertical = 7.dp)
-                )
-            }
-        }
-    }
+    // Taçlı, altın vurgulu PRO afişi (bkz. ProVisuals).
+    com.example.ui.components.ProHeroBanner(isProUser = isProUser, onClick = onClick)
 }

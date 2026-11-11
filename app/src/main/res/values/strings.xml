@@ -760,7 +760,7 @@
     <string name="game_wheel_result">%1$s · listenden 3 film · birini seç</string>
     <string name="game_wheel_hint">Posterine dokununca film kartı açılır. Beğenmezsen çarkı yeniden çevir.</string>
     <string name="game_wheel_empty">Çark için yeterli kategori yok: her kategoride en az 3 posterli film gerekir.</string>
-    <string name="game_quiz_title">Diziyi bil, kartı aç</string>
+    <string name="game_quiz_title">Diziyi bil, izle</string>
     <string name="game_quiz_desc">Gizli dizi hakkında iki şıklı sorular. Üç hakkın var.</string>
     <string name="game_quiz_progress">Soru %1$d · %2$d hakkın var</string>
     <string name="game_quiz_q_year">Dizi ilk kez hangi yıl yayınlandı?</string>
@@ -803,4 +803,16 @@
     <string name="player_episodes_seasons">Bölümler ve Sezonlar</string>
     <string name="tv_season_episode_short">S%1$d B%2$d</string>
     <string name="resume_up_next">Sıradaki</string>
+    <string name="feedback_title">Geri bildirimde bulun</string>
+    <string name="feedback_mail_subject">CineStream geri bildirim</string>
+    <string name="feedback_no_mail_app">Bu cihazda e-posta uygulaması bulunamadı.</string>
+    <string name="feedback_tv_hint">Geri bildirim için uygulamayı telefonunda aç: Ayarlar → Yasal → Geri bildirimde bulun.</string>
+    <string name="pro_point_games">Oyunlar: kaydırma, çark, dizi yarışması ve poster puzzle</string>
+    <string name="pro_point_sports">Spor: maç programı ve canlı skorlar</string>
+    <string name="paywall_best_value">En avantajlı seçenek</string>
+    <string name="pro_banner_tagline">Sınırsız izle, daha fazlasını aç</string>
+    <string name="pro_banner_b1">Günlük süre sınırı yok</string>
+    <string name="pro_banner_b2">3 listeye kadar ekle</string>
+    <string name="pro_banner_b3">Oyunlar</string>
+    <string name="pro_banner_cta">PRO\'ya yükselt</string>
 </resources>

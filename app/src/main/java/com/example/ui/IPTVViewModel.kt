@@ -599,6 +599,17 @@ class IPTVViewModel(
     private val _paywallReasonMessage = MutableStateFlow<String?>(null)
     val paywallReasonMessage: StateFlow<String?> = _paywallReasonMessage.asStateFlow()
 
+    /**
+     * İlk kurulumdan (liste girildikten) hemen sonra PRO seçenekleri bir kez gösterilir; kullanıcı kapatıp ücretsiz
+     * devam edebilir. PRO kullanıcıya ve daha önce gösterildiyse açılmaz.
+     */
+    fun openWelcomePaywallOnce() {
+        val prefs = getApplication<Application>().getSharedPreferences("paywall_prefs", android.content.Context.MODE_PRIVATE)
+        if (prefs.getBoolean("welcome_shown", false)) return
+        prefs.edit().putBoolean("welcome_shown", true).apply()
+        if (!isProUser.value) openPaywall()
+    }
+
     fun openPaywall(reason: String? = null) {
         _paywallReasonMessage.value = reason
         _showPaywallDialog.value = true

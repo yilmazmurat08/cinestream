@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -220,18 +221,29 @@ internal fun PaywallContent(
             .padding(vertical = 16.dp)
             .clip(RoundedCornerShape(24.dp))
             .border(
-                BorderStroke(1.5.dp, Brush.linearGradient(listOf(CineOrange, Color(0xFFFF007A), Color(0xFF9D00FF)))),
+                BorderStroke(1.5.dp, Brush.linearGradient(listOf(ProGold, CineOrange, Color(0xFF9D00FF), ProNeonGreen.copy(alpha = 0.8f)))),
                 RoundedCornerShape(24.dp)
             )
             .testTag("pro_paywall_dialog"),
-        color = Color(0xFF140D2B)
+        color = Color(0xFF120A24)
     ) {
         Box(Modifier.fillMaxWidth()) {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
-                    .background(Brush.verticalGradient(listOf(CineOrange.copy(alpha = 0.25f), Color(0xFF9D00FF).copy(alpha = 0.15f), Color.Transparent)))
+                    .height(230.dp)
+                    .background(Brush.verticalGradient(listOf(CineOrange.copy(alpha = 0.32f), Color(0xFF9D00FF).copy(alpha = 0.16f), Color.Transparent)))
+            )
+            // İnce yeşil neon ışık (sağ alt)
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.radialGradient(
+                            listOf(ProNeonGreen.copy(alpha = 0.10f), Color.Transparent),
+                            center = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY), radius = 700f
+                        )
+                    )
             )
             Column(
                 Modifier
@@ -253,14 +265,22 @@ internal fun PaywallContent(
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.paywall_close), tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
-                Box(
-                    Modifier.size(64.dp).clip(CircleShape).background(Brush.linearGradient(listOf(CineOrange, Color(0xFFFF007A)))),
-                    contentAlignment = Alignment.Center
-                ) { Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp)) }
-                Spacer(Modifier.height(12.dp))
+                ProCrownEmblem(size = if (layout.isLandscape) 56.dp else 78.dp, modifier = Modifier.offset(y = (-18).dp))
+                // Başlıkta "PRO" altın renkte.
+                val titleText = stringResource(if (isPro) R.string.paywall_pro_active_title else R.string.paywall_title)
                 Text(
-                    stringResource(if (isPro) R.string.paywall_pro_active_title else R.string.paywall_title),
-                    fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center
+                    androidx.compose.ui.text.buildAnnotatedString {
+                        val at = titleText.indexOf("PRO")
+                        if (at < 0) append(titleText) else {
+                            append(titleText.substring(0, at))
+                            pushStyle(androidx.compose.ui.text.SpanStyle(color = ProGold))
+                            append("PRO")
+                            pop()
+                            append(titleText.substring(at + 3))
+                        }
+                    },
+                    fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center,
+                    modifier = Modifier.offset(y = (-10).dp)
                 )
                 Spacer(Modifier.height(6.dp))
                 if (!isPro && !reasonMessage.isNullOrEmpty()) {
@@ -291,19 +311,7 @@ internal fun PaywallContent(
                     Spacer(Modifier.height(12.dp))
                 }
 
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ProFeatureRow(stringResource(R.string.pro_point_unlimited))
-                        ProFeatureRow(stringResource(R.string.pro_point_playlists))
-                        ProFeatureRow(stringResource(R.string.pro_point_devices))
-                        ProFeatureRow(stringResource(R.string.pro_point_account))
-                    }
-                }
+                ProFeatureList()
                 Spacer(Modifier.height(18.dp))
 
                 if (isPro) {
@@ -330,7 +338,11 @@ internal fun PaywallContent(
                         ProPackageRadioCard(
                             packageType = pkg,
                             offer = offers[pkg.productId],
-                            badge = if (pkg == ProPackageType.YEARLY) savings?.let { stringResource(R.string.paywall_save_percent, it) } else null,
+                            badge = if (pkg == ProPackageType.YEARLY) {
+                                // "En avantajlı seçenek" (+ fiyatlar geldiyse tasarruf yüzdesi)
+                                savings?.let { stringResource(R.string.paywall_best_value) + " · " + stringResource(R.string.paywall_save_percent, it) }
+                                    ?: stringResource(R.string.paywall_best_value)
+                            } else null,
                             isSelected = selected == pkg,
                             onSelect = { selected = pkg },
                             modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
@@ -356,18 +368,18 @@ internal fun PaywallContent(
                             .fillMaxWidth()
                             .height(52.dp)
                             .background(
-                                if (selectedOffer != null) Brush.horizontalGradient(listOf(CineOrange, Color(0xFFE91E63)))
+                                if (selectedOffer != null) Brush.horizontalGradient(listOf(Color(0xFFFFE08A), ProGold, ProGoldDeep))
                                 else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent)),
                                 RoundedCornerShape(16.dp)
                             )
                             .testTag("paywall_purchase_button")
                     ) {
                         if (busy) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            CircularProgressIndicator(color = ProInk, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         } else {
                             Text(
                                 if (selectedOffer != null) stringResource(R.string.paywall_buy, selectedOffer.formattedPrice) else stringResource(pkgTitle(selected)),
-                                fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White
+                                fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = if (selectedOffer != null) ProInk else Color.White
                             )
                         }
                     }
@@ -562,27 +574,32 @@ private fun ProPackageRadioCard(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (isSelected) CineOrange else Color.White.copy(alpha = 0.15f)
+    // En avantajlı paket (rozetli) altın çerçeveli; seçili diğer paketler mor.
+    val accent = if (badge != null) ProGold else CineOrange
+    val borderColor = if (isSelected) accent else Color.White.copy(alpha = 0.15f)
     Surface(
         onClick = onSelect,
         shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) CineOrange.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.04f),
+        color = if (isSelected) accent.copy(alpha = 0.13f) else Color.White.copy(alpha = 0.04f),
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
         modifier = modifier.fillMaxWidth().testTag("package_card_${packageType.productId}")
     ) {
         Box(Modifier.fillMaxWidth()) {
             badge?.let {
-                Surface(color = CineOrange, shape = RoundedCornerShape(bottomStart = 10.dp, topEnd = 16.dp), modifier = Modifier.align(Alignment.TopEnd)) {
-                    Text(it, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                Surface(color = ProGold, shape = RoundedCornerShape(bottomStart = 10.dp, topEnd = 16.dp), modifier = Modifier.align(Alignment.TopEnd)) {
+                    Text("★ $it", color = ProInk, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = if (badge != null) 20.dp else 14.dp, bottom = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     Modifier
                         .size(20.dp)
                         .clip(CircleShape)
-                        .border(2.dp, if (isSelected) CineOrange else Color.White.copy(alpha = 0.4f), CircleShape)
-                        .background(if (isSelected) CineOrange else Color.Transparent),
+                        .border(2.dp, if (isSelected) accent else Color.White.copy(alpha = 0.4f), CircleShape)
+                        .background(if (isSelected) accent else Color.Transparent),
                     contentAlignment = Alignment.Center
                 ) { if (isSelected) Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White)) }
                 Spacer(Modifier.width(12.dp))
@@ -593,7 +610,7 @@ private fun ProPackageRadioCard(
                 Text(
                     offer?.formattedPrice ?: "—",
                     fontSize = 17.sp, fontWeight = FontWeight.ExtraBold,
-                    color = if (isSelected) CineOrange else Color.White,
+                    color = if (isSelected) accent else Color.White,
                     modifier = Modifier.testTag("package_price_${packageType.productId}")
                 )
             }

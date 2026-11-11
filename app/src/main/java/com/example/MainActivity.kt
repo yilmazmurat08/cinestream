@@ -347,6 +347,8 @@ class MainActivity : ComponentActivity() {
                                         onLoginSuccess = { email, name ->
                                             viewModel.loginWithGoogle(email, name)
                                             viewModel.completeSetup()
+                                            // İlk kurulum: PRO seçenekleri bir kez gösterilir (kapatılabilir).
+                                            viewModel.openWelcomePaywallOnce()
                                         }
                                     )
                                 } else {

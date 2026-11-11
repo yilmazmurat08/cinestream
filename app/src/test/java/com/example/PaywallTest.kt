@@ -80,7 +80,7 @@ class PaywallTest {
         }
         compose.onNodeWithTag("package_price_${SubscriptionManager.PRODUCT_YEARLY}", useUnmergedTree = true).assertTextContains("₺800,00")
         compose.onNodeWithTag("package_price_${SubscriptionManager.PRODUCT_LIFETIME}", useUnmergedTree = true).assertTextContains("₺1.500,00")
-        compose.onNode(hasText("%17 tasarruf"), useUnmergedTree = true).assertExists()
+        compose.onNode(hasText("%17 tasarruf", substring = true), useUnmergedTree = true).assertExists()
         // Varsayılan: yıllık
         compose.onNodeWithTag("paywall_purchase_button").performScrollTo().assertTextContains("₺800,00", substring = true)
 

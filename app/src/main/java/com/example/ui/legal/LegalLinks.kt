@@ -3,6 +3,7 @@ package com.example.ui.legal
 import android.app.ActivityManager
 import android.content.Context
 import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.getValue
@@ -89,6 +90,10 @@ fun LegalSettingsCard(onOpen: (LegalDoc) -> Unit, modifier: Modifier = Modifier,
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
             LegalRow(Icons.Outlined.SmartDisplay, stringResource(R.string.legal_youtube_terms), "legal_open_youtube_terms") {
                 openUrl(context, YOUTUBE_TERMS_URL)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            LegalRow(Icons.Outlined.MailOutline, stringResource(R.string.feedback_title), "legal_send_feedback") {
+                com.example.ui.components.ExternalLink.sendFeedback(context)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
             LegalRow(Icons.Outlined.DeleteForever, stringResource(R.string.legal_delete_all_data), "legal_delete_all_data") {
