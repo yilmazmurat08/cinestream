@@ -27,6 +27,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.ui.test.performScrollToIndex
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -143,5 +144,36 @@ class TvBrowseDetailTest {
         compose.onNodeWithTag("tv_detail_play").assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(9100, played?.id)
+    }
+
+    /**
+     * Kullanıcı (9 Kasım 2026): kumandayla hızlı gezinirken uygulama kapandı. Kategori listesinde hızla aşağı inip
+     * (seçim oturmadan) Sağ ile ızgaraya, sonra Sol ile geri dönmek: Sol'un hedefi ekran dışına kaymış seçili
+     * kategoriydi.
+     */
+    @Test
+    fun fastNavigation_downManyThenRightLeft_doesNotCrash() {
+        runBlocking {
+            db.iptvDao().insertItems((1..40).flatMap { c ->
+                (1..8).map { movie(20000 + c * 10 + it, "Hızlı Film $c-$it", "Hızlı Kat %02d".format(c)) }
+            })
+        }
+        val vm = IPTVViewModel(app, IPTVRepository(db.iptvDao(), db))
+        val state = TvAppState("MOVIE", "MOVIE", "Hızlı Kat 01", null, null)
+        compose.setContent { TvBrowseScreen(viewModel = vm, type = "MOVIE", state = state) }
+        waitForTag("tv_poster_MOVIE_20011")
+        compose.onNodeWithTag("tv_category_Hızlı Kat 01").assertIsFocused()
+        // Izgaraya geç, sonra kategori listesini (odağa dokunmadan) en alta kaydır: seçili kategori satırı artık çizilmiyor.
+        press(Key.DirectionRight)
+        compose.onNodeWithTag("tv_poster_MOVIE_20011").assertIsFocused()
+        compose.onNodeWithTag("tv_categories").performScrollToIndex(40)
+        compose.waitForIdle()
+        assertEquals(0, compose.onAllNodes(hasTestTag("tv_category_Hızlı Kat 01")).fetchSemanticsNodes().size)
+        // İlk sütundan Sol: eskiden "FocusRequester is not initialized" ile çöküyordu. Artık liste kaydırılır, odak
+        // seçili kategoriye gelir.
+        press(Key.DirectionLeft)
+        compose.waitUntil(5_000) {
+            runCatching { compose.onNodeWithTag("tv_category_Hızlı Kat 01").assertIsFocused() }.isSuccess
+        }
     }
 }

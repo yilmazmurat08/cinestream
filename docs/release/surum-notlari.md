@@ -1,3 +1,20 @@
+# Sürüm notları — 1.1.9 (20)
+
+Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).
+
+```
+<tr-TR>
+• Android TV: kumandayla hızlı gezinirken uygulamanın kapanması giderildi (Filmler/Diziler ve Ayarlar).
+• Kararlılık iyileştirmeleri.
+</tr-TR>
+<en-US>
+• Android TV: fixed a crash when navigating quickly with the remote (Movies/Series and Settings).
+• Stability improvements.
+</en-US>
+```
+
+---
+
 # Sürüm notları — 1.1.8 (19)
 
 Play Console'a dil etiketleriyle yapıştır (her dil en fazla 500 karakter).

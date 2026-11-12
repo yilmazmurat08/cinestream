@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -150,7 +148,7 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
         shown = focused
     }
     // Panel içindeyken Geri listeye döner (ikinci Geri ana sayfaya).
-    BackHandler(enabled = inPanel) { rowFocus.getValue(shown).requestFocus() }
+    BackHandler(enabled = inPanel) { runCatching { rowFocus.getValue(shown).requestFocus() } }
 
     val profileName = userProfile?.displayName ?: userName ?: ""
     val on = stringResource(R.string.tv_on)
@@ -185,16 +183,20 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
             .padding(start = 40.dp, top = 28.dp, end = 32.dp)
             .testTag("tv_settings_screen")
     ) {
-        LazyColumn(
+        // Tembel liste DEĞİL: 13 satırın hepsi her zaman çizili kalır. Tembel listede ekran dışına kayan satır
+        // çizilmiyordu; panelden Sol/Geri ile o satıra dönülünce (hızlı gezinmede seçim 250 ms geriden gelir) Compose
+        // "FocusRequester is not initialized" ile uygulamayı kapatıyordu. Odaklanan satır kendiliğinden görünür olur.
+        Column(
             verticalArrangement = Arrangement.spacedBy(6.dp),
-            contentPadding = PaddingValues(vertical = 6.dp, horizontal = 6.dp),
-            modifier = Modifier.width(380.dp).fillMaxHeight()
+            modifier = Modifier
+                .width(380.dp)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 6.dp, horizontal = 6.dp)
         ) {
-            item {
-                Text(stringResource(R.string.settings_title), color = TvTheme.TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 12.dp))
-            }
-            items(TvSetting.values().toList()) { setting ->
+            Text(stringResource(R.string.settings_title), color = TvTheme.TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp, bottom = 12.dp))
+            TvSetting.values().forEach { setting ->
                 val (icon, title) = settingLabel(setting)
                 TvGlassButton(
                     onClick = {
