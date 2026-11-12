@@ -942,17 +942,10 @@ fun HomeScreen(
                                 if (selectedCategory == null || selectedCategory == "Tümü") {
                                     item(key = "ai_bulletin_card") {
                                         val aiBulletinText by viewModel.aiBulletinText.collectAsState()
-                                        // Sinema Gündemi: TMDB verisinden günlük satırlar. Gelmediyse (internet/anahtar yok) eski
-                                        // yapay zekâ bülteni görünür.
+                                        // Üstte AI Sinema Bülteni, altında Sinema Gündemi (TMDB verisinden günlük satırlar); ikisi birlikte görünür.
                                         val cinemaAgenda by viewModel.cinemaAgenda.collectAsState()
                                         LaunchedEffect(movies.size) { viewModel.loadCinemaAgenda() }
-                                        if (cinemaAgenda.isNotEmpty()) {
-                                            com.example.ui.components.CinemaAgendaCard(
-                                                entries = cinemaAgenda,
-                                                onOpen = { entry -> viewModel.selectItem(entry.libraryItem ?: entry.tmdbItem) },
-                                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                                            )
-                                        } else if (aiBulletinText.isNotEmpty() && !aiBulletinText.contains("bulunmuyor")) {
+                                        if (aiBulletinText.isNotEmpty() && !aiBulletinText.contains("bulunmuyor")) {
                                             Card(
                                                 colors = CardDefaults.cardColors(
                                                     containerColor = if (currentTheme.isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)
@@ -1001,6 +994,13 @@ fun HomeScreen(
                                                     )
                                                 }
                                             }
+                                        }
+                                        if (cinemaAgenda.isNotEmpty()) {
+                                            com.example.ui.components.CinemaAgendaCard(
+                                                entries = cinemaAgenda,
+                                                onOpen = { entry -> viewModel.selectItem(entry.libraryItem ?: entry.tmdbItem) },
+                                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                                            )
                                         }
                                     }
                                 }
