@@ -37,7 +37,7 @@ jobs:
         run: ./gradlew --continue testDebugUnitTest lintRelease
 
       - name: Ekran görüntüsü karşılaştırma
-        run: ./gradlew testDebugUnitTest --tests 'com.example.UiGoldenTest' -Proborazzi.test.verify=true --rerun
+        run: ./gradlew :app:testDebugUnitTest --tests 'com.example.UiGoldenTest' -Proborazzi.test.verify=true --rerun
 
       - name: Raporları sakla
         if: failure()
