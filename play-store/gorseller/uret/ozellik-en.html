@@ -1,0 +1,141 @@
+<!doctype html>
+<!-- İngilizce özellik görselleri, Facebook için 4:5 (1080x1350). ?n=0..7. Türkçe seriyle (ozellik-tek.html) aynı tasarım.
+     Ekranlar uygulamanın gerçek kodundan İngilizce arayüzle (tek-ekran/en/); afiş ve kanallar hayalidir (promo/en). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --zemin: #0b0814; --mor: #c084fc; --pembe: #e879f9; --turuncu: #fb923c; --kart: rgba(28,22,44,.9); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: var(--zemin); font-family: Poppins, sans-serif; color: #fff; }
+  .zemin { position: absolute; inset: 0; background:
+      radial-gradient(800px 600px at 12% 4%, rgba(124,58,237,.65), transparent 60%),
+      radial-gradient(700px 700px at 96% 96%, rgba(234,88,12,.38), transparent 60%),
+      radial-gradient(600px 500px at 90% 40%, rgba(192,38,211,.25), transparent 60%), var(--zemin); }
+  .isik { position: absolute; inset: 0; opacity: .35; background: repeating-conic-gradient(from 200deg at 80% 10%, rgba(217,70,239,.12) 0deg 3deg, transparent 3deg 14deg);
+    -webkit-mask-image: radial-gradient(circle at 80% 10%, #000 0, transparent 60%); }
+  .ust { position: absolute; top: 56px; left: 70px; display: flex; align-items: center; gap: 18px; }
+  .ust img { width: 64px; height: 64px; border-radius: 18px; box-shadow: 0 0 0 2px #3b2f5c, 0 0 30px rgba(217,70,239,.5); }
+  .ust div { font-weight: 800; font-size: 36px; letter-spacing: -1px; }
+  .sayac { position: absolute; top: 72px; right: 70px; font-size: 24px; font-weight: 600; color: #c4b5fd; letter-spacing: 3px; }
+  .r { background: linear-gradient(90deg, var(--mor), var(--pembe) 45%, var(--turuncu)); -webkit-background-clip: text; color: transparent; }
+  .baslik { position: absolute; top: 160px; left: 70px; right: 70px; }
+  .etiket { display: inline-block; font-size: 22px; font-weight: 700; letter-spacing: 4px; color: #d4a853; margin-bottom: 12px; }
+  h1 { margin: 0; font-weight: 800; font-size: 70px; line-height: 1.04; letter-spacing: -2px; }
+  .baslik p { margin: 18px 0 0; font-size: 29px; line-height: 1.38; color: #ddd6fe; font-weight: 500; }
+  .sahne { position: absolute; left: 0; right: 0; top: 560px; bottom: 84px; display: flex; justify-content: center; align-items: flex-start; overflow: hidden; }
+  .olcek { transform-origin: top center; flex: none; }
+  .alt { position: absolute; bottom: 30px; left: 0; right: 0; text-align: center; font-size: 22px; color: #a78bfa; }
+  .telefon { width: 560px; padding: 16px; border-radius: 76px 76px 0 0; background: #14101f; height: 1010px; overflow: hidden;
+    box-shadow: 0 0 0 3px #2a2340, 0 0 0 6px rgba(217,70,239,.35), 0 0 120px rgba(192,132,252,.45), 0 40px 120px rgba(0,0,0,.6); }
+  .telefon img { width: 100%; border-radius: 62px 62px 0 0; display: block; }
+  .kart { background: var(--kart); border: 1.5px solid rgba(255,255,255,.13); border-radius: 36px; box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 100px rgba(192,132,252,.25); }
+  .dugme { display: inline-flex; align-items: center; gap: 12px; padding: 18px 30px; border-radius: 999px; font-weight: 700; font-size: 28px; background: linear-gradient(90deg, #a855f7, #d946ef); box-shadow: 0 0 30px rgba(217,70,239,.5); }
+  .rozet { display: inline-block; padding: 8px 18px; border-radius: 999px; font-size: 22px; font-weight: 700; background: rgba(16,185,129,.18); color: #6ee7b7; border: 1.5px solid rgba(110,231,183,.5); }
+  .ince { color: #bdb4d8; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div class="zemin"></div><div class="isik"></div>
+<div class="ust"><img src="logo.jpg"><div>Cine<span class="r">Stream</span></div></div>
+<div class="sayac" id="sayac"></div>
+<div class="baslik" id="baslik"></div>
+<div class="sahne"><div class="olcek" id="sahne"></div></div>
+<div class="alt">Use your own M3U / Xtream playlist · No content included</div>
+<script>
+const n = +(new URLSearchParams(location.search).get('n') || 0);
+const af = (s) => `../../../app/src/test/resources/promo/en/afis/${s}.jpg`;
+const kanal = (s) => `../../../app/src/test/resources/promo/en/kanal/${s}.jpg`;
+
+function qr(boyut) {            // QR'a benzeyen desen (gerçek bir adres içermez)
+  let r = 7, s = '';
+  const N = 25, h = boyut / N;
+  const rnd = () => (r = (r * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const goz = (x, y) => `<rect x="${x*h}" y="${y*h}" width="${7*h}" height="${7*h}" fill="#111"/><rect x="${(x+1)*h}" y="${(y+1)*h}" width="${5*h}" height="${5*h}" fill="#fff"/><rect x="${(x+2)*h}" y="${(y+2)*h}" width="${3*h}" height="${3*h}" fill="#111"/>`;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const kose = (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
+    if (!kose && rnd() < 0.48) s += `<rect x="${x*h}" y="${y*h}" width="${h}" height="${h}" fill="#111"/>`;
+  }
+  return `<svg width="${boyut}" height="${boyut}"><rect width="${boyut}" height="${boyut}" fill="#fff"/>${s}${goz(0,0)}${goz(N-7,0)}${goz(0,N-7)}</svg>`;
+}
+
+// k: sahnenin ölçeği (4:5 çerçeveye sığsın diye)
+const O = [
+  { e: 'AI ASSISTANT', b1: 'Describe the scene,', b2: 'find the movie', k: 0.8,
+    p: 'Forgot a title? Describe it and the assistant searches your own library. On TV, just ask with your voice.',
+    s: () => `<div class="telefon"><img src="tek-ekran/en/p04-asistan.png"></div>` },
+  { e: 'SERIES', b1: 'Spoiler-free', b2: 'episode recap', k: 0.9,
+    p: 'Been a while? Read a short recap of everything up to where you stopped. It never tells you what comes next.',
+    s: () => `<div style="position:relative;width:900px;height:680px"><div class="kart" style="width:900px;padding:44px;display:flex;gap:38px">
+      <img src="${af('daglarin-kizi')}" style="width:240px;height:360px;border-radius:22px;flex:none">
+      <div style="flex:1"><div style="font-size:40px;font-weight:800">Mountain Daughter</div>
+        <div class="ince" style="font-size:26px;margin:6px 0 26px">Before Season 1 · Episode 3</div>
+        <div style="font-size:25px;line-height:1.5;color:#e9e3ff">Back in her village, Elif learns about the debts on the old family house. She falls out with her brother, and an old letter hints at a secret the family has kept.</div>
+        <div style="margin-top:28px"><span class="rozet">✓ No spoilers</span></div></div></div>
+      <div style="position:absolute;top:500px;left:50%;transform:translateX(-50%);white-space:nowrap" class="dugme">✦ Recap previous episodes</div></div>` },
+  { e: 'ANDROID TV', b1: 'Set up your TV', b2: 'in seconds with QR', k: 0.74,
+    p: 'Scan the code on your TV and type your playlist on your phone. No more typing long URLs with the remote.',
+    s: () => `<div style="position:relative;width:960px;height:900px">
+      <div class="kart" style="position:absolute;left:0;top:0;width:640px;height:470px;padding:40px;display:flex;flex-direction:column;justify-content:center;gap:24px;border-radius:26px">
+        <div style="display:flex;gap:30px;align-items:center"><div style="background:#fff;padding:16px;border-radius:18px">${qr(250)}</div><div style="font-size:34px;font-weight:800;line-height:1.2">Sign in<br>with phone</div></div><div class="ince" style="font-size:23px;line-height:1.4">Scan the code, enter your list on the page.</div>
+        </div>
+      <div style="position:absolute;left:200px;top:480px;width:240px;height:16px;border-radius:8px;background:#2a2340"></div>
+      <div style="position:absolute;right:0;top:160px;width:330px;height:640px;border-radius:52px;background:#14101f;box-shadow:0 0 0 3px #2a2340,0 30px 80px rgba(0,0,0,.6);padding:26px">
+        <div style="height:100%;border-radius:34px;background:#1b1430;padding:30px 24px">
+          <div style="font-size:24px;font-weight:800">CineStream</div><div class="ince" style="font-size:18px;margin:6px 0 26px">Send playlist to TV</div>
+          ${['M3U URL', 'Username', 'Password'].map((t) => `<div style="height:62px;border-radius:16px;border:1.5px solid rgba(255,255,255,.18);margin-bottom:16px;padding:18px;font-size:19px;color:#8f86ad">${t}</div>`).join('')}
+          <div class="dugme" style="font-size:21px;padding:16px 26px;margin-top:14px">Send to TV</div></div></div></div>` },
+  { e: 'PLAYER', b1: 'Smart playback', b2: 'that beats freezes', k: 0.9,
+    p: 'If a stream stalls, the app reconnects on its own: live TV jumps to now, movies continue where you were.',
+    s: () => `<div class="kart" style="width:940px;overflow:hidden;border-radius:30px">
+      <div style="position:relative;height:528px;background:url(${af('mavi-dalga')}) center/cover">
+        <div style="position:absolute;inset:0;background:rgba(5,3,10,.45)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:20px;background:rgba(20,16,31,.88);padding:22px 34px;border-radius:999px;border:1.5px solid rgba(255,255,255,.16);white-space:nowrap">
+          <svg width="44" height="44" viewBox="0 0 40 40"><path d="M33 20a13 13 0 1 1-4-9.4" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/><path d="M30 4v8h-8" fill="none" stroke="#e879f9" stroke-width="4" stroke-linecap="round"/></svg>
+          <span style="font-size:30px;font-weight:700">Reconnecting…</span></div></div>
+      <div style="padding:30px 40px 36px"><div style="font-size:34px;font-weight:800">Blue Wave</div>
+        <div style="height:10px;border-radius:5px;background:rgba(255,255,255,.15);margin:22px 0 14px"><div style="width:62%;height:100%;border-radius:5px;background:linear-gradient(90deg,#a855f7,#fb923c)"></div></div>
+        <div class="ince" style="font-size:24px;display:flex;justify-content:space-between"><span>1:12:40</span><span>Resuming where you left off</span></div></div></div>` },
+  { e: 'LIVE TV', b1: 'TV guide and', b2: 'reminders', k: 0.84,
+    p: '12-hour schedule on every channel card. Pick a show and get a notification 5 minutes before it starts.',
+    s: () => `<div style="width:920px">
+      <div class="kart" style="padding:36px 40px;border-radius:30px">
+        <div style="display:flex;align-items:center;gap:24px;margin-bottom:26px"><img src="${kanal('docu-world')}" style="width:150px;height:94px;border-radius:14px"><div><div style="font-size:34px;font-weight:800">Docu World</div><div class="ince" style="font-size:23px">National</div></div></div>
+        ${[['8:00 PM', 'Ocean Depths', 1], ['9:00 PM', 'Migrating Birds', 0], ['10:15 PM', 'Sound of Glaciers', 0], ['11:30 PM', 'Night Sky', 0]].map(([t, a, c]) => `
+          <div style="display:flex;align-items:center;gap:26px;padding:20px 22px;border-radius:20px;margin-top:10px;${c ? 'background:rgba(168,85,247,.22);border:1.5px solid rgba(232,121,249,.6)' : 'background:rgba(255,255,255,.04)'}">
+            <span style="font-size:26px;font-weight:700;color:${c ? '#f0abfc' : '#c4b5fd'};width:140px">${t}</span><span style="font-size:27px;flex:1">${a}</span>
+            ${c ? '<span style="font-size:20px;font-weight:700;color:#6ee7b7">NOW</span>' : ''}${t === '9:00 PM' ? '<span class="dugme" style="font-size:20px;padding:10px 20px">🔔 Remind me</span>' : ''}</div>`).join('')}
+      </div>
+      <div class="kart" style="margin:34px auto 0;width:760px;padding:24px 30px;display:flex;gap:20px;align-items:center;border-radius:26px">
+        <img src="logo.jpg" style="width:60px;height:60px;border-radius:16px"><div><div style="font-size:24px;font-weight:700">Migrating Birds starts in 5 minutes</div><div class="ince" style="font-size:21px">Docu World · tap to watch</div></div></div></div>` },
+  { e: 'LIBRARY', b1: 'Folders sorted', b2: 'by genre', k: 0.8,
+    p: 'Movie, series and live TV folders with matching artwork. Poster, plot, rating and trailer in one place.',
+    s: () => `<div class="telefon"><img src="tek-ekran/en/p14-film-klasorleri.png"></div>` },
+  { e: 'WATCHING', b1: 'Continue', b2: 'where you left off', k: 0.76,
+    p: 'Unfinished movies and episodes wait for you. Episodes you finished are marked as watched.',
+    s: () => `<div style="width:940px"><div style="font-size:30px;font-weight:700;margin:0 0 22px 6px">Continue watching</div>
+      <div style="display:flex;gap:26px">${[['mavi-fener', 'Blue Lighthouse', 'S1 · E2', 34], ['kayip-harita', 'The Lost Map', '60 min left', 62], ['sonsuz-yorunge', 'Endless Orbit', '25 min left', 80]].map(([s, a, t, y]) => `
+        <div style="width:296px"><div style="position:relative"><img src="${af(s)}" style="width:296px;height:444px;border-radius:24px;display:block;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+          <div style="position:absolute;left:16px;right:16px;bottom:16px;height:9px;border-radius:5px;background:rgba(255,255,255,.25)"><div style="width:${y}%;height:100%;border-radius:5px;background:#e879f9"></div></div></div>
+          <div style="font-size:27px;font-weight:700;margin-top:16px">${a}</div><div class="ince" style="font-size:22px">${t}</div></div>`).join('')}</div>
+      <div class="kart" style="margin-top:44px;padding:26px 30px;display:flex;gap:22px;border-radius:26px">${[1, 2, 3].map((k) => `<div style="flex:1"><div style="position:relative;height:150px;border-radius:16px;background:url(${af('mavi-fener')}) center 30%/cover">${k < 3 ? '<span class="rozet" style="position:absolute;top:10px;right:10px;font-size:17px;padding:5px 12px">✓ Watched</span>' : ''}</div><div style="font-size:21px;margin-top:10px">Episode ${k}</div></div>`).join('')}</div></div>` },
+  { e: 'SAFETY', b1: 'Parental lock,', b2: 'no ads', k: 0.74,
+    p: 'Adult categories are PIN-locked by default. No account needed: your playlist and history stay on your device.',
+    s: () => `<div class="kart" style="width:640px;padding:50px 54px;text-align:center;border-radius:40px">
+      <svg width="90" height="90" viewBox="0 0 40 40" style="margin:0 auto"><rect x="7" y="17" width="26" height="19" rx="4" fill="none" stroke="#e879f9" stroke-width="3"/><path d="M13 17v-5a7 7 0 0 1 14 0v5" fill="none" stroke="#e879f9" stroke-width="3"/><circle cx="20" cy="26" r="3" fill="#e879f9"/></svg>
+      <div style="font-size:36px;font-weight:800;margin-top:18px">Enter your PIN</div><div class="ince" style="font-size:23px;margin-top:6px">This category is locked</div>
+      <div style="display:flex;justify-content:center;gap:22px;margin:34px 0 40px">${[1, 1, 0, 0].map((d) => `<span style="width:28px;height:28px;border-radius:50%;${d ? 'background:#e879f9' : 'border:3px solid #6b5f8a'}"></span>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">${['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k) => `<div style="height:96px;border-radius:24px;${k ? 'background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12)' : ''};display:grid;place-items:center;font-size:36px;font-weight:600">${k}</div>`).join('')}</div></div>` },
+];
+
+const o = O[n];
+document.getElementById('sayac').textContent = `${n + 1} / ${O.length}`;
+document.getElementById('baslik').innerHTML = `<div class="etiket">${o.e}</div><h1>${o.b1}<br><span class="r">${o.b2}</span></h1><p>${o.p}</p>`;
+const sahne = document.getElementById('sahne');
+sahne.innerHTML = o.s();
+sahne.style.transform = `scale(${o.k})`;
+</script>
+</body>
+</html>

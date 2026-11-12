@@ -72,3 +72,7 @@ yana. Sonda "ŞİMDİ YAYINDA / Google Play'de" kutusu ve "Uygulama içerik sağ
   davul susar, 28,62'de yeniden girer; son vuruş 38,62.
 - `uret.sh <kayıt.mp4>`: hepsini çalıştırır, `CineStream-tanitim-dikey.mp4` ve `-yatay.mp4` üretir. Yazı tipi
   Inter (yüklü değilse benzer bir yazı tipiyle çıkar).
+
+## İngilizce özellik görselleri (`ozellikler/en/`, 13 Kasım 2026)
+
+Facebook için 4:5 (1080x1350), 8 adet; Türkçe serinin (`ozellik-tek.html`) tasarımı. Kaynak `../gorseller/uret/ozellik-en.html?n=0..7`; ekranlar `tek-ekran/en/` (PhonePromoShotsTest, `CINESTREAM_SHOTS_LANG=en`), afiş/kanallar `app/src/test/resources/promo/en`. Çekim: `node afis/cek.js "../gorseller/uret/ozellik-en.html?n=0" cikis.png 1080 1350`. Yalnızca yayındaki sürümün özellikleri.
