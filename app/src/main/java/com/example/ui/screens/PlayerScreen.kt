@@ -85,6 +85,7 @@ import coil.compose.AsyncImage
 import com.example.data.model.IPTVItem
 import com.example.ui.tv.tvModePlayerKeys
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.focusable
 import com.example.player.ExoPlayerConfigurator
 import com.example.ui.IPTVViewModel
@@ -276,6 +277,12 @@ fun LegacyExoPlayerScreen(
     val autoplayNextEpisode by (iptvViewModel?.autoplayNextEpisode?.collectAsState() ?: remember { mutableStateOf(true) })
     val latestAutoplayNext by rememberUpdatedState(autoplayNextEpisode)
     var nextCountdownItem by remember(item.id) { mutableStateOf<IPTVItem?>(null) }
+    // Jeneriği geç (PRO): dizinin jeneriği bir kez işaretlenir, sonraki bölümlerde "Jeneriği geç" çıkar.
+    val introKey = remember(item.id) { com.example.util.IntroSkip.showKey(item) }
+    var introMark by remember(introKey) { mutableStateOf(introKey?.let { com.example.util.IntroSkip.get(context, it) }) }
+    var introMarkStart by remember(item.id) { mutableStateOf<Long?>(null) }
+    val introSkipAllowed = isProUser || com.example.BuildConfig.PREVIEW_UNLOCK_PRO
+    var introSkipDismissed by remember(item.id) { mutableStateOf(false) }
 
     // Günlük ücretsiz süre doldu: oynatıcı kapanır ve PRO penceresi ana ekranda açılır. Oynatıcıda kalınmaz;
     // böylece "Yeniden dene" ya da uygulamaya geri dönüş yayını süre kontrolü olmadan yeniden başlatamaz.
@@ -308,6 +315,37 @@ fun LegacyExoPlayerScreen(
 
     // Auto-hide controls timer Job
     var autoHideJob by remember { mutableStateOf<Job?>(null) }
+
+    /** Jenerik işaretleme: ilk dokunuş başını, ikincisi sonunu kaydeder. */
+    fun markIntro() {
+        val key = introKey ?: return
+        if (!introSkipAllowed) {
+            iptvViewModel?.openPaywall()
+            return
+        }
+        val pos = player.currentPosition / 1000
+        val start = introMarkStart
+        if (start == null) {
+            introMarkStart = pos
+            android.widget.Toast.makeText(context, R.string.intro_mark_start_saved, android.widget.Toast.LENGTH_LONG).show()
+        } else if (com.example.util.IntroSkip.isValid(start, pos)) {
+            val mark = com.example.util.IntroMark(start, pos)
+            com.example.util.IntroSkip.save(context, key, mark)
+            introMark = mark
+            introMarkStart = null
+            introSkipDismissed = true // az önce işaretlenen bölümde düğme hemen çıkmasın
+            android.widget.Toast.makeText(context, R.string.intro_mark_saved, android.widget.Toast.LENGTH_LONG).show()
+        } else {
+            introMarkStart = null
+            android.widget.Toast.makeText(context, R.string.intro_mark_invalid, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun skipIntro() {
+        val mark = introMark ?: return
+        player.seekTo(mark.endSec * 1000)
+        introSkipDismissed = true
+    }
 
     fun resetControlsTimer() {
         autoHideJob?.cancel()
@@ -556,6 +594,13 @@ fun LegacyExoPlayerScreen(
 
     // Yayın tüm denemelere rağmen açılamazsa hata penceresi gösterilir ("Tekrar dene" sayacı sıfırlar).
     var streamFailed by remember(player) { mutableStateOf(false) }
+    // "Jeneriği geç" yalnızca işaretli aralıkta, işaretleme sürmüyorken ve başka pencere açık değilken görünür.
+    val introSkipVisible = introSkipAllowed && !introSkipDismissed && introMarkStart == null && !showResumeDialog &&
+        !streamFailed && com.example.util.IntroSkip.shouldOffer(currentPos, introMark)
+    // Jeneriğin başından önceye geri sarılınca düğme yeniden çıkabilir.
+    LaunchedEffect(currentPos < (introMark?.startSec ?: 0L) - com.example.util.IntroSkip.EARLY_SEC) {
+        if (introMark != null && currentPos < introMark!!.startSec - com.example.util.IntroSkip.EARLY_SEC) introSkipDismissed = false
+    }
     // Yayın hiç başlamazsa (sunucu yanıt vermiyor, bağlantı asılı kaldı) sonsuz "yükleniyor" yerine hata ve
     // "Yeniden dene" gösterilir.
     var reachedReady by remember(player) { mutableStateOf(false) }
@@ -1042,7 +1087,8 @@ fun LegacyExoPlayerScreen(
                     },
                     onNext = { if (item.type == "LIVE") tvStep(1) else nextItem?.let { tvPlay(it, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
                     onPrevious = { if (item.type == "LIVE") tvStep(-1) else previousItem?.let { tvPlay(it, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
-                    onUserActivity = { if (controlsVisible) resetControlsTimer() }
+                    onUserActivity = { if (controlsVisible) resetControlsTimer() },
+                    onOkOverride = { if (introSkipVisible) { skipIntro(); true } else false }
     )
 
     // Sayaç bitince sonraki bölüm başlar (İptal ya da Geri ile durdurulmadıysa).
@@ -1928,6 +1974,30 @@ fun LegacyExoPlayerScreen(
                                 }
                             }
 
+                            // Jenerik işaretleme (dizi; PRO). İlk dokunuş başı, ikincisi sonu.
+                            if (introKey != null) {
+                                val marking = introMarkStart != null
+                                Surface(
+                                    onClick = {
+                                        markIntro()
+                                        resetControlsTimer()
+                                    },
+                                    shape = CircleShape,
+                                    color = if (marking) NeonPink.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.5f),
+                                    border = BorderStroke(1.dp, if (marking) NeonPink else Color.White.copy(alpha = 0.3f)),
+                                    modifier = Modifier.size(layout.playerSecondaryControlSize).testTag("player_intro_mark")
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = if (marking) Icons.Default.Flag else Icons.Outlined.Flag,
+                                            contentDescription = stringResource(if (marking) R.string.intro_mark_end else R.string.intro_mark_start),
+                                            tint = Color.White,
+                                            modifier = Modifier.size((layout.playerSecondaryControlSize.value * 0.48f).dp)
+                                        )
+                                    }
+                                }
+                            }
+
                         }
                     }
                 }
@@ -2309,7 +2379,9 @@ fun LegacyExoPlayerScreen(
                         }
                         resetControlsTimer()
                     },
-                    onUserActivity = { if (controlsVisible) resetControlsTimer() }
+                    onUserActivity = { if (controlsVisible) resetControlsTimer() },
+                    onMarkIntro = if (introKey != null) ({ markIntro(); resetControlsTimer() }) else null,
+                    introMarking = introMarkStart != null
                 )
             }
 
@@ -3003,6 +3075,14 @@ fun LegacyExoPlayerScreen(
             }
         }
 
+        if (introSkipVisible && !isInPip) {
+            IntroSkipButton(
+                tvMode = tvMode,
+                onSkip = { skipIntro() },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
+
         nextCountdownItem?.let { next ->
             if (!isInPip) {
                 NextEpisodeCountdown(
@@ -3020,6 +3100,31 @@ fun LegacyExoPlayerScreen(
 }
 
 internal const val NEXT_EPISODE_COUNTDOWN_S = 10
+
+/** Jenerik sırasında sağ altta "Jeneriği geç". TV'de OK tuşuyla çalışır (odak almaz, oynatıcı tuşları bozulmaz). */
+@Composable
+internal fun IntroSkipButton(tvMode: Boolean, onSkip: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        onClick = onSkip,
+        color = Color.Black.copy(alpha = 0.78f),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.85f)),
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(end = 24.dp, bottom = if (tvMode) 40.dp else 96.dp)
+            .focusProperties { canFocus = false }
+            .testTag("intro_skip_button")
+    ) {
+        Row(Modifier.padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                stringResource(if (tvMode) R.string.intro_skip_tv else R.string.intro_skip),
+                color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
 
 /** Bölüm bitince sağ altta çıkan sayaç: "Şimdi oynat" ya da "İptal" (Geri tuşu da iptal eder). */
 @Composable

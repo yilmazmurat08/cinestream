@@ -837,4 +837,11 @@
     <string name="cover_changed">Cover changed</string>
     <string name="cover_restored">Default cover restored</string>
     <string name="cover_import_failed">Couldn\'t load the image</string>
+    <string name="intro_mark_start">Mark intro start</string>
+    <string name="intro_mark_end">Mark intro end</string>
+    <string name="intro_mark_start_saved">Intro start marked. Press the same button again when the intro ends.</string>
+    <string name="intro_mark_saved">Intro saved. \"Skip intro\" will appear in this show\'s episodes.</string>
+    <string name="intro_mark_invalid">The intro must be between 5 seconds and 5 minutes. Mark it again.</string>
+    <string name="intro_skip">Skip intro</string>
+    <string name="intro_skip_tv">Skip intro (OK)</string>
 </resources>

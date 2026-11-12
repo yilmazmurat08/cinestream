@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.outlined.Flag
 import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -142,7 +144,9 @@ fun Modifier.tvModePlayerKeys(
     onVolume: (Int) -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
-    onUserActivity: () -> Unit
+    onUserActivity: () -> Unit,
+    /** Film/dizide kontroller gizliyken OK önce buna sorulur (ör. "Jeneriği geç"); true dönerse OK burada biter. */
+    onOkOverride: () -> Boolean = { false }
 ): Modifier = this.onPreviewKeyEvent { event ->
     val down = event.type == KeyEventType.KeyDown
     val key = event.key
@@ -190,7 +194,7 @@ fun Modifier.tvModePlayerKeys(
     if (isOk) {
         if (event.type == KeyEventType.KeyUp) {
             // Canlıda OK kanal listesini açar (kontroller Sağ ile).
-            if (isLive) onOpenPanel() else { onPlayPause(); onShowControls() }
+            if (isLive) onOpenPanel() else if (!onOkOverride()) { onPlayPause(); onShowControls() }
         }
         return@onPreviewKeyEvent true
     }
@@ -238,7 +242,10 @@ fun TvPlayerOverlay(
     onPreviousEpisode: (() -> Unit)?,
     onOpenTracks: () -> Unit,
     onCycleAspect: () -> Unit,
-    onUserActivity: () -> Unit
+    onUserActivity: () -> Unit,
+    /** Dizide jenerik işaretleme (null: düğme yok). [introMarking]: başı işaretlendi, sonu bekleniyor. */
+    onMarkIntro: (() -> Unit)? = null,
+    introMarking: Boolean = false
 ) {
     val isLive = item.type == "LIVE"
     val parentalLock by viewModel.parentalLock.collectAsState()
@@ -364,7 +371,9 @@ fun TvPlayerOverlay(
                         onOpenTracks = onOpenTracks,
                         onCycleAspect = onCycleAspect,
                         onToggleSaved = { viewModel.toggleFavorite(favorites.firstOrNull { it.id == item.id } ?: item) },
-                        onUserActivity = onUserActivity
+                        onUserActivity = onUserActivity,
+                        onMarkIntro = onMarkIntro,
+                        introMarking = introMarking
                     )
                 }
                 // Film/dizide kontroller gizliyken Sol/Sağ ile sarınca kısa süre konum görünür
@@ -839,7 +848,9 @@ private fun TvControlBar(
     onToggleSaved: () -> Unit,
     onUserActivity: () -> Unit,
     /** Kanal paneli açıkken çubuk dar: yalnızca ana düğmeler (diğerleri panel kapanınca görünür). */
-    compact: Boolean = false
+    compact: Boolean = false,
+    onMarkIntro: (() -> Unit)? = null,
+    introMarking: Boolean = false
 ) {
     val episode = remember(item.id) {
         if (item.type == "SERIES") com.example.data.model.SeriesParser.episodeInfoOf(item) else null
@@ -914,6 +925,11 @@ private fun TvControlBar(
                     }
                 ),
                 "tv_bar_list", onClick = onOpenPanel, onUserActivity = onUserActivity
+            )
+            if (onMarkIntro != null) TvBarButton(
+                if (introMarking) Icons.Filled.Flag else Icons.Outlined.Flag,
+                stringResource(if (introMarking) R.string.intro_mark_end else R.string.intro_mark_start),
+                "tv_bar_intro", onClick = onMarkIntro, onUserActivity = onUserActivity
             )
             TvBarButton(Icons.Filled.Subtitles, stringResource(R.string.player_audio_subtitle_desc), "tv_bar_tracks", onClick = onOpenTracks, onUserActivity = onUserActivity)
             TvBarButton(Icons.Filled.AspectRatio, stringResource(R.string.player_aspect_ratio_desc), "tv_bar_aspect", onClick = onCycleAspect, onUserActivity = onUserActivity)

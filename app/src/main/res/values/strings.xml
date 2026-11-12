@@ -836,4 +836,11 @@
     <string name="cover_changed">Kapak değiştirildi</string>
     <string name="cover_restored">Varsayılan kapak geri geldi</string>
     <string name="cover_import_failed">Görsel alınamadı</string>
+    <string name="intro_mark_start">Jeneriğin başını işaretle</string>
+    <string name="intro_mark_end">Jeneriğin sonunu işaretle</string>
+    <string name="intro_mark_start_saved">Jeneriğin başı işaretlendi. Jenerik bitince aynı düğmeye yeniden bas.</string>
+    <string name="intro_mark_saved">Jenerik kaydedildi. Bu dizinin bölümlerinde \"Jeneriği geç\" çıkacak.</string>
+    <string name="intro_mark_invalid">Jenerik 5 saniye ile 5 dakika arasında olmalı. Baştan işaretle.</string>
+    <string name="intro_skip">Jeneriği geç</string>
+    <string name="intro_skip_tv">Jeneriği geç (OK)</string>
 </resources>
