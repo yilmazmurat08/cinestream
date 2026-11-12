@@ -250,8 +250,11 @@ fun SeriesDetailScreen(
         )
     }
 
-    val dynamicPosterUrl = remember(item, tvShow) {
-        tvShow.logoUrl
+    val coverOverride = com.example.ui.components.rememberCoverOverride(true, tvShow.title)
+    val dynamicPosterUrl = coverOverride ?: tvShow.logoUrl
+    var showCoverPicker by remember { mutableStateOf(false) }
+    if (showCoverPicker) {
+        com.example.ui.components.CoverPickerDialog(title = tvShow.title, isSeries = true, originalUrl = tvShow.logoUrl ?: item.logoUrl, onDismiss = { showCoverPicker = false })
     }
     // Yatay sahne görseli sağlayıcı kataloğunda varsa üst görsel o olur; yoksa poster yumuşatılarak arka plan yapılır.
     var dynamicBackdropUrl by remember(tvShow.id) { mutableStateOf<String?>(null) }
@@ -566,6 +569,10 @@ fun SeriesDetailScreen(
                                     contentDescription = "Poster Thumbnail",
                                     modifier = Modifier.fillMaxSize().then(sharedImageModifier),
                                     contentScale = ContentScale.Crop
+                                )
+                                com.example.ui.components.CoverChangeBadge(
+                                    onClick = { showCoverPicker = true },
+                                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
                                 )
 
                                 if (item.displayRating() > 0.0) {

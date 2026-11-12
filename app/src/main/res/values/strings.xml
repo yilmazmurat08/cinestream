@@ -828,4 +828,12 @@
     <string name="agenda_movie">FİLM</string>
     <string name="agenda_series">DİZİ</string>
     <string name="agenda_rating">Puan %1$s</string>
+    <string name="cover_change">Kapak Görselini Değiştir</string>
+    <string name="cover_suggestions_title">TMDB önerileri: doğru kapağı seç</string>
+    <string name="cover_from_gallery">Galeriden seç</string>
+    <string name="cover_reset">Varsayılana dön</string>
+    <string name="cover_no_suggestions">Öneri bulunamadı. İnternet bağlantını kontrol edip yeniden dene.</string>
+    <string name="cover_changed">Kapak değiştirildi</string>
+    <string name="cover_restored">Varsayılan kapak geri geldi</string>
+    <string name="cover_import_failed">Görsel alınamadı</string>
 </resources>

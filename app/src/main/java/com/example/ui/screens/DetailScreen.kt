@@ -121,7 +121,12 @@ fun DetailScreen(
     val layout = com.example.ui.theme.rememberAppAdaptiveLayout()
     var selectedPersonForBio by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    val dynamicPosterUrl = item.logoUrl
+    val coverTitle = item.cleanedName.ifBlank { item.name }
+    val dynamicPosterUrl = com.example.ui.components.rememberCoverOverride(false, coverTitle) ?: item.logoUrl
+    var showCoverPicker by remember { mutableStateOf(false) }
+    if (showCoverPicker) {
+        com.example.ui.components.CoverPickerDialog(title = coverTitle, isSeries = false, originalUrl = item.logoUrl, onDismiss = { showCoverPicker = false })
+    }
     // Üst görsel: sağlayıcının yatay sahne görseli varsa o, yoksa poster. Poster (küçük kapak) listedekiyle aynı kalır.
     val detailBackdrop by if (viewModel != null) {
         viewModel.detailBackdrop.collectAsState()
@@ -419,6 +424,10 @@ fun DetailScreen(
                                     contentDescription = "Poster Thumbnail",
                                     modifier = Modifier.fillMaxSize().then(sharedImageModifier),
                                     contentScale = ContentScale.Crop
+                                )
+                                com.example.ui.components.CoverChangeBadge(
+                                    onClick = { showCoverPicker = true },
+                                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
                                 )
 
                                 if (item.displayRating() > 0.0) {

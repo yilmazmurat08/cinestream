@@ -829,4 +829,12 @@
     <string name="agenda_movie">MOVIE</string>
     <string name="agenda_series">SERIES</string>
     <string name="agenda_rating">Rating %1$s</string>
+    <string name="cover_change">Change Cover Image</string>
+    <string name="cover_suggestions_title">TMDB suggestions: pick the right cover</string>
+    <string name="cover_from_gallery">Choose from gallery</string>
+    <string name="cover_reset">Restore default</string>
+    <string name="cover_no_suggestions">No suggestions found. Check your internet connection and try again.</string>
+    <string name="cover_changed">Cover changed</string>
+    <string name="cover_restored">Default cover restored</string>
+    <string name="cover_import_failed">Couldn\'t load the image</string>
 </resources>

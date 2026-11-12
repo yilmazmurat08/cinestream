@@ -2,62 +2,58 @@
 *{box-sizing:border-box}html,body{margin:0}
 body{width:1080px;height:600px;position:relative;overflow:hidden;background:#120A24}
 .bg{position:absolute;inset:0;background:
- radial-gradient(520px 380px at 50% 46%, rgba(217,70,239,.75), rgba(124,58,237,.35) 45%, transparent 72%),
- radial-gradient(360px 260px at 50% 40%, rgba(255,197,61,.35), transparent 70%),
- radial-gradient(500px 300px at 100% 100%, rgba(124,255,107,.16), transparent 70%),
- radial-gradient(500px 300px at 0% 100%, rgba(124,255,107,.10), transparent 70%),
- linear-gradient(#2a0f52,#120A24)}
-.p{position:absolute;width:190px;height:285px;border-radius:14px;background-size:cover;background-position:center;
-   box-shadow:0 18px 40px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.14),0 0 34px rgba(217,70,239,.45)}
-.p::after{content:'';position:absolute;inset:0;border-radius:14px;background:linear-gradient(rgba(18,10,36,0) 40%,rgba(18,10,36,.55))}
-.l1{left:28px;top:70px;transform:perspective(700px) rotateY(38deg) rotate(-7deg)}
-.l2{left:176px;top:44px;transform:perspective(700px) rotateY(30deg) rotate(-4deg) scale(.96)}
-.l3{left:312px;top:36px;transform:perspective(700px) rotateY(22deg) rotate(-2deg) scale(.9);opacity:.85}
-.r1{right:28px;top:70px;transform:perspective(700px) rotateY(-38deg) rotate(7deg)}
-.r2{right:176px;top:44px;transform:perspective(700px) rotateY(-30deg) rotate(4deg) scale(.96)}
-.r3{right:312px;top:36px;transform:perspective(700px) rotateY(-22deg) rotate(2deg) scale(.9);opacity:.85}
-.fade{position:absolute;left:0;right:0;bottom:0;height:170px;background:linear-gradient(transparent,#120A24 96%)}
-.center{position:absolute;left:50%;top:46%;width:560px;height:560px;transform:translate(-50%,-50%);
-  background:radial-gradient(circle,rgba(255,197,61,.38) 0,rgba(217,70,239,.55) 26%,rgba(124,58,237,.30) 48%,transparent 70%)}
-.ring{position:absolute;left:50%;top:48%;width:520px;height:150px;transform:translate(-50%,-50%) rotate(-14deg);border-radius:50%;
-  border:3px solid rgba(255,197,61,.55);box-shadow:0 0 30px rgba(255,197,61,.55), inset 0 0 30px rgba(255,197,61,.25)}
-svg{position:absolute}
+ radial-gradient(420px 300px at 50% 44%, rgba(255,214,102,.55), transparent 70%),
+ radial-gradient(640px 460px at 50% 46%, rgba(232,121,249,.95), rgba(147,51,234,.55) 46%, transparent 74%),
+ radial-gradient(520px 320px at 100% 100%, rgba(124,255,107,.26), transparent 70%),
+ radial-gradient(520px 320px at 0% 100%, rgba(124,255,107,.18), transparent 70%),
+ linear-gradient(#3b1273,#1a0b38 60%,#120A24)}
+.rays{position:absolute;left:50%;top:46%;width:1300px;height:1300px;transform:translate(-50%,-50%);
+ background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.085) 0 6deg, transparent 6deg 18deg);
+ -webkit-mask-image:radial-gradient(circle, #000 0, #000 22%, transparent 56%);mask-image:radial-gradient(circle,#000 0,#000 22%,transparent 56%)}
+.p{position:absolute;width:190px;height:285px;border-radius:16px;overflow:hidden}
+.p img{width:100%;height:100%;display:block}
+.l1{left:22px;top:66px;transform:perspective(700px) rotateY(36deg) rotate(-7deg);box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 2.5px rgba(253,230,138,.9),0 0 38px rgba(253,224,71,.65)}
+.l2{left:170px;top:36px;transform:perspective(700px) rotateY(28deg) rotate(-4deg) scale(.97);box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 2.5px rgba(240,171,252,.9),0 0 38px rgba(232,121,249,.7)}
+.l3{left:310px;top:22px;transform:perspective(700px) rotateY(20deg) rotate(-2deg) scale(.9);box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 2.5px rgba(103,232,249,.85),0 0 34px rgba(34,211,238,.6)}
+.r1{right:22px;top:66px;transform:perspective(700px) rotateY(-36deg) rotate(7deg);box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 2.5px rgba(103,232,249,.9),0 0 38px rgba(34,211,238,.65)}
+.r2{right:170px;top:36px;transform:perspective(700px) rotateY(-28deg) rotate(4deg) scale(.97);box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 2.5px rgba(190,242,100,.9),0 0 38px rgba(124,255,107,.6)}
+.r3{right:310px;top:22px;transform:perspective(700px) rotateY(-20deg) rotate(2deg) scale(.9);box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 2.5px rgba(253,186,116,.9),0 0 34px rgba(249,115,22,.65)}
+.glow{position:absolute;left:50%;top:47%;width:520px;height:520px;transform:translate(-50%,-50%);
+ background:radial-gradient(circle,rgba(255,236,170,.75) 0,rgba(255,197,61,.45) 16%,rgba(232,121,249,.55) 34%,rgba(147,51,234,.25) 52%,transparent 68%)}
+.ring{position:absolute;left:50%;top:50%;width:560px;height:160px;transform:translate(-50%,-50%) rotate(-14deg);border-radius:50%;
+ border:4px solid rgba(255,214,102,.85);box-shadow:0 0 34px rgba(255,197,61,.9), inset 0 0 34px rgba(255,197,61,.4)}
+.ring2{position:absolute;left:50%;top:50%;width:660px;height:200px;transform:translate(-50%,-50%) rotate(-14deg);border-radius:50%;border:1.5px solid rgba(124,255,107,.5);box-shadow:0 0 18px rgba(124,255,107,.5)}
+.fade{position:absolute;left:0;right:0;bottom:0;height:150px;background:linear-gradient(transparent,#120A24 97%)}
+svg.o{position:absolute}
 .sp{position:absolute;border-radius:50%}
 </style></head><body>
-<div class="bg"></div>
-<div class="p l3" style="background-image:url(golge-avcisi.jpg)"></div>
-<div class="p r3" style="background-image:url(kizil-sinir.jpg)"></div>
-<div class="p l2" style="background-image:url(sonsuz-yorunge.jpg)"></div>
-<div class="p r2" style="background-image:url(eski-konak.jpg)"></div>
-<div class="p l1" style="background-image:url(gece-yarisi-treni.jpg)"></div>
-<div class="p r1" style="background-image:url(mavi-dalga.jpg)"></div>
-<div class="center"></div><div class="ring"></div>
+<div class="bg"></div><div class="rays"></div>
+<div class="p l3"><img src="p3.svg"></div><div class="p r3"><img src="p4.svg"></div>
+<div class="p l2"><img src="p2.svg"></div><div class="p r2"><img src="p5.svg"></div>
+<div class="p l1"><img src="p1.svg"></div><div class="p r1"><img src="p6.svg"></div>
+<div class="glow"></div><div class="ring2"></div><div class="ring"></div>
 <div class="fade"></div>
-<!-- patlamış mısır -->
-<svg style="left:10px;bottom:0" width="205" height="222" viewBox="0 0 250 270">
- <defs><linearGradient id="k" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e9dcc8"/></linearGradient>
- <radialGradient id="m" cx=".35" cy=".3"><stop offset="0" stop-color="#fffbe6"/><stop offset=".6" stop-color="#ffe08a"/><stop offset="1" stop-color="#f5b942"/></radialGradient></defs>
+<svg class="o" style="left:6px;bottom:0" width="215" height="232" viewBox="0 0 250 270">
+ <defs><linearGradient id="k" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#e2d3bb"/></linearGradient>
+ <linearGradient id="kr" x1="0" x2="1"><stop offset="0" stop-color="#fb7185"/><stop offset=".5" stop-color="#e11d48"/><stop offset="1" stop-color="#9f1239"/></linearGradient>
+ <radialGradient id="m" cx=".35" cy=".28"><stop offset="0" stop-color="#fffdf0"/><stop offset=".55" stop-color="#ffe89a"/><stop offset="1" stop-color="#f5a623"/></radialGradient></defs>
+ <ellipse cx="125" cy="262" rx="96" ry="8" fill="#000" opacity=".45"/>
  <g>
-  <circle cx="62" cy="96" r="30" fill="url(#m)"/><circle cx="104" cy="70" r="34" fill="url(#m)"/><circle cx="150" cy="78" r="32" fill="url(#m)"/><circle cx="190" cy="100" r="28" fill="url(#m)"/>
-  <circle cx="84" cy="112" r="28" fill="url(#m)"/><circle cx="128" cy="106" r="32" fill="url(#m)"/><circle cx="168" cy="118" r="27" fill="url(#m)"/><circle cx="126" cy="50" r="24" fill="url(#m)"/>
+  <circle cx="58" cy="100" r="30" fill="url(#m)"/><circle cx="100" cy="70" r="34" fill="url(#m)"/><circle cx="150" cy="76" r="33" fill="url(#m)"/><circle cx="194" cy="102" r="28" fill="url(#m)"/>
+  <circle cx="82" cy="112" r="28" fill="url(#m)"/><circle cx="128" cy="104" r="33" fill="url(#m)"/><circle cx="170" cy="118" r="27" fill="url(#m)"/><circle cx="126" cy="46" r="26" fill="url(#m)"/><circle cx="76" cy="60" r="20" fill="url(#m)"/><circle cx="176" cy="56" r="20" fill="url(#m)"/>
  </g>
- <path d="M38 118 L212 118 L188 262 L62 262 Z" fill="url(#k)"/>
- <g fill="#e11d48"><path d="M38 118 L67 118 L80 262 L62 262Z"/><path d="M96 118 L125 118 L125 262 L104 262Z"/><path d="M154 118 L183 118 L165 262 L146 262Z"/><path d="M204 118 L212 118 L188 262 L186 262Z"/></g>
- <path d="M38 118 L212 118 L209 136 L41 136Z" fill="rgba(0,0,0,.18)"/>
+ <path d="M34 118 L216 118 L190 262 L60 262 Z" fill="url(#k)"/>
+ <g fill="url(#kr)"><path d="M34 118 L64 118 L80 262 L60 262Z"/><path d="M95 118 L125 118 L125 262 L103 262Z"/><path d="M156 118 L186 118 L167 262 L147 262Z"/></g>
+ <path d="M34 118 L216 118 L213 138 L37 138Z" fill="rgba(0,0,0,.2)"/><path d="M42 124 L60 124 L74 256 L64 256Z" fill="#fff" opacity=".35"/>
 </svg>
-<!-- film makarası -->
-<svg style="right:6px;bottom:-6px" width="215" height="215" viewBox="0 0 270 270">
- <defs><radialGradient id="r" cx=".4" cy=".35"><stop offset="0" stop-color="#9a93ad"/><stop offset=".55" stop-color="#4a4460"/><stop offset="1" stop-color="#1f1a30"/></radialGradient></defs>
- <path d="M150 232 C200 250 240 240 270 214 L270 262 C230 280 190 276 150 262Z" fill="#2a2440"/>
- <g fill="#ffc53d" opacity=".85"><rect x="166" y="244" width="14" height="10" rx="2"/><rect x="192" y="246" width="14" height="10" rx="2"/><rect x="218" y="242" width="14" height="10" rx="2"/><rect x="244" y="234" width="14" height="10" rx="2"/></g>
- <circle cx="130" cy="150" r="112" fill="url(#r)" stroke="#c9c3da" stroke-width="5"/>
- <circle cx="130" cy="150" r="96" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
- <g fill="#120A24"><circle cx="130" cy="88" r="27"/><circle cx="189" cy="131" r="27"/><circle cx="166" cy="200" r="27"/><circle cx="94" cy="200" r="27"/><circle cx="71" cy="131" r="27"/></g>
- <circle cx="130" cy="150" r="17" fill="#c9c3da"/><circle cx="130" cy="150" r="7" fill="#120A24"/>
+<svg class="o" style="right:0;bottom:-8px" width="232" height="232" viewBox="0 0 270 270">
+ <defs><radialGradient id="r" cx=".38" cy=".3"><stop offset="0" stop-color="#f5f3ff"/><stop offset=".35" stop-color="#a59ccf"/><stop offset=".75" stop-color="#4a3f7a"/><stop offset="1" stop-color="#1f1740"/></radialGradient></defs>
+ <path d="M140 228 C196 252 240 240 270 210 L270 266 C226 284 186 280 140 262Z" fill="#2a2150"/>
+ <g fill="#ffd666"><rect x="160" y="244" width="15" height="11" rx="2"/><rect x="188" y="247" width="15" height="11" rx="2"/><rect x="216" y="243" width="15" height="11" rx="2"/><rect x="244" y="234" width="15" height="11" rx="2"/></g>
+ <circle cx="130" cy="150" r="114" fill="url(#r)" stroke="#ffd666" stroke-width="5"/>
+ <circle cx="130" cy="150" r="98" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2"/>
+ <g fill="#160c33"><circle cx="130" cy="86" r="28"/><circle cx="191" cy="130" r="28"/><circle cx="168" cy="202" r="28"/><circle cx="92" cy="202" r="28"/><circle cx="69" cy="130" r="28"/></g>
+ <circle cx="130" cy="150" r="18" fill="#ffd666"/><circle cx="130" cy="150" r="7" fill="#160c33"/>
+ <path d="M52 92 A114 114 0 0 1 150 38" stroke="#fff" stroke-opacity=".55" stroke-width="5" fill="none" stroke-linecap="round"/>
 </svg>
-<div class="sp" style="left:300px;top:150px;width:8px;height:8px;background:#ffc53d;box-shadow:0 0 14px #ffc53d"></div>
-<div class="sp" style="left:760px;top:110px;width:7px;height:7px;background:#7cff6b;box-shadow:0 0 14px #7cff6b"></div>
-<div class="sp" style="left:700px;top:330px;width:6px;height:6px;background:#ffc53d;box-shadow:0 0 12px #ffc53d"></div>
-<div class="sp" style="left:360px;top:340px;width:6px;height:6px;background:#7cff6b;box-shadow:0 0 12px #7cff6b"></div>
-<div class="sp" style="left:540px;top:30px;width:5px;height:5px;background:#fff;box-shadow:0 0 12px #fff"></div>
-</body></html>
+<div class="sp" style="left:267px;top:260px;width:5px;height:5px;background:#f0abfc;box-shadow:0 0 15px #f0abfc;opacity:0.76"></div><div class="sp" style="left:624px;top:289px;width:7px;height:7px;background:#7cff6b;box-shadow:0 0 21px #7cff6b;opacity:0.80"></div><div class="sp" style="left:219px;top:340px;width:9px;height:9px;background:#f0abfc;box-shadow:0 0 27px #f0abfc;opacity:0.76"></div><div class="sp" style="left:685px;top:79px;width:4px;height:4px;background:#f0abfc;box-shadow:0 0 12px #f0abfc;opacity:0.73"></div><div class="sp" style="left:36px;top:368px;width:4px;height:4px;background:#f0abfc;box-shadow:0 0 12px #f0abfc;opacity:0.57"></div><div class="sp" style="left:831px;top:389px;width:5px;height:5px;background:#ffffff;box-shadow:0 0 15px #ffffff;opacity:0.82"></div><div class="sp" style="left:977px;top:188px;width:7px;height:7px;background:#ffffff;box-shadow:0 0 21px #ffffff;opacity:0.88"></div><div class="sp" style="left:620px;top:453px;width:4px;height:4px;background:#7cff6b;box-shadow:0 0 12px #7cff6b;opacity:0.59"></div><div class="sp" style="left:161px;top:110px;width:7px;height:7px;background:#7cff6b;box-shadow:0 0 21px #7cff6b;opacity:0.74"></div><div class="sp" style="left:887px;top:274px;width:9px;height:9px;background:#f0abfc;box-shadow:0 0 27px #f0abfc;opacity:0.73"></div><div class="sp" style="left:262px;top:165px;width:3px;height:3px;background:#7cff6b;box-shadow:0 0 9px #7cff6b;opacity:1.00"></div><div class="sp" style="left:718px;top:85px;width:5px;height:5px;background:#f0abfc;box-shadow:0 0 15px #f0abfc;opacity:0.96"></div><div class="sp" style="left:612px;top:338px;width:4px;height:4px;background:#f0abfc;box-shadow:0 0 12px #f0abfc;opacity:0.67"></div><div class="sp" style="left:149px;top:232px;width:7px;height:7px;background:#ffd666;box-shadow:0 0 21px #ffd666;opacity:0.70"></div><div class="sp" style="left:89px;top:423px;width:3px;height:3px;background:#7cff6b;box-shadow:0 0 9px #7cff6b;opacity:0.74"></div><div class="sp" style="left:452px;top:65px;width:9px;height:9px;background:#f0abfc;box-shadow:0 0 27px #f0abfc;opacity:0.89"></div><div class="sp" style="left:413px;top:280px;width:9px;height:9px;background:#7cff6b;box-shadow:0 0 27px #7cff6b;opacity:0.78"></div><div class="sp" style="left:1058px;top:152px;width:3px;height:3px;background:#ffd666;box-shadow:0 0 9px #ffd666;opacity:0.82"></div><div class="sp" style="left:53px;top:101px;width:7px;height:7px;background:#7cff6b;box-shadow:0 0 21px #7cff6b;opacity:0.82"></div><div class="sp" style="left:182px;top:30px;width:5px;height:5px;background:#7cff6b;box-shadow:0 0 15px #7cff6b;opacity:0.71"></div><div class="sp" style="left:164px;top:406px;width:7px;height:7px;background:#ffffff;box-shadow:0 0 21px #ffffff;opacity:0.94"></div><div class="sp" style="left:422px;top:409px;width:9px;height:9px;background:#ffd666;box-shadow:0 0 27px #ffd666;opacity:0.83"></div><div class="sp" style="left:998px;top:243px;width:7px;height:7px;background:#ffd666;box-shadow:0 0 21px #ffd666;opacity:0.97"></div><div class="sp" style="left:475px;top:129px;width:5px;height:5px;background:#f0abfc;box-shadow:0 0 15px #f0abfc;opacity:0.70"></div><div class="sp" style="left:840px;top:464px;width:5px;height:5px;background:#ffd666;box-shadow:0 0 15px #ffd666;opacity:0.72"></div><div class="sp" style="left:633px;top:71px;width:5px;height:5px;background:#ffffff;box-shadow:0 0 15px #ffffff;opacity:0.71"></div><div class="sp" style="left:974px;top:290px;width:5px;height:5px;background:#ffffff;box-shadow:0 0 15px #ffffff;opacity:0.56"></div><div class="sp" style="left:83px;top:321px;width:5px;height:5px;background:#7cff6b;box-shadow:0 0 15px #7cff6b;opacity:0.83"></div><div class="sp" style="left:331px;top:287px;width:4px;height:4px;background:#7cff6b;box-shadow:0 0 12px #7cff6b;opacity:0.63"></div><div class="sp" style="left:808px;top:398px;width:5px;height:5px;background:#7cff6b;box-shadow:0 0 15px #7cff6b;opacity:0.90"></div><div class="sp" style="left:129px;top:384px;width:9px;height:9px;background:#ffd666;box-shadow:0 0 27px #ffd666;opacity:0.69"></div><div class="sp" style="left:251px;top:380px;width:4px;height:4px;background:#7cff6b;box-shadow:0 0 12px #7cff6b;opacity:0.63"></div><div class="sp" style="left:473px;top:331px;width:3px;height:3px;background:#f0abfc;box-shadow:0 0 9px #f0abfc;opacity:0.69"></div><div class="sp" style="left:367px;top:393px;width:7px;height:7px;background:#ffd666;box-shadow:0 0 21px #ffd666;opacity:0.59"></div></body></html>

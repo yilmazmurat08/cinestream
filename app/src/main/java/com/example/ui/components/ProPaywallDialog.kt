@@ -284,7 +284,8 @@ internal fun PaywallContent(
                         }
                     },
                     fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 2.dp)
+                    // Dikeyde başlık üst görselin (mısır, makara) altına iner; üstüne binmez.
+                    modifier = Modifier.padding(top = if (layout.isLandscape) 2.dp else 26.dp)
                 )
                 Spacer(Modifier.height(6.dp))
                 if (!isPro && !reasonMessage.isNullOrEmpty()) {

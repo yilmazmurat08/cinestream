@@ -135,7 +135,11 @@ fun SafeAsyncImage(
     if (isUrlInvalid) {
         CinemaPlaceholder(modifier = modifier)
     } else {
-        val effectiveModel = model
+        // Kullanıcı bu kapağı değiştirdiyse yeni kapak hemen gösterilir (bkz. CoverOverrideStore).
+        val coverVersion = com.example.data.repository.CoverOverrideStore.version
+        val effectiveModel = androidx.compose.runtime.remember(model, coverVersion) {
+            (model as? String)?.let { com.example.data.repository.CoverOverrideStore.replacementFor(it) } ?: model
+        }
 
         val imageRequest = androidx.compose.runtime.remember(effectiveModel, contentScale) {
             ImageRequest.Builder(context)

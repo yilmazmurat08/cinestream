@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="190" height="285" viewBox="0 0 190 285"><defs><linearGradient id="sheen" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="dark" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".7"/></linearGradient></defs><linearGradient id="k1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7f1d1d"/><stop offset=".45" stop-color="#f97316"/><stop offset=".7" stop-color="#fbbf24"/><stop offset="1" stop-color="#7c2d12"/></linearGradient>
+<radialGradient id="sun"><stop offset="0" stop-color="#fff7d6"/><stop offset=".6" stop-color="#fde047"/><stop offset="1" stop-color="#f97316"/></radialGradient>
+<rect width="190" height="285" fill="url(#k1)"/><circle cx="95" cy="112" r="74" fill="#fde047" opacity=".25"/><circle cx="95" cy="112" r="50" fill="url(#sun)"/>
+<path d="M30 60 q8 -6 16 0 q8 -6 16 0" stroke="#450a0a" stroke-width="2" fill="none"/><path d="M130 44 q6 -5 12 0 q6 -5 12 0" stroke="#450a0a" stroke-width="2" fill="none"/>
+<path d="M0 150 L24 128 L40 140 L62 104 L84 150 L110 120 L140 150 L162 126 L190 150 L190 285 L0 285Z" fill="#9a3412"/>
+<path d="M0 176 q50 -26 100 -6 q50 18 90 -10 L190 285 L0 285Z" fill="#7c2d12"/>
+<path d="M0 204 q60 -22 120 -4 q40 12 70 0 L190 285 L0 285Z" fill="#431407"/>
+<path d="M112 168 q8 -6 14 0 l8 2 l2 8 l-6 0 l0 14 h-4 v-12 h-10 v12 h-4 v-14 q-4 -4 0 -10z" fill="#1c0a02"/><circle cx="121" cy="158" r="4" fill="#1c0a02"/><path d="M114 154 h14 l-2 -4 h-10z" fill="#1c0a02"/>
+<path d="M150 166 v20 M150 172 h8 v-8 M150 178 h-7 v-6" stroke="#1c0a02" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<text x="95" y="238" text-anchor="middle" font-family="Impact, 'Arial Black', sans-serif" font-size="25" fill="#fff7d6" letter-spacing="1.5" style="paint-order:stroke" stroke="rgba(0,0,0,.55)" stroke-width="3">KIZIL</text><text x="95" y="264" text-anchor="middle" font-family="Impact, 'Arial Black', sans-serif" font-size="25" fill="#fff7d6" letter-spacing="1.5" style="paint-order:stroke" stroke="rgba(0,0,0,.55)" stroke-width="3">SINIR</text><rect width="190" height="285" fill="url(#dark)"/><path d="M0 0 L120 0 L40 285 L0 285Z" fill="url(#sheen)"/></svg>

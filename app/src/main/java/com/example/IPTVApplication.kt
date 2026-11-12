@@ -66,6 +66,7 @@ class IPTVApplication : Application(), ImageLoaderFactory {
         }
 
         // 2. Explicitly set the custom ImageLoader globally
+        com.example.data.repository.CoverOverrideStore.init(this)
         Coil.setImageLoader(this)
 
         // 3. Perform proactive cache cleanup & storage maintenance on app startup
@@ -108,6 +109,7 @@ class IPTVApplication : Application(), ImageLoaderFactory {
         android.util.Log.d("IPTVApplication", "Cihaz RAM: %.1f GB -> önbellek: %%${(memoryCachePercent * 100).toInt()} RAM, ${diskCacheMB}MB disk".format(totalRamGB))
 
         return ImageLoader.Builder(this)
+            .components { add(com.example.data.repository.CoverOverrideInterceptor()) }
             .memoryCache {
                 MemoryCache.Builder(this)
                     .maxSizePercent(memoryCachePercent)

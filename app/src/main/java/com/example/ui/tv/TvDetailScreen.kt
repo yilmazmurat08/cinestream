@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
@@ -238,7 +239,13 @@ fun TvDetailScreen(
         else -> tmdb?.overview?.takeIf { it.isNotBlank() && it != "Açıklama bulunamadı." }
     }
     val backdrop = tmdb?.backdropUrl?.takeIf { it.isNotBlank() }
-    val poster = show?.logoUrl ?: item.logoUrl ?: tmdb?.posterUrl
+    val coverOverride = com.example.ui.components.rememberCoverOverride(isSeries, title)
+    val listPoster = show?.logoUrl ?: item.logoUrl
+    val poster = coverOverride ?: listPoster ?: tmdb?.posterUrl
+    var showCoverPicker by remember { mutableStateOf(false) }
+    if (showCoverPicker) {
+        com.example.ui.components.CoverPickerDialog(title = title, isSeries = isSeries, originalUrl = listPoster, onDismiss = { showCoverPicker = false })
+    }
     // Puan yalnızca TMDB'den: kayıtlı TMDB puanı, yoksa bu detay için çekilen TMDB bilgisi (sağlayıcının puanı değil).
     val rating = item.displayRating().takeIf { it > 0.0 }
         ?: tmdb?.rating?.let { com.example.util.RatingScale.normalize(it) }?.takeIf { it > 0.0 }
@@ -370,6 +377,9 @@ fun TvDetailScreen(
                         stringResource(if (isFavorite) R.string.tv_remove_favorite else R.string.tv_add_favorite),
                         "tv_detail_favorite"
                     ) { viewModel.toggleFavorite(item) }
+                }
+                item {
+                    TvActionButton(Icons.Filled.Image, stringResource(R.string.cover_change), "tv_detail_cover") { showCoverPicker = true }
                 }
             }
 
