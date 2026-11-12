@@ -57,6 +57,25 @@ const KANALLAR = [
 const q = new URLSearchParams(location.search);
 const tur = q.get('tur') || 'afis';
 const i = +(q.get('i') || 0);
+// ?lang=en: İngilizce tanıtım için aynı hayali afişler İngilizce ad ve yazılarla (Türkçe çıktı değişmez).
+const EN = q.get('lang') === 'en';
+const EN_AFIS = {
+  'gece-yarisi-treni': ['Midnight Train', 'THE LAST STOP'], 'tas-kale': ['Stone Castle', 'THE WALLS REMEMBER'],
+  'mavi-dalga': ['Blue Wave', 'RIDE THE STORM'], 'kayip-harita': ['The Lost Map', 'SOME ROADS FIND YOU'],
+  'sonsuz-yorunge': ['Endless Orbit', 'BEYOND THE STARS'], 'sessiz-sehir': ['Silent City', 'NO ONE IS LISTENING'],
+  'kizil-sinir': ['Red Border', 'NO WAY BACK'], 'ruzgarin-oglu': ['Son of the Wind', 'ONE SUMMER, ONE PROMISE'],
+  'golge-avcisi': ['Shadow Hunter', 'DARKNESS IS HOME'], 'beyaz-sessizlik': ['White Silence', 'WINTER WILL BE LONG'],
+  'altin-vadi': ['Golden Valley', 'THE LAND REMEMBERS'], 'karanlik-orman': ['Dark Forest', 'KEEP THE LIGHT ON'],
+  'mavi-fener': ['Blue Lighthouse', 'NEW SEASON'], 'daglarin-kizi': ['Mountain Daughter', 'EVERY SUNDAY'],
+  'eski-konak': ['The Old Mansion', 'WHEN THE DOORS CLOSE'],
+};
+const EN_KANAL = { 'Yıldız TV': 'Star TV', 'Kanal Mavi': 'Blue Channel', 'Film Plus': 'Film Plus', 'Aile TV': 'Family TV',
+  'Belgesel Dünya': 'Docu World', 'Çocuk Kulübü': 'Kids Club', 'Haber 24': 'News 24', 'Gündem TV': 'Agenda TV',
+  'Ekonomi Hattı': 'Money Line', 'Spor Arena': 'Sport Arena', 'Spor Max': 'Sport Max', 'Maç Saati': 'Match Time' };
+if (EN) {
+  for (const a of AFISLER) { const t = EN_AFIS[a.slug]; if (t) { a.ad = t[0]; a.slogan = t[1]; } }
+  for (const k of KANALLAR) k.ad = EN_KANAL[k.ad] || k.ad;
+}
 
 // Dağ sırtı: rastgele yürüyüşle yumuşak bir yol
 function sirt(r, W, taban, yuk, puruz, adim = 24) {
@@ -250,7 +269,7 @@ function afisSahne(a, W, H, r) {
 function afis(a, W = 480, H = 720) {
   const r = rng(a.slug.split('').reduce((t, c) => t * 31 + c.charCodeAt(0), 7));
   const baslikBoy = a.font === 'Cinzel' ? 54 : a.font === 'Playfair Display' ? 58 : 74;
-  const satirlar = a.ad.toLocaleUpperCase('tr').split(' ');
+  const satirlar = a.ad.toLocaleUpperCase(EN ? 'en' : 'tr').split(' ');
   const yaz = a.font === 'Playfair Display' ? a.ad.split(' ') : satirlar;
   const tekSatir = yaz.join(' ').length <= 12;
   const baslik = tekSatir ? [yaz.join(' ')] : [yaz.slice(0, Math.ceil(yaz.length / 2)).join(' '), yaz.slice(Math.ceil(yaz.length / 2)).join(' ')];
@@ -273,8 +292,8 @@ function afis(a, W = 480, H = 720) {
     <text x="${W / 2}" y="44" text-anchor="middle" font-family="Poppins" font-weight="600" font-size="13" letter-spacing="5" fill="${a.vurgu}" opacity="0.9">${a.slogan}</text>
     ${baslik.map((t, k) => `<text x="${W / 2}" y="${by + k * baslikBoy * 0.95}" text-anchor="middle" font-family="${a.font}" font-size="${baslikBoy}" style="${stil}" fill="${a.vurgu}" opacity="0.35" filter="url(#parla)">${t}</text>
     <text x="${W / 2}" y="${by + k * baslikBoy * 0.95}" text-anchor="middle" font-family="${a.font}" font-size="${baslikBoy}" style="${stil}" fill="#fff">${t}</text>`).join('')}
-    <text x="${W / 2}" y="${H - 66}" text-anchor="middle" font-family="Bebas Neue" font-size="11.5" letter-spacing="1.2" fill="#fff" opacity="0.55">YAPIM DENİZ ARSLAN · SENARYO ADA YILDIZ · MÜZİK CEM DEMİR · GÖRÜNTÜ ECE AK · KURGU BORA KAYA</text>
-    <text x="${W / 2}" y="${H - 38}" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" letter-spacing="4" fill="${a.vurgu}">${a.dizi ? 'YENİ BÖLÜM' : 'YAKINDA'}</text>
+    <text x="${W / 2}" y="${H - 66}" text-anchor="middle" font-family="Bebas Neue" font-size="11.5" letter-spacing="1.2" fill="#fff" opacity="0.55">${EN ? 'DIRECTED BY DENIZ ARSLAN · WRITTEN BY ADA YILDIZ · MUSIC CEM DEMIR' : 'YAPIM DENİZ ARSLAN · SENARYO ADA YILDIZ · MÜZİK CEM DEMİR · GÖRÜNTÜ ECE AK · KURGU BORA KAYA'}</text>
+    <text x="${W / 2}" y="${H - 38}" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" letter-spacing="4" fill="${a.vurgu}">${EN ? (a.dizi ? 'NEW EPISODE' : 'COMING SOON') : (a.dizi ? 'YENİ BÖLÜM' : 'YAKINDA')}</text>
   </svg>`;
 }
 
@@ -297,7 +316,7 @@ function ikon(k, renk) {
 }
 function kanal(k, W = 320, H = 200) {
   const kelime = k.ad.split(' ');
-  const ust = kelime[0].toLocaleUpperCase('tr'), alt = kelime.slice(1).join(' ').toLocaleUpperCase('tr');
+  const loc = EN ? 'en' : 'tr', ust = kelime[0].toLocaleUpperCase(loc), alt = kelime.slice(1).join(' ').toLocaleUpperCase(loc);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     <defs><linearGradient id="z" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${k.renk[0]}"/><stop offset="1" stop-color="${k.renk[1]}"/></linearGradient>
     <radialGradient id="p" cx="0.2" cy="0.1" r="1"><stop offset="0" stop-color="#fff" stop-opacity="0.35"/><stop offset="0.6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>

@@ -60,6 +60,23 @@ class PhonePromoShotsTest {
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private val outDir = System.getenv("CINESTREAM_SHOTS")?.let { File(it) }
+    /** CINESTREAM_SHOTS_LANG=en: İngilizce tanıtım görselleri (arayüz İngilizce, hayali içerik İngilizce adlarla). */
+    private val en = System.getenv("CINESTREAM_SHOTS_LANG") == "en"
+    private fun t(tr: String, english: String) = if (en) english else tr
+    private val enTitles = mapOf(
+        "Gece Yarısı Treni" to "Midnight Train", "Taş Kale" to "Stone Castle", "Mavi Dalga" to "Blue Wave",
+        "Kayıp Harita" to "The Lost Map", "Sonsuz Yörünge" to "Endless Orbit", "Sessiz Şehir" to "Silent City",
+        "Kızıl Sınır" to "Red Border", "Rüzgarın Oğlu" to "Son of the Wind", "Gölge Avcısı" to "Shadow Hunter",
+        "Beyaz Sessizlik" to "White Silence", "Altın Vadi" to "Golden Valley", "Karanlık Orman" to "Dark Forest",
+        "Mavi Fener" to "Blue Lighthouse", "Dağların Kızı" to "Mountain Daughter", "Eski Konak" to "The Old Mansion"
+    )
+    private val enChannels = mapOf(
+        "Yıldız TV" to "Star TV", "Kanal Mavi" to "Blue Channel", "Film Plus" to "Film Plus", "Aile TV" to "Family TV",
+        "Belgesel Dünya" to "Docu World", "Çocuk Kulübü" to "Kids Club", "Haber 24" to "News 24", "Gündem TV" to "Agenda TV",
+        "Ekonomi Hattı" to "Money Line", "Spor Arena" to "Sport Arena", "Spor Max" to "Sport Max", "Maç Saati" to "Match Time"
+    )
+    /** Görünen ad (İngilizce modda çevrilir); afiş görseli her zaman Türkçe adla bulunur. */
+    private fun shown(name: String) = if (en) enTitles[name] ?: enChannels[name] ?: name else name
     private lateinit var vm: IPTVViewModel
     private lateinit var movies: List<IPTVItem>
     private lateinit var series: List<IPTVItem>
@@ -90,58 +107,63 @@ class PhonePromoShotsTest {
     @Before
     fun setUp() {
         assumeTrue("Tanıtım görselleri yalnızca CINESTREAM_SHOTS ile", outDir != null)
+        if (en) {
+            org.robolectric.RuntimeEnvironment.setQualifiers("+en")
+            app.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE).edit().putString("app_language", "en").commit()
+        }
         outDir!!.mkdirs()
         val db = AppDatabase.getDatabase(app)
         val titles = listOf(
             "Gece Yarısı Treni", "Taş Kale", "Mavi Dalga", "Kayıp Harita", "Sonsuz Yörünge", "Sessiz Şehir",
             "Kızıl Sınır", "Rüzgarın Oğlu", "Gölge Avcısı", "Beyaz Sessizlik", "Altın Vadi", "Karanlık Orman"
         )
-        val cats = listOf("Aksiyon", "Yeni Filmler", "Komedi")
+        val cats = if (en) listOf("Action", "New Movies", "Comedy") else listOf("Aksiyon", "Yeni Filmler", "Komedi")
         movies = titles.mapIndexed { i, t ->
             IPTVItem(
-                id = 8000 + i, playlistId = 1, name = t, cleanedName = t, logoUrl = poster(t, 8000 + i),
+                id = 8000 + i, playlistId = 1, name = shown(t), cleanedName = shown(t), logoUrl = poster(t, 8000 + i),
                 streamUrl = "http://10.255.255.1/m/${8000 + i}.mp4", category = cats[i % 3], type = "MOVIE",
                 rating = listOf(8.4, 7.9, 7.2, 8.8, 6.9, 7.6)[i % 6], releaseDate = "${2018 + i % 6}-05-01",
-                genre = listOf("Aksiyon, Macera", "Dram", "Komedi", "Bilim Kurgu")[i % 4],
-                summary = "$t, sıradan bir hayatı olan kahramanın beklenmedik bir yolculuğa çıkışını anlatıyor. Yol boyunca dostluk, cesaret ve fedakârlık sınanıyor.",
+                genre = (if (en) listOf("Action, Adventure", "Drama", "Comedy", "Sci-Fi") else listOf("Aksiyon, Macera", "Dram", "Komedi", "Bilim Kurgu"))[i % 4],
+                summary = if (en) "${shown(t)} follows an ordinary hero on an unexpected journey, where friendship, courage and sacrifice are put to the test."
+                    else "$t, sıradan bir hayatı olan kahramanın beklenmedik bir yolculuğa çıkışını anlatıyor. Yol boyunca dostluk, cesaret ve fedakârlık sınanıyor.",
                 cast = "Ada Yıldız, Bora Kaya, Cem Demir, Ece Ak", director = "Deniz Arslan", isFavorite = i % 4 == 0
             )
         }
         series = (1..4).flatMap { s ->
             listOf("Mavi Fener", "Dağların Kızı", "Eski Konak").mapIndexed { k, show ->
                 IPTVItem(
-                    id = 8100 + k * 10 + s, playlistId = 1, name = "$show S01E0$s", cleanedName = "$show S01E0$s",
-                    logoUrl = poster(show, 20 + k), streamUrl = "http://10.255.255.1/s/${k}_$s.mp4", category = "Yerli Diziler",
-                    type = "SERIES", rating = 8.1 - k * 0.3, releaseDate = "2022-01-01", genre = "Dram",
-                    summary = "$show, bir ailenin kuşaklar boyu süren hikâyesi.", season = 1, episode = s,
+                    id = 8100 + k * 10 + s, playlistId = 1, name = "${shown(show)} S01E0$s", cleanedName = "${shown(show)} S01E0$s",
+                    logoUrl = poster(show, 20 + k), streamUrl = "http://10.255.255.1/s/${k}_$s.mp4", category = t("Yerli Diziler", "Drama Series"),
+                    type = "SERIES", rating = 8.1 - k * 0.3, releaseDate = "2022-01-01", genre = t("Dram", "Drama"),
+                    summary = t("$show, bir ailenin kuşaklar boyu süren hikâyesi.", "${shown(show)}: a family story across generations."), season = 1, episode = s,
                     cast = "Selin Aydın, Kerem Tan, Mert Uçar", director = "Deniz Arslan"
                 )
             }
         }
         val live = ShowcaseData.channelNames.mapIndexed { i, n ->
             IPTVItem(
-                id = 8200 + i, playlistId = 1, name = n, cleanedName = n, logoUrl = poster(n, 30 + i, 320, 200),
-                streamUrl = "http://10.255.255.1/l/$i.ts", category = if (i < 6) "Ulusal" else if (i < 9) "Haber" else "Spor",
+                id = 8200 + i, playlistId = 1, name = shown(n), cleanedName = shown(n), logoUrl = poster(shown(n), 30 + i, 320, 200),
+                streamUrl = "http://10.255.255.1/l/$i.ts", category = if (i < 6) t("Ulusal", "National") else if (i < 9) t("Haber", "News") else t("Spor", "Sports"),
                 type = "LIVE", isFavorite = i == 0
             )
         }
         runBlocking {
             db.iptvDao().insertItems(movies + series + live)
             listOf("Mavi Fener", "Dağların Kızı", "Eski Konak").forEachIndexed { k, show ->
-                db.iptvDao().upsertSeriesCover(com.example.data.model.SeriesCoverEntity(show.lowercase(java.util.Locale.ROOT), poster(show, 20 + k)))
+                db.iptvDao().upsertSeriesCover(com.example.data.model.SeriesCoverEntity(shown(show).lowercase(java.util.Locale.ROOT), poster(show, 20 + k)))
             }
             // Mavi Fener: 1. bölüm bitmiş (İzlendi), 2. bölüm yarıda.
             db.iptvDao().insertContinueWatching(
-                ContinueWatching(itemId = 8101, itemName = "Mavi Fener S01E01", itemType = "SERIES", itemLogo = poster("Mavi Fener", 20),
-                    streamUrl = "http://10.255.255.1/s/0_1.mp4", category = "Yerli Diziler", progressSeconds = 2650, totalSeconds = 2700,
+                ContinueWatching(itemId = 8101, itemName = "${shown("Mavi Fener")} S01E01", itemType = "SERIES", itemLogo = poster("Mavi Fener", 20),
+                    streamUrl = "http://10.255.255.1/s/0_1.mp4", category = t("Yerli Diziler", "Drama Series"), progressSeconds = 2650, totalSeconds = 2700,
                     lastPlayedAt = System.currentTimeMillis() - 3_600_000)
             )
             db.iptvDao().insertContinueWatching(
-                ContinueWatching(itemId = 8102, itemName = "Mavi Fener S01E02", itemType = "SERIES", itemLogo = poster("Mavi Fener", 20),
-                    streamUrl = "http://10.255.255.1/s/0_2.mp4", category = "Yerli Diziler", progressSeconds = 900, totalSeconds = 2700)
+                ContinueWatching(itemId = 8102, itemName = "${shown("Mavi Fener")} S01E02", itemType = "SERIES", itemLogo = poster("Mavi Fener", 20),
+                    streamUrl = "http://10.255.255.1/s/0_2.mp4", category = t("Yerli Diziler", "Drama Series"), progressSeconds = 900, totalSeconds = 2700)
             )
             db.iptvDao().insertContinueWatching(
-                ContinueWatching(itemId = 8003, itemName = "Kayıp Harita", itemType = "MOVIE", itemLogo = poster("Kayıp Harita", 8003),
+                ContinueWatching(itemId = 8003, itemName = shown("Kayıp Harita"), itemType = "MOVIE", itemLogo = poster("Kayıp Harita", 8003),
                     streamUrl = "http://10.255.255.1/m/8003.mp4", category = "Aksiyon", progressSeconds = 2400, totalSeconds = 6000,
                     lastPlayedAt = System.currentTimeMillis() - 120_000)
             )
@@ -231,9 +253,11 @@ class PhonePromoShotsTest {
         runBlocking { com.example.data.repository.SettingsRepository(app).setGeminiApiKey("AIzaShowcaseKey000000000000000000000000") }
         val field = IPTVViewModel::class.java.getDeclaredField("_chatMessages").apply { isAccessible = true }
         (field.get(vm) as MutableStateFlow<List<IPTVViewModel.ChatMessage>>).value = listOf(
-            IPTVViewModel.ChatMessage("user", "Bir adam gece trende uyanıyor, herkes aynı günü tekrar yaşıyor. Filmin adı ne?"),
-            IPTVViewModel.ChatMessage("ai", "Anlattığın sahneler \"Gece Yarısı Treni\" filmine çok benziyor: kahraman her gece aynı trende uyanıp olayların tekrarını çözmeye çalışıyor. Kütüphanende var!",
-                matchedItem = movies[0], detectedTitle = "Gece Yarısı Treni", matchedItems = listOf(movies[0]))
+            IPTVViewModel.ChatMessage("user", t("Bir adam gece trende uyanıyor, herkes aynı günü tekrar yaşıyor. Filmin adı ne?",
+                "A man wakes up on a night train and everyone relives the same day. What's the movie called?")),
+            IPTVViewModel.ChatMessage("ai", t("Anlattığın sahneler \"Gece Yarısı Treni\" filmine çok benziyor: kahraman her gece aynı trende uyanıp olayların tekrarını çözmeye çalışıyor. Kütüphanende var!",
+                "That sounds a lot like \"Midnight Train\": the hero wakes up on the same train every night and tries to break the loop. It's in your library!"),
+                matchedItem = movies[0], detectedTitle = movies[0].name, matchedItems = listOf(movies[0]))
         )
         shot("p04-asistan", 4_000) { MovieFinderChatScreen(viewModel = vm, onBack = {}, onOpenItem = {}) }
     }
@@ -271,7 +295,10 @@ class PhonePromoShotsTest {
         compose.onRoot().captureRoboImage(filePath = File(outDir, "p08-ayarlar-yasal.png").absolutePath)
     }
 
-    private val sampleFolders = listOf(
+    private val sampleFolders get() = if (en) listOf(
+        "Thriller", "Now Playing", "Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Adventure", "Romance", "Animation",
+        "Fantasy", "Crime", "Documentary", "Family", "War", "4K UHD", "Local Movies", "Classics", "Kids", "Top Rated", "Other"
+    ) else listOf(
         "Gerilim", "Vizyondakiler", "TR | AKSİYON", "Komedi", "Dram", "Korku", "Bilim Kurgu", "Macera", "Romantik", "Animasyon",
         "Fantastik", "Suç & Polisiye", "Belgesel", "Aile", "Savaş", "4K UHD", "Yerli Filmler", "Klasikler",
         "Çocuk", "IMDb Top", "NETFLIX FİLMLERİ", "Diğer"
@@ -281,15 +308,16 @@ class PhonePromoShotsTest {
         val groups = sampleFolders.mapIndexed { i, n ->
             com.example.data.model.IPTVGroup(id = "g$i", name = n, type = "MOVIE", items = movies.take(3 + i % 5))
         }
-        com.example.ui.screens.FolderGridScreen(groups = groups, title = "Filmler", viewModel = vm, onPlayItem = {})
+        com.example.ui.screens.FolderGridScreen(groups = groups, title = t("Filmler", "Movies"), viewModel = vm, onPlayItem = {})
     }
 
     @Test fun p17_liveFolders() = shot("p17-canli-klasorler", 3_000) {
-        val names = listOf("YETİŞKİN: TÜRK", "HABER", "SPOR", "MÜZİK", "TR | ULUSAL", "DİNİ", "RELAX LOOP", "RADYO", "ÇOCUK")
+        val names = if (en) listOf("ADULT", "NEWS", "SPORTS", "MUSIC", "NATIONAL", "RELIGIOUS", "RELAX LOOP", "RADIO", "KIDS")
+            else listOf("YETİŞKİN: TÜRK", "HABER", "SPOR", "MÜZİK", "TR | ULUSAL", "DİNİ", "RELAX LOOP", "RADYO", "ÇOCUK")
         val groups = names.mapIndexed { i, n ->
             com.example.data.model.IPTVGroup(id = "l$i", name = n, type = "LIVE", items = movies.take(3 + i % 5))
         }
-        com.example.ui.screens.FolderGridScreen(groups = groups, title = "Canlı Yayın", viewModel = vm, onPlayItem = {})
+        com.example.ui.screens.FolderGridScreen(groups = groups, title = t("Canlı Yayın", "Live TV"), viewModel = vm, onPlayItem = {})
     }
 
     @Test fun p20_topRatedRow() {
@@ -327,11 +355,12 @@ class PhonePromoShotsTest {
     }
 
     @Test fun p16_seriesFolders() = shot("p16-dizi-klasorleri", 3_000) {
-        val names = listOf("Yerli Diziler", "Suç Dizileri", "Gerilim Dizileri", "Komedi Dizileri", "Bilim Kurgu Dizileri", "Yeni Eklenen Diziler")
+        val names = if (en) listOf("Drama Series", "Crime Series", "Thriller Series", "Comedy Series", "Sci-Fi Series", "Recently Added")
+            else listOf("Yerli Diziler", "Suç Dizileri", "Gerilim Dizileri", "Komedi Dizileri", "Bilim Kurgu Dizileri", "Yeni Eklenen Diziler")
         val groups = names.mapIndexed { i, n ->
             com.example.data.model.IPTVGroup(id = "s$i", name = n, type = "SERIES", items = movies.take(3 + i % 5))
         }
-        com.example.ui.screens.FolderGridScreen(groups = groups, title = "Diziler", viewModel = vm, onPlayItem = {})
+        com.example.ui.screens.FolderGridScreen(groups = groups, title = t("Diziler", "Series"), viewModel = vm, onPlayItem = {})
     }
 
     @Test

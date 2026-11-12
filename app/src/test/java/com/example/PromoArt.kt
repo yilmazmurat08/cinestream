@@ -16,7 +16,9 @@ object PromoArt {
 
     /** [kanal] true ise yatay kanal logosu, değilse dikey afiş. */
     fun uri(context: Context, name: String, kanal: Boolean): String? {
-        val path = "promo/${if (kanal) "kanal" else "afis"}/${slug(name)}.jpg"
+        // İngilizce tanıtım (CINESTREAM_SHOTS_LANG=en): aynı hayali görseller İngilizce adlarla (promo/en).
+        val en = System.getenv("CINESTREAM_SHOTS_LANG") == "en"
+        val path = "promo/${if (en) "en/" else ""}${if (kanal) "kanal" else "afis"}/${slug(name)}.jpg"
         val stream = PromoArt::class.java.classLoader?.getResourceAsStream(path) ?: return null
         val file = File(context.cacheDir, "promo_" + path.replace('/', '_'))
         stream.use { input -> if (!file.exists()) file.outputStream().use { input.copyTo(it) } }

@@ -1,5 +1,6 @@
 // Hayali afiş ve kanal logolarını çizer, test kaynaklarına yazar (tanıtım ekranları bunları kullanır).
 // Kullanım: node afisleri-ciz.js <çıkış klasörü>   (varsayılan: app/src/test/resources/promo)
+// İngilizce adlarla: AFIS_LANG=en node afisleri-ciz.js en   (İngilizce tanıtım görselleri için)
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
@@ -14,13 +15,13 @@ const slug = (s) => s.toLocaleLowerCase('tr').replace(/ç/g, 'c').replace(/ğ/g,
   const sayfa = 'file://' + path.join(__dirname, 'afis-uretici.html');
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 480, height: 720 }, deviceScaleFactor: 1 });
-  await page.goto(sayfa);
+  await page.goto(sayfa + (process.env.AFIS_LANG === 'en' ? '?lang=en' : ''));
   await page.evaluate(() => document.fonts.ready);
   const liste = await page.evaluate(() => window.LISTE);
   for (const [tur, adlar, w, h] of [['afis', liste.afis, 480, 720], ['kanal', liste.kanal, 320, 200]]) {
     await page.setViewportSize({ width: w, height: h });
     for (let i = 0; i < adlar.length; i++) {
-      await page.goto(`${sayfa}?tur=${tur}&i=${i}`);
+      await page.goto(`${sayfa}?tur=${tur}&i=${i}${process.env.AFIS_LANG === 'en' ? '&lang=en' : ''}`);
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(150);
       const dosya = path.join(out, tur, `${tur === 'afis' ? adlar[i] : slug(adlar[i])}.jpg`);

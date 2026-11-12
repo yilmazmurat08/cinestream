@@ -35,6 +35,7 @@ Tek kareye bakmak için: `node render.js 1920 1080 onizleme 30 2.2,6.0`
 - `afis-forum.html`: forumlar için yatay afiş (1920x1080, JPG).
 - `hazirla.sh`: güncel ekranları çeker (PhonePromoShotsTest), bütün afişleri baştan üretir.
 - `CineStream-afis-1080x1920.png`: genel afiş (son çıktı).
+- **İngilizce afiş (13 Kasım 2026, Facebook grupları için):** `afis-en.html` (aynı düzen, İngilizce metin, "NOW ON Google Play" kutusu, altta "No channels or content included" notu; `?fmt=fb` ile 1080x1350). Ekranlar İngilizce arayüzle ve İngilizce adlı hayali içerikle çekilir (`CINESTREAM_SHOTS_LANG=en`, görseller `app/src/test/resources/promo/en`). `hazirla-en.sh` hepsini üretir. Çıktılar: `CineStream-poster-en-1080x1920.png`, `CineStream-poster-en-1080x1350.png`. Yalnızca yayındaki sürümün (1.1.8) özellikleri yazılır.
 
 Play kuralları gereği: hazır içerik vaadi yok ("binlerce kanal" gibi), "Kendi M3U / Xtream listenle" notu var,
 yetişkin klasörü gösterilmez, ünlü yüz ya da marka logosu kullanılmaz.
