@@ -300,8 +300,7 @@
     <string name="player_channel_list_category">Channel List (%1$s)</string>
     <string name="player_recommended">Recommended</string>
     <string name="player_next_episode">Up Next</string>
-    <string name="player_resume_episode">Season %1$d, Episode %2$d — you are at %3$s.</string>
-    <string name="player_resume_position">You stopped at — %1$s</string>
+    <string name="player_resume_episode">Season %1$d, Episode %2$d</string>
     <string name="player_subtitle_track">Subtitle %1$d</string>
     <string name="player_resume_progress">You stopped at: %1$s (%2$d%% watched)</string>
     <string name="parental_pin_incorrect">Incorrect PIN! Please try again.</string>
@@ -844,4 +843,6 @@
     <string name="intro_mark_invalid">The intro must be between 5 seconds and 5 minutes. Mark it again.</string>
     <string name="intro_skip">Skip intro</string>
     <string name="intro_skip_tv">Skip intro (OK)</string>
+    <string name="settings_subtitle_preview">PREVIEW</string>
+    <string name="settings_subtitle_preview_sample">Tonight, everything changes.</string>
 </resources>

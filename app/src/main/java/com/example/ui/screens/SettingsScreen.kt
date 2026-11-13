@@ -937,6 +937,10 @@ fun SubtitlesCard(
                 )
             }
 
+            // Canlı önizleme: oynatıcıdaki gibi (seçili renk ve boyut, siyah kenarlı yazı, saydam arka plan).
+            SubtitlePreview(subtitleSize = subtitleSize, color = colorMap[selectedColor] ?: Color.White)
+            Spacer(modifier = Modifier.height(14.dp))
+
             // Subtitle Size Slider
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                 Row(
@@ -1033,6 +1037,49 @@ fun SubtitlesCard(
                     }
                 }
             }
+        }
+    }
+}
+
+/** Altyazı ayarlarının canlı önizlemesi: koyu bir sahne üzerinde örnek altyazı, oynatıcıdaki görünümle aynı. */
+@Composable
+fun SubtitlePreview(subtitleSize: Int, color: Color, modifier: Modifier = Modifier) {
+    val sample = stringResource(R.string.settings_subtitle_preview_sample)
+    val outline = androidx.compose.ui.text.TextStyle(
+        fontSize = subtitleSize.sp, fontWeight = FontWeight.Medium, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 5f, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    )
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Brush.verticalGradient(listOf(Color(0xFF2A1F3D), Color(0xFF0E0A16))))
+            .testTag("subtitle_preview")
+    ) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(R.drawable.genre_drama),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            alpha = 0.55f,
+            modifier = Modifier.fillMaxSize()
+        )
+        Text(
+            text = stringResource(R.string.settings_subtitle_preview),
+            color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(8.dp)
+                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                .padding(horizontal = 8.dp, vertical = 3.dp)
+        )
+        Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 12.dp, vertical = 12.dp)) {
+            Text(text = sample, color = Color.Black, style = outline, maxLines = 2)
+            Text(
+                text = sample, color = color, maxLines = 2,
+                style = outline.copy(drawStyle = androidx.compose.ui.graphics.drawscope.Fill),
+                modifier = Modifier.testTag("subtitle_preview_text")
+            )
         }
     }
 }

@@ -299,8 +299,7 @@
     <string name="player_channel_list_category">Kanal Listesi (%1$s)</string>
     <string name="player_recommended">Önerilen İçerikler</string>
     <string name="player_next_episode">Sıradaki Bölüm</string>
-    <string name="player_resume_episode">%1$d. Sezon, %2$d. Bölüm — %3$s. dakikadasınız.</string>
-    <string name="player_resume_position">Kaldığınız yer — %1$s</string>
+    <string name="player_resume_episode">%1$d. Sezon, %2$d. Bölüm</string>
     <string name="player_subtitle_track">Altyazı %1$d</string>
     <string name="player_resume_progress">Kaldığın yer: %1$s (%%%2$d tamamlandı)</string>
     <string name="parental_pin_incorrect">Hatalı PIN kodu! Lütfen tekrar deneyin.</string>
@@ -843,4 +842,6 @@
     <string name="intro_mark_invalid">Jenerik 5 saniye ile 5 dakika arasında olmalı. Baştan işaretle.</string>
     <string name="intro_skip">Jeneriği geç</string>
     <string name="intro_skip_tv">Jeneriği geç (OK)</string>
+    <string name="settings_subtitle_preview">ÖNİZLEME</string>
+    <string name="settings_subtitle_preview_sample">Bu akşam her şey değişecek.</string>
 </resources>

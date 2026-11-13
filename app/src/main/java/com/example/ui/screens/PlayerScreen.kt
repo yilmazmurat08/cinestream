@@ -2766,6 +2766,10 @@ fun LegacyExoPlayerScreen(
             }
 
             if (showResumeDialog) {
+                // Yatay telefonda (alçak ekran) pencere sığsın: simge gizlenir, boşluklar küçülür, kart genişler ve
+                // gerekirse kaydırılır. Dikey telefonda düğmeler alt alta (büyük yazı tipinde yazılar bölünmesin).
+                val resumeCompact = !tvMode && LocalConfiguration.current.screenHeightDp < 480
+                val resumeStackButtons = !tvMode && !resumeCompact
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -2781,7 +2785,7 @@ fun LegacyExoPlayerScreen(
                         // Genişlik sınırı fillMaxWidth'ten ÖNCE: ters sırada sınır uygulanmıyor, kart TV'de ve yatay
                         // telefonda ekranın %85'ine yayılıyordu. TV'de kart daha dar ve toplu.
                         modifier = Modifier
-                            .widthIn(max = if (tvMode) 380.dp else 420.dp)
+                            .widthIn(max = if (tvMode) 380.dp else if (resumeCompact) 600.dp else 420.dp)
                             .fillMaxWidth(0.85f)
                             .padding(16.dp)
                             .border(
@@ -2796,16 +2800,19 @@ fun LegacyExoPlayerScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(if (tvMode) 20.dp else 24.dp),
+                                .verticalScroll(rememberScrollState())
+                                .padding(if (tvMode || resumeCompact) 20.dp else 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = stringResource(R.string.player_play_desc),
-                                tint = CineOrange,
-                                modifier = Modifier.size(if (tvMode) 40.dp else 56.dp)
-                            )
-                            Spacer(modifier = Modifier.height(if (tvMode) 8.dp else 16.dp))
+                            if (!resumeCompact) {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = stringResource(R.string.player_play_desc),
+                                    tint = CineOrange,
+                                    modifier = Modifier.size(if (tvMode) 40.dp else 56.dp)
+                                )
+                                Spacer(modifier = Modifier.height(if (tvMode) 8.dp else 16.dp))
+                            }
 
                             Text(
                                 text = stringResource(R.string.player_continue_watching_question),
@@ -2819,7 +2826,7 @@ fun LegacyExoPlayerScreen(
                             val progressSec = initialProgressSeconds
                             val totalSec = iptvViewModel?.continueWatching?.value?.find { it.itemId == item.id }?.totalSeconds ?: 3600L
                             val percentage = if (totalSec > 0) ((progressSec.toFloat() / totalSec.toFloat()) * 100).toInt().coerceIn(1, 99) else 0
-                            val progressStr = String.format("%02d:%02d", progressSec / 60, progressSec % 60)
+                            val progressStr = formatTime(progressSec)
 
                             Text(
                                 text = stringResource(R.string.player_resume_progress, progressStr, percentage),
@@ -2828,7 +2835,7 @@ fun LegacyExoPlayerScreen(
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(if (resumeCompact) 10.dp else 16.dp))
 
                             LinearProgressIndicator(
                                 progress = { percentage.toFloat() / 100f },
@@ -2839,7 +2846,7 @@ fun LegacyExoPlayerScreen(
                                 color = CineOrange,
                                 trackColor = Color.White.copy(alpha = 0.1f)
                             )
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(if (resumeCompact) 12.dp else 24.dp))
 
                             // Dizi: kaldığın bölüme kadar olanların spoilersiz özeti (yapay zekâ). Eskiden ayrı, arkada kalan
                             // ikinci bir pencerede duruyordu (iki pencere üst üste açılıyor, TV'de odak arkadakinde kalıyordu).
@@ -2851,16 +2858,12 @@ fun LegacyExoPlayerScreen(
                             }
                         }
 
-                        val detailText = remember(item, initialProgressSeconds, seriesInfo, context) {
-                            val timeStr = formatTime(initialProgressSeconds)
-                            if (seriesInfo != null) {
-                                context.getString(R.string.player_resume_episode, seriesInfo.season, seriesInfo.episode, timeStr)
-                            } else {
-                                context.getString(R.string.player_resume_position, timeStr)
-                            }
+                        // Dizide hangi bölüm olduğu; süre yukarıda zaten yazıyor (filmde bu satır yok).
+                        val detailText = remember(item, seriesInfo, context) {
+                            seriesInfo?.let { context.getString(R.string.player_resume_episode, it.season, it.episode) }
                         }
 
-                        Text(
+                        if (detailText != null) Text(
                             text = detailText,
                             color = SlateGray,
                             fontSize = 14.sp,
@@ -2870,7 +2873,7 @@ fun LegacyExoPlayerScreen(
                         )
 
                         if (seriesInfo != null && iptvViewModel != null) {
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(if (resumeCompact) 10.dp else 16.dp))
                             if (aiRecapText == null) {
                                 OutlinedButton(
                                     onClick = {
@@ -2981,7 +2984,7 @@ fun LegacyExoPlayerScreen(
                             }
                         }
 
-                            if (seriesInfo != null && iptvViewModel != null) Spacer(modifier = Modifier.height(20.dp))
+                            if (seriesInfo != null && iptvViewModel != null) Spacer(modifier = Modifier.height(if (resumeCompact) 12.dp else 20.dp))
 
 
                             // Kumanda: pencere açılınca odak "Devam Et"te; odaktaki düğmenin çevresinde beyaz çerçeve.
@@ -3012,10 +3015,7 @@ fun LegacyExoPlayerScreen(
                                     }
                                 }
                             }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
+                            val startOverButton: @Composable (Modifier) -> Unit = { m ->
                                 OutlinedButton(
                                     onClick = {
                                         showResumeDialog = false
@@ -3031,18 +3031,19 @@ fun LegacyExoPlayerScreen(
                                         if (startOverFocused) 2.dp else 1.dp,
                                         if (startOverFocused) Color.White else Color.White.copy(alpha = 0.3f)
                                     ),
-                                    modifier = Modifier
-                                        .weight(1f)
+                                    modifier = m
                                         .onFocusChanged { startOverFocused = it.isFocused }
                                         .testTag("resume_start_over")
                                 ) {
                                     Text(
                                         text = stringResource(R.string.player_start_over),
+                                        maxLines = 1,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
-
+                            }
+                            val continueButton: @Composable (Modifier) -> Unit = { m ->
                                 Button(
                                     onClick = {
                                         showResumeDialog = false
@@ -3056,17 +3057,32 @@ fun LegacyExoPlayerScreen(
                                         contentColor = Color.White
                                     ),
                                     border = if (continueFocused) androidx.compose.foundation.BorderStroke(2.dp, Color.White) else null,
-                                    modifier = Modifier
-                                        .weight(1f)
+                                    modifier = m
                                         .focusRequester(resumeContinueFocus)
                                         .onFocusChanged { continueFocused = it.isFocused }
                                         .testTag("resume_continue")
                                 ) {
                                     Text(
                                         text = stringResource(R.string.player_continue),
+                                        maxLines = 1,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold
                                     )
+                                }
+                            }
+                            if (resumeStackButtons) {
+                                // Dikey telefon: alt alta, tam genişlik; asıl seçenek (Devam Et) üstte.
+                                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    continueButton(Modifier.fillMaxWidth().heightIn(min = 48.dp))
+                                    startOverButton(Modifier.fillMaxWidth().heightIn(min = 48.dp))
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    startOverButton(Modifier.weight(1f))
+                                    continueButton(Modifier.weight(1f))
                                 }
                             }
                         }
