@@ -91,6 +91,7 @@ fun SettingsScreen(
     val autoplayNextEpisode by viewModel.autoplayNextEpisode.collectAsState()
     val subtitleSize by viewModel.subtitleSize.collectAsState()
     val subtitleColor by viewModel.subtitleColor.collectAsState()
+    val subtitleBackground by viewModel.subtitleBackground.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
     val parentalPin by viewModel.parentalPin.collectAsState()
     val geminiApiKey by viewModel.geminiApiKey.collectAsState()
@@ -278,7 +279,9 @@ fun SettingsScreen(
                             selectedColor = subtitleColor,
                             colorOptions = subtitleColorOptions,
                             colorMap = colorPreviewMap,
-                            onColorSelect = { viewModel.setSubtitleColor(it) }
+                            onColorSelect = { viewModel.setSubtitleColor(it) },
+                            selectedBackground = subtitleBackground,
+                            onBackgroundSelect = { viewModel.setSubtitleBackground(it) }
                         )
                     }
                     "SECURITY" -> {
@@ -906,7 +909,9 @@ fun SubtitlesCard(
     selectedColor: String,
     colorOptions: List<String>,
     colorMap: Map<String, Color>,
-    onColorSelect: (String) -> Unit
+    onColorSelect: (String) -> Unit,
+    selectedBackground: String = com.example.util.SubtitleBackground.NONE,
+    onBackgroundSelect: (String) -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -938,7 +943,7 @@ fun SubtitlesCard(
             }
 
             // Canlı önizleme: oynatıcıdaki gibi (seçili renk ve boyut, siyah kenarlı yazı, saydam arka plan).
-            SubtitlePreview(subtitleSize = subtitleSize, color = colorMap[selectedColor] ?: Color.White)
+            SubtitlePreview(subtitleSize = subtitleSize, color = colorMap[selectedColor] ?: Color.White, background = selectedBackground)
             Spacer(modifier = Modifier.height(14.dp))
 
             // Subtitle Size Slider
@@ -1037,13 +1042,67 @@ fun SubtitlesCard(
                     }
                 }
             }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp)
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            )
+
+            // Altyazı arka planı: saydam (kenarlı yazı), yarı saydam ya da siyah şerit
+            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Text(
+                    text = stringResource(R.string.settings_subtitle_background),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    com.example.util.SubtitleBackground.options.forEach { key ->
+                        val isSelected = selectedBackground == key
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isSelected) CineOrange.copy(alpha = 0.15f)
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                                .border(1.dp, if (isSelected) CineOrange else Color.Transparent, RoundedCornerShape(12.dp))
+                                .clickable { onBackgroundSelect(key) }
+                                .padding(horizontal = 8.dp, vertical = 10.dp)
+                                .testTag("subtitle_bg_$key")
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    when (key) {
+                                        com.example.util.SubtitleBackground.SEMI -> R.string.settings_subtitle_bg_semi
+                                        com.example.util.SubtitleBackground.SOLID -> R.string.settings_subtitle_bg_solid
+                                        else -> R.string.settings_subtitle_bg_none
+                                    }
+                                ),
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 /** Altyazı ayarlarının canlı önizlemesi: koyu bir sahne üzerinde örnek altyazı, oynatıcıdaki görünümle aynı. */
 @Composable
-fun SubtitlePreview(subtitleSize: Int, color: Color, modifier: Modifier = Modifier) {
+fun SubtitlePreview(subtitleSize: Int, color: Color, modifier: Modifier = Modifier, background: String = com.example.util.SubtitleBackground.NONE) {
+    val bgColor = Color(com.example.util.SubtitleBackground.argb(background))
+    val hasBg = bgColor.alpha > 0f
     val sample = stringResource(R.string.settings_subtitle_preview_sample)
     val outline = androidx.compose.ui.text.TextStyle(
         fontSize = subtitleSize.sp, fontWeight = FontWeight.Medium, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -1073,8 +1132,16 @@ fun SubtitlePreview(subtitleSize: Int, color: Color, modifier: Modifier = Modifi
                 .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
                 .padding(horizontal = 8.dp, vertical = 3.dp)
         )
-        Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 12.dp, vertical = 12.dp)) {
-            Text(text = sample, color = Color.Black, style = outline, maxLines = 2)
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+                .testTag("subtitle_preview_box")
+                .background(bgColor, RoundedCornerShape(4.dp))
+                .padding(horizontal = if (hasBg) 8.dp else 0.dp, vertical = if (hasBg) 2.dp else 0.dp)
+        ) {
+            // Saydamda oynatıcıdaki gibi siyah kenar; arka plan seçiliyse kenar yok.
+            if (!hasBg) Text(text = sample, color = Color.Black, style = outline, maxLines = 2)
             Text(
                 text = sample, color = color, maxLines = 2,
                 style = outline.copy(drawStyle = androidx.compose.ui.graphics.drawscope.Fill),

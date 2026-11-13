@@ -845,4 +845,8 @@
     <string name="intro_skip_tv">Skip intro (OK)</string>
     <string name="settings_subtitle_preview">PREVIEW</string>
     <string name="settings_subtitle_preview_sample">Tonight, everything changes.</string>
+    <string name="settings_subtitle_background">Subtitle Background</string>
+    <string name="settings_subtitle_bg_none">None</string>
+    <string name="settings_subtitle_bg_semi">Semi-transparent</string>
+    <string name="settings_subtitle_bg_solid">Black</string>
 </resources>

@@ -176,6 +176,9 @@ class IPTVViewModel(
     val subtitleColor: StateFlow<String> = settingsRepository.subtitleColorFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Beyaz")
 
+    val subtitleBackground: StateFlow<String> = settingsRepository.subtitleBackgroundFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.util.SubtitleBackground.NONE)
+
     val parentalLock: StateFlow<Boolean> = settingsRepository.parentalLockFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
@@ -787,6 +790,12 @@ class IPTVViewModel(
     fun setSubtitleColor(color: String) {
         viewModelScope.launch(coroutineExceptionHandler) {
             settingsRepository.setSubtitleColor(color)
+        }
+    }
+
+    fun setSubtitleBackground(key: String) {
+        viewModelScope.launch(coroutineExceptionHandler) {
+            settingsRepository.setSubtitleBackground(key)
         }
     }
 

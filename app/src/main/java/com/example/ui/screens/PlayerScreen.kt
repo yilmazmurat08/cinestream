@@ -175,6 +175,7 @@ fun LegacyExoPlayerScreen(
     val trayProgressById = remember(trayWatchHistory) { WatchedFractions(trayWatchHistory) }
     val subtitleSize by (iptvViewModel?.subtitleSize?.collectAsState() ?: remember { mutableStateOf(16) })
     val subtitleColor by (iptvViewModel?.subtitleColor?.collectAsState() ?: remember { mutableStateOf("Beyaz") })
+    val subtitleBackground by (iptvViewModel?.subtitleBackground?.collectAsState() ?: remember { mutableStateOf(com.example.util.SubtitleBackground.NONE) })
 
     // ExoPlayer creation & lifecycle management
     val player = remember(item) {
@@ -1262,14 +1263,7 @@ fun LegacyExoPlayerScreen(
                             "Mavi" -> 0xFF2196F3.toInt()
                             else -> android.graphics.Color.WHITE
                         }
-                        val captionStyle = CaptionStyleCompat(
-                            subColorInt,
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT,
-                            CaptionStyleCompat.EDGE_TYPE_OUTLINE,
-                            android.graphics.Color.BLACK,
-                            null
-                        )
+                        val captionStyle = subtitleCaptionStyle(subColorInt, subtitleBackground)
                         subtitleView?.apply {
                             setApplyEmbeddedFontSizes(false)
                             setApplyEmbeddedStyles(false)
@@ -1295,14 +1289,7 @@ fun LegacyExoPlayerScreen(
                         "Mavi" -> 0xFF2196F3.toInt()
                         else -> android.graphics.Color.WHITE
                     }
-                    val captionStyle = CaptionStyleCompat(
-                        subColorInt,
-                        android.graphics.Color.TRANSPARENT,
-                        android.graphics.Color.TRANSPARENT,
-                        CaptionStyleCompat.EDGE_TYPE_OUTLINE,
-                        android.graphics.Color.BLACK,
-                        null
-                    )
+                    val captionStyle = subtitleCaptionStyle(subColorInt, subtitleBackground)
                     playerView.subtitleView?.apply {
                         setApplyEmbeddedFontSizes(false)
                         setApplyEmbeddedStyles(false)
@@ -3230,6 +3217,19 @@ private fun formatTime(seconds: Long): String {
     } else {
         String.format("%02d:%02d", m, s)
     }
+}
+
+/** Altyazı görünümü: seçilen renk, arka plan (saydam / yarı saydam / siyah); saydamda okunur olsun diye siyah kenar. */
+internal fun subtitleCaptionStyle(textColor: Int, background: String): CaptionStyleCompat {
+    val bg = com.example.util.SubtitleBackground.argb(background)
+    return CaptionStyleCompat(
+        textColor,
+        bg,
+        android.graphics.Color.TRANSPARENT,
+        if (bg == 0) CaptionStyleCompat.EDGE_TYPE_OUTLINE else CaptionStyleCompat.EDGE_TYPE_NONE,
+        android.graphics.Color.BLACK,
+        null
+    )
 }
 
 /** Zorlanan yön yoksa sensör (kullanıcının döndürme kilidine uyar), varsa o yön. */

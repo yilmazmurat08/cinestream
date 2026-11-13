@@ -844,4 +844,8 @@
     <string name="intro_skip_tv">Jeneriği geç (OK)</string>
     <string name="settings_subtitle_preview">ÖNİZLEME</string>
     <string name="settings_subtitle_preview_sample">Bu akşam her şey değişecek.</string>
+    <string name="settings_subtitle_background">Altyazı Arka Planı</string>
+    <string name="settings_subtitle_bg_none">Yok</string>
+    <string name="settings_subtitle_bg_semi">Yarı saydam</string>
+    <string name="settings_subtitle_bg_solid">Siyah</string>
 </resources>

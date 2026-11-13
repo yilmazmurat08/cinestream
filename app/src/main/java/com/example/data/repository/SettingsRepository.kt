@@ -36,6 +36,7 @@ class SettingsRepository(
         val AUTOPLAY_NEXT_EPISODE = booleanPreferencesKey("autoplay_next_episode")
         val SUBTITLE_SIZE = intPreferencesKey("subtitle_size")
         val SUBTITLE_COLOR = stringPreferencesKey("subtitle_color")
+        val SUBTITLE_BACKGROUND = stringPreferencesKey("subtitle_background")
         val PARENTAL_LOCK = booleanPreferencesKey("parental_lock")
         val PARENTAL_PIN = stringPreferencesKey("parental_pin")
         /** Kullanıcının elle kilitlediği/açtığı kategoriler ("L|TİP|kategori" / "U|TİP|kategori"). */
@@ -181,6 +182,14 @@ class SettingsRepository(
             preferences[SUBTITLE_COLOR] ?: "Beyaz"
         }
 
+    /** Altyazı arka planı: [com.example.util.SubtitleBackground] anahtarı; varsayılan saydam (eski davranış). */
+    val subtitleBackgroundFlow: Flow<String> = store.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.map { preferences ->
+            preferences[SUBTITLE_BACKGROUND] ?: com.example.util.SubtitleBackground.NONE
+        }
+
     val parentalLockFlow: Flow<Boolean> = store.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
@@ -290,6 +299,12 @@ class SettingsRepository(
     suspend fun setSubtitleColor(color: String) {
         store.edit { preferences ->
             preferences[SUBTITLE_COLOR] = color
+        }
+    }
+
+    suspend fun setSubtitleBackground(key: String) {
+        store.edit { preferences ->
+            preferences[SUBTITLE_BACKGROUND] = key
         }
     }
 

@@ -14,6 +14,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
+import androidx.compose.ui.test.performClick
 import com.example.ui.screens.SubtitlesCard
 import com.example.ui.theme.MyApplicationTheme
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -38,13 +40,15 @@ class SubtitlePreviewTest {
     fun previewFollowsSizeAndColor() {
         var size by mutableIntStateOf(14)
         var color by mutableStateOf("Beyaz")
+        var bg by mutableStateOf(com.example.util.SubtitleBackground.NONE)
         compose.setContent {
             MyApplicationTheme {
                 SubtitlesCard(
                     subtitleSize = size, onSizeChange = { size = it }, selectedColor = color,
                     colorOptions = listOf("Beyaz", "Sarı", "Yeşil", "Mavi"),
                     colorMap = mapOf("Beyaz" to Color.White, "Sarı" to Color(0xFFFFEB3B), "Yeşil" to Color(0xFF4CAF50), "Mavi" to Color(0xFF2196F3)),
-                    onColorSelect = { color = it }
+                    onColorSelect = { color = it },
+                    selectedBackground = bg, onBackgroundSelect = { bg = it }
                 )
             }
         }
@@ -55,6 +59,16 @@ class SubtitlePreviewTest {
         compose.waitForIdle()
         val big = compose.onNodeWithTag("subtitle_preview_text").getUnclippedBoundsInRoot().height
         assertTrue("büyük yazı daha yüksek: $small -> $big", big > small + 4.dp)
+        // Arka plan: dokununca seçilir ve önizleme kutusu şeritli olur (yazının çevresinde boşluk).
+        fun boxPad() = compose.onNodeWithTag("subtitle_preview_box").getUnclippedBoundsInRoot().width -
+            compose.onNodeWithTag("subtitle_preview_text").getUnclippedBoundsInRoot().width
+        assertTrue("saydamda şerit yok", boxPad() < 1.dp)
+        compose.onNodeWithTag("subtitle_bg_SEMI").performClick()
+        compose.waitForIdle()
+        assertTrue(bg == com.example.util.SubtitleBackground.SEMI)
+        assertTrue("arka planda yazının çevresinde şerit", boxPad() >= 15.dp)
+        assertTrue((com.example.util.SubtitleBackground.argb("SEMI") ushr 24) in 1..254)
+        assertTrue(com.example.util.SubtitleBackground.argb("NONE") == 0)
         System.getenv("CINESTREAM_SHOTS")?.let { compose.onRoot().captureRoboImage("$it/subtitle-preview.png") }
     }
 }

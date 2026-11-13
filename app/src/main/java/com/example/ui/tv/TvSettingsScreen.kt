@@ -115,6 +115,7 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
     val autoplayNextEpisode by viewModel.autoplayNextEpisode.collectAsState()
     val subtitleSize by viewModel.subtitleSize.collectAsState()
     val subtitleColor by viewModel.subtitleColor.collectAsState()
+    val subtitleBackground by viewModel.subtitleBackground.collectAsState()
     val parentalLockEnabled by viewModel.parentalLock.collectAsState()
     val parentalPin by viewModel.parentalPin.collectAsState()
     val geminiApiKey by viewModel.geminiApiKey.collectAsState()
@@ -302,7 +303,9 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
                         selectedColor = subtitleColor,
                         colorOptions = listOf("Beyaz", "Sarı", "Yeşil", "Mavi"),
                         colorMap = mapOf("Beyaz" to Color.White, "Sarı" to Color(0xFFFFEB3B), "Yeşil" to Color(0xFF4CAF50), "Mavi" to Color(0xFF2196F3)),
-                        onColorSelect = { viewModel.setSubtitleColor(it) }
+                        onColorSelect = { viewModel.setSubtitleColor(it) },
+                        selectedBackground = subtitleBackground,
+                        onBackgroundSelect = { viewModel.setSubtitleBackground(it) }
                     )
                     TvSetting.SECURITY -> SecurityCard(
                         onOpenCategoryLocks = openCategoryLocks,
