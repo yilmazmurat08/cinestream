@@ -849,4 +849,17 @@
     <string name="settings_subtitle_bg_none">None</string>
     <string name="settings_subtitle_bg_semi">Semi-transparent</string>
     <string name="settings_subtitle_bg_solid">Black</string>
+    <string name="player_go_to_minute">Go to minute</string>
+    <string name="player_go_to_minute_total">%1$d minutes in total</string>
+    <string name="player_go_to_minute_unit">min</string>
+    <string name="player_go_to_minute_too_far">This title is %1$d minutes long</string>
+    <string name="player_go_to_minute_go">Go</string>
+    <string name="intro_marking">Marking intro · %1$s · Press the flag when it ends</string>
+    <string name="intro_marking_tv">Marking intro · %1$s · Press OK when it ends</string>
+    <string name="intro_hint_title">Mark the intro once</string>
+    <string name="intro_hint_body">Press the flag when the intro starts and again when it ends. In this show\'s next episodes, skip it with one tap.</string>
+    <string name="intro_hint_body_tv">Press the flag in the controls when the intro starts, then OK when it ends. In this show\'s next episodes, press OK to skip it.</string>
+    <string name="intro_hint_ok">Got it</string>
+    <string name="intro_suggest">Want to skip the intro?</string>
+    <string name="intro_suggest_tv">Want to skip the intro? (OK)</string>
 </resources>

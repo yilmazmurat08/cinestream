@@ -848,4 +848,17 @@
     <string name="settings_subtitle_bg_none">Yok</string>
     <string name="settings_subtitle_bg_semi">Yarı saydam</string>
     <string name="settings_subtitle_bg_solid">Siyah</string>
+    <string name="player_go_to_minute">Dakikaya git</string>
+    <string name="player_go_to_minute_total">Toplam %1$d dakika</string>
+    <string name="player_go_to_minute_unit">dk</string>
+    <string name="player_go_to_minute_too_far">Bu yapım %1$d dakika</string>
+    <string name="player_go_to_minute_go">Git</string>
+    <string name="intro_marking">Jenerik işaretleniyor · %1$s · Bitince bayrağa bas</string>
+    <string name="intro_marking_tv">Jenerik işaretleniyor · %1$s · Bitince OK\'a bas</string>
+    <string name="intro_hint_title">Jeneriği bir kez işaretle</string>
+    <string name="intro_hint_body">Jenerik başlayınca bayrağa bas, bitince yine bas. Bu dizinin sonraki bölümlerinde tek dokunuşla \"Jeneriği geç\".</string>
+    <string name="intro_hint_body_tv">Jenerik başlayınca kontrollerdeki bayrağa bas, bitince OK\'a bas. Bu dizinin sonraki bölümlerinde OK ile \"Jeneriği geç\".</string>
+    <string name="intro_hint_ok">Anladım</string>
+    <string name="intro_suggest">Jeneriği atlamak ister misin?</string>
+    <string name="intro_suggest_tv">Jeneriği atlamak ister misin? (OK)</string>
 </resources>

@@ -284,6 +284,11 @@ fun LegacyExoPlayerScreen(
     var introMarkStart by remember(item.id) { mutableStateOf<Long?>(null) }
     val introSkipAllowed = isProUser || com.example.BuildConfig.PREVIEW_UNLOCK_PRO
     var introSkipDismissed by remember(item.id) { mutableStateOf(false) }
+    // Bayrağın açıklaması (ilk dizi bölümünde bir kez ya da öneriye dokununca) ve işaretsiz dizide bir kerelik öneri.
+    var introHintVisible by remember { mutableStateOf(false) }
+    var introSuggestVisible by remember(item.id) { mutableStateOf(false) }
+    // Dakikaya git (PRO): rakamla dakika yazılır.
+    var showGoToMinute by remember { mutableStateOf(false) }
 
     // Günlük ücretsiz süre doldu: oynatıcı kapanır ve PRO penceresi ana ekranda açılır. Oynatıcıda kalınmaz;
     // böylece "Yeniden dene" ya da uygulamaya geri dönüş yayını süre kontrolü olmadan yeniden başlatamaz.
@@ -340,6 +345,14 @@ fun LegacyExoPlayerScreen(
             introMarkStart = null
             android.widget.Toast.makeText(context, R.string.intro_mark_invalid, android.widget.Toast.LENGTH_LONG).show()
         }
+    }
+
+    fun openGoToMinute() {
+        if (!introSkipAllowed) {
+            iptvViewModel?.openPaywall()
+            return
+        }
+        showGoToMinute = true
     }
 
     fun skipIntro() {
@@ -598,6 +611,29 @@ fun LegacyExoPlayerScreen(
     // "Jeneriği geç" yalnızca işaretli aralıkta, işaretleme sürmüyorken ve başka pencere açık değilken görünür.
     val introSkipVisible = introSkipAllowed && !introSkipDismissed && introMarkStart == null && !showResumeDialog &&
         !streamFailed && com.example.util.IntroSkip.shouldOffer(currentPos, introMark)
+    // Bayrak ipucu: ilk dizi bölümünde kontroller görününce bir kez (12 sn sonra kendiliğinden kapanır).
+    LaunchedEffect(controlsVisible, introKey, showResumeDialog) {
+        if (introKey == null || !controlsVisible || showResumeDialog || com.example.util.IntroSkip.hintShown(context)) return@LaunchedEffect
+        delay(600)
+        introHintVisible = true
+        com.example.util.IntroSkip.markHintShown(context)
+    }
+    LaunchedEffect(introHintVisible) {
+        if (introHintVisible) { delay(12_000); introHintVisible = false }
+    }
+    // Öneri: işaretsiz dizinin 2. ve sonraki bölümünde ilk dakikalarda bir kez.
+    val introEpisodeInfo = remember(item.id) { if (item.type == "SERIES") com.example.data.model.SeriesParser.episodeInfoOf(item) else null }
+    val introSuggestEligible = introKey != null && introMark == null && introMarkStart == null && !introHintVisible &&
+        !showResumeDialog && !streamFailed &&
+        com.example.util.IntroSkip.shouldSuggest(introEpisodeInfo?.season ?: item.season, introEpisodeInfo?.episode ?: item.episode, currentPos)
+    LaunchedEffect(introSuggestEligible) {
+        val key = introKey ?: return@LaunchedEffect
+        if (!introSuggestEligible || com.example.util.IntroSkip.suggested(context, key)) return@LaunchedEffect
+        com.example.util.IntroSkip.markSuggested(context, key)
+        introSuggestVisible = true
+        delay(12_000)
+        introSuggestVisible = false
+    }
     // Jeneriğin başından önceye geri sarılınca düğme yeniden çıkabilir.
     LaunchedEffect(currentPos < (introMark?.startSec ?: 0L) - com.example.util.IntroSkip.EARLY_SEC) {
         if (introMark != null && currentPos < introMark!!.startSec - com.example.util.IntroSkip.EARLY_SEC) introSkipDismissed = false
@@ -1089,7 +1125,15 @@ fun LegacyExoPlayerScreen(
                     onNext = { if (item.type == "LIVE") tvStep(1) else nextItem?.let { tvPlay(it, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
                     onPrevious = { if (item.type == "LIVE") tvStep(-1) else previousItem?.let { tvPlay(it, com.example.ui.tv.TvPlayerUiState.LAUNCH_CONTROLS) } },
                     onUserActivity = { if (controlsVisible) resetControlsTimer() },
-                    onOkOverride = { if (introSkipVisible) { skipIntro(); true } else false }
+                    onOkOverride = {
+                        when {
+                            introSkipVisible -> { skipIntro(); true }
+                            // İşaretleme sürerken OK jeneriğin sonunu işaretler (menüye dönmeye gerek yok).
+                            introMarkStart != null -> { markIntro(); true }
+                            introSuggestVisible -> { introSuggestVisible = false; introHintVisible = true; true }
+                            else -> false
+                        }
+                    }
     )
 
     // Sayaç bitince sonraki bölüm başlar (İptal ya da Geri ile durdurulmadıysa).
@@ -1783,6 +1827,21 @@ fun LegacyExoPlayerScreen(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
+                                if (durationKnown && player.isCurrentMediaItemSeekable) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(50))
+                                            .background(Color.White.copy(alpha = 0.12f))
+                                            .clickable { openGoToMinute(); resetControlsTimer() }
+                                            .padding(horizontal = 10.dp, vertical = 3.dp)
+                                            .testTag("player_go_to_minute")
+                                    ) {
+                                        Icon(Icons.Default.Timer, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(stringResource(R.string.player_go_to_minute), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
                                 val remainingSec = (totalDuration - currentPos).coerceAtLeast(0L)
                                 Text(
                                     text = if (durationKnown) "-${formatTime(remainingSec)}" else "--:--",
@@ -2368,6 +2427,7 @@ fun LegacyExoPlayerScreen(
                     },
                     onUserActivity = { if (controlsVisible) resetControlsTimer() },
                     onMarkIntro = if (introKey != null) ({ markIntro(); resetControlsTimer() }) else null,
+                    onGoToMinute = { openGoToMinute() },
                     introMarking = introMarkStart != null
                 )
             }
@@ -3078,6 +3138,37 @@ fun LegacyExoPlayerScreen(
             }
         }
 
+        if (!isInPip) {
+            if (introMarkStart != null) {
+                IntroMarkingChip(
+                    elapsedSec = (currentPos - introMarkStart!!).coerceAtLeast(0L),
+                    tvMode = tvMode,
+                    onCancel = { introMarkStart = null },
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+            }
+            if (introHintVisible) {
+                androidx.activity.compose.BackHandler { introHintVisible = false }
+                IntroHintCard(tvMode = tvMode, onDismiss = { introHintVisible = false }, modifier = Modifier.align(Alignment.BottomEnd))
+            } else if (introSuggestVisible && !introSkipVisible) {
+                IntroSuggestChip(
+                    tvMode = tvMode,
+                    onClick = { introSuggestVisible = false; introHintVisible = true },
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
+            }
+        }
+        if (showGoToMinute) {
+            com.example.ui.components.GoToMinuteDialog(
+                durationSec = totalDuration,
+                onGo = { minute ->
+                    player.seekTo(minute * 60_000L)
+                    resetControlsTimer()
+                },
+                onDismiss = { showGoToMinute = false }
+            )
+        }
+
         if (introSkipVisible && !isInPip) {
             IntroSkipButton(
                 tvMode = tvMode,
@@ -3103,6 +3194,94 @@ fun LegacyExoPlayerScreen(
 }
 
 internal const val NEXT_EPISODE_COUNTDOWN_S = 10
+
+/** İşaretleme sürerken üstte kalan şerit: geçen süre ve ne yapılacağı (telefonda İptal). */
+@Composable
+internal fun IntroMarkingChip(elapsedSec: Long, tvMode: Boolean, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        color = Color.Black.copy(alpha = 0.8f),
+        shape = RoundedCornerShape(50),
+        border = BorderStroke(1.dp, NeonPink.copy(alpha = 0.7f)),
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(top = if (tvMode) 24.dp else 64.dp)
+            .focusProperties { canFocus = false }
+            .testTag("intro_marking_chip")
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(10.dp).clip(CircleShape).background(Color(0xFFEF4444)))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                stringResource(if (tvMode) R.string.intro_marking_tv else R.string.intro_marking, formatTime(elapsedSec)),
+                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
+            )
+            if (!tvMode) {
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    stringResource(R.string.cancel), color = NeonPink, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(onClick = onCancel).padding(4.dp).testTag("intro_marking_cancel")
+                )
+            }
+        }
+    }
+}
+
+/** Bayrağın açıklaması (bir kez). TV'de odak almaz, kendiliğinden ya da Geri ile kapanır. */
+@Composable
+internal fun IntroHintCard(tvMode: Boolean, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        color = Color(0xF2150F22),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, NeonPink.copy(alpha = 0.6f)),
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(end = 20.dp, bottom = if (tvMode) 200.dp else 150.dp, start = 20.dp)
+            .widthIn(max = 340.dp)
+            .focusProperties { canFocus = false }
+            .testTag("intro_hint_card")
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Flag, contentDescription = null, tint = NeonPink, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.intro_hint_title), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(if (tvMode) R.string.intro_hint_body_tv else R.string.intro_hint_body),
+                color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, lineHeight = 18.sp
+            )
+            if (!tvMode) {
+                Text(
+                    stringResource(R.string.intro_hint_ok), color = NeonPink, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.End).clickable(onClick = onDismiss).padding(top = 8.dp, start = 8.dp).testTag("intro_hint_ok")
+                )
+            }
+        }
+    }
+}
+
+/** İşaretsiz dizinin 2. ve sonraki bölümünde bir kez: "Jeneriği atlamak ister misin?". */
+@Composable
+internal fun IntroSuggestChip(tvMode: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        onClick = onClick,
+        color = Color.Black.copy(alpha = 0.8f),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(end = 24.dp, bottom = if (tvMode) 40.dp else 96.dp)
+            .focusProperties { canFocus = false }
+            .testTag("intro_suggest_chip")
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Flag, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(if (tvMode) R.string.intro_suggest_tv else R.string.intro_suggest), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
 
 /** Jenerik sırasında sağ altta "Jeneriği geç". TV'de OK tuşuyla çalışır (odak almaz, oynatıcı tuşları bozulmaz). */
 @Composable

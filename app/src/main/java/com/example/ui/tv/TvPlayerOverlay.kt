@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.Flag
 import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.AspectRatio
@@ -245,7 +246,8 @@ fun TvPlayerOverlay(
     onUserActivity: () -> Unit,
     /** Dizide jenerik işaretleme (null: düğme yok). [introMarking]: başı işaretlendi, sonu bekleniyor. */
     onMarkIntro: (() -> Unit)? = null,
-    introMarking: Boolean = false
+    introMarking: Boolean = false,
+    onGoToMinute: (() -> Unit)? = null
 ) {
     val isLive = item.type == "LIVE"
     val parentalLock by viewModel.parentalLock.collectAsState()
@@ -373,7 +375,8 @@ fun TvPlayerOverlay(
                         onToggleSaved = { viewModel.toggleFavorite(favorites.firstOrNull { it.id == item.id } ?: item) },
                         onUserActivity = onUserActivity,
                         onMarkIntro = onMarkIntro,
-                        introMarking = introMarking
+                        introMarking = introMarking,
+                        onGoToMinute = onGoToMinute
                     )
                 }
                 // Film/dizide kontroller gizliyken Sol/Sağ ile sarınca kısa süre konum görünür
@@ -850,7 +853,8 @@ private fun TvControlBar(
     /** Kanal paneli açıkken çubuk dar: yalnızca ana düğmeler (diğerleri panel kapanınca görünür). */
     compact: Boolean = false,
     onMarkIntro: (() -> Unit)? = null,
-    introMarking: Boolean = false
+    introMarking: Boolean = false,
+    onGoToMinute: (() -> Unit)? = null
 ) {
     val episode = remember(item.id) {
         if (item.type == "SERIES") com.example.data.model.SeriesParser.episodeInfoOf(item) else null
@@ -891,7 +895,8 @@ private fun TvControlBar(
                 positionSec = positionSec,
                 durationSec = durationSec,
                 onSeekTo = { target -> onSeek((target - positionSec) * 1000) },
-                onUserActivity = onUserActivity
+                onUserActivity = onUserActivity,
+                onGoToMinute = onGoToMinute
             )
         } else if (progress != null) {
             Spacer(Modifier.height(10.dp))
@@ -959,7 +964,9 @@ internal fun TvSeekBar(
     positionSec: Long,
     durationSec: Long,
     onSeekTo: (Long) -> Unit,
-    onUserActivity: () -> Unit
+    onUserActivity: () -> Unit,
+    /** "Dakikaya git" düğmesi (çubuğun sağında; null: yok). */
+    onGoToMinute: (() -> Unit)? = null
 ) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
@@ -1042,6 +1049,23 @@ internal fun TvSeekBar(
             }
         }
         Text(formatClock(durationSec), color = TvTheme.TextSecondary, fontSize = 13.sp)
+        if (onGoToMinute != null) {
+            Spacer(Modifier.width(12.dp))
+            TvGlassButton(
+                onClick = onGoToMinute,
+                onFocused = onUserActivity,
+                shape = TvTheme.PillShape,
+                focusScale = 1.06f,
+                focusElevation = 6.dp,
+                modifier = Modifier.height(34.dp).testTag("tv_go_to_minute")
+            ) { focused ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp)) {
+                    Icon(Icons.Filled.Timer, contentDescription = null, tint = if (focused) TvTheme.FocusGlow else TvTheme.TextPrimary, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.player_go_to_minute), color = TvTheme.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
     }
 }
 

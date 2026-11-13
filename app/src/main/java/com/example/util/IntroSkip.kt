@@ -28,7 +28,7 @@ object IntroSkip {
     }
 
     fun get(context: Context, key: String): IntroMark? {
-        val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(key, null) ?: return null
+        val raw = runCatching { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(key, null) }.getOrNull() ?: return null
         val parts = raw.split(',')
         val start = parts.getOrNull(0)?.toLongOrNull() ?: return null
         val end = parts.getOrNull(1)?.toLongOrNull() ?: return null
@@ -43,6 +43,20 @@ object IntroSkip {
     fun clear(context: Context, key: String) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(key).apply()
     }
+
+    // İpuçları (bir kez): bayrağın ne işe yaradığı ve bir dizide bir kez gösterilen "işaretle" önerisi.
+    fun hintShown(context: Context): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("__hint_shown", false)
+    fun markHintShown(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("__hint_shown", true).apply()
+    }
+    fun suggested(context: Context, key: String): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("__suggested|$key", false)
+    fun markSuggested(context: Context, key: String) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("__suggested|$key", true).apply()
+    }
+
+    /** "Jeneriği atlamak ister misin?" önerisi: işaretsiz dizinin 2. ve sonraki bölümlerinde, ilk 5 dakikada bir kez. */
+    fun shouldSuggest(season: Int?, episode: Int?, positionSec: Long): Boolean =
+        ((episode ?: 0) >= 2 || (season ?: 0) >= 2) && positionSec in 15L..300L
 
     fun isValid(startSec: Long, endSec: Long): Boolean =
         startSec >= 0 && endSec - startSec in MIN_LENGTH_SEC..MAX_LENGTH_SEC
