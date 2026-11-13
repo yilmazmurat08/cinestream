@@ -861,4 +861,18 @@
     <string name="intro_hint_ok">Anladım</string>
     <string name="intro_suggest">Jeneriği atlamak ister misin?</string>
     <string name="intro_suggest_tv">Jeneriği atlamak ister misin? (OK)</string>
+    <string name="age_general">Genel</string>
+    <string name="age_lock_title">Bu yapım %1$d yaş üstü için</string>
+    <string name="age_lock_body">Ebeveyn kilidinde yaş sınırı %1$d. İzlemek için PIN gerekli.</string>
+    <string name="age_lock_unlock">PIN ile aç</string>
+    <string name="age_lock_back">Geri</string>
+    <string name="settings_age_limit_title">Yaş sınırı</string>
+    <string name="settings_age_limit_desc">Seçilen yaşın üstündeki film ve diziler PIN ister (TMDB yaş derecelendirmesi).</string>
+    <string name="settings_age_limit_off">Kapalı</string>
+    <string name="settings_age_limit_n">%1$d yaş</string>
+    <string name="settings_new_episode_alerts">Yeni bölüm bildirimleri</string>
+    <string name="settings_new_episode_alerts_desc">Favori dizinin yeni bölümü yayınlanınca haber ver.</string>
+    <string name="new_episode_channel">Yeni bölümler</string>
+    <string name="new_episode_title">%1$s: yeni bölüm</string>
+    <string name="new_episode_text">%1$d. Sezon %2$d. Bölüm yayınlandı. Listende görünmesi biraz sürebilir.</string>
 </resources>

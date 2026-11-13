@@ -127,6 +127,9 @@ fun DetailScreen(
     if (showCoverPicker) {
         com.example.ui.components.CoverPickerDialog(title = coverTitle, isSeries = false, originalUrl = item.logoUrl, onDismiss = { showCoverPicker = false })
     }
+    // Yaş sınırı (TMDB): rozet; ebeveyn kilidi + yaş sınırı açıksa PIN ister.
+    val ageRating = com.example.ui.components.rememberAgeRating(viewModel, coverTitle, isSeries = false)
+    com.example.ui.components.AgeLockGate(viewModel, ageRating, onBack = onDismiss)
     // Üst görsel: sağlayıcının yatay sahne görseli varsa o, yoksa poster. Poster (küçük kapak) listedekiyle aynı kalır.
     val detailBackdrop by if (viewModel != null) {
         viewModel.detailBackdrop.collectAsState()
@@ -429,6 +432,7 @@ fun DetailScreen(
                                     onClick = { showCoverPicker = true },
                                     modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
                                 )
+                                ageRating?.let { com.example.ui.components.AgeBadge(it, Modifier.align(Alignment.TopEnd).padding(8.dp)) }
 
                                 if (item.displayRating() > 0.0) {
                                     val formattedRating = String.format(java.util.Locale.US, "%.1f", item.displayRating())

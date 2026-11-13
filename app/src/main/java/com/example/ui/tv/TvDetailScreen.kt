@@ -246,6 +246,8 @@ fun TvDetailScreen(
     if (showCoverPicker) {
         com.example.ui.components.CoverPickerDialog(title = title, isSeries = isSeries, originalUrl = listPoster, onDismiss = { showCoverPicker = false })
     }
+    val ageRating = com.example.ui.components.rememberAgeRating(viewModel, title, isSeries)
+    com.example.ui.components.AgeLockGate(viewModel, ageRating, tvMode = true, onBack = { viewModel.selectItem(null) })
     // Puan yalnızca TMDB'den: kayıtlı TMDB puanı, yoksa bu detay için çekilen TMDB bilgisi (sağlayıcının puanı değil).
     val rating = item.displayRating().takeIf { it > 0.0 }
         ?: tmdb?.rating?.let { com.example.util.RatingScale.normalize(it) }?.takeIf { it > 0.0 }
@@ -312,6 +314,7 @@ fun TvDetailScreen(
                     modifier = Modifier.testTag("tv_detail_title")
                 )
                 val meta = listOfNotNull(
+                    ageRating?.let { if (it == 0) stringResource(R.string.age_general) else "$it+" },
                     rating?.let { "★ " + String.format(java.util.Locale.getDefault(), "%.1f", it) },
                     year,
                     genre,

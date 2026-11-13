@@ -862,4 +862,18 @@
     <string name="intro_hint_ok">Got it</string>
     <string name="intro_suggest">Want to skip the intro?</string>
     <string name="intro_suggest_tv">Want to skip the intro? (OK)</string>
+    <string name="age_general">All ages</string>
+    <string name="age_lock_title">This title is rated %1$d+</string>
+    <string name="age_lock_body">Parental lock age limit is %1$d. A PIN is required to watch.</string>
+    <string name="age_lock_unlock">Unlock with PIN</string>
+    <string name="age_lock_back">Back</string>
+    <string name="settings_age_limit_title">Age limit</string>
+    <string name="settings_age_limit_desc">Movies and series rated above the selected age require the PIN (TMDB age ratings).</string>
+    <string name="settings_age_limit_off">Off</string>
+    <string name="settings_age_limit_n">Age %1$d</string>
+    <string name="settings_new_episode_alerts">New episode alerts</string>
+    <string name="settings_new_episode_alerts_desc">Get notified when a favorite series airs a new episode.</string>
+    <string name="new_episode_channel">New episodes</string>
+    <string name="new_episode_title">%1$s: new episode</string>
+    <string name="new_episode_text">Season %1$d Episode %2$d has aired. It may take a while to appear in your list.</string>
 </resources>

@@ -682,6 +682,40 @@ fun DataAndMemoryCard(
                 )
             }
 
+            // Favori dizinin yeni bölümü yayınlanınca bildirim (TMDB)
+            val newEpisodeContext = LocalContext.current
+            val newEpisodeAlerts by com.example.worker.NewEpisodeAlerts.enabled.collectAsState()
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_new_episode_alerts),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_new_episode_alerts_desc),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                Switch(
+                    checked = newEpisodeAlerts,
+                    onCheckedChange = { com.example.worker.NewEpisodeAlerts.setEnabled(newEpisodeContext, it) },
+                    modifier = Modifier.testTag("new_episode_alerts_switch"),
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = CineOrange
+                    )
+                )
+            }
+
             // Custom bulletproof divider
             Box(
                 modifier = Modifier
@@ -1305,6 +1339,54 @@ fun SecurityCard(
                             modifier = Modifier.size(20.dp)
                         )
                     }
+
+                    // Yaş sınırı (TMDB yaş derecelendirmesi): seçilen yaşın üstündeki film/dizi PIN ister.
+                    AgeLimitSelector(modifier = Modifier.padding(top = 16.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AgeLimitSelector(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val limit by com.example.util.AgeRatings.limit.collectAsState()
+    LaunchedEffect(Unit) { com.example.util.AgeRatings.init(context) }
+    Column(modifier = modifier.fillMaxWidth().testTag("age_limit_selector")) {
+        Text(
+            text = stringResource(R.string.settings_age_limit_title),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.5.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = stringResource(R.string.settings_age_limit_desc),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.example.util.AgeRatings.limitOptions.forEach { years ->
+                val selected = years == limit
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (selected) CineOrange.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .border(1.dp, if (selected) CineOrange else Color.Transparent, RoundedCornerShape(12.dp))
+                        .clickable { com.example.util.AgeRatings.setLimit(context, years) }
+                        .padding(vertical = 10.dp)
+                        .testTag("age_limit_$years")
+                ) {
+                    Text(
+                        text = if (years == 0) stringResource(R.string.settings_age_limit_off) else stringResource(R.string.settings_age_limit_n, years),
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }

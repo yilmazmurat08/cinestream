@@ -256,6 +256,8 @@ fun SeriesDetailScreen(
     if (showCoverPicker) {
         com.example.ui.components.CoverPickerDialog(title = tvShow.title, isSeries = true, originalUrl = tvShow.logoUrl ?: item.logoUrl, onDismiss = { showCoverPicker = false })
     }
+    val ageRating = com.example.ui.components.rememberAgeRating(viewModel, tvShow.title, isSeries = true)
+    com.example.ui.components.AgeLockGate(viewModel, ageRating, onBack = onDismiss)
     // Yatay sahne görseli sağlayıcı kataloğunda varsa üst görsel o olur; yoksa poster yumuşatılarak arka plan yapılır.
     var dynamicBackdropUrl by remember(tvShow.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(tvShow.id, tvShow.title) {
@@ -574,6 +576,7 @@ fun SeriesDetailScreen(
                                     onClick = { showCoverPicker = true },
                                     modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
                                 )
+                                ageRating?.let { com.example.ui.components.AgeBadge(it, Modifier.align(Alignment.TopEnd).padding(8.dp)) }
 
                                 if (item.displayRating() > 0.0) {
                                     val formattedRating = String.format(java.util.Locale.US, "%.1f", item.displayRating())
