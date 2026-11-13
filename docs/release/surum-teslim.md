@@ -1,3 +1,27 @@
+# Sürüm Teslimi — 1.1.9 (20)
+
+| Bilgi | Değer |
+|---|---|
+| Dosya | `CineStream-1.1.9-20.aab` (13 Kasım 2026'da sohbette gönderildi; depoya eklenmez) |
+| Boyut | 12.868.336 bayt (~12,3 MB) |
+| versionCode / versionName | 20 / 1.1.9 (kullanıcı onayı: "1.1.9 hazırla") |
+| Paket adı | `com.cinestream.iptv` |
+| SHA-256 | `cb722502ebc523ede69c23feca3f8691e3ad7c3d454578be5a7a0c97ca95d008` |
+| İmza | Yükleme anahtarı `B2:3C:DE:7D:…:79:7B:B3` (Play'e kayıtlı); `jarsigner -verify`: jar verified |
+| TV afişi | `drawable-xhdpi/tv_banner.png` pakette |
+| Testler | 495 birim testi, 41 bilerek atlandı (görsel/stres), 0 düştü; lintRelease 0 hata |
+| Kaynak | `claude/cinestream-stability-compat-cleanup-xlv565`, kod commit'i `6aa2d01` |
+
+Bu sürümde yeni (1.1.8'e göre) yalnızca iki TV çökme düzeltmesi; yeni özellik, izin ya da şema değişikliği yok:
+
+- TV Filmler/Diziler: kategori listesinde hızla inip Sağ, sonra Sol → "FocusRequester is not initialized". Test `TvBrowseDetailTest.fastNavigation_*`.
+- TV Ayarlar: hızlı gezinmede panelden Sol/Geri → aynı çökme. Test `TvSettingsTest.fast*`.
+- İki test de eski kodda bu hatayla düşüyor, yeni kodda geçiyor (13 Kasım'da doğrulandı).
+
+Play Console sürüm notları (TR ve EN): `docs/release/surum-notlari.md`.
+
+---
+
 # Sürüm Teslimi — 1.1.8 (19)
 
 | Bilgi | Değer |
