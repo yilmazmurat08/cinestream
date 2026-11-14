@@ -345,12 +345,16 @@ fun FolderEditEntry(viewModel: IPTVViewModel, modifier: Modifier = Modifier) {
         }
         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MutedText)
     }
-    if (open) {
-        androidx.compose.ui.window.Dialog(
-            onDismissRequest = { open = false },
-            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
-        ) {
-            FolderEditScreen(viewModel = viewModel, onBack = { open = false }, modifier = Modifier.fillMaxSize())
-        }
+    if (open) FolderEditDialog(viewModel) { open = false }
+}
+
+/** "Klasörleri düzenle" tam ekran penceresi; Geri kapatır. */
+@Composable
+fun FolderEditDialog(viewModel: IPTVViewModel, onClose: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onClose,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        FolderEditScreen(viewModel = viewModel, onBack = onClose, modifier = Modifier.fillMaxSize())
     }
 }

@@ -795,6 +795,9 @@ fun SeriesDetailScreen(
                                         tint = if (isFavorite) CineOrange else Color.White,
                                         modifier = Modifier.size(22.dp)
                                     )
+                                    com.example.ui.components.FavoriteAddedTip(
+                                        com.example.ui.components.FeatureTips.NEW_EPISODE, stringResource(R.string.tip_new_episode), isFavorite
+                                    )
                                 }
                             }
                         }

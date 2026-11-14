@@ -1848,6 +1848,9 @@ fun LegacyExoPlayerScreen(
                                         Icon(Icons.Default.Timer, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
                                         Spacer(Modifier.width(4.dp))
                                         Text(stringResource(R.string.player_go_to_minute), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                        com.example.ui.components.FeatureTip(
+                                            com.example.ui.components.FeatureTips.GO_TO_MINUTE, stringResource(R.string.tip_go_to_minute), tvMode = tvMode
+                                        )
                                     }
                                 }
                                 val remainingSec = (totalDuration - currentPos).coerceAtLeast(0L)
@@ -3153,6 +3156,15 @@ fun LegacyExoPlayerScreen(
                     tvMode = tvMode,
                     onCancel = { introMarkStart = null },
                     modifier = Modifier.align(Alignment.TopCenter)
+                )
+            }
+            // Bir kez: altyazı ilk açıldığında görünümün Ayarlar'dan değiştirilebileceği söylenir.
+            val subtitleOn = currentTracks?.groups?.any { it.type == C.TRACK_TYPE_TEXT && it.isSelected } == true
+            Box(Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(top = 56.dp)) {
+                com.example.ui.components.FeatureTip(
+                    com.example.ui.components.FeatureTips.SUBTITLES,
+                    stringResource(if (tvMode) R.string.tip_subtitles_tv else R.string.tip_subtitles),
+                    show = subtitleOn && !introHintVisible, tvMode = tvMode
                 )
             }
             if (introHintVisible) {

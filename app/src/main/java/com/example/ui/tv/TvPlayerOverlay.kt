@@ -1063,6 +1063,9 @@ internal fun TvSeekBar(
                     Icon(Icons.Filled.Timer, contentDescription = null, tint = if (focused) TvTheme.FocusGlow else TvTheme.TextPrimary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.player_go_to_minute), color = TvTheme.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    com.example.ui.components.FeatureTip(
+                        com.example.ui.components.FeatureTips.GO_TO_MINUTE, stringResource(R.string.tip_go_to_minute_tv), tvMode = true
+                    )
                 }
             }
         }

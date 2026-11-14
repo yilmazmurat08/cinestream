@@ -255,6 +255,11 @@ fun TvBrowseScreen(
                     color = TvTheme.TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 8.dp, bottom = 10.dp)
                 )
+                if ((categories?.size ?: 0) > 3) {
+                    com.example.ui.components.FeatureTip(
+                        com.example.ui.components.FeatureTips.FOLDERS, stringResource(R.string.tip_folders_tv), tvMode = true
+                    )
+                }
             }
             val list = categories
             if (list == null) {

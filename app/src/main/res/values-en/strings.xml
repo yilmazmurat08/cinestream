@@ -887,4 +887,17 @@
     <string name="folder_edit_reset">Reset layout</string>
     <string name="folder_edit_entry_sub">Pin or hide folders</string>
     <string name="folder_edit_entry_counts">%1$d pinned · %2$d hidden</string>
+    <string name="tip_cover">Don\'t like the poster? Pick another cover with this button.</string>
+    <string name="tip_cover_tv">Don\'t like the poster? Pick another cover with "Change cover".</string>
+    <string name="tip_new_episode">Added to favorites. I\'ll notify you when a new episode of this show comes out (you can turn this off in Settings).</string>
+    <string name="tip_go_to_minute">Jump to any minute: type it and playback continues from there.</string>
+    <string name="tip_go_to_minute_tv">Use "Go to minute" to type a minute and continue from there.</string>
+    <string name="tip_epg_reminder">Open the schedule with EPG. Pick a programme and I\'ll remind you 5 minutes before it starts.</string>
+    <string name="tip_folders">You can pin or hide folders. Tap to edit them (Settings › Playlists).</string>
+    <string name="tip_folders_tv">You can pin or hide folders: Settings › Playlists › Edit folders.</string>
+    <string name="tip_age_limit">Choose an age limit for kids: movies and series above it ask for the PIN.</string>
+    <string name="tip_subtitles">Change subtitle size, color and background in Settings › Subtitle Customization.</string>
+    <string name="tip_subtitles_tv">Change subtitle size, color and background in Settings › Subtitle Customization.</string>
+    <string name="tip_resume">Unfinished movies and series are here; pick up where you left off.</string>
+    <string name="tip_resume_tv">Unfinished movies and series are here; pick up where you left off.</string>
 </resources>

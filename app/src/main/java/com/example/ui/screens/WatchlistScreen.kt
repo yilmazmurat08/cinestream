@@ -149,7 +149,12 @@ fun WatchlistScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (resumeShelf.isNotEmpty()) {
-            ResumeShelfRow(resumeShelf, contentColor, onPlayContinueWatching)
+            Box {
+                ResumeShelfRow(resumeShelf, contentColor, onPlayContinueWatching)
+                Box(Modifier.align(Alignment.TopCenter)) {
+                    com.example.ui.components.FeatureTip(com.example.ui.components.FeatureTips.RESUME, stringResource(R.string.tip_resume))
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
 

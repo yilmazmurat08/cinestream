@@ -258,5 +258,6 @@ fun CoverChangeBadge(onClick: () -> Unit, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Icon(Icons.Default.Image, contentDescription = stringResource(R.string.cover_change), tint = Color.White, modifier = Modifier.size(19.dp))
+        FeatureTip(FeatureTips.COVER, stringResource(R.string.tip_cover), onClick = onClick)
     }
 }

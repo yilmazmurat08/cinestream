@@ -380,9 +380,15 @@ fun TvDetailScreen(
                         stringResource(if (isFavorite) R.string.tv_remove_favorite else R.string.tv_add_favorite),
                         "tv_detail_favorite"
                     ) { viewModel.toggleFavorite(item) }
+                    if (isSeries) {
+                        com.example.ui.components.FavoriteAddedTip(
+                            com.example.ui.components.FeatureTips.NEW_EPISODE, stringResource(R.string.tip_new_episode), isFavorite, tvMode = true
+                        )
+                    }
                 }
                 item {
                     TvActionButton(Icons.Filled.Image, stringResource(R.string.cover_change), "tv_detail_cover") { showCoverPicker = true }
+                    com.example.ui.components.FeatureTip(com.example.ui.components.FeatureTips.COVER, stringResource(R.string.tip_cover_tv), tvMode = true)
                 }
             }
 

@@ -304,6 +304,9 @@ fun TvHomeScreen(
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
                     )
+                    com.example.ui.components.FeatureTip(
+                        com.example.ui.components.FeatureTips.RESUME, stringResource(R.string.tip_resume_tv), tvMode = true
+                    )
                     // Ekrana tam 3 kart sığar (yarım kart kalmaz; kaydırınca bir kart kayar). Şerit, büyüyen odaklı kartın
                     // kenarı ve parıltısı kesilmesin diye her yandan RESUME_ROW_PAD kadar taşar; kartlar yukarıdaki bölüm
                     // kartlarıyla aynı hizada başlar.

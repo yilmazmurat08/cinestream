@@ -311,6 +311,8 @@ fun FolderListLayout(
     val isSafeSessionActive by viewModel.isSafeSessionActive.collectAsState()
     val safeSessionRemainingSeconds by viewModel.safeSessionRemainingSeconds.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var showFolderEdit by remember { mutableStateOf(false) }
+    if (showFolderEdit) FolderEditDialog(viewModel) { showFolderEdit = false }
     val filteredGroups = remember(groups, searchQuery) {
         if (searchQuery.isBlank()) {
             groups
@@ -328,7 +330,16 @@ fun FolderListLayout(
             .testTag("folder_grid_view")
     ) {
         item(key = "folder_title_header") {
-            FolderTitleHeader(title = title, displayTitle = displayTitle, viewModel = viewModel)
+            Box {
+                FolderTitleHeader(title = title, displayTitle = displayTitle, viewModel = viewModel)
+                // Bir kez: "Klasörleri öne alabilir ya da gizleyebilirsin" (telefonda dokununca düzenleme açılır).
+                Box(Modifier.align(Alignment.BottomCenter)) {
+                    com.example.ui.components.FeatureTip(
+                        com.example.ui.components.FeatureTips.FOLDERS, stringResource(R.string.tip_folders),
+                        show = groups.size > 1, onClick = { showFolderEdit = true }
+                    )
+                }
+            }
         }
 
         if (isParentalLockEnabled && isSafeSessionActive) {
@@ -1697,6 +1708,7 @@ fun LiveChannelCard(
                     onClick = onToggleEpg,
                     modifier = Modifier.testTag("live_epg_button_${item.id}")
                 )
+                com.example.ui.components.FeatureTip(com.example.ui.components.FeatureTips.EPG_REMINDER, stringResource(R.string.tip_epg_reminder))
                 Spacer(modifier = Modifier.width(6.dp))
             }
             com.example.ui.components.ChannelPlayButton(

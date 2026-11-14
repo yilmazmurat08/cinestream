@@ -886,4 +886,17 @@
     <string name="folder_edit_reset">Düzeni sıfırla</string>
     <string name="folder_edit_entry_sub">Klasörleri öne al ya da gizle</string>
     <string name="folder_edit_entry_counts">%1$d öne alındı · %2$d gizli</string>
+    <string name="tip_cover">Posteri beğenmedin mi? Bu düğmeyle başka bir kapak seçebilirsin.</string>
+    <string name="tip_cover_tv">Posteri beğenmedin mi? "Kapağı değiştir" ile başka bir kapak seçebilirsin.</string>
+    <string name="tip_new_episode">Favorilere eklendi. Bu dizinin yeni bölümü çıkınca sana bildirim göndereceğim (Ayarlar\'dan kapatılabilir).</string>
+    <string name="tip_go_to_minute">İstediğin dakikaya atla: dakikayı yaz, yapım oradan devam etsin.</string>
+    <string name="tip_go_to_minute_tv">"Dakikaya git" ile istediğin dakikayı yaz, yapım oradan devam etsin.</string>
+    <string name="tip_epg_reminder">EPG ile yayın akışını aç. Bir programı seçersen başlamadan 5 dakika önce hatırlatırım.</string>
+    <string name="tip_folders">Klasörleri öne alabilir ya da gizleyebilirsin. Dokun, düzenleyelim (Ayarlar › Liste Yönetimi).</string>
+    <string name="tip_folders_tv">Klasörleri öne alabilir ya da gizleyebilirsin: Ayarlar › Liste Yönetimi › Klasörleri düzenle.</string>
+    <string name="tip_age_limit">Çocuklar için yaş sınırı seç: üstündeki film ve diziler PIN ister.</string>
+    <string name="tip_subtitles">Altyazının boyutunu, rengini ve arka planını Ayarlar › Altyazı Özelleştirme\'den değiştirebilirsin.</string>
+    <string name="tip_subtitles_tv">Altyazının boyutunu, rengini ve arka planını Ayarlar › Altyazı Özelleştirme\'den değiştirebilirsin.</string>
+    <string name="tip_resume">Yarım kalan film ve diziler burada; kaldığın yerden devam et.</string>
+    <string name="tip_resume_tv">Yarım kalan film ve diziler burada; kaldığın yerden devam et.</string>
 </resources>

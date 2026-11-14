@@ -1380,6 +1380,7 @@ fun AgeLimitSelector(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(bottom = 8.dp)
         )
+        com.example.ui.components.FeatureTip(com.example.ui.components.FeatureTips.AGE_LIMIT, stringResource(R.string.tip_age_limit))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             com.example.util.AgeRatings.limitOptions.forEach { years ->
                 val selected = years == limit
