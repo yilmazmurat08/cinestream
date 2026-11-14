@@ -279,8 +279,15 @@ fun LegacyExoPlayerScreen(
     val latestAutoplayNext by rememberUpdatedState(autoplayNextEpisode)
     var nextCountdownItem by remember(item.id) { mutableStateOf<IPTVItem?>(null) }
     // Jeneriği geç (PRO): dizinin jeneriği bir kez işaretlenir, sonraki bölümlerde "Jeneriği geç" çıkar.
-    val introKey = remember(item.id) { com.example.util.IntroSkip.showKey(item) }
-    var introMark by remember(introKey) { mutableStateOf(introKey?.let { com.example.util.IntroSkip.get(context, it) }) }
+    // Dizinin anahtarı: Xtream katalog dizisinde sağlayıcının dizi numarası (bölüm adları farklı gelse de aynı dizi),
+    // yoksa dizi adı.
+    // İşaret hem dizi numarasıyla hem dizi adıyla kaydedilir, ikisinden de okunur (numara her açılışta bilinmeyebilir).
+    val introKeys = remember(item.id) {
+        if (item.type != "SERIES") emptyList()
+        else listOfNotNull(iptvViewModel?.catalogSeriesIdOf(item)?.let { "series:$it" }, com.example.util.IntroSkip.showKey(item)).distinct()
+    }
+    val introKey = introKeys.firstOrNull()
+    var introMark by remember(introKeys) { mutableStateOf(introKeys.firstNotNullOfOrNull { com.example.util.IntroSkip.get(context, it) }) }
     var introMarkStart by remember(item.id) { mutableStateOf<Long?>(null) }
     val introSkipAllowed = isProUser || com.example.BuildConfig.PREVIEW_UNLOCK_PRO
     var introSkipDismissed by remember(item.id) { mutableStateOf(false) }
@@ -336,10 +343,9 @@ fun LegacyExoPlayerScreen(
             android.widget.Toast.makeText(context, R.string.intro_mark_start_saved, android.widget.Toast.LENGTH_LONG).show()
         } else if (com.example.util.IntroSkip.isValid(start, pos)) {
             val mark = com.example.util.IntroMark(start, pos)
-            com.example.util.IntroSkip.save(context, key, mark)
+            introKeys.ifEmpty { listOf(key) }.forEach { com.example.util.IntroSkip.save(context, it, mark) }
             introMark = mark
             introMarkStart = null
-            introSkipDismissed = true // az önce işaretlenen bölümde düğme hemen çıkmasın
             android.widget.Toast.makeText(context, R.string.intro_mark_saved, android.widget.Toast.LENGTH_LONG).show()
         } else {
             introMarkStart = null
@@ -634,9 +640,11 @@ fun LegacyExoPlayerScreen(
         delay(12_000)
         introSuggestVisible = false
     }
-    // Jeneriğin başından önceye geri sarılınca düğme yeniden çıkabilir.
-    LaunchedEffect(currentPos < (introMark?.startSec ?: 0L) - com.example.util.IntroSkip.EARLY_SEC) {
-        if (introMark != null && currentPos < introMark!!.startSec - com.example.util.IntroSkip.EARLY_SEC) introSkipDismissed = false
+    // Geri sarınca (3 sn'den fazla geriye) "Jeneriği geç" yeniden çıkabilir; aynı bölümde tekrar denemek mümkün.
+    var introLastPos by remember(item.id) { mutableStateOf(0L) }
+    LaunchedEffect(currentPos) {
+        if (currentPos + 3 < introLastPos) introSkipDismissed = false
+        introLastPos = currentPos
     }
     // Yayın hiç başlamazsa (sunucu yanıt vermiyor, bağlantı asılı kaldı) sonsuz "yükleniyor" yerine hata ve
     // "Yeniden dene" gösterilir.

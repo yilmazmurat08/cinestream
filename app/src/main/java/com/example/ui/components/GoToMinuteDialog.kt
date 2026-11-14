@@ -76,37 +76,22 @@ fun GoToMinuteDialog(durationSec: Long, onGo: (Int) -> Unit, onDismiss: () -> Un
     fun type(d: Int) { typed = goToMinuteAppend(typed, d) }
     fun go() { if (valid) { onGo(minutes!!); onDismiss() } }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .widthIn(max = 340.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF15101F))
-                .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(24.dp))
-                .onPreviewKeyEvent { e ->
-                    if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                    val digit = goToMinuteDigit(e.key)
-                    when {
-                        digit >= 0 -> { type(digit); true }
-                        e.key == Key.Backspace || e.key == Key.Delete -> { typed = typed.dropLast(1); true }
-                        else -> false
-                    }
-                }
-                .padding(20.dp)
-                .testTag("go_to_minute_dialog")
-        ) {
+    // Yatay telefonda (alçak ekran) bilgiler solda, tuşlar sağda; dikeyde ve TV'de alt alta.
+    val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
+    val keyW = if (compact) 66.dp else 80.dp
+    val keyH = if (compact) 42.dp else 54.dp
+    val gap = if (compact) 8.dp else 10.dp
+
+    val info: @Composable () -> Unit = {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(stringResource(R.string.player_go_to_minute), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text(
-                stringResource(R.string.player_go_to_minute_total, totalMin),
-                color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp
-            )
-            Spacer(Modifier.height(14.dp))
+            Text(stringResource(R.string.player_go_to_minute_total, totalMin), color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+            Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     typed.ifEmpty { "–" }, color = if (typed.isEmpty() || valid) Color.White else Color(0xFFFF8A80),
-                    fontSize = 44.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.testTag("go_to_minute_value")
+                    fontSize = if (compact) 38.sp else 44.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.testTag("go_to_minute_value")
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.player_go_to_minute_unit), color = Color.White.copy(alpha = 0.7f), fontSize = 18.sp,
@@ -115,16 +100,20 @@ fun GoToMinuteDialog(durationSec: Long, onGo: (Int) -> Unit, onDismiss: () -> Un
             if (typed.isNotEmpty() && !valid) {
                 Text(stringResource(R.string.player_go_to_minute_too_far, totalMin), color = Color(0xFFFF8A80), fontSize = 12.sp)
             }
-            Spacer(Modifier.height(12.dp))
+        }
+    }
+    val pad: @Composable () -> Unit = {
+        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
             val rows = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf("⌫", "0", "OK"))
             rows.forEachIndexed { r, row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                     row.forEachIndexed { c, label ->
                         val isGo = label == "OK"
                         PadKey(
                             label = if (isGo) stringResource(R.string.player_go_to_minute_go) else label,
                             highlighted = isGo && valid,
                             enabled = !isGo || valid,
+                            width = keyW, height = keyH,
                             modifier = if (r == 0 && c == 0) Modifier.focusRequester(firstFocus) else Modifier,
                             tag = "go_key_${if (isGo) "go" else if (label == "⌫") "back" else label}"
                         ) {
@@ -139,18 +128,52 @@ fun GoToMinuteDialog(durationSec: Long, onGo: (Int) -> Unit, onDismiss: () -> Un
             }
         }
     }
+
+    Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        val container = Modifier
+            .widthIn(max = if (compact) 600.dp else 340.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color(0xFF15101F))
+            .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(24.dp))
+            .onPreviewKeyEvent { e ->
+                if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                val digit = goToMinuteDigit(e.key)
+                when {
+                    digit >= 0 -> { type(digit); true }
+                    e.key == Key.Backspace || e.key == Key.Delete -> { typed = typed.dropLast(1); true }
+                    else -> false
+                }
+            }
+            .padding(if (compact) 16.dp else 20.dp)
+            .testTag("go_to_minute_dialog")
+        if (compact) {
+            Row(container, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Box(Modifier.widthIn(min = 160.dp), contentAlignment = Alignment.Center) { info() }
+                pad()
+            }
+        } else {
+            Column(container, horizontalAlignment = Alignment.CenterHorizontally) {
+                info()
+                Spacer(Modifier.height(12.dp))
+                pad()
+            }
+        }
+    }
 }
 
 @Composable
-private fun PadKey(label: String, highlighted: Boolean, enabled: Boolean, modifier: Modifier, tag: String, onClick: () -> Unit) {
+private fun PadKey(
+    label: String, highlighted: Boolean, enabled: Boolean, modifier: Modifier, tag: String,
+    width: androidx.compose.ui.unit.Dp = 80.dp, height: androidx.compose.ui.unit.Dp = 54.dp, onClick: () -> Unit
+) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val shape = RoundedCornerShape(14.dp)
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .width(80.dp)
-            .height(54.dp)
+            .width(width)
+            .height(height)
             .clip(shape)
             .background(
                 when {

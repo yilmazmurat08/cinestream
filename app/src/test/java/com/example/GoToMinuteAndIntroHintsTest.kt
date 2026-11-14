@@ -13,6 +13,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -85,6 +88,23 @@ class GoToMinuteAndIntroHintsTest {
         shots?.let { compose.onNode(isDialog()).captureRoboImage("$it/go-to-minute.png") }
         compose.onNodeWithTag("go_key_go").performClick()
         assertEquals(65, went)
+    }
+
+    /** Kullanıcı (14 Kasım 2026): yatay telefonda alt tuşlar (7-8-9, ⌫ 0 Git) ekran dışında kalıyordu. */
+    @Test
+    @Config(qualifiers = "tr-w850dp-h392dp-land-xxhdpi")
+    fun landscape_allKeysVisible_goWorks() {
+        var went: Int? = null
+        compose.setContent { GoToMinuteDialog(durationSec = 55 * 60L, onGo = { went = it }, onDismiss = {}) }
+        compose.onNodeWithTag("go_key_2").performClick()
+        compose.onNodeWithTag("go_key_3").performClick()
+        listOf("7", "8", "9", "back", "0", "go").forEach { compose.onNodeWithTag("go_key_$it").assertIsDisplayed() }
+        val root = compose.onNode(isDialog()).getUnclippedBoundsInRoot()
+        val go = compose.onNodeWithTag("go_key_go").getUnclippedBoundsInRoot()
+        assertTrue("Git tuşu ekranın içinde: $go / $root", go.bottom <= 392.dp)
+        shots?.let { compose.onNode(isDialog()).captureRoboImage("$it/go-to-minute-land.png") }
+        compose.onNodeWithTag("go_key_go").performClick()
+        assertEquals(23, went)
     }
 
     @Test
