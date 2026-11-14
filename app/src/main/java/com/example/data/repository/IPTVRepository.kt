@@ -531,6 +531,35 @@ class IPTVRepository(
      * kenardaki bir liste silinirse ekrandaki liste hiç etkilenmez.
      */
     suspend fun deletePlaylist(playlistId: Int) {
+        // Silinen listenin izleme kayıtları ("Kaldığın yerden devam", "Nerede kalmıştık") da gider; yoksa liste
+        // silindikten sonra da yapımları ana sayfada görünüp oynatılabiliyordu. Kalan başka bir listede de bulunan
+        // yapımın kaydı korunur.
+        val playlist = iptvDao.getAllPlaylists().firstOrNull { it.id == playlistId }
+        val history = runCatching { iptvDao.getAllContinueWatchingOnce() }.getOrDefault(emptyList())
+        val belongs = history.filter { cw ->
+            iptvDao.countStreamInPlaylist(playlistId, cw.streamUrl) > 0 ||
+                xtreamPathOf(playlist)?.let { cw.streamUrl.contains(it) } == true
+        }
+        deletePlaylistData(playlistId)
+        if (belongs.isNotEmpty()) {
+            val otherPaths = iptvDao.getAllPlaylists().mapNotNull { xtreamPathOf(it) }
+            val orphaned = belongs.filter { cw ->
+                iptvDao.countStreamAnywhere(cw.streamUrl) == 0 && otherPaths.none { cw.streamUrl.contains(it) }
+            }
+            if (orphaned.isNotEmpty()) iptvDao.deleteContinueWatchingByIds(orphaned.map { it.id })
+        }
+    }
+
+    /** Xtream listesinin yayın adreslerinde geçen "/kullanıcı/şifre/" parçası (katalog bölümleri tabloda satır değil). */
+    private fun xtreamPathOf(playlist: com.example.data.model.Playlist?): String? {
+        if (playlist == null || !playlist.isXtream) return null
+        val user = playlist.xtreamUsername?.trim().orEmpty()
+        val pass = playlist.xtreamPassword?.trim().orEmpty()
+        if (user.isEmpty() || pass.isEmpty()) return null
+        return "/$user/$pass/"
+    }
+
+    private suspend fun deletePlaylistData(playlistId: Int) {
         val active = iptvDao.getActivePlaylist()
         iptvDao.clearStagingItems(playlistId)
         iptvDao.deleteParkedPlaylistData(playlistId)

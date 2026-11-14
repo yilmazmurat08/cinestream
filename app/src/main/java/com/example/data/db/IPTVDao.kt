@@ -366,6 +366,16 @@ interface IPTVDao {
     @Query("DELETE FROM continue_watching WHERE itemId = :itemId")
     suspend fun deleteContinueWatchingByItemId(itemId: Int)
 
+    @Query("DELETE FROM continue_watching WHERE id IN (:ids)")
+    suspend fun deleteContinueWatchingByIds(ids: List<Int>)
+
+    // Liste silinirken izleme kaydının o listeye ait olup olmadığı (yayın adresiyle; aktif ya da kenardaki tablo).
+    @Query("SELECT (SELECT COUNT(*) FROM iptv_items WHERE playlistId = :playlistId AND streamUrl = :url) + (SELECT COUNT(*) FROM iptv_items_parked WHERE playlistId = :playlistId AND streamUrl = :url)")
+    suspend fun countStreamInPlaylist(playlistId: Int, url: String): Int
+
+    @Query("SELECT (SELECT COUNT(*) FROM iptv_items WHERE streamUrl = :url) + (SELECT COUNT(*) FROM iptv_items_parked WHERE streamUrl = :url)")
+    suspend fun countStreamAnywhere(url: String): Int
+
     // Staging Table Operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStagingItems(items: List<com.example.data.model.IPTVItemStaging>)
