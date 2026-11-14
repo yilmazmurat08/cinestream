@@ -31,6 +31,9 @@ import com.example.ui.components.LocalFloatingTopBarInset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -203,6 +206,7 @@ fun SettingsScreen(
                 when (section) {
                     "PLAYLISTS" -> {
                         PlaylistManagerModule(viewModel = viewModel)
+                        FolderEditEntry(viewModel = viewModel)
                     }
                     "EPG" -> {
                         ManualEpgCard(
@@ -1003,10 +1007,20 @@ fun SubtitlesCard(
                 
                 Slider(
                     value = subtitleSize.toFloat(),
-                    onValueChange = { onSizeChange(it.toInt()) },
+                    onValueChange = { onSizeChange(kotlin.math.round(it).toInt().coerceIn(12, 28)) },
                     valueRange = 12f..28f,
                     steps = 15,
-                    modifier = Modifier.testTag("subtitle_size_slider"),
+                    // TV kumandası: Sağ/Sol boyutu 1 değiştirir (kaydırıcı yön tuşlarını kendisi işlemiyordu).
+                    modifier = Modifier
+                        .onPreviewKeyEvent { e ->
+                            if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                            when (e.key) {
+                                androidx.compose.ui.input.key.Key.DirectionRight -> { onSizeChange((subtitleSize + 1).coerceAtMost(28)); true }
+                                androidx.compose.ui.input.key.Key.DirectionLeft -> { onSizeChange((subtitleSize - 1).coerceAtLeast(12)); true }
+                                else -> false
+                            }
+                        }
+                        .testTag("subtitle_size_slider"),
                     colors = SliderDefaults.colors(
                         activeTrackColor = CineOrange,
                         thumbColor = CineOrange

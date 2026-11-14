@@ -875,4 +875,15 @@
     <string name="new_episode_channel">Yeni bölümler</string>
     <string name="new_episode_title">%1$s: yeni bölüm</string>
     <string name="new_episode_text">%1$d. Sezon %2$d. Bölüm yayınlandı. Listende görünmesi biraz sürebilir.</string>
+    <string name="folder_edit_title">Klasörleri düzenle</string>
+    <string name="folder_edit_intro">İstediğin klasörü en üste al, istemediğini gizle. Düzen bu cihazda saklanır, liste yenilense de kalır. Gizlenen klasörün içeriği aramada yine çıkar.</string>
+    <string name="folder_edit_pin">Öne al</string>
+    <string name="folder_edit_unpin">Kaldır</string>
+    <string name="folder_edit_hide">Gizle</string>
+    <string name="folder_edit_show">Göster</string>
+    <string name="folder_edit_state_pinned">en üstte</string>
+    <string name="folder_edit_state_hidden">gizli</string>
+    <string name="folder_edit_reset">Düzeni sıfırla</string>
+    <string name="folder_edit_entry_sub">Klasörleri öne al ya da gizle</string>
+    <string name="folder_edit_entry_counts">%1$d öne alındı · %2$d gizli</string>
 </resources>

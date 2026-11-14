@@ -68,6 +68,7 @@ class IPTVApplication : Application(), ImageLoaderFactory {
         // 2. Explicitly set the custom ImageLoader globally
         com.example.data.repository.CoverOverrideStore.init(this)
         com.example.util.AgeRatings.init(this)
+        com.example.util.FolderOrder.init(this)
         com.example.worker.NewEpisodeAlerts.init(this)
         Coil.setImageLoader(this)
 

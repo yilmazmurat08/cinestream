@@ -309,6 +309,11 @@ class IPTVViewModel(
         // Kilit durumu (elle ayar > otomatik tespit) kategori satırına yansıtılır; özel bölümler kilitlenemez.
         tvCatalog.categories(type) { if (type == "SERIES") seriesCategoryRank(it) else movieCategoryRank(it) }
             .map { c -> if (c.special != null) c else c.copy(isAdult = isCategoryLocked(type, c.key)) }
+            .let { list ->
+                // Klasör düzeni (öne al / gizle) yalnızca sağlayıcı kategorilerine; özel bölümler en üstte kalır.
+                val (specials, rows) = list.partition { it.special != null }
+                specials + com.example.util.FolderOrder.apply(rows, type, com.example.util.FolderOrder.prefs.value) { it.key }
+            }
     }
 
     suspend fun tvSpecial(type: String, section: com.example.data.repository.TvSpecialSection): List<com.example.data.repository.TvPoster> =
@@ -1604,33 +1609,36 @@ class IPTVViewModel(
     }
 
     val liveGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = liveItemsShared
-        .map { items ->
+        .combine(com.example.util.FolderOrder.prefs) { items, folders ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
                     // Kanallar zaten listedeki sırada gelir (bkz. liveItemsShared).
                     com.example.data.model.IPTVGroup(id = cat, name = cat, type = "LIVE", items = list)
                 }
                 .sortedBy { it.name }
+                .let { com.example.util.FolderOrder.apply(it, "LIVE", folders) { g -> g.name } }
         }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val movieGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = movieItemsShared
-        .map { items ->
+        .combine(com.example.util.FolderOrder.prefs) { items, folders ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
                     com.example.data.model.IPTVGroup(id = cat, name = cat, type = "MOVIE", items = list.sortedWith(naturalOrderItemComparator))
                 }
                 .sortedWith(compareBy({ movieCategoryRank(it.name).first }, { movieCategoryRank(it.name).second }))
+                .let { com.example.util.FolderOrder.apply(it, "MOVIE", folders) { g -> g.name } }
         }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val seriesGroups: StateFlow<List<com.example.data.model.IPTVGroup>> = seriesItemsShared
-        .map { items ->
+        .combine(com.example.util.FolderOrder.prefs) { items, folders ->
             items.groupBy { it.category }
                 .map { (cat, list) ->
                     com.example.data.model.IPTVGroup(id = cat, name = cat, type = "SERIES", items = list.sortedWith(naturalOrderItemComparator))
                 }
                 .sortedWith(compareBy({ seriesCategoryRank(it.name).first }, { seriesCategoryRank(it.name).second }))
+                .let { com.example.util.FolderOrder.apply(it, "SERIES", folders) { g -> g.name } }
         }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

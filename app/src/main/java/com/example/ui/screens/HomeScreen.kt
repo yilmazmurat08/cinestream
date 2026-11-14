@@ -1404,11 +1404,14 @@ fun HomeScreen(
                             )
                         }
                         if (currentCategory == null) {
-                            val filteredCategoryEntries = remember(grouped, seriesCategorySearchQuery) {
+                            val folderPrefs by com.example.util.FolderOrder.prefs.collectAsState()
+                            val filteredCategoryEntries = remember(grouped, seriesCategorySearchQuery, folderPrefs) {
+                                // Klasör düzeni (Ayarlar > Klasörleri düzenle): öne alınanlar üstte, gizlenenler yok.
+                                val ordered = com.example.util.FolderOrder.apply(grouped.entries.toList(), "SERIES", folderPrefs) { it.key }
                                 if (seriesCategorySearchQuery.isBlank()) {
-                                    grouped.entries.toList()
+                                    ordered
                                 } else {
-                                    grouped.entries.filter { it.key.contains(seriesCategorySearchQuery, ignoreCase = true) }
+                                    ordered.filter { it.key.contains(seriesCategorySearchQuery, ignoreCase = true) }
                                 }
                             }
                             LazyColumn(

@@ -248,7 +248,10 @@ private fun TvSettingsContent(viewModel: IPTVViewModel, modifier: Modifier) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
                 when (shown) {
                     TvSetting.PROFILE, TvSetting.PRO -> CineStreamProUpgradeCard(isProUser = isProUser, onOpenPaywall = { viewModel.openPaywall() })
-                    TvSetting.PLAYLISTS -> com.example.ui.screens.PlaylistManagerModule(viewModel = viewModel)
+                    TvSetting.PLAYLISTS -> {
+                        com.example.ui.screens.PlaylistManagerModule(viewModel = viewModel)
+                        com.example.ui.screens.FolderEditEntry(viewModel = viewModel)
+                    }
                     TvSetting.EPG -> ManualEpgCard(
                         currentEpgUrl = manualEpgUrl,
                         onSaveEpgUrl = { url ->

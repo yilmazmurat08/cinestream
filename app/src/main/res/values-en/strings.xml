@@ -876,4 +876,15 @@
     <string name="new_episode_channel">New episodes</string>
     <string name="new_episode_title">%1$s: new episode</string>
     <string name="new_episode_text">Season %1$d Episode %2$d has aired. It may take a while to appear in your list.</string>
+    <string name="folder_edit_title">Edit folders</string>
+    <string name="folder_edit_intro">Move the folders you want to the top and hide the ones you don\'t. The layout is saved on this device and stays after a playlist refresh. Content in hidden folders still shows up in search.</string>
+    <string name="folder_edit_pin">Pin</string>
+    <string name="folder_edit_unpin">Unpin</string>
+    <string name="folder_edit_hide">Hide</string>
+    <string name="folder_edit_show">Show</string>
+    <string name="folder_edit_state_pinned">on top</string>
+    <string name="folder_edit_state_hidden">hidden</string>
+    <string name="folder_edit_reset">Reset layout</string>
+    <string name="folder_edit_entry_sub">Pin or hide folders</string>
+    <string name="folder_edit_entry_counts">%1$d pinned · %2$d hidden</string>
 </resources>
