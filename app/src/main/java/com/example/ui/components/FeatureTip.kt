@@ -102,7 +102,8 @@ fun FeatureTip(id: String, text: String, show: Boolean = true, tvMode: Boolean? 
         if (FeatureTips.seen(context, id)) { closed = true; return@LaunchedEffect }
         delay(700) // ekran yerleşsin
         // Aynı balon birden çok yerde olabilir (ör. her kanal kartında): yalnızca ilk gelen gösterir.
-        if (FeatureTips.active != null || FeatureTips.seen(context, id)) { if (FeatureTips.active != id) closed = true; return@LaunchedEffect }
+        if (FeatureTips.seen(context, id)) { closed = true; return@LaunchedEffect }
+        if (FeatureTips.active != null) return@LaunchedEffect // başka balon açık: o kapanınca yeniden denenir
         FeatureTips.active = id
         FeatureTips.markSeen(context, id)
         shownHere = true

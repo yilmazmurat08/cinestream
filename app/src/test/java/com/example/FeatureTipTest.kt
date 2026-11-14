@@ -98,6 +98,7 @@ class FeatureTipTest {
         waitTip()
         compose.onNodeWithTag("feature_tip_new_episode").assertDoesNotExist()
         fav = true
+        compose.waitForIdle()
         waitTip()
         compose.onNodeWithTag("feature_tip_new_episode").assertExists()
     }
